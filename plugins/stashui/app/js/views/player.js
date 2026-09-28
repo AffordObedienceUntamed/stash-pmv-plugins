@@ -1,0 +1,493 @@
+// Scene player: custom controls, timeline with thumbnails, resume, history,
+// queue/random/endless, keyboard, placard with all details.
+
+import { esc, icon, fmtDuration, store, toast, errorToast } from "../ui.js";
+import { getScene, findItems, saveActivity, addPlay } from "../api.js";
+import { toPiece } from "../pieces.js";
+import { app, go, closeOverlay } from "../main.js";
+import { placardHtml, bindPlacard } from "./placard.js";
+import { similarScenes } from "../similar.js";
+import { BINS, watchRecorder, watchBins, motionBins, combine, peaks } from "../heat.js";
+
+// Read Stash's sprite VTT: time ranges → region in the sprite image
+async function loadSprites(vttUrl, spriteUrl) {
+  try {
+    const txt = await (await fetch(vttUrl)).text();
+    const cues = [];
+    const re = /(\d+):(\d+):(\d+)\.(\d+)\s+-->\s+(\d+):(\d+):(\d+)\.(\d+)\s*\n([^\n]+)/g;
+    let m;
+    const t = (h, mi, s, ms) => +h * 3600 + +mi * 60 + +s + +ms / 1000;
+    while ((m = re.exec(txt))) {
+      const xywh = (m[9].match(/#xywh=(\d+),(\d+),(\d+),(\d+)/) || []).slice(1).map(Number);
+      if (xywh.length === 4) cues.push({ start: t(m[1], m[2], m[3], m[4]), end: t(m[5], m[6], m[7], m[8]), xywh });
+    }
+    return cues.length ? { cues, url: spriteUrl } : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+export async function render(host, params) {
+  document.body.classList.add("kb-noscroll");
+  host.innerHTML = `<div class="kb-stage kb-player"><div class="kb-loading">Loading …</div></div>`;
+  let x = await getScene(params.id);
+  if (!x) {
+    host.innerHTML = `<div class="kb-stage"><div class="kb-empty"><b>This scene no longer exists</b><button class="kb-btn" data-close>Close</button></div></div>`;
+    host.querySelector("[data-close]").onclick = closeOverlay;
+    return;
+  }
+  const f = x.files[0] || {};
+  const prefs = Object.assign({ volume: 0.8, muted: false, auto: true, random: false, loop: false, panel: true, heat: true }, store.get("player", {}));
+  const ctx = app.context || {};
+  const inQueue = !!ctx.queue;
+
+  host.innerHTML = `
+    <div class="kb-stage kb-player${prefs.panel ? " has-panel" : ""}" tabindex="-1">
+      <div class="kb-screen">
+        <video class="kb-video" playsinline preload="auto" poster="${esc(x.paths.screenshot || "")}"></video>
+        <div class="kb-bigplay" data-bigplay hidden>${icon("play")}</div>
+        <div class="kb-resume-hint" data-resume hidden></div>
+        <div class="kb-topbar">
+          <button class="kb-btn is-icon is-ghost" data-close aria-label="Close (Esc)" title="Close (Esc)">${icon("back")}</button>
+          <span class="kb-topbar-title">${esc(x.title || f.basename || "")}</span>
+          <button class="kb-btn is-icon is-ghost" data-panel aria-label="Details on/off (I)" title="Details on/off (I)">${icon("info")}</button>
+        </div>
+        <div class="kb-controls">
+          <div class="kb-timeline${prefs.heat ? " has-heat" : ""}" data-timeline>
+            <canvas class="kb-tl-heat" data-heat width="800" height="40" hidden></canvas>
+            <div class="kb-tl-buf" data-buf></div>
+            <div class="kb-tl-played" data-played></div>
+            <div class="kb-tl-resume" data-resmark hidden></div>
+            <div class="kb-tl-knob" data-knob></div>
+            <div class="kb-tl-hls" data-hls></div>
+            <div class="kb-tl-peek" data-peek hidden><div class="kb-tl-peek-img" data-peekimg></div><span data-peektime></span></div>
+          </div>
+          <div class="kb-ctrl-row">
+            <button class="kb-btn is-icon is-ghost" data-prev aria-label="Previous (P)" title="Previous (P)">${icon("prev")}</button>
+            <button class="kb-btn is-icon is-ghost kb-playbtn" data-play aria-label="Play/pause (Space)">${icon("play")}</button>
+            <button class="kb-btn is-icon is-ghost" data-next aria-label="Next (N)" title="Next (N)">${icon("next")}</button>
+            <span class="kb-time"><span data-cur>0:00</span> / <span data-dur>${fmtDuration(f.duration)}</span></span>
+            <span class="kb-spacer"></span>
+            <button class="kb-btn is-ghost kb-toggle${prefs.heat ? " is-on" : ""}" data-heatbtn title="Highlights: heat curve and jump marks on the timeline (J jumps to the next one)">${icon("bolt")}<span>Highlights</span></button>
+            <button class="kb-btn is-ghost kb-toggle${prefs.random ? " is-on" : ""}" data-random title="Play something random next">${icon("shuffle")}<span>Random</span></button>
+            <button class="kb-btn is-ghost kb-toggle${prefs.auto ? " is-on" : ""}" data-auto title="Continue automatically at the end">${icon("next")}<span>Endless</span></button>
+            <button class="kb-btn is-ghost kb-toggle${prefs.loop ? " is-on" : ""}" data-loop title="Repeat this scene">${icon("repeat")}<span>Loop</span></button>
+            <select class="kb-field kb-speed" data-speed aria-label="Speed">${[0.5, 0.75, 1, 1.25, 1.5, 2].map((s) => `<option value="${s}"${s === 1 ? " selected" : ""}>${s}×</option>`).join("")}</select>
+            <button class="kb-btn is-icon is-ghost" data-mute aria-label="Sound on/off (M)" title="Sound on/off (M)"></button>
+            <input class="kb-vol" type="range" min="0" max="1" step="0.02" data-vol aria-label="Volume">
+            <button class="kb-btn is-icon is-ghost" data-fs aria-label="Fullscreen (F)" title="Fullscreen (F)">${icon("expand")}</button>
+          </div>
+        </div>
+      </div>
+      <aside class="kb-side" data-side>${placardHtml("scene", x)}<div class="kb-upnext" data-upnext></div><div class="kb-upnext kb-similar" data-similar></div></aside>
+    </div>`;
+
+  const stage = host.querySelector(".kb-stage");
+  const $ = (s) => host.querySelector(s);
+  const v = $("video");
+  v.volume = prefs.volume;
+  v.muted = prefs.muted;
+  v.loop = prefs.loop;
+  const savePrefs = () => store.set("player", prefs);
+
+  // ---------- Source: direct stream, otherwise transcode ----------
+  const sources = [x.paths.stream, ...(x.sceneStreams || []).filter((s) => /mp4|webm/.test(s.mime_type || s.url)).map((s) => s.url)].filter(Boolean);
+  let srcIdx = 0;
+  v.addEventListener("error", () => {
+    if (srcIdx < sources.length - 1) {
+      const t = v.currentTime;
+      v.src = sources[++srcIdx];
+      v.currentTime = t;
+      v.play().catch(() => {});
+    } else toast("This video can't be played here", "error");
+  });
+  v.src = sources[0];
+
+  // Resume
+  const dur = f.duration || 0;
+  const resumeAt = x.resume_time && dur && x.resume_time > 5 && x.resume_time < dur * 0.95 ? x.resume_time : 0;
+  if (resumeAt) {
+    v.currentTime = resumeAt;
+    const r = $("[data-resume]");
+    r.innerHTML = `Resume at ${fmtDuration(resumeAt)} <button class="kb-btn" data-fromstart>From the start</button>`;
+    r.hidden = false;
+    setTimeout(() => (r.hidden = true), 6000);
+    r.querySelector("[data-fromstart]").onclick = () => {
+      v.currentTime = 0;
+      r.hidden = true;
+    };
+    const mark = $("[data-resmark]");
+    mark.hidden = false;
+    mark.style.left = (resumeAt / dur) * 100 + "%";
+  }
+  v.play().catch(() => ($("[data-bigplay]").hidden = false));
+
+  // ---------- History ----------
+  const watch = watchRecorder(x.id, dur);
+  let playedSec = 0;
+  let lastTick = null;
+  let counted = false;
+  let lastSave = 0;
+  const flushActivity = (force) => {
+    if (!playedSec && !force) return;
+    const p = playedSec;
+    playedSec = 0;
+    lastSave = Date.now();
+    watch.flush();
+    saveActivity(x.id, v.currentTime >= dur * 0.98 ? 0 : v.currentTime, p).catch(() => {});
+  };
+  v.addEventListener("timeupdate", () => {
+    const now = performance.now();
+    if (!v.paused && lastTick != null) {
+      const sec = Math.min(1, (now - lastTick) / 1000) * v.playbackRate;
+      playedSec += sec;
+      watch.played(v.currentTime, sec);
+    }
+    lastTick = now;
+    if (!counted && (v.currentTime > Math.min(15, dur * 0.1) || playedSec > 10)) {
+      counted = true;
+      addPlay(x.id).catch(() => {});
+    }
+    if (Date.now() - lastSave > 10000) flushActivity();
+    paintTime();
+  });
+  v.addEventListener("pause", () => {
+    lastTick = null;
+    flushActivity(true);
+    syncPlay();
+  });
+  v.addEventListener("play", syncPlay);
+  v.addEventListener("progress", paintBuffer);
+
+  // ---------- Timeline ----------
+  const tl = $("[data-timeline]");
+  function paintTime() {
+    const d = v.duration || dur || 1;
+    $("[data-played]").style.width = (v.currentTime / d) * 100 + "%";
+    $("[data-knob]").style.left = (v.currentTime / d) * 100 + "%";
+    $("[data-cur]").textContent = fmtDuration(v.currentTime);
+    if (v.duration) $("[data-dur]").textContent = fmtDuration(v.duration);
+  }
+  function paintBuffer() {
+    if (!v.buffered.length || !v.duration) return;
+    $("[data-buf]").style.width = (v.buffered.end(v.buffered.length - 1) / v.duration) * 100 + "%";
+  }
+  const posFrom = (e) => {
+    const r = tl.getBoundingClientRect();
+    return Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+  };
+  let sprites = null;
+  const spritesReady = x.paths.vtt && x.paths.sprite ? loadSprites(x.paths.vtt, x.paths.sprite).then((s) => (sprites = s)) : Promise.resolve(null);
+
+  // ---------- Highlights: heat curve + jump marks ----------
+  let highlights = [];
+  async function paintHeat() {
+    const mot = await motionBins(await spritesReady, dur);
+    const heat = combine(mot, watchBins(x.id));
+    const cv = $("[data-heat]");
+    if (!cv) return;
+    if (!heat) {
+      cv.hidden = true;
+      return;
+    }
+    const g = cv.getContext("2d");
+    const { width: W, height: H } = cv;
+    g.clearRect(0, 0, W, H);
+    const grad = g.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, "rgba(255, 62, 138, .95)");
+    grad.addColorStop(1, "rgba(255, 62, 138, .15)");
+    g.fillStyle = grad;
+    g.beginPath();
+    g.moveTo(0, H);
+    heat.forEach((h, i) => {
+      const xx = ((i + 0.5) / BINS) * W;
+      g.lineTo(xx, H - 3 - h * (H - 5));
+    });
+    g.lineTo(W, H);
+    g.closePath();
+    g.fill();
+    cv.hidden = false;
+    highlights = peaks(heat, v.duration || dur);
+    $("[data-hls]").innerHTML = highlights
+      .map((t) => `<button type="button" class="kb-tl-hl" data-hl="${t}" style="left:${(t / (v.duration || dur)) * 100}%" title="Highlight at ${fmtDuration(t)} (J)" aria-label="Highlight at ${fmtDuration(t)}"></button>`)
+      .join("");
+  }
+  paintHeat();
+  $("[data-hls]").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-hl]");
+    if (!b) return;
+    e.stopPropagation();
+    v.currentTime = Number(b.dataset.hl);
+    watch.seeked(v.currentTime);
+    if (v.paused) v.play().catch(() => {});
+  });
+  function nextHighlight() {
+    if (!highlights.length) return toast("No highlights for this scene yet");
+    const t = highlights.find((h) => h > v.currentTime + 2) ?? highlights[0];
+    v.currentTime = t;
+    watch.seeked(t);
+    toast(`Highlight at ${fmtDuration(t)}`);
+  }
+  tl.addEventListener("pointermove", (e) => {
+    const p = posFrom(e);
+    const t = p * (v.duration || dur);
+    const peek = $("[data-peek]");
+    peek.hidden = false;
+    peek.style.left = p * 100 + "%";
+    $("[data-peektime]").textContent = fmtDuration(t);
+    const img = $("[data-peekimg]");
+    const cue = sprites && sprites.cues.find((c) => t >= c.start && t < c.end);
+    if (cue) {
+      const [cx, cy, cw, ch] = cue.xywh;
+      img.hidden = false;
+      img.style.width = cw + "px";
+      img.style.height = ch + "px";
+      img.style.background = `url("${sprites.url}") -${cx}px -${cy}px`;
+    } else img.hidden = true;
+    if (scrubbing) v.currentTime = t;
+  });
+  tl.addEventListener("pointerleave", () => !scrubbing && ($("[data-peek]").hidden = true));
+  let scrubbing = false;
+  tl.addEventListener("pointerdown", (e) => {
+    if (e.target.closest("[data-hl]")) return; // jump mark: handles its own click
+    scrubbing = true;
+    tl.setPointerCapture(e.pointerId);
+    v.currentTime = posFrom(e) * (v.duration || dur);
+  });
+  tl.addEventListener("pointerup", () => watch.seeked(v.currentTime));
+  tl.addEventListener("pointerup", () => {
+    scrubbing = false;
+    $("[data-peek]").hidden = true;
+  });
+
+  // ---------- Controls ----------
+  function syncPlay() {
+    $("[data-play]").innerHTML = icon(v.paused ? "play" : "pause");
+    $("[data-bigplay]").hidden = !v.paused || v.currentTime > 0.5 ? true : false;
+    stage.classList.toggle("is-paused", v.paused);
+  }
+  function syncVol() {
+    $("[data-mute]").innerHTML = icon(v.muted || v.volume === 0 ? "mute" : "volume");
+    $("[data-vol]").value = v.muted ? 0 : v.volume;
+  }
+  syncVol();
+  syncPlay();
+  const toggle = () => (v.paused ? v.play().catch(() => {}) : v.pause());
+
+  // Controls hide when idle
+  let idle;
+  const wake = () => {
+    stage.classList.remove("is-idle");
+    clearTimeout(idle);
+    idle = setTimeout(() => !v.paused && stage.classList.add("is-idle"), 2600);
+  };
+  stage.addEventListener("pointermove", wake);
+  wake();
+
+  host.addEventListener("click", (e) => {
+    const t = e.target;
+    if (t.closest("[data-close]")) return closeOverlay();
+    if (t.closest("[data-play]") || t.closest("[data-bigplay]")) return toggle();
+    if (t === v) return toggle();
+    if (t.closest("[data-next]")) return next(1);
+    if (t.closest("[data-prev]")) return next(-1);
+    if (t.closest("[data-fs]")) return fullscreen();
+    if (t.closest("[data-mute]")) {
+      v.muted = !v.muted;
+      prefs.muted = v.muted;
+      savePrefs();
+      return syncVol();
+    }
+    if (t.closest("[data-panel]")) {
+      prefs.panel = !prefs.panel;
+      savePrefs();
+      return stage.classList.toggle("has-panel", prefs.panel);
+    }
+    if (t.closest("[data-heatbtn]")) {
+      prefs.heat = !prefs.heat;
+      savePrefs();
+      t.closest("[data-heatbtn]").classList.toggle("is-on", prefs.heat);
+      return tl.classList.toggle("has-heat", prefs.heat);
+    }
+    const sim = t.closest("[data-simgo]");
+    if (sim) return openScene(sim.dataset.simgo);
+    for (const k of ["random", "auto", "loop"]) {
+      const b = t.closest(`[data-${k}]`);
+      if (b) {
+        prefs[k] = !prefs[k];
+        savePrefs();
+        b.classList.toggle("is-on", prefs[k]);
+        if (k === "loop") v.loop = prefs.loop;
+        return;
+      }
+    }
+    const up = t.closest("[data-upgo]");
+    if (up) return jump(Number(up.dataset.upgo));
+  });
+  v.addEventListener("dblclick", fullscreen);
+  $("[data-vol]").addEventListener("input", (e) => {
+    v.volume = Number(e.target.value);
+    v.muted = v.volume === 0;
+    prefs.volume = v.volume;
+    prefs.muted = v.muted;
+    savePrefs();
+    syncVol();
+  });
+  $("[data-speed]").onchange = (e) => (v.playbackRate = Number(e.target.value));
+
+  function fullscreen() {
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    else stage.requestFullscreen().catch(() => toast("Fullscreen not allowed"));
+  }
+
+  // ---------- Next / previous ----------
+  // Order: queue > list it was opened from > random from the library
+  function upcoming() {
+    if (inQueue) {
+      const q = store.get("queue", []);
+      const pos = store.get("queuePos", 0);
+      return { list: q.map((it) => ({ kind: it.kind, id: it.id, title: it.title, thumb: it.thumb })), pos };
+    }
+    if (ctx.pieces) {
+      const list = ctx.pieces.filter((p) => p.kind === "scene");
+      return { list, pos: list.findIndex((p) => p.id === x.id) };
+    }
+    return { list: [], pos: -1 };
+  }
+  async function next(dir) {
+    flushActivity(true);
+    if (prefs.random && dir > 0) {
+      try {
+        const r = await findItems("scene", { per_page: 1, sort: "random_" + Math.floor(Math.random() * 1e8) });
+        if (r.items[0]) return openScene(r.items[0].id);
+      } catch (e) {
+        return errorToast(e, "Random");
+      }
+    }
+    const { list, pos } = upcoming();
+    const i = pos + dir;
+    if (i < 0 || i >= list.length) return toast(dir > 0 ? "That was the last video" : "This is the first video");
+    jump(i);
+  }
+  function jump(i) {
+    const { list } = upcoming();
+    const it = list[i];
+    if (!it) return;
+    if (inQueue) store.set("queuePos", i);
+    if (ctx.index != null && !inQueue) ctx.index = i;
+    if (it.kind === "image") return go("image/" + it.id, true);
+    openScene(it.id);
+  }
+  function openScene(id) {
+    go("scene/" + id, true);
+  }
+  v.addEventListener("ended", () => {
+    flushActivity(true);
+    if (!prefs.loop && prefs.auto) next(1);
+  });
+
+  // "Up next" in the placard
+  function paintUpnext() {
+    const { list, pos } = upcoming();
+    const rest = list.slice(pos + 1, pos + 6);
+    $("[data-upnext]").innerHTML = rest.length
+      ? `<h3>Up next${inQueue ? " in the queue" : ""}</h3>` +
+        rest
+          .map((it, k) => `<button class="kb-upnext-item" data-upgo="${pos + 1 + k}">${it.thumb ? `<img alt="" src="${esc(it.thumb)}">` : ""}<span>${esc(it.title || it.id)}</span></button>`)
+          .join("")
+      : prefs.random
+      ? "<h3>Up next</h3><p class=\"kb-plc-meta\">Something random from the library.</p>"
+      : "";
+  }
+  paintUpnext();
+
+  // "Similar" in the placard – loads in the background
+  async function paintSimilar() {
+    const box = $("[data-similar]");
+    if (!box) return;
+    box.innerHTML = '<h3>Similar</h3><p class="kb-plc-meta">Searching …</p>';
+    try {
+      const list = await similarScenes(x.id, 8);
+      if (!box.isConnected) return;
+      box.innerHTML = list.length
+        ? "<h3>Similar</h3>" +
+          list
+            .map((it) => `<button class="kb-upnext-item" data-simgo="${esc(it.id)}">${it.thumb ? `<img alt="" loading="lazy" src="${esc(it.thumb)}">` : ""}<span><b>${esc(it.title)}</b><small>${esc(it.why)}</small></span></button>`)
+            .join("")
+        : "";
+    } catch (e) {
+      box.innerHTML = "";
+    }
+  }
+  paintSimilar();
+
+  // ---------- Placard ----------
+  const side = $("[data-side]");
+  const plc = bindPlacard(side, "scene", () => x, {
+    refresh: async () => {
+      x = await getScene(x.id);
+      side.innerHTML = placardHtml("scene", x) + '<div class="kb-upnext" data-upnext></div><div class="kb-upnext kb-similar" data-similar></div>';
+      paintUpnext();
+      paintSimilar();
+    },
+    onDeleted: () => {
+      closeOverlay();
+      if (ctx.hang) ctx.hang.remove(["scene:" + x.id]);
+    },
+    goFolder: () => goToFolder(f.path),
+  });
+  async function goToFolder(path) {
+    const { loadFolders } = await import("../api.js");
+    const tree = await loadFolders();
+    const dir = (path || "").split(/[\\/]/).slice(0, -1).join("\\");
+    const n = [...tree.nodes.values()].find((n) => n.path === dir);
+    if (n) go("folder/" + n.id);
+  }
+
+  // ---------- Keyboard ----------
+  const onKey = (e) => {
+    if (e.target.closest && e.target.closest("input, textarea, select, .kb-drawer, .kb-dialog")) return;
+    if (document.querySelector("#overlay-root .kb-drawer, #overlay-root .kb-dialog")) return;
+    const k = e.key.toLowerCase();
+    let handled = true;
+    if (k === "escape") document.fullscreenElement ? document.exitFullscreen() : closeOverlay();
+    else if (k === " " || k === "k") toggle();
+    else if (k === "arrowright") (v.currentTime += e.shiftKey ? 30 : 5), watch.seeked(v.currentTime);
+    else if (k === "arrowleft") (v.currentTime -= e.shiftKey ? 30 : 5), watch.seeked(v.currentTime);
+    else if (k === "j") nextHighlight();
+    else if (k === "arrowup") (v.volume = Math.min(1, v.volume + 0.05)), (prefs.volume = v.volume), syncVol();
+    else if (k === "arrowdown") (v.volume = Math.max(0, v.volume - 0.05)), (prefs.volume = v.volume), syncVol();
+    else if (k === "m") (v.muted = !v.muted), syncVol();
+    else if (k === "f") fullscreen();
+    else if (k === "n") next(1);
+    else if (k === "p") next(-1);
+    else if (k === "i") $("[data-panel]").click();
+    else if (k === "h") plc.fav().catch((err) => errorToast(err, "Favorite"));
+    else if (k === "o") plc.o(1).catch((err) => errorToast(err, "O counter"));
+    else if (/^[1-5]$/.test(k)) plc.rate(Number(k)).catch((err) => errorToast(err, "Rating"));
+    else if (/^[0-9]$/.test(k)) v.currentTime = (Number(k) / 10) * (v.duration || dur);
+    else handled = false;
+    if (handled) {
+      e.preventDefault();
+      wake();
+    }
+  };
+  document.addEventListener("keydown", onKey);
+  stage.focus();
+
+  return () => {
+    document.removeEventListener("keydown", onKey);
+    flushActivity(true);
+    const tEnd = v.currentTime;
+    v.pause();
+    v.removeAttribute("src");
+    v.load();
+    savePrefs();
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    // Update progress in the grid
+    if (ctx.hang) {
+      const p = ctx.hang.pieces.find((q) => q.kind === "scene" && q.id === x.id);
+      if (p && dur) ctx.hang.update(Object.assign({}, p, { resume: tEnd && tEnd < dur * 0.98 ? tEnd / dur : 0 }));
+    }
+  };
+}
