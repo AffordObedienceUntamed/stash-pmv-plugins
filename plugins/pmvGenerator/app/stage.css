@@ -404,7 +404,7 @@
 .kb-pmvg-hudvol input::-moz-range-thumb { width: 10px; height: 10px; border: 2px solid var(--pink); border-radius: 50%; background: var(--paper); }
 .kb-pmvg-hudvol.is-dim { opacity: .35; }
 .kb-pmvg-hudmode { height: 30px; padding: 0 10px; font-size: 12.5px; white-space: nowrap; }
-.kb-pmvg-hudmode.is-on { color: var(--pink); }
+.kb-pmvg-hudmode.is-on { color: var(--ink); }
 @media (max-width: 760px) {
   .kb-pmvg-hudvol input { width: 56px; }
   .kb-pmvg-hud [data-h="cuts"], .kb-pmvg-hud [data-h="bpm"] { display: none; }

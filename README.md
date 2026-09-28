@@ -10,6 +10,17 @@ Three plugins for [Stash](https://github.com/stashapp/stash).
 
 The PMV Generator is included in Stash UI. Install the standalone **PMV Generator** only if you want to keep the classic Stash interface.
 
+## Screenshots
+
+| | |
+|---|---|
+| ![PMV Generator: setup](docs/screenshots/pmvgen-setup.png) | ![PMV Generator: live show with a mirrored 3-way split](docs/screenshots/pmvgen-run.png) |
+| ![Media Storm: panel](docs/screenshots/mediastorm-panel.png) | ![Media Storm: the storm tab](docs/screenshots/mediastorm-storm.png) |
+| ![Stash UI: home](docs/screenshots/stashui-home.png) | ![Stash UI: scenes with filters](docs/screenshots/stashui-scenes.png) |
+| ![Stash UI: player with similar scenes](docs/screenshots/stashui-player.png) | ![Stash UI: settings](docs/screenshots/stashui-settings.png) |
+
+*Screenshots use placeholder sample data and test clips.*
+
 ## Install
 
 1. In Stash, open **Settings → Plugins → Available Plugins → Add Source**.

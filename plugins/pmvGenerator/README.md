@@ -4,6 +4,10 @@ Pick a song – on every beat it cuts to a clip from your Stash library: split-s
 
 This is the standalone version. The same generator is built into the **Stash UI** plugin – you don't need both.
 
+![PMV Generator](../../docs/screenshots/pmvgen-standalone.png)
+
+![Live show](../../docs/screenshots/pmvgen-run.png)
+
 ## Using it
 
 Open it with the **PMV** button in the Stash navbar (or directly at `/plugin/pmvGenerator/assets/index.html`). Three steps on the left; on the right the **Go** card with a summary of all settings and the start button (on narrow screens it sticks to the bottom). Every function is its own row with a switch and a short explanation.

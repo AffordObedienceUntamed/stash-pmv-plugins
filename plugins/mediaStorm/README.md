@@ -2,6 +2,10 @@
 
 Random images and videos from your Stash library, appearing in waves in their own browser tab.
 
+![Media Storm panel](../../docs/screenshots/mediastorm-panel.png)
+
+![The storm tab](../../docs/screenshots/mediastorm-storm.png)
+
 Open it with **⚡ Storm** in the Stash navbar → panel → **Start** (opens a separate tab). **Esc** stops with a fade-out and closes the tab.
 
 ## Its own tab
