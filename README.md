@@ -6,9 +6,9 @@ Three plugins for [Stash](https://github.com/stashapp/stash).
 |---|---|
 | [**PMV Generator**](plugins/pmvGenerator/README.md) | Pick a song – on every beat it cuts to a clip from your library, with split-screen layouts, effects, speed ramps and clip audio. Live in the browser, optionally recorded and saved back to Stash. Can also rebuild an existing PMV with your own clips. |
 | [**Media Storm**](plugins/mediaStorm/README.md) | Random images and videos from your library appear in waves in their own tab – eight layouts, effects, moods, folder and tag filters, waves on the beat of a song. |
-| [**Stash UI**](plugins/stashui/README.md) | A complete new interface for Stash in the Media Storm look: browsing, player with highlights and “similar”, image viewer, folders, tags, queue, tasks, all settings – and the PMV Generator built in. Classic Stash stays available in the same look. |
+| [**Stash UI**](plugins/stashui/README.md) | A complete new interface for Stash in the Media Storm look: browsing, player with highlights and “similar”, image viewer, folders, tags, queue, tasks, all settings. Classic Stash stays available in the same look. |
 
-The PMV Generator is included in Stash UI. Install the standalone **PMV Generator** only if you want to keep the classic Stash interface.
+Each plugin works on its own – install just the ones you want. They share the same look and work together: with Stash UI installed, Media Storm and the PMV Generator show up in its menu, and the PMV Generator leads back into Stash UI.
 
 ## Screenshots
 
@@ -41,7 +41,7 @@ Manual install: copy a folder from `plugins/` into your Stash plugins folder and
 ## Development
 
 - No build step for the code itself: plain JavaScript ES modules.
-- Stash UI is the source of the shared files (`app/js`, the CSS, `backend.py`). After editing them, run `python tools/build.py --sync-only` – it copies them into the PMV Generator and Media Storm plugins and stamps versions against stale browser caches.
+- Stash UI is the source of the shared basics (the CSS, `api.js`, `ui.js`, `pmvsmart.js`, the tag picker). The PMV Generator owns its own code (`pmvgen.js`, `beats.js`, `pmvfx.js`, `pmvscan.js`, `backend.py`); its `beats.js` is also used by Media Storm. After editing shared files, run `python tools/build.py --sync-only` – it copies them where they're needed and stamps versions against stale browser caches.
 - `python tools/build.py` additionally writes the zips and `index.yml` to `dist/`. On every push to `main`, the GitHub Actions workflow builds them and publishes them with GitHub Pages (Settings → Pages → Source: **GitHub Actions**).
 
 ## License

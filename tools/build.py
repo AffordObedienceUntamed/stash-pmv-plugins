@@ -2,9 +2,10 @@
 
     python tools/build.py [--out dist] [--repo owner/name] [--sync-only]
 
-1. Sync: the PMV Generator plugin and Media Storm share code with Stash UI. The shared
-   files are copied from plugins/stashui into plugins/pmvGenerator and plugins/mediaStorm/web
-   (edit them in stashui, then run this script).
+1. Sync: the PMV Generator plugin uses the basics of Stash UI (styles, GraphQL, helpers,
+   tag picker, image analysis) – they're copied from plugins/stashui into plugins/pmvGenerator
+   (edit them in stashui, then run this script). The generator itself (pmvgen.js, beats.js, …)
+   lives only in plugins/pmvGenerator; its beats.js is also copied to plugins/mediaStorm/web.
 2. Stamp: every app page gets an import map with version stamps, so browsers never mix
    cached old modules with new ones.
 3. Package: every plugin folder is zipped and listed in <out>/index.yml – the file Stash reads
@@ -33,13 +34,8 @@ SHARED = [
     "app/admin.css",
     "app/js/api.js",
     "app/js/ui.js",
-    "app/js/beats.js",
-    "app/js/pmvfx.js",
-    "app/js/pmvscan.js",
     "app/js/pmvsmart.js",
-    "app/js/views/pmvgen.js",
     "app/js/views/tagpicker.js",
-    "app/js/views/folderpick.js",
 ]
 SKIP_DIRS = {"__pycache__", ".cache", "tools"}
 PLACEHOLDER_URL = "https://github.com/OWNER/REPO"
@@ -59,10 +55,7 @@ def write(p, s):
 def sync():
     for rel in SHARED:
         write(os.path.join(GEN, rel), read(os.path.join(UI, rel)))
-    backend = read(os.path.join(UI, "backend.py"))
-    backend = backend.replace("[Stash UI]", "[PMV Generator]").replace('"""Stash UI – a small backend', '"""PMV Generator – a small backend', 1)
-    write(os.path.join(GEN, "backend.py"), backend)
-    write(os.path.join(STORM, "web", "beats.js"), read(os.path.join(UI, "app", "js", "beats.js")))
+    write(os.path.join(STORM, "web", "beats.js"), read(os.path.join(GEN, "app", "js", "beats.js")))
 
 
 def version_of(plugin_dir):

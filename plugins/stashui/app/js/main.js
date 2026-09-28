@@ -1,7 +1,7 @@
 // Stash UI – app frame: router, navigation rail, overlays.
 
 import { esc, icon, store, errorToast, $ } from "./ui.js";
-import { loadFolders, favoriteTagId, stats } from "./api.js";
+import { gql, loadFolders, favoriteTagId, stats } from "./api.js";
 
 // ---------- Routes ----------
 // Base views replace the content; overlays (player, image viewer) sit on top.
@@ -23,7 +23,6 @@ const ROUTES = [
   { re: /^settings$/, view: "settings" },
   { re: /^settings\/([a-z-]+)$/, view: "settings", keys: ["section"] },
   { re: /^plugins$/, view: "plugins" },
-  { re: /^pmv$/, view: "pmvgen" },
   { re: /^extern\/([a-z-]+)$/, view: "embed", keys: ["name"] },
   { re: /^scene\/(\d+)$/, view: "player", keys: ["id"], overlay: true },
   { re: /^image\/(\d+)$/, view: "viewer", keys: ["id"], overlay: true },
@@ -89,7 +88,6 @@ const loaders = {
   settings: () => import("./views/settings.js"),
   plugins: () => import("./views/plugins.js"),
   embed: () => import("./views/embed.js"),
-  pmvgen: () => import("./views/pmvgen.js"),
   player: () => import("./views/player.js"),
   viewer: () => import("./views/viewer.js"),
 };
@@ -177,8 +175,8 @@ const NAV = [
   { group: "Watch", items: [
     { href: "queue", label: "Queue", icon: "queue", match: /^queue/, count: "queue" },
     { href: "history", label: "History", icon: "history", match: /^history/ },
-    { action: "storm", label: "Media Storm", icon: "bolt" },
-    { href: "pmv", label: "PMV Generator", icon: "music", match: /^pmv$/ },
+    { action: "storm", label: "Media Storm", icon: "bolt", plugin: "mediaStorm" },
+    { action: "pmv", label: "PMV Generator", icon: "music", plugin: "pmvGenerator" },
   ] },
   { group: "Manage", items: [
     { href: "tasks", label: "Tasks", icon: "tasks", match: /^tasks/, count: "jobs" },
@@ -199,7 +197,7 @@ function renderRail() {
       `<nav class="kb-nav">` +
       g.items.map((it) =>
         it.action
-          ? `<button type="button" data-action="${it.action}">${icon(it.icon)}<span>${it.label}</span></button>`
+          ? `<button type="button" data-action="${it.action}"${it.plugin ? ` data-plugin="${it.plugin}"` : ""}>${icon(it.icon)}<span>${it.label}</span></button>`
           : `<a href="#/${it.href}" data-match="${it.match.source}">${icon(it.icon)}<span>${it.label}</span>${it.count ? `<span class="kb-count" data-count="${it.count}"></span>` : ""}</a>`
       ).join("") +
       `</nav>` +
@@ -219,10 +217,26 @@ function renderRail() {
     }
     const a = e.target.closest("[data-action]");
     if (a && a.dataset.action === "storm") openStorm();
+    if (a && a.dataset.action === "pmv") location.href = PMV_PAGE;
   });
   renderTree();
   refreshCounts();
+  refreshPluginLinks();
 }
+
+// Menu entries of companion plugins (Media Storm, PMV Generator) only show when they're installed and on
+const PMV_PAGE = "/plugin/pmvGenerator/assets/index.html?from=stashui"; // so its links lead back here
+async function refreshPluginLinks() {
+  let on;
+  try {
+    const d = await gql(`query { plugins { id enabled } }`);
+    on = new Set(d.plugins.filter((p) => p.enabled).map((p) => p.id));
+  } catch (e) {
+    return; // unknown – leave the entries visible
+  }
+  document.querySelectorAll("#rail [data-plugin]").forEach((b) => (b.hidden = !on.has(b.dataset.plugin)));
+}
+window.addEventListener("stash:plugins-changed", refreshPluginLinks);
 
 let treeData = null;
 window.addEventListener("stash:library-changed", () => {

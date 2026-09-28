@@ -2,7 +2,7 @@
 
 Pick a song – on every beat it cuts to a clip from your Stash library: split-screen layouts like real PMVs, effects on cuts, beats and drops, beat-synced speed ramps and clip audio. It runs live in the browser and can record the result as a video and save it back to Stash as a scene. It can also analyze an existing PMV and rebuild it with your own clips.
 
-This is the standalone version. The same generator is built into the **Stash UI** plugin – you don't need both.
+Works with classic Stash and with the **Stash UI** plugin: with Stash UI installed, the generator shows up in its menu under **Watch**, and its back link and saved scenes lead back into Stash UI.
 
 ![PMV Generator](../../docs/screenshots/pmvgen-standalone.png)
 
@@ -10,7 +10,7 @@ This is the standalone version. The same generator is built into the **Stash UI*
 
 ## Using it
 
-Open it with the **PMV** button in the Stash navbar (or directly at `/plugin/pmvGenerator/assets/index.html`). Three steps on the left; on the right the **Go** card with a summary of all settings and the start button (on narrow screens it sticks to the bottom). Every function is its own row with a switch and a short explanation.
+Open it with the **PMV** button in the Stash navbar, from **Watch → PMV Generator** in Stash UI, or directly at `/plugin/pmvGenerator/assets/index.html`. Three steps on the left; on the right the **Go** card with a summary of all settings and the start button (on narrow screens it sticks to the bottom). Every function is its own row with a switch and a short explanation.
 
 1. **Music**: drop or choose a song (MP3, M4A, WAV, OGG, FLAC). Tempo and beats are detected in the browser (under 1 s per minute of music). The waveform shows loudness and bars; if the tempo is off, **½ tempo** / **2× tempo** help, and **Earlier** / **Later** shift the cuts by 20 ms. Or use **PMV as template** (see below).
 2. **Clips**

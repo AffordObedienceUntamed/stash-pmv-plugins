@@ -12,9 +12,9 @@ import { tagPicker } from "./tagpicker.js";
 import { folderPicker } from "./folderpick.js";
 import { LAYOUTS, slotsFor, aspectOfGroup, Compositor } from "../pmvfx.js";
 
-// The standalone PMV Generator plugin sets these before loading; inside Stash UI the defaults apply.
-const BACKEND = window.PMVGEN_PLUGIN || "stashui"; // plugin whose backend saves recordings
-const SCENE_LINK = window.PMVGEN_SCENE_LINK || ((id) => "#/scene/" + id);
+// config.js can override these (e.g. open saved scenes in Stash UI when that's where you came from).
+const BACKEND = window.PMVGEN_PLUGIN || "pmvGenerator"; // plugin whose backend saves recordings
+const SCENE_LINK = window.PMVGEN_SCENE_LINK || ((id) => "/scenes/" + id);
 
 const DEFAULTS = {
   mode: "song", // song = your own song, tpl = use a PMV as template

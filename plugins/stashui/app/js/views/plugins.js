@@ -59,6 +59,7 @@ export async function render(main) {
     const id = en.closest("[data-id]").dataset.id;
     try {
       await gql(`mutation($m: BoolMap!) { setPluginsEnabled(enabledMap: $m) }`, { m: { [id]: en.checked } });
+      window.dispatchEvent(new Event("stash:plugins-changed"));
       toast(`${en.checked ? "Turned on" : "Turned off"} – takes effect after reloading the page`, "ok");
       en.closest("[data-id]").classList.toggle("is-off", !en.checked);
     } catch (err) {
