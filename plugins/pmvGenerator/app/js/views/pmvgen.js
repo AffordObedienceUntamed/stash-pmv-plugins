@@ -3,7 +3,8 @@
 // Layouts and effects live in ../pmvfx.js.
 // Optionally MediaRecorder records picture + song; the video can be downloaded or saved to Stash as a scene.
 
-import { esc, icon, toast, errorToast, fmtDuration, fmtBytes, store } from "../ui.js";
+import { esc, icon, toast, errorToast, fmtDuration, fmtBytes, fmtNum, store } from "../ui.js";
+import * as rg from "../redgifs.js";
 import { gql, favoriteTagId, countItems } from "../api.js";
 import { analyzeSong, rescale, shift } from "../beats.js";
 import { scanPmv } from "../pmvscan.js";
@@ -47,6 +48,13 @@ const DEFAULTS = {
   quality: 720,
   record: true,
   collapsed: {}, // style sections the user closed (all open by default)
+  // RedGifs (same as in Media Storm)
+  rgPct: 0, // share of clips from RedGifs (0 = off)
+  rgPicks: [], // [{ type: "niche" | "tag" | "user", id, name }] – empty = trending
+  rgOrder: "trending", // trending | top7 | top28 | top | latest
+  rgQuality: "sd", // sd | hd (playback – saved clips are always HD)
+  rgDlDir: "", // empty = <first Stash library>/RedGifs
+  rgDlLayout: "source", // source | creator | flat
   v: 2, // settings version
 };
 const FX = {
@@ -136,6 +144,7 @@ export function render(main) {
   // Settings from before version 2 had "Fill" as default – people took the cropping for a bug
   if (!stored.v) S.fit = "contain";
   if (!Array.isArray(S.folders)) S.folders = [];
+  if (!Array.isArray(S.rgPicks)) S.rgPicks = [];
   const save = () => store.set("pmvgen", S);
   let song = null; // beat detection result + name
   let run = null; // running generator
@@ -217,6 +226,26 @@ export function render(main) {
           ${sw("smartCrop", "Smart crop", "The crop follows what matters in the clip instead of sticking to the center")}
           ${sw("matchCut", "Match cuts", "At each cut, the clip that best matches the previous one in color, brightness and composition comes next")}
           ${sw("variety", "Variety", "The same scene or performer doesn't come up again shortly after")}
+        </div>
+        <span class="kb-lab-t">RedGifs <small>– mix in clips from RedGifs (needs internet)</small></span>
+        <div class="kb-pmvg-rg">
+          <label class="kb-pmvg-range"><span>${icon("film")}Share</span><input type="range" min="0" max="100" step="5" data-r="rgPct" aria-label="RedGifs share"><output data-ro="rgPct"></output></label>
+          <div class="kb-pmvg-rgbox" data-rgbox>
+            <div class="kb-chips" data-rgchips></div>
+            <div class="kb-pmvg-rgsearch">
+              <input class="kb-field" type="search" data-rgq placeholder="Add niches, tags or creators … (none = trending)" autocomplete="off" spellcheck="false" aria-label="Search RedGifs niches, tags and creators">
+              <div class="kb-pmvg-rgsug" data-rgsug hidden></div>
+            </div>
+            <div class="kb-pmvg-row">
+              <label class="kb-pmvg-sel"><span>Sort</span><select class="kb-field" data-sel="rgOrder">${[["trending", "Trending"], ["top7", "Top of the week"], ["top28", "Top of the month"], ["top", "Top (all time)"], ["latest", "Latest"]].map(([v, l]) => `<option value="${v}">${l}</option>`).join("")}</select></label>
+              <label class="kb-pmvg-sel"><span>Quality</span><select class="kb-field" data-sel="rgQuality"><option value="sd">SD (faster)</option><option value="hd">HD</option></select></label>
+            </div>
+            <span class="kb-lab-t">Saving clips to Stash <small>– D or “Save clip” during the show, or all at the end</small></span>
+            <div class="kb-pmvg-row">
+              <label class="kb-pmvg-sel"><span>Folders</span><select class="kb-field" data-sel="rgDlLayout"><option value="source">By source (niche/tag/creator)</option><option value="creator">By the clip's creator</option><option value="flat">Everything in one folder</option></select></label>
+              <input class="kb-field kb-pmvg-rgdir" data-rgdir placeholder="Save location – empty = first library/RedGifs" value="${esc(S.rgDlDir)}" aria-label="Save location for RedGifs clips">
+            </div>
+          </div>
         </div>
       </section>
 
@@ -344,6 +373,9 @@ export function render(main) {
       r.style.setProperty("--p", S[r.dataset.r] + "%");
     });
     main.querySelectorAll("[data-ro]").forEach((o) => (o.textContent = S[o.dataset.ro] + " %"));
+    $("[data-rgbox]").hidden = !(S.rgPct > 0);
+    main.querySelectorAll("[data-sel]").forEach((x) => (x.value = S[x.dataset.sel]));
+    paintRgChips();
     // Without clip audio, clip volume and "when" have no effect
     ["[data-clipvol]", "[data-seg=voiceMode]", "[data-voicewhen]"].forEach((q) => $(q).classList.toggle("is-dim", !S.fx.voice));
     $("[data-voicehint]").textContent = !S.fx.voice
@@ -371,7 +403,7 @@ export function render(main) {
     const src = { scene: "Scenes", image: "Images", both: "Scenes + images" }[S.source];
     const where = S.folders.length ? `from ${S.folders.length === 1 ? "1 folder" : S.folders.length + " folders"}` : "from all folders";
     $("[data-sum]").innerHTML = [
-      `<li><b>Clips</b>${esc(src)} ${esc(where)}${S.tags.length ? ` · ${S.tags.length} Tags` : ""}${S.fav ? " · favorites only" : ""}</li>`,
+      `<li><b>Clips</b>${S.rgPct >= 100 ? "RedGifs only" : `${esc(src)} ${esc(where)}${S.tags.length ? ` · ${S.tags.length} Tags` : ""}${S.fav ? " · favorites only" : ""}`}${S.rgPct > 0 && S.rgPct < 100 ? ` · RedGifs ${S.rgPct} %` : ""}${S.rgPct > 0 ? ` (${esc(S.rgPicks.length ? S.rgPicks.map(rg.pickLabel).join(", ") : "trending")})` : ""}</li>`,
       `<li><b>Selection</b>${clipOpts.length ? esc(clipOpts.join(", ")) : "random"}</li>`,
       `<li><b>Cutting</b>${esc(tabSum.cut)}</li>`,
       `<li><b>Effects</b>${fxOn} on${S.look !== "none" ? " · look " + esc(look) : ""}</li>`,
@@ -455,6 +487,13 @@ export function render(main) {
     save();
   });
   main.addEventListener("change", (e) => {
+    const sel = e.target.closest("[data-sel]");
+    if (sel) {
+      S[sel.dataset.sel] = sel.value;
+      save();
+      paintSummary();
+      return;
+    }
     const c = e.target.closest("[data-t]");
     if (!c) return;
     setPath(S, c.dataset.t, c.checked);
@@ -485,6 +524,88 @@ export function render(main) {
       updateCount();
     },
   });
+
+  // ---------- RedGifs: niches, tags and creators as chips, with live suggestions ----------
+
+  function paintRgChips() {
+    $("[data-rgchips]").innerHTML = S.rgPicks.length
+      ? S.rgPicks.map((p, i) => `<span class="kb-chip is-on kb-rg-${esc(p.type)}" title="${p.type === "user" ? "Creator" : p.type === "niche" ? "Niche" : "Tag"}">${esc(rg.pickLabel(p))}<button type="button" data-rgrm="${i}" aria-label="Remove">×</button></span>`).join("")
+      : `<span class="kb-hint">Trending – or add niches, tags or creators</span>`;
+  }
+  const rgq = $("[data-rgq]");
+  const rgsug = $("[data-rgsug]");
+  let rgTimer;
+  let rgSeq = 0;
+  let rgList = [];
+  let rgListFor = "";
+  const rgCount = (p) =>
+    [p.count ? fmtNum(p.count) + " clips" : "", p.sub ? fmtNum(p.sub) + (p.type === "user" ? " followers" : " subscribers") : ""].filter(Boolean).join(" · ");
+  async function loadRgSuggest(q) {
+    const seq = ++rgSeq;
+    rgsug.hidden = false;
+    rgsug.innerHTML = `<div class="kb-hint">Searching …</div>`;
+    try {
+      const r = await rg.suggest(q);
+      if (seq !== rgSeq) return;
+      rgList = [...r.niches, ...r.tags, ...r.users];
+      rgListFor = q;
+      const group = (title, items, off) =>
+        items.length
+          ? `<div class="kb-pmvg-rggroup">${title}</div>` +
+            items.map((p, i) => `<button type="button" class="kb-pmvg-rgopt kb-rg-${p.type}" data-rgpick="${off + i}"><b>${esc(rg.pickLabel(p))}</b><small>${esc(rgCount(p))}</small></button>`).join("")
+          : "";
+      rgsug.innerHTML = rgList.length
+        ? group("Niches", r.niches, 0) + group("Tags", r.tags, r.niches.length) + group("Creators", r.users, r.niches.length + r.tags.length)
+        : `<div class="kb-hint">Nothing found – Enter adds “${esc(q)}” as a tag</div>`;
+    } catch (err) {
+      if (seq === rgSeq) rgsug.innerHTML = `<div class="kb-hint">RedGifs isn't reachable: ${esc(err.message)}</div>`;
+    }
+  }
+  function addRgPick(p) {
+    if (!S.rgPicks.some((x) => x.type === p.type && x.id.toLowerCase() === String(p.id).toLowerCase())) S.rgPicks.push({ type: p.type, id: p.id, name: p.name });
+    save();
+    paintRgChips();
+    paintSummary();
+    rgq.value = "";
+    rgsug.hidden = true;
+  }
+  rgq.addEventListener("input", () => {
+    clearTimeout(rgTimer);
+    const q = rgq.value.trim();
+    if (!q) {
+      rgSeq++;
+      rgsug.hidden = true;
+      return;
+    }
+    rgTimer = setTimeout(() => loadRgSuggest(q), 250);
+  });
+  rgq.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") rgsug.hidden = true;
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    const q = rgq.value.trim();
+    if (q) addRgPick(rgListFor === q && rgList[0] ? rgList[0] : { type: "tag", id: q, name: q });
+  });
+  rgsug.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-rgpick]");
+    if (b) addRgPick(rgList[Number(b.dataset.rgpick)]);
+  });
+  $("[data-rgchips]").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-rgrm]");
+    if (!b) return;
+    S.rgPicks.splice(Number(b.dataset.rgrm), 1);
+    save();
+    paintRgChips();
+    paintSummary();
+  });
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".kb-pmvg-rgsearch")) rgsug.hidden = true;
+  });
+  $("[data-rgdir]").addEventListener("input", (e) => {
+    S.rgDlDir = e.target.value;
+    save();
+  });
+  paintRgChips();
 
   // How many clips match?
   let countSeq = 0;
@@ -826,6 +947,10 @@ class Generator {
     this.recent = []; // recently shown clips (variety)
     this.used = new Set();
     this.shown = new Set(); // all shown clips (credits)
+    // RedGifs: a share of the clips (error diffusion keeps the ratio); what was shown can be saved
+    this.rg = S.rgPct > 0 ? new rg.Feed(S, (msg) => this.rgError(msg)) : null;
+    this.rgAcc = 0;
+    this.rgUsed = new Map();
     this.layouts = Object.keys(LAYOUTS).filter((k) => S.layouts[k]);
     if (!this.layouts.length) this.layouts = ["full"];
     this.layout = null;
@@ -864,6 +989,7 @@ class Generator {
           <span class="kb-pmvg-hudvol" title="Song volume">${icon("music")}<input type="range" min="0" max="100" step="5" data-vol="songVol" value="${this.S.songVol ?? 100}" aria-label="Song volume"></span>
           <span class="kb-pmvg-hudvol" title="Clip volume">${icon("film")}<input type="range" min="0" max="100" step="5" data-vol="clipVol" value="${this.S.clipVol ?? 50}" aria-label="Clip volume"></span>
           <button class="kb-btn is-ghost kb-pmvg-hudmode" data-act="voicemode" title="Clip audio: off → only on drops → always"></button>
+          ${this.rg ? `<button class="kb-btn is-ghost kb-pmvg-hudsave" data-act="rgsave" title="Save the RedGifs clips on screen to Stash (D)">${icon("download")}<span>Save clip</span></button>` : ""}
           <button class="kb-btn is-icon is-ghost" data-act="pause" title="Pause (Space)">${icon("pause")}</button>
           <button class="kb-btn is-icon is-ghost" data-act="full" title="Fullscreen (F)">${icon("expand")}</button>
           <button class="kb-btn is-icon is-ghost" data-act="stop" title="Stop (Esc)">${icon("stop")}</button>
@@ -888,6 +1014,7 @@ class Generator {
       if (!b) return;
       const a = b.dataset.act;
       if (a === "pause") this.togglePause();
+      if (a === "rgsave") this.saveOnScreen();
       if (a === "voicemode") this.cycleVoiceMode();
       if (a === "full") this.fullscreen();
       if (a === "stop") this.done ? this.close() : this.finish(true);
@@ -896,6 +1023,7 @@ class Generator {
       if (e.key === "Escape") this.done ? this.close() : this.finish(true);
       else if (e.key === " " && !this.done) this.togglePause();
       else if (e.key === "f" || e.key === "F") this.fullscreen();
+      else if ((e.key === "d" || e.key === "D") && this.rg) this.saveOnScreen();
       else return;
       e.preventDefault();
     };
@@ -955,6 +1083,59 @@ class Generator {
     this.persistSound();
   }
 
+  // ---------- RedGifs → Stash ----------
+
+  // Save the RedGifs clips that are on screen right now (D / "Save clip")
+  saveOnScreen() {
+    const list = [...new Set(this.groups)].filter((m) => m && m.rg).map((m) => m.rg);
+    const btn = this.el.querySelector('[data-act="rgsave"] span');
+    if (!list.length) {
+      if (btn) this.flashLabel(btn, "No RedGifs clip on screen");
+      return;
+    }
+    if (btn) btn.textContent = "Saving …";
+    Promise.allSettled(list.map((d) => this.saveRg(d))).then((r) => {
+      const ok = r.filter((x) => x.status === "fulfilled").length;
+      if (btn) this.flashLabel(btn, ok === r.length ? `Saved ✓${ok > 1 ? " (" + ok + ")" : ""}` : "Saving failed");
+    });
+  }
+
+  flashLabel(el, text) {
+    el.textContent = text;
+    clearTimeout(el.pmvT);
+    el.pmvT = setTimeout(() => (el.textContent = "Save clip"), 2200);
+  }
+
+  saveRg(d) {
+    const was = rg.isSaved(d);
+    return rg.save(d, this.S).then(
+      (out) => {
+        if (!was) toast(`${out.existed ? "Already in the library" : "Saved"}: ${d.user || "RedGifs"} → ${out.dir.split(/[\\/]/).slice(-2).join("/")}`, "ok");
+        return out;
+      },
+      (e) => {
+        toast("Saving the RedGifs clip failed: " + e.message, "error");
+        throw e;
+      }
+    );
+  }
+
+  // End card: save every RedGifs clip that was used in this PMV
+  async saveAllUsed(btn) {
+    const list = [...this.rgUsed.values()];
+    btn.disabled = true;
+    let ok = 0;
+    for (let i = 0; i < list.length; i++) {
+      btn.innerHTML = `${icon("download")}Saving ${i + 1}/${list.length} …`;
+      try {
+        await this.saveRg(list[i]);
+        ok++;
+      } catch (e) { /* reported by saveRg; go on with the rest */ }
+    }
+    btn.innerHTML = `${icon("check")}${ok} of ${list.length} RedGifs clips saved`;
+    btn.disabled = ok === list.length;
+  }
+
   fullscreen() {
     if (document.fullscreenElement) document.exitFullscreen();
     else this.stage.requestFullscreen && this.stage.requestFullscreen().catch(() => {});
@@ -1008,6 +1189,40 @@ class Generator {
   }
 
   async nextSource() {
+    // RedGifs share first; the rest comes from Stash – and each side fills in when the other runs dry
+    if (this.rg && !this.rg.dead) {
+      this.rgAcc += this.S.rgPct / 100;
+      if (this.rgAcc >= 1 || this.stashDead) {
+        this.rgAcc = Math.max(0, this.rgAcc - 1);
+        const s = await this.nextRedgif();
+        if (s) return s;
+      }
+    }
+    try {
+      return await this.nextStash();
+    } catch (e) {
+      const s = this.rg && !this.rg.dead ? ((this.stashDead = true), await this.nextRedgif()) : null;
+      if (s) return s;
+      throw e;
+    }
+  }
+
+  async nextRedgif() {
+    const S = this.S;
+    const d = await this.rg.next(
+      (x) => (S.source === "both" || (S.source === "scene") === x.video) && (S.shape === "all" || (S.shape === "portrait" ? x.h > x.w : x.w > x.h))
+    );
+    if (!d) return null;
+    return { kind: d.video ? "video" : "image", id: "r" + d.id, key: "rg:" + d.id, url: d.src, dur: d.dur, marks: [], perf: d.user ? ["rg:" + d.user.toLowerCase()] : [], rg: d, cors: true };
+  }
+
+  rgError(msg) {
+    if (this.rgLastError === msg) return;
+    this.rgLastError = msg;
+    toast("RedGifs – " + msg, "error");
+  }
+
+  async nextStash() {
     // Several clips are prepared in parallel – fetch new ones only once
     for (let tries = 0; ; tries++) {
       while (this.srcIdx >= this.sources.length) {
@@ -1026,6 +1241,7 @@ class Generator {
   }
   remember(m) {
     this.shown.add(m.key);
+    if (m.rg) this.rgUsed.set(m.rg.id, m.rg);
     this.recent.push(m);
     if (this.recent.length > 24) this.recent.shift();
     this.used = new Set(this.recent.map((x) => x.key));
@@ -1062,9 +1278,10 @@ class Generator {
     if (s.kind === "image") {
       const img = new Image();
       img.decoding = "async";
+      if (s.cors) img.crossOrigin = "anonymous";
       img.src = s.url;
       await withTimeout(img.decode(), 8000);
-      const m = { kind: "image", el: img, w: img.naturalWidth, h: img.naturalHeight, id: s.id, key: s.key, perf: s.perf, kb: Math.random() < 0.5 ? 1 : -1 };
+      const m = { kind: "image", el: img, w: img.naturalWidth, h: img.naturalHeight, id: s.id, key: s.key, perf: s.perf, rg: s.rg, kb: Math.random() < 0.5 ? 1 : -1 };
       m.sig = analyze(img, m.w, m.h);
       if (this.S.smartCrop) m.focus = m.sig.focus;
       return m;
@@ -1076,6 +1293,7 @@ class Generator {
     v.loop = true;
     this.pool.appendChild(v);
     try {
+      if (s.cors) v.crossOrigin = "anonymous"; // RedGifs allows it – analysis and recording keep working
       v.src = s.url;
       await withTimeout(once(v, "loadedmetadata"), 8000);
       const dur = isFinite(v.duration) && v.duration > 0 ? v.duration : s.dur;
@@ -1108,7 +1326,7 @@ class Generator {
         }
       }
       await seek(start);
-      const m = { kind: "video", el: v, w: v.videoWidth, h: v.videoHeight, id: s.id, key: s.key, perf: s.perf, start };
+      const m = { kind: "video", el: v, w: v.videoWidth, h: v.videoHeight, id: s.id, key: s.key, perf: s.perf, rg: s.rg, start };
       m.sig = info || analyze(v, m.w, m.h);
       if (this.S.smartCrop) {
         m.focus = Object.assign({}, m.sig.focus);
@@ -1554,6 +1772,7 @@ class Generator {
           ${url ? `<video class="kb-pmvg-result" src="${url}" controls playsinline></video>` : ""}
           <div class="kb-card-acts">
             ${blob ? `<button class="kb-btn is-primary" data-end="stash">${icon("download")}Save to Stash</button><a class="kb-btn" data-end="file" href="${url}" download="${esc(fileName(this.song.name))}.webm">Download</a>` : ""}
+            ${this.rgUsed.size ? `<button class="kb-btn" data-end="rgall" title="Download them into your library, scanned and tagged “RedGifs”">${icon("download")}Save the ${this.rgUsed.size} RedGifs ${this.rgUsed.size === 1 ? "clip" : "clips"}</button>` : ""}
             <button class="kb-btn" data-end="again">${icon("shuffle")}Again, reshuffled</button>
             <button class="kb-btn is-ghost" data-end="close">Close</button>
           </div>
@@ -1570,6 +1789,7 @@ class Generator {
         onClose(new Generator(song, S, onClose, tpl));
       }
       if (a === "stash") this.saveToStash(b);
+      if (a === "rgall") this.saveAllUsed(b);
     };
   }
 

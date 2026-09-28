@@ -1,4 +1,4 @@
-"""Media Storm – backend for RedGifs (suggestions and downloads).
+"""RedGifs backend (copied from Media Storm by tools/build.py) (suggestions and downloads).
 
 Called from the browser through Stash's `runPluginOperation`.
 

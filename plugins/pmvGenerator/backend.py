@@ -10,6 +10,10 @@ Called through Stash's `runPluginOperation` (interface: raw):
   The target is always the folder "PMV Generator" in the first video library. Browser recordings
   (MediaRecorder) carry no duration; if ffmpeg can be found, the file is remuxed without
   re-encoding so Stash gets duration, previews and seeking right.
+
+* modes "rg_api" and "rg_download": RedGifs clips in the show – the API detour for pages not
+  opened via localhost and saving clips into the library. The code lives in rgbackend.py
+  (shared with Media Storm, copied by tools/build.py).
 """
 
 import base64
@@ -144,6 +148,12 @@ def main():
     try:
         if mode == "save_chunk":
             out = save_chunk(Stash(data.get("server_connection")), args)
+        elif mode == "rg_api":
+            import rgbackend
+            out = rgbackend.api(args.get("path"))
+        elif mode == "rg_download":
+            import rgbackend
+            out = rgbackend.download(args)
         else:
             raise ValueError(f"unknown mode: {mode or '(empty)'}")
     except Exception as e:

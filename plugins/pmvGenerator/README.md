@@ -36,6 +36,24 @@ Open it with the **PMV** button in the Stash navbar, from **Watch → PMV Genera
 
 Tip: three full-size portrait clips side by side = format **16:9** + layout 3-way + “Portrait only” (each column is then almost exactly 9:16).
 
+## RedGifs (optional)
+
+Step 2 → **RedGifs** – the same source as in Media Storm:
+
+- **Share**: what percentage of the clips comes from RedGifs (0 = off, the default; 100 = RedGifs only). The rest comes from your library; if one side runs out or RedGifs can't be reached, the other fills in.
+- **Niches, tags & creators**: type in the search field → live suggestions in three groups (with clip count and subscribers/followers). Click or Enter adds them as a chip (pink = niche, purple = tag, blue = creator), × removes. Several are possible; one is picked at random per fetch. Without a choice you get trending.
+- **Sort order** (trending, top of the week/month/all time, latest) and **quality** (SD/HD).
+- Clip shape and “scenes/images” apply to RedGifs clips too; best moments, smart crop, match cuts and the recording work with them as well.
+
+### Saving RedGifs clips to Stash
+
+- During the show: **D** or **Save clip** in the top bar saves the RedGifs clips that are on screen.
+- On the end card: **Save the N RedGifs clips** saves every RedGifs clip used in this PMV.
+- Always saved in **HD** as `creator_id.mp4`. Save location: default `<first Stash library>/RedGifs`, subfolders **by source** (niche, tag or creator – `Trending` without a choice), **by the clip's creator** or **everything in one folder**.
+- Stash then scans just this folder and the new scene gets the RedGifs link, a title, the description and the tag **RedGifs**. Files that already exist aren't downloaded twice.
+
+Technical notes: the page talks to the RedGifs API directly when Stash is opened via `localhost`; opened via its network address, the browser isn't allowed to, so the requests go through the plugin backend (`rgbackend.py`, shared with Media Storm – needs `python` in the PATH). Downloads only come from `media.redgifs.com`.
+
 ## PMV as template
 
 Switch step 1 to **PMV as template**, then pick a PMV from your library (without a search, scenes tagged “PMV” are listed first) or a video file. The analysis runs in the browser at about three times real-time speed:
@@ -52,4 +70,4 @@ Needs a browser with `requestVideoFrameCallback` (Chrome, Edge, current Firefox)
 ## Requirements
 
 - A current Chrome, Edge or Firefox.
-- Saving to Stash uses the small backend `backend.py` (needs `python` in the PATH). With ffmpeg (Stash's own or from the PATH) the recording is remuxed without re-encoding so duration and seeking work – browser recordings otherwise carry no duration.
+- Saving to Stash and saving RedGifs clips use the small backend `backend.py` (needs `python` in the PATH). With ffmpeg (Stash's own or from the PATH) the recording is remuxed without re-encoding so duration and seeking work – browser recordings otherwise carry no duration.

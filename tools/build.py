@@ -6,6 +6,7 @@
    tag picker, image analysis) – they're copied from plugins/stashui into plugins/pmvGenerator
    (edit them in stashui, then run this script). The generator itself (pmvgen.js, beats.js, …)
    lives only in plugins/pmvGenerator; its beats.js is also copied to plugins/mediaStorm/web.
+   Media Storm's rgbackend.py (RedGifs) is copied to plugins/pmvGenerator.
 2. Stamp: every app page gets an import map with version stamps, so browsers never mix
    cached old modules with new ones.
 3. Package: every plugin folder is zipped and listed in <out>/index.yml – the file Stash reads
@@ -56,6 +57,9 @@ def sync():
     for rel in SHARED:
         write(os.path.join(GEN, rel), read(os.path.join(UI, rel)))
     write(os.path.join(STORM, "web", "beats.js"), read(os.path.join(GEN, "app", "js", "beats.js")))
+    # RedGifs backend: Media Storm's is the source, the PMV Generator uses the same one
+    rg = read(os.path.join(STORM, "rgbackend.py")).replace('"""Media Storm – backend for RedGifs', '"""RedGifs backend (copied from Media Storm by tools/build.py)', 1)
+    write(os.path.join(GEN, "rgbackend.py"), rg)
 
 
 def version_of(plugin_dir):

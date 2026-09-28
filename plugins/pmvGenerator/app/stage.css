@@ -302,6 +302,30 @@
   .kb-pmvg-secsub { display: none; }
   .kb-pmvg-sectitle { flex: 1; }
 }
+/* RedGifs block in the clips step */
+.kb-pmvg-rg { display: flex; flex-direction: column; gap: 10px; }
+.kb-pmvg-rg > .kb-pmvg-range { max-width: 420px; }
+.kb-pmvg-rgbox { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border: 1px solid var(--bg-3); border-radius: 6px; background: var(--base); }
+.kb-pmvg-rgbox[hidden] { display: none; }
+.kb-chip.kb-rg-niche { box-shadow: inset 3px 0 0 var(--pink); }
+.kb-chip.kb-rg-tag { box-shadow: inset 3px 0 0 var(--violet); }
+.kb-chip.kb-rg-user { box-shadow: inset 3px 0 0 var(--shine); }
+.kb-pmvg-rgsearch { position: relative; }
+.kb-pmvg-rgsearch .kb-field { width: 100%; }
+.kb-pmvg-rgsug { position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 20; display: flex; flex-direction: column; max-height: 340px; overflow-y: auto; padding: 6px; border: 1px solid var(--bg-3); border-radius: 6px; background: var(--bg-2); box-shadow: 0 12px 30px rgba(0, 0, 0, .45); }
+.kb-pmvg-rgsug[hidden] { display: none; }
+.kb-pmvg-rggroup { padding: 6px 8px 2px; color: var(--faint); font: 600 11.5px/1.2 var(--f-label); text-transform: uppercase; letter-spacing: .05em; }
+.kb-pmvg-rgopt { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 7px 10px; border: 0; border-left: 3px solid transparent; border-radius: 4px; color: var(--text); text-align: left; background: none; cursor: pointer; }
+.kb-pmvg-rgopt:hover, .kb-pmvg-rgopt:focus-visible { background: var(--bg-3); }
+.kb-pmvg-rgopt.kb-rg-niche { border-left-color: var(--pink); }
+.kb-pmvg-rgopt.kb-rg-tag { border-left-color: var(--violet); }
+.kb-pmvg-rgopt.kb-rg-user { border-left-color: var(--shine); }
+.kb-pmvg-rgopt b { font: 600 14px/1.3 var(--f-text); }
+.kb-pmvg-rgopt small { flex: none; color: var(--faint); font-size: 12px; }
+.kb-pmvg-sel { display: inline-flex; align-items: center; gap: 8px; color: var(--text-2); font: 500 13px/1 var(--f-label); }
+.kb-pmvg-rgdir { flex: 1 1 260px; min-width: 0; }
+.kb-pmvg-hudsave { gap: 6px; }
+
 .kb-pmvg-pane { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
 .kb-pmvg-pane[hidden] { display: none; }
 .kb-pmvg-pane > .kb-pmvg-opts, .kb-pmvg-pane > .kb-field, .kb-pmvg-pane > .kb-pmvg-group, .kb-pmvg-pane > .kb-chips { align-self: stretch; }
