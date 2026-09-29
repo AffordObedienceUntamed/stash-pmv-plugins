@@ -1,11 +1,14 @@
 // Edit drawer: one item in detail, several items together (add/remove tags, rating).
 
 import { esc, openDrawer, toast, errorToast, starsHtml, plural, confirmDialog } from "../ui.js";
+import { t } from "../i18n.js";
 import { getScene, getImage, getGallery, updateItem, bulkUpdate, destroyItems, favoriteTagId, setFavorite } from "../api.js";
 import { tagPicker } from "./tagpicker.js";
 import { app } from "../main.js";
 
-const NAMES = { scene: ["Scene", "Scenes"], image: ["Image", "Images"], gallery: ["Gallery", "Galleries"] };
+const UNITS = { scene: ["scene", "scenes"], image: ["image", "images"], gallery: ["gallery", "galleries"] };
+// Whole sentences per kind – other languages can't just insert the word
+const TITLES = { scene: ["Edit scene", "Delete scene?"], image: ["Edit image", "Delete image?"], gallery: ["Edit gallery", "Delete gallery?"] };
 const GET = { scene: getScene, image: getImage, gallery: getGallery };
 
 export function openEditor(kind, pieces, { onSaved, onDeleted } = {}) {
@@ -16,7 +19,7 @@ export function openEditor(kind, pieces, { onSaved, onDeleted } = {}) {
 function starInput(host, value, onChange) {
   let v = Math.round((value || 0) / 20);
   const paint = () => {
-    host.innerHTML = starsHtml(v * 20, true) + `<button type="button" class="kb-btn is-ghost" data-clear${v ? "" : " hidden"}>None</button>`;
+    host.innerHTML = starsHtml(v * 20, true) + `<button type="button" class="kb-btn is-ghost" data-clear${v ? "" : " hidden"}>${t("None")}</button>`;
   };
   host.addEventListener("click", (e) => {
     const s = e.target.closest("[data-star]");
@@ -39,36 +42,36 @@ async function editOne(kind, id, { onSaved, onDeleted }) {
     return errorToast(e, "Couldn't be loaded");
   }
   const favId = await favoriteTagId(false);
-  const tagIds = x.tags.map((t) => t.id).filter((t) => t !== favId);
-  const isFav = !!favId && x.tags.some((t) => t.id === favId);
+  const tagIds = x.tags.map((tg) => tg.id).filter((tg) => tg !== favId);
+  const isFav = !!favId && x.tags.some((tg) => tg.id === favId);
   const path =
     kind === "scene" ? (x.files[0] || {}).path : kind === "image" ? (x.visual_files[0] || {}).path : (x.folder && x.folder.path) || ((x.files || [])[0] || {}).path;
   const state = { rating100: x.rating100 || 0, tags: tagIds, fav: isFav };
 
   const d = openDrawer({
-    title: `Edit ${NAMES[kind][0].toLowerCase()}`,
+    title: t(TITLES[kind][0]),
     body: `
-      <label class="kb-form-row"><span>Title</span><input class="kb-field" data-e="title" value="${esc(x.title || "")}" placeholder="${esc(path ? path.split(/[\\/]/).pop() : "")}"></label>
-      <div class="kb-form-row"><span>Rating</span><div data-stars></div></div>
-      <label class="kb-switch"><input type="checkbox" data-e="fav"${isFav ? " checked" : ""}><i></i><span>Favorite (heart)</span></label>
-      <div class="kb-form-row"><span>Tags</span><div class="kb-tagpick" data-tags></div></div>
-      <label class="kb-form-row"><span>Date</span><input class="kb-field" type="date" data-e="date" value="${esc(x.date || "")}"></label>
-      <label class="kb-form-row"><span>Description</span><textarea class="kb-field" data-e="details" rows="4">${esc(x.details || "")}</textarea></label>
-      <label class="kb-form-row"><span>Links (one per line)</span><textarea class="kb-field" data-e="urls" rows="2">${esc((x.urls || []).join("\n"))}</textarea></label>
-      <label class="kb-switch"><input type="checkbox" data-e="organized"${x.organized ? " checked" : ""}><i></i><span>Organized</span></label>
-      ${path ? `<p class="kb-hint">File: ${esc(path)}</p>` : ""}`,
-    foot: `<button class="kb-btn is-danger" data-del>Delete</button><span class="kb-spacer"></span><button class="kb-btn" data-cancel>Cancel</button><button class="kb-btn is-primary" data-save>Save</button>`,
+      <label class="kb-form-row"><span>${t("Title")}</span><input class="kb-field" data-e="title" value="${esc(x.title || "")}" placeholder="${esc(path ? path.split(/[\\/]/).pop() : "")}"></label>
+      <div class="kb-form-row"><span>${t("Rating")}</span><div data-stars></div></div>
+      <label class="kb-switch"><input type="checkbox" data-e="fav"${isFav ? " checked" : ""}><i></i><span>${t("Favorite (heart)")}</span></label>
+      <div class="kb-form-row"><span>${t("Tags")}</span><div class="kb-tagpick" data-tags></div></div>
+      <label class="kb-form-row"><span>${t("Date")}</span><input class="kb-field" type="date" data-e="date" value="${esc(x.date || "")}"></label>
+      <label class="kb-form-row"><span>${t("Description")}</span><textarea class="kb-field" data-e="details" rows="4">${esc(x.details || "")}</textarea></label>
+      <label class="kb-form-row"><span>${t("Links (one per line)")}</span><textarea class="kb-field" data-e="urls" rows="2">${esc((x.urls || []).join("\n"))}</textarea></label>
+      <label class="kb-switch"><input type="checkbox" data-e="organized"${x.organized ? " checked" : ""}><i></i><span>${t("Organized")}</span></label>
+      ${path ? `<p class="kb-hint">${t("File:")} ${esc(path)}</p>` : ""}`,
+    foot: `<button class="kb-btn is-danger" data-del>${t("Delete")}</button><span class="kb-spacer"></span><button class="kb-btn" data-cancel>${t("Cancel")}</button><button class="kb-btn is-primary" data-save>${t("Save")}</button>`,
   });
   const el = d.el;
   starInput(el.querySelector("[data-stars]"), state.rating100, (v) => (state.rating100 = v));
-  const picker = tagPicker(el.querySelector("[data-tags]"), { include: tagIds, allowCreate: true, placeholder: "Search or create a tag" });
+  const picker = tagPicker(el.querySelector("[data-tags]"), { include: tagIds, allowCreate: true, placeholder: t("Search or create a tag") });
   el.querySelector("[data-cancel]").onclick = d.close;
   el.querySelector("[data-save]").onclick = async () => {
     const v = (k) => el.querySelector(`[data-e="${k}"]`);
     const fav = v("fav").checked;
     let tags = picker.include;
     const favTag = fav ? await favoriteTagId(true) : favId;
-    if (favTag) tags = fav ? [...new Set([...tags, favTag])] : tags.filter((t) => t !== favTag);
+    if (favTag) tags = fav ? [...new Set([...tags, favTag])] : tags.filter((tg) => tg !== favTag);
     const input = {
       id,
       title: v("title").value.trim(),
@@ -83,7 +86,7 @@ async function editOne(kind, id, { onSaved, onDeleted }) {
       el.querySelector("[data-save]").disabled = true;
       await updateItem(kind, input);
       app.favId = favTag || app.favId;
-      toast("Saved", "ok");
+      toast(t("Saved"), "ok");
       d.close();
       onSaved && onSaved();
     } catch (e) {
@@ -93,16 +96,16 @@ async function editOne(kind, id, { onSaved, onDeleted }) {
   };
   el.querySelector("[data-del]").onclick = async () => {
     const r = await confirmDialog({
-      title: `Delete ${NAMES[kind][0].toLowerCase()}?`,
-      text: "The item disappears from Stash. With the box ticked, the file on disk is deleted too – this can't be undone.",
-      ok: "Delete",
+      title: t(TITLES[kind][1]),
+      text: t("The item disappears from Stash. With the box ticked, the file on disk is deleted too – this can't be undone."),
+      ok: t("Delete"),
       danger: true,
-      checkbox: "Also delete the file from disk",
+      checkbox: t("Also delete the file from disk"),
     });
     if (!r.ok) return;
     try {
       await destroyItems(kind, [id], r.checked);
-      toast("Deleted", "ok");
+      toast(t("Deleted"), "ok");
       d.close();
       onDeleted ? onDeleted() : onSaved && onSaved();
     } catch (e) {
@@ -115,18 +118,18 @@ function editMany(kind, pieces, { onSaved }) {
   const ids = pieces.map((p) => p.id);
   const state = { rating100: undefined, add: [], remove: [], organized: "" };
   const d = openDrawer({
-    title: `Edit ${plural(ids.length, NAMES[kind][0].toLowerCase(), NAMES[kind][1].toLowerCase())}`,
+    title: t("Edit {what}", { what: plural(ids.length, UNITS[kind][0], UNITS[kind][1]) }),
     body: `
-      <p class="kb-hint">Only what you change here is applied to all selected items. Everything else stays as it is.</p>
-      <div class="kb-form-row"><span>Add tags</span><div class="kb-tagpick" data-add></div></div>
-      <div class="kb-form-row"><span>Remove tags</span><div class="kb-tagpick" data-rm></div></div>
-      <div class="kb-form-row"><span>Set rating</span><div data-stars></div></div>
-      <label class="kb-form-row"><span>Organized</span><select class="kb-field" data-org><option value="">don't change</option><option value="1">organized</option><option value="0">not organized</option></select></label>`,
-    foot: `<span class="kb-spacer"></span><button class="kb-btn" data-cancel>Cancel</button><button class="kb-btn is-primary" data-save>Apply to all</button>`,
+      <p class="kb-hint">${t("Only what you change here is applied to all selected items. Everything else stays as it is.")}</p>
+      <div class="kb-form-row"><span>${t("Add tags")}</span><div class="kb-tagpick" data-add></div></div>
+      <div class="kb-form-row"><span>${t("Remove tags")}</span><div class="kb-tagpick" data-rm></div></div>
+      <div class="kb-form-row"><span>${t("Set rating")}</span><div data-stars></div></div>
+      <label class="kb-form-row"><span>${t("Organized")}</span><select class="kb-field" data-org><option value="">${t("don't change")}</option><option value="1">${t("organized")}</option><option value="0">${t("not organized")}</option></select></label>`,
+    foot: `<span class="kb-spacer"></span><button class="kb-btn" data-cancel>${t("Cancel")}</button><button class="kb-btn is-primary" data-save>${t("Apply to all")}</button>`,
   });
   const el = d.el;
-  const addP = tagPicker(el.querySelector("[data-add]"), { allowCreate: true, placeholder: "Search or create a tag" });
-  const rmP = tagPicker(el.querySelector("[data-rm]"), { placeholder: "Search tag" });
+  const addP = tagPicker(el.querySelector("[data-add]"), { allowCreate: true, placeholder: t("Search or create a tag") });
+  const rmP = tagPicker(el.querySelector("[data-rm]"), { placeholder: t("Search tag") });
   starInput(el.querySelector("[data-stars]"), 0, (v) => (state.rating100 = v));
   el.querySelector("[data-cancel]").onclick = d.close;
   el.querySelector("[data-save]").onclick = async () => {
@@ -141,7 +144,7 @@ function editMany(kind, pieces, { onSaved }) {
       if (rmP.include.length) jobs.push({ ids, tag_ids: { ids: rmP.include, mode: "REMOVE" } });
       if (!jobs.length && Object.keys(base).length > 1) jobs.push(base);
       for (const j of jobs) await bulkUpdate(kind, j);
-      toast(jobs.length ? `${plural(ids.length, "item", "items")} updated` : "Nothing changed", "ok");
+      toast(jobs.length ? t("{what} updated", { what: plural(ids.length, "item", "items") }) : t("Nothing changed"), "ok");
       d.close();
       jobs.length && onSaved && onSaved();
     } catch (e) {

@@ -1,7 +1,9 @@
-// Settings: all Stash options, sorted into understandable sections.
+// Settings: all Stash options, sorted into understandable sections. Titles and intros below are
+// translated when shown (the English text is the key).
 // Fields and types come live from Stash; unknown options end up under "More options".
 
 import { esc, icon, toast, errorToast, store, confirmDialog, fmtDate } from "../ui.js";
+import { t, locale, LANGS, chosen, choose } from "../i18n.js";
 import { gql } from "../api.js";
 import { typeInfo, selection, fieldHtml, readFields, unwrap } from "../forms.js";
 import { go } from "../main.js";
@@ -40,14 +42,14 @@ export async function render(main, params) {
   const sec = SECTIONS.find((s) => s.id === params.section) || SECTIONS[0];
   main.innerHTML = `
     <header class="kb-head"><div class="kb-head-title">
-      <nav class="kb-crumbs"><span><a href="#/settings">Settings</a></span></nav>
-      <h1 class="kb-h1">${esc(sec.title)}</h1>
-      <p class="kb-sub">${esc(sec.intro)}</p>
+      <nav class="kb-crumbs"><span><a href="#/settings">${t("Settings")}</a></span></nav>
+      <h1 class="kb-h1">${esc(t(sec.title))}</h1>
+      <p class="kb-sub">${esc(t(sec.intro))}</p>
     </div></header>
     <div class="kb-settings">
-      <nav class="kb-set-nav" aria-label="Sections">${SECTIONS.map((s) => `<a href="#/settings/${s.id}" class="${s === sec ? "is-active" : ""}">${esc(s.title)}</a>`).join("")}
-        <a href="#/extern/classic-settings">Open in classic Stash</a></nav>
-      <div class="kb-set-body" data-body><div class="kb-loading">Loading …</div></div>
+      <nav class="kb-set-nav" aria-label="${t("Sections")}">${SECTIONS.map((s) => `<a href="#/settings/${s.id}" class="${s === sec ? "is-active" : ""}">${esc(t(s.title))}</a>`).join("")}
+        <a href="#/extern/classic-settings">${t("Open in classic Stash")}</a></nav>
+      <div class="kb-set-body" data-body><div class="kb-loading">${t("Loading …")}</div></div>
     </div>`;
   const body = main.querySelector("[data-body]");
   try {
@@ -55,7 +57,7 @@ export async function render(main, params) {
     if (sec.custom === "app") return renderApp(body);
     return await renderArea(body, sec);
   } catch (e) {
-    body.innerHTML = `<div class="kb-empty"><b>Couldn't load settings</b><p>${esc(e.message)}</p></div>`;
+    body.innerHTML = `<div class="kb-empty"><b>${t("Couldn't load settings")}</b><p>${esc(e.message)}</p></div>`;
   }
 }
 
@@ -80,10 +82,10 @@ async function renderArea(body, sec) {
     else parts.push(await fieldHtml(n, inputFields.get(n).type, cur[n]));
   }
   body.innerHTML = `
-    <form class="kb-set-form" data-form>${parts.join("") || '<p class="kb-hint">Nothing else to set here.</p>'}
+    <form class="kb-set-form" data-form>${parts.join("") || `<p class="kb-hint">${t("Nothing else to set here.")}</p>`}
       ${sec.apiKey ? apiKeyHtml(cur.apiKey) : ""}
-      ${sec.classic ? `<p><a class="kb-btn" href="#/extern/classic-settings?path=${encodeURIComponent(sec.classic)}">${icon("door")}Open in classic Stash</a></p>` : ""}
-      <div class="kb-set-save" data-save hidden><span>Unsaved changes</span><button type="button" class="kb-btn" data-reset>Discard</button><button type="submit" class="kb-btn is-primary">Save</button></div>
+      ${sec.classic ? `<p><a class="kb-btn" href="#/extern/classic-settings?path=${encodeURIComponent(sec.classic)}">${icon("door")}${t("Open in classic Stash")}</a></p>` : ""}
+      <div class="kb-set-save" data-save hidden><span>${t("Unsaved changes")}</span><button type="button" class="kb-btn" data-reset>${t("Discard")}</button><button type="submit" class="kb-btn is-primary">${t("Save")}</button></div>
     </form>
     ${sec.logs ? '<section class="kb-logs" data-logs></section>' : ""}`;
   const form = body.querySelector("[data-form]");
@@ -99,7 +101,7 @@ async function renderArea(body, sec) {
     if (names.includes("stashes")) input.stashes = readStashes(form);
     try {
       await gql(`mutation($i: ${a.input}!) { ${a.mutation}(input: $i) { __typename } }`, { i: input });
-      toast(sec.id === "paths" ? "Saved – takes effect after restarting Stash" : "Saved", "ok");
+      toast(sec.id === "paths" ? t("Saved – takes effect after restarting Stash") : t("Saved"), "ok");
       saveBar.hidden = true;
     } catch (err) {
       errorToast(err, "Saving failed");
@@ -113,16 +115,16 @@ async function renderArea(body, sec) {
 
 function stashRow(s) {
   return `<div class="kb-stash-row" data-stash>
-    <input class="kb-field" data-spath value="${esc(s.path || "")}" placeholder="Folder path" spellcheck="false">
-    <label class="kb-check"><input type="checkbox" data-snovid${s.excludeVideo ? " checked" : ""}>no videos</label>
-    <label class="kb-check"><input type="checkbox" data-snoimg${s.excludeImage ? " checked" : ""}>no images</label>
-    <button type="button" class="kb-btn is-icon is-ghost" data-srm aria-label="Remove folder">${icon("close")}</button>
+    <input class="kb-field" data-spath value="${esc(s.path || "")}" placeholder="${t("Folder path")}" spellcheck="false">
+    <label class="kb-check"><input type="checkbox" data-snovid${s.excludeVideo ? " checked" : ""}>${t("no videos")}</label>
+    <label class="kb-check"><input type="checkbox" data-snoimg${s.excludeImage ? " checked" : ""}>${t("no images")}</label>
+    <button type="button" class="kb-btn is-icon is-ghost" data-srm aria-label="${t("Remove folder")}">${icon("close")}</button>
   </div>`;
 }
 function stashesHtml(list) {
-  return `<div class="kb-set"><div class="kb-set-label"><b>Library folders</b><small>Folders Stash scans. “no videos/images” ignores that kind of media in the folder.</small></div>
+  return `<div class="kb-set"><div class="kb-set-label"><b>${t("Library folders")}</b><small>${t("Folders Stash scans. “no videos/images” ignores that kind of media in the folder.")}</small></div>
     <div class="kb-stashes" data-stashes>${list.map(stashRow).join("")}</div>
-    <button type="button" class="kb-btn" data-sadd>${icon("plus")}Add folder</button></div>`;
+    <button type="button" class="kb-btn" data-sadd>${icon("plus")}${t("Add folder")}</button></div>`;
 }
 function bindStashes(form, dirty) {
   form.addEventListener("click", (e) => {
@@ -146,21 +148,21 @@ function readStashes(form) {
 // ---------- API key ----------
 
 function apiKeyHtml(key) {
-  return `<div class="kb-set"><div class="kb-set-label"><b>API key</b><small>For external programs. Generating a new one invalidates the old one.</small></div>
-    <div class="kb-apikey"><code data-key>${key ? esc(key) : "no key"}</code>
-    <button type="button" class="kb-btn" data-genkey>Generate new</button>${key ? '<button type="button" class="kb-btn is-ghost" data-clearkey>Remove</button>' : ""}</div></div>`;
+  return `<div class="kb-set"><div class="kb-set-label"><b>${t("API key")}</b><small>${t("For external programs. Generating a new one invalidates the old one.")}</small></div>
+    <div class="kb-apikey"><code data-key>${key ? esc(key) : t("no key")}</code>
+    <button type="button" class="kb-btn" data-genkey>${t("Generate new")}</button>${key ? `<button type="button" class="kb-btn is-ghost" data-clearkey>${t("Remove")}</button>` : ""}</div></div>`;
 }
 function bindApiKey(body) {
   body.addEventListener("click", async (e) => {
     const gen = e.target.closest("[data-genkey]");
     const clr = e.target.closest("[data-clearkey]");
     if (!gen && !clr) return;
-    const r = await confirmDialog({ title: gen ? "Generate a new API key?" : "Remove the API key?", text: "Programs using the old key lose access.", ok: gen ? "Generate" : "Remove", danger: !!clr });
+    const r = await confirmDialog({ title: gen ? t("Generate a new API key?") : t("Remove the API key?"), text: t("Programs using the old key lose access."), ok: gen ? t("Generate") : t("Remove"), danger: !!clr });
     if (!r.ok) return;
     try {
       const d = await gql(`mutation($c: Boolean) { generateAPIKey(input: { clear: $c }) }`, { c: !!clr });
-      body.querySelector("[data-key]").textContent = d.generateAPIKey || "no key";
-      toast("API key changed", "ok");
+      body.querySelector("[data-key]").textContent = d.generateAPIKey || t("no key");
+      toast(t("API key changed"), "ok");
     } catch (err) {
       errorToast(err, "API key");
     }
@@ -171,9 +173,9 @@ function bindApiKey(body) {
 
 async function renderLogs(box) {
   const level = store.get("logLevel", "Info");
-  box.innerHTML = `<h2 class="kb-h2">Latest entries
-    <select class="kb-field" data-lvl>${["Debug", "Info", "Warning", "Error"].map((l) => `<option${l === level ? " selected" : ""}>${l}</option>`).join("")}</select>
-    <button class="kb-btn is-ghost" data-refresh>Refresh</button></h2><div class="kb-loglist" data-list>Loading …</div>`;
+  box.innerHTML = `<h2 class="kb-h2">${t("Latest entries")}
+    <select class="kb-field" data-lvl>${["Debug", "Info", "Warning", "Error"].map((l) => `<option value="${l}"${l === level ? " selected" : ""}>${t(l)}</option>`).join("")}</select>
+    <button class="kb-btn is-ghost" data-refresh>${t("Refresh")}</button></h2><div class="kb-loglist" data-list>${t("Loading …")}</div>`;
   const order = { Trace: 0, Debug: 1, Info: 2, Progress: 2, Warning: 3, Error: 4 };
   const load = async () => {
     try {
@@ -181,10 +183,10 @@ async function renderLogs(box) {
       const min = order[box.querySelector("[data-lvl]").value];
       const rows = d.logs.filter((l) => (order[l.level] ?? 2) >= min).slice(-400).reverse();
       box.querySelector("[data-list]").innerHTML = rows.length
-        ? rows.map((l) => `<div class="kb-log is-${l.level.toLowerCase()}"><time>${esc(new Date(l.time).toLocaleTimeString("en-US"))}</time><b>${esc(l.level)}</b><span>${esc(l.message)}</span></div>`).join("")
-        : '<p class="kb-hint">No entries at this level.</p>';
+        ? rows.map((l) => `<div class="kb-log is-${l.level.toLowerCase()}"><time>${esc(new Date(l.time).toLocaleTimeString(locale()))}</time><b>${esc(l.level)}</b><span>${esc(l.message)}</span></div>`).join("")
+        : `<p class="kb-hint">${t("No entries at this level.")}</p>`;
     } catch (e) {
-      box.querySelector("[data-list]").textContent = "Couldn't load the log: " + e.message;
+      box.querySelector("[data-list]").textContent = t("Couldn't load the log:") + " " + e.message;
     }
   };
   box.querySelector("[data-lvl]").onchange = (e) => {
@@ -201,19 +203,19 @@ async function renderSystem(body) {
   const cg = await typeInfo("CleanGeneratedInput");
   body.innerHTML = `
     <div class="kb-cards">
-      <section class="kb-card"><h2>Back up database</h2><p>Stores a copy of the database in the backup folder.</p>
-        <label class="kb-check"><input type="checkbox" data-blobs>Include image data</label>
-        <button class="kb-btn is-primary" data-backup>Back up now</button></section>
-      <section class="kb-card"><h2>Optimize database</h2><p>Tidies up the database internally and makes it smaller. Runs as a background task.</p>
-        <button class="kb-btn" data-optimise>Optimize</button></section>
-      <section class="kb-card"><h2>Clean up generated files</h2><p>Removes previews, sprites and other generated files that no longer belong to a scene or image.</p>
+      <section class="kb-card"><h2>${t("Back up database")}</h2><p>${t("Stores a copy of the database in the backup folder.")}</p>
+        <label class="kb-check"><input type="checkbox" data-blobs>${t("Include image data")}</label>
+        <button class="kb-btn is-primary" data-backup>${t("Back up now")}</button></section>
+      <section class="kb-card"><h2>${t("Optimize database")}</h2><p>${t("Tidies up the database internally and makes it smaller. Runs as a background task.")}</p>
+        <button class="kb-btn" data-optimise>${t("Optimize")}</button></section>
+      <section class="kb-card"><h2>${t("Clean up generated files")}</h2><p>${t("Removes previews, sprites and other generated files that no longer belong to a scene or image.")}</p>
         <form data-cleangen>${(await Promise.all(cg.inputFields.map((f) => fieldHtml(f.name, f.type, f.name === "dryRun")))).join("")}
-        <button class="kb-btn" type="submit">Start clean-up</button></form></section>
+        <button class="kb-btn" type="submit">${t("Start clean-up")}</button></form></section>
     </div>`;
   body.querySelector("[data-backup]").onclick = async () => {
     try {
       const d = await gql(`mutation($b: Boolean) { backupDatabase(input: { download: false, includeBlobs: $b }) }`, { b: body.querySelector("[data-blobs]").checked });
-      toast("Backed up" + (d.backupDatabase ? ": " + d.backupDatabase : ""), "ok");
+      toast(t("Backed up") + (d.backupDatabase ? ": " + d.backupDatabase : ""), "ok");
     } catch (e) {
       errorToast(e, "Backup failed");
     }
@@ -222,7 +224,7 @@ async function renderSystem(body) {
     try {
       await gql(`mutation { optimiseDatabase }`);
       pokeJobs();
-      toast("Optimizing – see Tasks", "ok");
+      toast(t("Optimizing – see Tasks"), "ok");
     } catch (e) {
       errorToast(e, "Optimize");
     }
@@ -232,7 +234,7 @@ async function renderSystem(body) {
     try {
       await gql(`mutation($i: CleanGeneratedInput!) { metadataCleanGenerated(input: $i) }`, { i: readFields(e.target) });
       pokeJobs();
-      toast("Cleaning up – see Tasks", "ok");
+      toast(t("Cleaning up – see Tasks"), "ok");
     } catch (err) {
       errorToast(err, "Clean-up");
     }
@@ -247,21 +249,30 @@ async function renderApp(body) {
   const player = store.get("player", {});
   body.innerHTML = `
     <form class="kb-set-form" data-form>
-      <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>This interface as home page</b><small>Opening Stash goes straight to this interface. Off = classic Stash stays the home page.</small></span>
+      <label class="kb-set"><span class="kb-set-label"><b>${t("Language")}</b><small>${t("“Automatic” follows the language set in Stash (classic Stash → Settings → Interface).")}</small></span>
+        <select class="kb-field" data-lang><option value="auto">${t("Automatic")}</option>${LANGS.map(([code, name]) => `<option value="${code}">${esc(name)}</option>`).join("")}</select></label>
+      <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("This interface as home page")}</b><small>${t("Opening Stash goes straight to this interface. Off = classic Stash stays the home page.")}</small></span>
         <span class="kb-switch"><input type="checkbox" data-home${cfg.keepClassicHome ? "" : " checked"}><i></i></span></label>
-      <label class="kb-set"><span class="kb-set-label"><b>Thumbnail size</b><small>How tall a row in the lists is.</small></span>
+      <label class="kb-set"><span class="kb-set-label"><b>${t("Thumbnail size")}</b><small>${t("How tall a row in the lists is.")}</small></span>
         <input type="range" min="130" max="480" step="10" data-rowh value="${store.get("rowHeight", 250)}"></label>
-      <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>Autoplay next in the player</b><small>Start the next scene when one ends.</small></span>
+      <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("Autoplay next in the player")}</b><small>${t("Start the next scene when one ends.")}</small></span>
         <span class="kb-switch"><input type="checkbox" data-auto${player.auto === false ? "" : " checked"}><i></i></span></label>
-      <div class="kb-set"><div class="kb-set-label"><b>Favorites</b><small>The heart is the Stash tag “Favorite”. You'll find it in classic Stash too.</small></div></div>
-      <div class="kb-set"><div class="kb-set-label"><b>Reset saved view</b><small>Expanded folders, player and viewer settings, thumbnail size.</small></div>
-        <button type="button" class="kb-btn" data-resetlocal>Reset</button></div>
+      <div class="kb-set"><div class="kb-set-label"><b>${t("Favorites")}</b><small>${t("The heart is the Stash tag “Favorite”. You'll find it in classic Stash too.")}</small></div></div>
+      <div class="kb-set"><div class="kb-set-label"><b>${t("Reset saved view")}</b><small>${t("Expanded folders, player and viewer settings, thumbnail size.")}</small></div>
+        <button type="button" class="kb-btn" data-resetlocal>${t("Reset")}</button></div>
     </form>`;
+  // Language: applies after reloading, so the menu and every page switch at once
+  const langSel = body.querySelector("[data-lang]");
+  langSel.value = chosen();
+  langSel.onchange = () => {
+    choose(langSel.value);
+    location.reload();
+  };
   body.querySelector("[data-home]").onchange = async (e) => {
     try {
       await gql(`mutation($i: Map!) { configurePlugin(plugin_id: "stashui", input: $i) }`, { i: Object.assign({}, cfg, { keepClassicHome: !e.target.checked }) });
       localStorage.setItem("stashui.keepClassicHome", String(!e.target.checked));
-      toast("Saved", "ok");
+      toast(t("Saved"), "ok");
     } catch (err) {
       errorToast(err, "Save");
     }
@@ -270,7 +281,7 @@ async function renderApp(body) {
   body.querySelector("[data-auto]").onchange = (e) => store.set("player", Object.assign(store.get("player", {}), { auto: e.target.checked }));
   body.querySelector("[data-resetlocal]").onclick = () => {
     Object.keys(localStorage).filter((k) => k.startsWith("stashui.") && k !== "stashui.queue").forEach((k) => localStorage.removeItem(k));
-    toast("Reset", "ok");
+    toast(t("Reset"), "ok");
     go("settings/this-ui", true);
   };
 }

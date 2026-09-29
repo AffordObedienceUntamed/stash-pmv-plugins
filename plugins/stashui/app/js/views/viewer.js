@@ -1,6 +1,7 @@
 // Image viewer: next/previous through the list, zoom & pan, slideshow, placard with details.
 
 import { esc, icon, store, toast, errorToast } from "../ui.js";
+import { t } from "../i18n.js";
 import { getImage } from "../api.js";
 import { app, go, closeOverlay } from "../main.js";
 import { placardHtml, bindPlacard } from "./placard.js";
@@ -11,7 +12,7 @@ export async function render(host, params) {
   const prefs = store.get("viewer", { panel: false, interval: 5 });
   let x = await getImage(params.id);
   if (!x) {
-    host.innerHTML = `<div class="kb-stage"><div class="kb-empty"><b>This image no longer exists</b><button class="kb-btn" data-close>Close</button></div></div>`;
+    host.innerHTML = `<div class="kb-stage"><div class="kb-empty"><b>${t("This image no longer exists")}</b><button class="kb-btn" data-close>${t("Close")}</button></div></div>`;
     host.querySelector("[data-close]").onclick = closeOverlay;
     return;
   }
@@ -32,17 +33,17 @@ export async function render(host, params) {
             ? `<video class="kb-img" src="${esc(x.paths.image)}" autoplay loop muted playsinline></video>`
             : `<img class="kb-img" alt="${esc(x.title || "")}" src="${esc(x.paths.image)}" draggable="false">`}
         </div>
-        <button class="kb-nav-arrow is-prev" data-prev aria-label="Previous image (←)">${icon("back")}</button>
-        <button class="kb-nav-arrow is-next" data-next aria-label="Next image (→)">${icon("fwd")}</button>
+        <button class="kb-nav-arrow is-prev" data-prev aria-label="${t("Previous image (←)")}">${icon("back")}</button>
+        <button class="kb-nav-arrow is-next" data-next aria-label="${t("Next image (→)")}">${icon("fwd")}</button>
         <div class="kb-topbar">
-          <button class="kb-btn is-icon is-ghost" data-close aria-label="Close (Esc)" title="Close (Esc)">${icon("back")}</button>
+          <button class="kb-btn is-icon is-ghost" data-close aria-label="${t("Close (Esc)")}" title="${t("Close (Esc)")}">${icon("back")}</button>
           <span class="kb-topbar-title">${esc(x.title || vf.basename || "")}</span>
           <span class="kb-counter" data-counter></span>
-          <button class="kb-btn is-ghost kb-toggle" data-slides title="Slideshow (S)">${icon("slides")}<span>Slideshow</span></button>
-          <select class="kb-field kb-speed" data-interval aria-label="Slideshow speed">${[2, 3, 5, 8, 12].map((s) => `<option value="${s}"${s === prefs.interval ? " selected" : ""}>${s} s</option>`).join("")}</select>
-          <button class="kb-btn is-icon is-ghost" data-zoom aria-label="Zoom (Z)" title="Original size (Z)">${icon("zoomin")}</button>
-          <button class="kb-btn is-icon is-ghost" data-fs aria-label="Fullscreen (F)" title="Fullscreen (F)">${icon("expand")}</button>
-          <button class="kb-btn is-icon is-ghost" data-panel aria-label="Details on/off (I)" title="Details on/off (I)">${icon("info")}</button>
+          <button class="kb-btn is-ghost kb-toggle" data-slides title="${t("Slideshow (S)")}">${icon("slides")}<span>${t("Slideshow")}</span></button>
+          <select class="kb-field kb-speed" data-interval aria-label="${t("Slideshow speed")}">${[2, 3, 5, 8, 12].map((s) => `<option value="${s}"${s === prefs.interval ? " selected" : ""}>${s} s</option>`).join("")}</select>
+          <button class="kb-btn is-icon is-ghost" data-zoom aria-label="${t("Zoom (Z)")}" title="${t("Original size (Z)")}">${icon("zoomin")}</button>
+          <button class="kb-btn is-icon is-ghost" data-fs aria-label="${t("Fullscreen (F)")}" title="${t("Fullscreen (F)")}">${icon("expand")}</button>
+          <button class="kb-btn is-icon is-ghost" data-panel aria-label="${t("Details on/off (I)")}" title="${t("Details on/off (I)")}">${icon("info")}</button>
         </div>
       </div>
       <aside class="kb-side" data-side>${placardHtml("image", x)}</aside>
@@ -123,7 +124,7 @@ export async function render(host, params) {
     const it = L2[i];
     if (!it) {
       if (slideTimer) stopSlides();
-      return toast(dir > 0 ? "That was the last image" : "This is the first image");
+      return toast(dir > 0 ? t("That was the last image") : t("This is the first image"));
     }
     if (inQueue) store.set("queuePos", i);
     if (it.kind === "scene") return go("scene/" + it.id, true);
@@ -150,14 +151,14 @@ export async function render(host, params) {
   app.slideshowRunning = false;
 
   host.addEventListener("click", (e) => {
-    const t = e.target;
-    if (t.closest("[data-close]")) return closeOverlay();
-    if (t.closest("[data-next]")) return step(1);
-    if (t.closest("[data-prev]")) return step(-1);
-    if (t.closest("[data-zoom]")) return setZoom(zoom > 1 ? 1 : 2.5);
-    if (t.closest("[data-fs]")) return fullscreen();
-    if (t.closest("[data-slides]")) return slideTimer ? stopSlides() : startSlides();
-    if (t.closest("[data-panel]")) {
+    const el = e.target;
+    if (el.closest("[data-close]")) return closeOverlay();
+    if (el.closest("[data-next]")) return step(1);
+    if (el.closest("[data-prev]")) return step(-1);
+    if (el.closest("[data-zoom]")) return setZoom(zoom > 1 ? 1 : 2.5);
+    if (el.closest("[data-fs]")) return fullscreen();
+    if (el.closest("[data-slides]")) return slideTimer ? stopSlides() : startSlides();
+    if (el.closest("[data-panel]")) {
       prefs.panel = !prefs.panel;
       store.set("viewer", prefs);
       return stage.classList.toggle("has-panel", prefs.panel);
@@ -173,7 +174,7 @@ export async function render(host, params) {
   };
   function fullscreen() {
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-    else stage.requestFullscreen().catch(() => toast("Fullscreen not allowed"));
+    else stage.requestFullscreen().catch(() => toast(t("Fullscreen not allowed")));
   }
 
   // Controls hide when idle

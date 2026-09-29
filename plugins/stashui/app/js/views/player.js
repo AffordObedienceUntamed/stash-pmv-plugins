@@ -2,6 +2,7 @@
 // queue/random/endless, keyboard, placard with all details.
 
 import { esc, icon, fmtDuration, store, toast, errorToast } from "../ui.js";
+import { t } from "../i18n.js";
 import { getScene, findItems, saveActivity, addPlay } from "../api.js";
 import { toPiece } from "../pieces.js";
 import { app, go, closeOverlay } from "../main.js";
@@ -16,10 +17,10 @@ async function loadSprites(vttUrl, spriteUrl) {
     const cues = [];
     const re = /(\d+):(\d+):(\d+)\.(\d+)\s+-->\s+(\d+):(\d+):(\d+)\.(\d+)\s*\n([^\n]+)/g;
     let m;
-    const t = (h, mi, s, ms) => +h * 3600 + +mi * 60 + +s + +ms / 1000;
+    const secs = (h, mi, s, ms) => +h * 3600 + +mi * 60 + +s + +ms / 1000;
     while ((m = re.exec(txt))) {
       const xywh = (m[9].match(/#xywh=(\d+),(\d+),(\d+),(\d+)/) || []).slice(1).map(Number);
-      if (xywh.length === 4) cues.push({ start: t(m[1], m[2], m[3], m[4]), end: t(m[5], m[6], m[7], m[8]), xywh });
+      if (xywh.length === 4) cues.push({ start: secs(m[1], m[2], m[3], m[4]), end: secs(m[5], m[6], m[7], m[8]), xywh });
     }
     return cues.length ? { cues, url: spriteUrl } : null;
   } catch (e) {
@@ -29,10 +30,10 @@ async function loadSprites(vttUrl, spriteUrl) {
 
 export async function render(host, params) {
   document.body.classList.add("kb-noscroll");
-  host.innerHTML = `<div class="kb-stage kb-player"><div class="kb-loading">Loading …</div></div>`;
+  host.innerHTML = `<div class="kb-stage kb-player"><div class="kb-loading">${t("Loading …")}</div></div>`;
   let x = await getScene(params.id);
   if (!x) {
-    host.innerHTML = `<div class="kb-stage"><div class="kb-empty"><b>This scene no longer exists</b><button class="kb-btn" data-close>Close</button></div></div>`;
+    host.innerHTML = `<div class="kb-stage"><div class="kb-empty"><b>${t("This scene no longer exists")}</b><button class="kb-btn" data-close>${t("Close")}</button></div></div>`;
     host.querySelector("[data-close]").onclick = closeOverlay;
     return;
   }
@@ -48,9 +49,9 @@ export async function render(host, params) {
         <div class="kb-bigplay" data-bigplay hidden>${icon("play")}</div>
         <div class="kb-resume-hint" data-resume hidden></div>
         <div class="kb-topbar">
-          <button class="kb-btn is-icon is-ghost" data-close aria-label="Close (Esc)" title="Close (Esc)">${icon("back")}</button>
+          <button class="kb-btn is-icon is-ghost" data-close aria-label="${t("Close (Esc)")}" title="${t("Close (Esc)")}">${icon("back")}</button>
           <span class="kb-topbar-title">${esc(x.title || f.basename || "")}</span>
-          <button class="kb-btn is-icon is-ghost" data-panel aria-label="Details on/off (I)" title="Details on/off (I)">${icon("info")}</button>
+          <button class="kb-btn is-icon is-ghost" data-panel aria-label="${t("Details on/off (I)")}" title="${t("Details on/off (I)")}">${icon("info")}</button>
         </div>
         <div class="kb-controls">
           <div class="kb-timeline${prefs.heat ? " has-heat" : ""}" data-timeline>
@@ -63,19 +64,19 @@ export async function render(host, params) {
             <div class="kb-tl-peek" data-peek hidden><div class="kb-tl-peek-img" data-peekimg></div><span data-peektime></span></div>
           </div>
           <div class="kb-ctrl-row">
-            <button class="kb-btn is-icon is-ghost" data-prev aria-label="Previous (P)" title="Previous (P)">${icon("prev")}</button>
-            <button class="kb-btn is-icon is-ghost kb-playbtn" data-play aria-label="Play/pause (Space)">${icon("play")}</button>
-            <button class="kb-btn is-icon is-ghost" data-next aria-label="Next (N)" title="Next (N)">${icon("next")}</button>
+            <button class="kb-btn is-icon is-ghost" data-prev aria-label="${t("Previous (P)")}" title="${t("Previous (P)")}">${icon("prev")}</button>
+            <button class="kb-btn is-icon is-ghost kb-playbtn" data-play aria-label="${t("Play/pause (Space)")}">${icon("play")}</button>
+            <button class="kb-btn is-icon is-ghost" data-next aria-label="${t("Next (N)")}" title="${t("Next (N)")}">${icon("next")}</button>
             <span class="kb-time"><span data-cur>0:00</span> / <span data-dur>${fmtDuration(f.duration)}</span></span>
             <span class="kb-spacer"></span>
-            <button class="kb-btn is-ghost kb-toggle${prefs.heat ? " is-on" : ""}" data-heatbtn title="Highlights: heat curve and jump marks on the timeline (J jumps to the next one)">${icon("bolt")}<span>Highlights</span></button>
-            <button class="kb-btn is-ghost kb-toggle${prefs.random ? " is-on" : ""}" data-random title="Play something random next">${icon("shuffle")}<span>Random</span></button>
-            <button class="kb-btn is-ghost kb-toggle${prefs.auto ? " is-on" : ""}" data-auto title="Continue automatically at the end">${icon("next")}<span>Endless</span></button>
-            <button class="kb-btn is-ghost kb-toggle${prefs.loop ? " is-on" : ""}" data-loop title="Repeat this scene">${icon("repeat")}<span>Loop</span></button>
-            <select class="kb-field kb-speed" data-speed aria-label="Speed">${[0.5, 0.75, 1, 1.25, 1.5, 2].map((s) => `<option value="${s}"${s === 1 ? " selected" : ""}>${s}×</option>`).join("")}</select>
-            <button class="kb-btn is-icon is-ghost" data-mute aria-label="Sound on/off (M)" title="Sound on/off (M)"></button>
-            <input class="kb-vol" type="range" min="0" max="1" step="0.02" data-vol aria-label="Volume">
-            <button class="kb-btn is-icon is-ghost" data-fs aria-label="Fullscreen (F)" title="Fullscreen (F)">${icon("expand")}</button>
+            <button class="kb-btn is-ghost kb-toggle${prefs.heat ? " is-on" : ""}" data-heatbtn title="${t("Highlights: heat curve and jump marks on the timeline (J jumps to the next one)")}">${icon("bolt")}<span>${t("Highlights")}</span></button>
+            <button class="kb-btn is-ghost kb-toggle${prefs.random ? " is-on" : ""}" data-random title="${t("Play something random next")}">${icon("shuffle")}<span>${t("Random")}</span></button>
+            <button class="kb-btn is-ghost kb-toggle${prefs.auto ? " is-on" : ""}" data-auto title="${t("Continue automatically at the end")}">${icon("next")}<span>${t("Endless")}</span></button>
+            <button class="kb-btn is-ghost kb-toggle${prefs.loop ? " is-on" : ""}" data-loop title="${t("Repeat this scene")}">${icon("repeat")}<span>${t("Loop")}</span></button>
+            <select class="kb-field kb-speed" data-speed aria-label="${t("Speed")}">${[0.5, 0.75, 1, 1.25, 1.5, 2].map((s) => `<option value="${s}"${s === 1 ? " selected" : ""}>${s}×</option>`).join("")}</select>
+            <button class="kb-btn is-icon is-ghost" data-mute aria-label="${t("Sound on/off (M)")}" title="${t("Sound on/off (M)")}"></button>
+            <input class="kb-vol" type="range" min="0" max="1" step="0.02" data-vol aria-label="${t("Volume")}">
+            <button class="kb-btn is-icon is-ghost" data-fs aria-label="${t("Fullscreen (F)")}" title="${t("Fullscreen (F)")}">${icon("expand")}</button>
           </div>
         </div>
       </div>
@@ -95,11 +96,11 @@ export async function render(host, params) {
   let srcIdx = 0;
   v.addEventListener("error", () => {
     if (srcIdx < sources.length - 1) {
-      const t = v.currentTime;
+      const at = v.currentTime;
       v.src = sources[++srcIdx];
-      v.currentTime = t;
+      v.currentTime = at;
       v.play().catch(() => {});
-    } else toast("This video can't be played here", "error");
+    } else toast(t("This video can't be played here"), "error");
   });
   v.src = sources[0];
 
@@ -109,7 +110,7 @@ export async function render(host, params) {
   if (resumeAt) {
     v.currentTime = resumeAt;
     const r = $("[data-resume]");
-    r.innerHTML = `Resume at ${fmtDuration(resumeAt)} <button class="kb-btn" data-fromstart>From the start</button>`;
+    r.innerHTML = `${t("Resume at {time}", { time: fmtDuration(resumeAt) })} <button class="kb-btn" data-fromstart>${t("From the start")}</button>`;
     r.hidden = false;
     setTimeout(() => (r.hidden = true), 6000);
     r.querySelector("[data-fromstart]").onclick = () => {
@@ -209,7 +210,7 @@ export async function render(host, params) {
     cv.hidden = false;
     highlights = peaks(heat, v.duration || dur);
     $("[data-hls]").innerHTML = highlights
-      .map((t) => `<button type="button" class="kb-tl-hl" data-hl="${t}" style="left:${(t / (v.duration || dur)) * 100}%" title="Highlight at ${fmtDuration(t)} (J)" aria-label="Highlight at ${fmtDuration(t)}"></button>`)
+      .map((sec) => `<button type="button" class="kb-tl-hl" data-hl="${sec}" style="left:${(sec / (v.duration || dur)) * 100}%" title="${t("Highlight at {time} (J)", { time: fmtDuration(sec) })}" aria-label="${t("Highlight at {time}", { time: fmtDuration(sec) })}"></button>`)
       .join("");
   }
   paintHeat();
@@ -222,21 +223,21 @@ export async function render(host, params) {
     if (v.paused) v.play().catch(() => {});
   });
   function nextHighlight() {
-    if (!highlights.length) return toast("No highlights for this scene yet");
-    const t = highlights.find((h) => h > v.currentTime + 2) ?? highlights[0];
-    v.currentTime = t;
-    watch.seeked(t);
-    toast(`Highlight at ${fmtDuration(t)}`);
+    if (!highlights.length) return toast(t("No highlights for this scene yet"));
+    const at = highlights.find((h) => h > v.currentTime + 2) ?? highlights[0];
+    v.currentTime = at;
+    watch.seeked(at);
+    toast(t("Highlight at {time}", { time: fmtDuration(at) }));
   }
   tl.addEventListener("pointermove", (e) => {
     const p = posFrom(e);
-    const t = p * (v.duration || dur);
+    const at = p * (v.duration || dur);
     const peek = $("[data-peek]");
     peek.hidden = false;
     peek.style.left = p * 100 + "%";
-    $("[data-peektime]").textContent = fmtDuration(t);
+    $("[data-peektime]").textContent = fmtDuration(at);
     const img = $("[data-peekimg]");
-    const cue = sprites && sprites.cues.find((c) => t >= c.start && t < c.end);
+    const cue = sprites && sprites.cues.find((c) => at >= c.start && at < c.end);
     if (cue) {
       const [cx, cy, cw, ch] = cue.xywh;
       img.hidden = false;
@@ -244,7 +245,7 @@ export async function render(host, params) {
       img.style.height = ch + "px";
       img.style.background = `url("${sprites.url}") -${cx}px -${cy}px`;
     } else img.hidden = true;
-    if (scrubbing) v.currentTime = t;
+    if (scrubbing) v.currentTime = at;
   });
   tl.addEventListener("pointerleave", () => !scrubbing && ($("[data-peek]").hidden = true));
   let scrubbing = false;
@@ -285,34 +286,34 @@ export async function render(host, params) {
   wake();
 
   host.addEventListener("click", (e) => {
-    const t = e.target;
-    if (t.closest("[data-close]")) return closeOverlay();
-    if (t.closest("[data-play]") || t.closest("[data-bigplay]")) return toggle();
-    if (t === v) return toggle();
-    if (t.closest("[data-next]")) return next(1);
-    if (t.closest("[data-prev]")) return next(-1);
-    if (t.closest("[data-fs]")) return fullscreen();
-    if (t.closest("[data-mute]")) {
+    const el = e.target;
+    if (el.closest("[data-close]")) return closeOverlay();
+    if (el.closest("[data-play]") || el.closest("[data-bigplay]")) return toggle();
+    if (el === v) return toggle();
+    if (el.closest("[data-next]")) return next(1);
+    if (el.closest("[data-prev]")) return next(-1);
+    if (el.closest("[data-fs]")) return fullscreen();
+    if (el.closest("[data-mute]")) {
       v.muted = !v.muted;
       prefs.muted = v.muted;
       savePrefs();
       return syncVol();
     }
-    if (t.closest("[data-panel]")) {
+    if (el.closest("[data-panel]")) {
       prefs.panel = !prefs.panel;
       savePrefs();
       return stage.classList.toggle("has-panel", prefs.panel);
     }
-    if (t.closest("[data-heatbtn]")) {
+    if (el.closest("[data-heatbtn]")) {
       prefs.heat = !prefs.heat;
       savePrefs();
-      t.closest("[data-heatbtn]").classList.toggle("is-on", prefs.heat);
+      el.closest("[data-heatbtn]").classList.toggle("is-on", prefs.heat);
       return tl.classList.toggle("has-heat", prefs.heat);
     }
-    const sim = t.closest("[data-simgo]");
+    const sim = el.closest("[data-simgo]");
     if (sim) return openScene(sim.dataset.simgo);
     for (const k of ["random", "auto", "loop"]) {
-      const b = t.closest(`[data-${k}]`);
+      const b = el.closest(`[data-${k}]`);
       if (b) {
         prefs[k] = !prefs[k];
         savePrefs();
@@ -321,7 +322,7 @@ export async function render(host, params) {
         return;
       }
     }
-    const up = t.closest("[data-upgo]");
+    const up = el.closest("[data-upgo]");
     if (up) return jump(Number(up.dataset.upgo));
   });
   v.addEventListener("dblclick", fullscreen);
@@ -337,7 +338,7 @@ export async function render(host, params) {
 
   function fullscreen() {
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-    else stage.requestFullscreen().catch(() => toast("Fullscreen not allowed"));
+    else stage.requestFullscreen().catch(() => toast(t("Fullscreen not allowed")));
   }
 
   // ---------- Next / previous ----------
@@ -366,7 +367,7 @@ export async function render(host, params) {
     }
     const { list, pos } = upcoming();
     const i = pos + dir;
-    if (i < 0 || i >= list.length) return toast(dir > 0 ? "That was the last video" : "This is the first video");
+    if (i < 0 || i >= list.length) return toast(dir > 0 ? t("That was the last video") : t("This is the first video"));
     jump(i);
   }
   function jump(i) {
@@ -391,12 +392,12 @@ export async function render(host, params) {
     const { list, pos } = upcoming();
     const rest = list.slice(pos + 1, pos + 6);
     $("[data-upnext]").innerHTML = rest.length
-      ? `<h3>Up next${inQueue ? " in the queue" : ""}</h3>` +
+      ? `<h3>${inQueue ? t("Up next in the queue") : t("Up next")}</h3>` +
         rest
           .map((it, k) => `<button class="kb-upnext-item" data-upgo="${pos + 1 + k}">${it.thumb ? `<img alt="" src="${esc(it.thumb)}">` : ""}<span>${esc(it.title || it.id)}</span></button>`)
           .join("")
       : prefs.random
-      ? "<h3>Up next</h3><p class=\"kb-plc-meta\">Something random from the library.</p>"
+      ? `<h3>${t("Up next")}</h3><p class="kb-plc-meta">${t("Something random from the library.")}</p>`
       : "";
   }
   paintUpnext();
@@ -405,12 +406,12 @@ export async function render(host, params) {
   async function paintSimilar() {
     const box = $("[data-similar]");
     if (!box) return;
-    box.innerHTML = '<h3>Similar</h3><p class="kb-plc-meta">Searching …</p>';
+    box.innerHTML = `<h3>${t("Similar")}</h3><p class="kb-plc-meta">${t("Searching …")}</p>`;
     try {
       const list = await similarScenes(x.id, 8);
       if (!box.isConnected) return;
       box.innerHTML = list.length
-        ? "<h3>Similar</h3>" +
+        ? `<h3>${t("Similar")}</h3>` +
           list
             .map((it) => `<button class="kb-upnext-item" data-simgo="${esc(it.id)}">${it.thumb ? `<img alt="" loading="lazy" src="${esc(it.thumb)}">` : ""}<span><b>${esc(it.title)}</b><small>${esc(it.why)}</small></span></button>`)
             .join("")

@@ -1,5 +1,7 @@
 // Stash GraphQL – all queries and mutations in one place.
 
+import { t, locale } from "./i18n.js";
+
 export async function gql(query, variables) {
   const res = await fetch("/graphql", {
     method: "POST",
@@ -7,7 +9,7 @@ export async function gql(query, variables) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ query, variables }),
   });
-  if (!res.ok) throw new Error(`Stash answers with ${res.status}`);
+  if (!res.ok) throw new Error(t("Stash answers with {status}", { status: res.status }));
   const json = await res.json();
   if (json.errors && json.errors.length) throw new Error(json.errors.map((e) => e.message).join("; "));
   return json.data;
@@ -134,11 +136,11 @@ export function loadFolders(force) {
     // Skip empty intermediate levels like a bare drive root
     while (roots.length === 1 && !roots[0].img && !roots[0].vid && keep(roots[0].kids).length === 1) roots = keep(roots[0].kids);
     const sortRec = (n) => {
-      n.kids = keep(n.kids).sort((a, b) => a.name.localeCompare(b.name, "de", { numeric: true, sensitivity: "base" }));
+      n.kids = keep(n.kids).sort((a, b) => a.name.localeCompare(b.name, locale(), { numeric: true, sensitivity: "base" }));
       n.kids.forEach(sortRec);
     };
     roots.forEach(sortRec);
-    roots.sort((a, b) => a.name.localeCompare(b.name, "de", { numeric: true }));
+    roots.sort((a, b) => a.name.localeCompare(b.name, locale(), { numeric: true }));
     return { nodes, roots };
   })().catch((e) => {
     folderCache = null;

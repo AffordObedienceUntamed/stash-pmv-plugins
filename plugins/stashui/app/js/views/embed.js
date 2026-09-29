@@ -2,8 +2,10 @@
 // Classic Stash detects the embedding and hides its own navigation.
 
 import { esc, icon } from "../ui.js";
+import { t } from "../i18n.js";
 
 const TOOLS = {
+  // title/text are translated when shown
   classic: { title: "Classic Stash", text: "The original interface – for everything that isn't built in here directly: performers, studios, scrapers, tagger, duplicates.", src: "/" },
   "classic-settings": { title: "Classic Stash: settings", text: "The settings in classic Stash.", src: "/settings" },
 };
@@ -23,13 +25,13 @@ const WORKSHOP = [
 ];
 
 export function render(main, params, query) {
-  const t = TOOLS[params.name];
-  if (!t) {
-    main.innerHTML = `<div class="kb-empty"><b>Unknown tool</b><a class="kb-btn" href="#/">Go to the home page</a></div>`;
+  const tool = TOOLS[params.name];
+  if (!tool) {
+    main.innerHTML = `<div class="kb-empty"><b>${t("Unknown tool")}</b><a class="kb-btn" href="#/">${t("Go to the home page")}</a></div>`;
     return;
   }
   // Only allow paths inside Stash
-  const path = query.path && /^\/[^/]/.test(query.path) ? query.path : t.src;
+  const path = query.path && /^\/[^/]/.test(query.path) ? query.path : tool.src;
   // Pages that only exist inside the classic interface (registered by plugins)
   // are loaded through the home page with a jump marker.
   const frameSrc = (p) => (/^\/plugin\/(?![^/]+\/assets\/)/.test(p) ? "/?kbroute=" + encodeURIComponent(p) : p);
@@ -37,11 +39,11 @@ export function render(main, params, query) {
   main.innerHTML = `
     <div class="kb-embed">
       <header class="kb-embed-head">
-        <div><h1>${esc(t.title)}</h1><p>${esc(t.text)}</p></div>
-        <a class="kb-btn is-ghost" href="${esc(path === "/" ? "/?classic=1" : frameSrc(path).replace("/?kbroute", "/?classic=1&kbroute"))}" target="_blank" rel="noopener">${icon("expand")}In a new tab</a>
+        <div><h1>${esc(t(tool.title))}</h1><p>${esc(t(tool.text))}</p></div>
+        <a class="kb-btn is-ghost" href="${esc(path === "/" ? "/?classic=1" : frameSrc(path).replace("/?kbroute", "/?classic=1&kbroute"))}" target="_blank" rel="noopener">${icon("expand")}${t("In a new tab")}</a>
       </header>
-      ${params.name.startsWith("classic") ? `<nav class="kb-chips kb-embed-nav">${WORKSHOP.map(([p, l]) => `<button class="kb-chip${p === path ? " is-on" : ""}" data-src="${esc(p)}">${esc(l)}</button>`).join("")}</nav>` : ""}
-      <iframe class="kb-embed-frame" src="${esc(frameSrc(path))}" title="${esc(t.title)}"></iframe>
+      ${params.name.startsWith("classic") ? `<nav class="kb-chips kb-embed-nav">${WORKSHOP.map(([p, l]) => `<button class="kb-chip${p === path ? " is-on" : ""}" data-src="${esc(p)}">${esc(t(l))}</button>`).join("")}</nav>` : ""}
+      <iframe class="kb-embed-frame" src="${esc(frameSrc(path))}" title="${esc(t(tool.title))}"></iframe>
     </div>`;
   const frame = main.querySelector("iframe");
   main.querySelectorAll("[data-src]").forEach((b) =>

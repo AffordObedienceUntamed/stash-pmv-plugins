@@ -1,6 +1,7 @@
 // The big placard next to the player and image viewer: details, rating, red dot, O counter, tags, actions.
 
 import { esc, icon, fmtDuration, fmtRes, fmtBytes, fmtDate, fmtAgo, invNo, starsHtml, toast, errorToast, store, plural } from "../ui.js";
+import { t } from "../i18n.js";
 import { updateItem, setFavorite, favoriteTagId, addO, removeO } from "../api.js";
 import { app, setQueueCount } from "../main.js";
 import { openEditor } from "./edit.js";
@@ -24,29 +25,29 @@ function fileInfo(kind, x) {
 }
 
 export function placardHtml(kind, x) {
-  const fav = !!app.favId && x.tags.some((t) => t.id === app.favId);
+  const fav = !!app.favId && x.tags.some((tg) => tg.id === app.favId);
   const info = fileInfo(kind, x);
   const title = x.title || (info.path || "").split(/[\\/]/).pop();
-  const tags = x.tags.filter((t) => t.id !== app.favId);
+  const tags = x.tags.filter((tg) => tg.id !== app.favId);
   const folder = (info.path || "").split(/[\\/]/).slice(0, -1).join("\\");
   return `
     <div class="kb-plc">
-      <p class="kb-plc-inv">${{ scene: "Scene", image: "Image", gallery: "Gallery" }[kind]} #${x.id}${x.date ? `, ${fmtDate(x.date)}` : ""}</p>
+      <p class="kb-plc-inv">${t({ scene: "Scene", image: "Image", gallery: "Gallery" }[kind])} #${x.id}${x.date ? `${t(", ")}${fmtDate(x.date)}` : ""}</p>
       <h2 class="kb-plc-title">${esc(title)}</h2>
       ${info.lines.filter(Boolean).map((l) => `<p class="kb-plc-meta">${esc(l)}</p>`).join("")}
       <div class="kb-plc-acts">
         <div data-rate>${starsHtml(x.rating100, true)}</div>
-        <button class="kb-plc-btn${fav ? " is-on" : ""}" data-fav title="Favorite (H)"><span class="kb-dotmini"></span>${fav ? "Favorite" : "Add to favorites"}</button>
-        <button class="kb-plc-btn" data-o title="O counter (O), right-click subtracts one">${icon("drop")}<span data-ocount>${x.o_counter || 0}</span></button>
+        <button class="kb-plc-btn${fav ? " is-on" : ""}" data-fav title="${t("Favorite (H)")}"><span class="kb-dotmini"></span>${fav ? t("Favorite") : t("Add to favorites")}</button>
+        <button class="kb-plc-btn" data-o title="${t("O counter (O), right-click subtracts one")}">${icon("drop")}<span data-ocount>${x.o_counter || 0}</span></button>
       </div>
-      ${kind === "scene" ? `<p class="kb-plc-meta">${x.play_count ? `Watched ${plural(x.play_count, "time", "times")}, last ${fmtAgo(x.last_played_at)}` : "Never watched to the end"}</p>` : ""}
-      ${tags.length ? `<div class="kb-chips kb-plc-tags">${tags.map((t) => `<a class="kb-chip" href="#/tag/${t.id}">${esc(t.name)}</a>`).join("")}</div>` : ""}
+      ${kind === "scene" ? `<p class="kb-plc-meta">${x.play_count ? t("Watched {what}, last {when}", { what: plural(x.play_count, "time", "times"), when: fmtAgo(x.last_played_at) }) : t("Never watched to the end")}</p>` : ""}
+      ${tags.length ? `<div class="kb-chips kb-plc-tags">${tags.map((tg) => `<a class="kb-chip" href="#/tag/${tg.id}">${esc(tg.name)}</a>`).join("")}</div>` : ""}
       ${x.details ? `<p class="kb-plc-text">${esc(x.details)}</p>` : ""}
-      ${kind === "image" && x.galleries && x.galleries.length ? `<p class="kb-plc-meta">From ${x.galleries.map((g) => `<a href="#/gallery/${g.id}">${esc(g.title || ((g.folder && g.folder.path) || ((g.files || [])[0] || {}).path || "").split(/[\\/]/).filter(Boolean).pop() || "Gallery " + g.id)}</a>`).join(", ")}</p>` : ""}
+      ${kind === "image" && x.galleries && x.galleries.length ? `<p class="kb-plc-meta">${t("From")} ${x.galleries.map((g) => `<a href="#/gallery/${g.id}">${esc(g.title || ((g.folder && g.folder.path) || ((g.files || [])[0] || {}).path || "").split(/[\\/]/).filter(Boolean).pop() || t("Gallery {id}", { id: g.id }))}</a>`).join(t(", "))}</p>` : ""}
       <div class="kb-plc-row">
-        <button class="kb-plc-btn" data-edit>${icon("edit")}Edit</button>
-        <button class="kb-plc-btn" data-queue>${icon("queue")}Queue</button>
-        ${folder ? `<button class="kb-plc-btn" data-folder title="${esc(folder)}">${icon("folder")}Folder</button>` : ""}
+        <button class="kb-plc-btn" data-edit>${icon("edit")}${t("Edit")}</button>
+        <button class="kb-plc-btn" data-queue>${icon("queue")}${t("Queue")}</button>
+        ${folder ? `<button class="kb-plc-btn" data-folder title="${esc(folder)}">${icon("folder")}${t("Folder")}</button>` : ""}
       </div>
       ${info.path ? `<p class="kb-plc-path">${esc(info.path)}</p>` : ""}
     </div>`;
@@ -68,7 +69,7 @@ export function bindPlacard(host, kind, getItem, { refresh, onDeleted, goFolder 
         q.push({ kind, id: x.id, title: x.title || x.id, thumb: kind === "scene" ? x.paths.screenshot : x.paths.thumbnail });
         store.set("queue", q);
         setQueueCount();
-        return toast("Added to the queue", "ok");
+        return toast(t("Added to the queue"), "ok");
       }
       if (e.target.closest("[data-folder]")) return goFolder && goFolder();
     } catch (err) {
@@ -88,19 +89,19 @@ export function bindPlacard(host, kind, getItem, { refresh, onDeleted, goFolder 
     await updateItem(kind, { id: x.id, rating100: v });
     x.rating100 = v;
     host.querySelector("[data-rate]").innerHTML = starsHtml(v, true);
-    toast(v ? `${n} ${n === 1 ? "star" : "stars"}` : "Rating removed");
+    toast(v ? plural(n, "star", "stars") : t("Rating removed"));
   }
   async function fav() {
     const x = getItem();
-    const on = !(app.favId && x.tags.some((t) => t.id === app.favId));
+    const on = !(app.favId && x.tags.some((tg) => tg.id === app.favId));
     await setFavorite(kind, [x.id], on);
     app.favId = await favoriteTagId(false);
     if (on) x.tags.push({ id: app.favId, name: "Favorite" });
-    else x.tags = x.tags.filter((t) => t.id !== app.favId);
+    else x.tags = x.tags.filter((tg) => tg.id !== app.favId);
     const b = host.querySelector("[data-fav]");
     b.classList.toggle("is-on", on);
-    b.innerHTML = `<span class="kb-dotmini"></span>${on ? "Favorite" : "Add to favorites"}`;
-    toast(on ? "Marked as favorite" : "Favorite removed");
+    b.innerHTML = `<span class="kb-dotmini"></span>${on ? t("Favorite") : t("Add to favorites")}`;
+    toast(on ? t("Marked as favorite") : t("Favorite removed"));
     if (app.context && app.context.hang) {
       const p = app.context.hang.pieces.find((q) => q.kind === kind && q.id === x.id);
       if (p) app.context.hang.update(Object.assign({}, p, { fav: on }));

@@ -33,6 +33,28 @@ Open it: just open Stash (e.g. `http://localhost:9999`) – the home page redire
 | Plugins | On/off, settings, run plugin tasks, reload |
 | Classic Stash | The original Stash in the same look, embedded with quick picks: performers, studios, groups, markers, scene tagger, duplicates, scrapers, tools, settings |
 
+## Languages
+
+Stash UI is available in **English** and **Simplified Chinese (简体中文)**. By default it follows the interface language set in Stash (classic Stash → Settings → Interface → Language); you can also pick one under **Settings → This interface → Language**.
+
+![Stash UI in Simplified Chinese](../../docs/screenshots/stashui-zh.png)
+
+### Help translate
+
+Translations live in `app/js/locales/` – one file per language, English text → translation:
+
+```js
+export default {
+  "Scenes": "场景",
+  "{n} days ago": "{n} 天前",
+};
+```
+
+- Anything missing simply shows in English, so partial translations work.
+- `python tools/i18n_keys.py zh-CN` lists the texts a language file is still missing.
+- A new language: copy `zh-CN.js`, translate the values, and add it to `LANGS` and `FILES` in `app/js/i18n.js`.
+- Found an odd or too long wording? Open an issue or a pull request.
+
 ## Works with the other plugins
 
 Stash UI works on its own. If you also install **Media Storm** or the **PMV Generator** (same plugin source), they show up in the menu under **Watch** – entries of plugins that aren't installed or are turned off are hidden. The PMV Generator opens as its own page; its back link and saved scenes lead back into Stash UI.

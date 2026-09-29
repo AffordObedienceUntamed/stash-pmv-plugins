@@ -2,6 +2,7 @@
 // salon hanging, multi-select with actions. State lives in the URL.
 
 import { esc, icon, store, debounce, seed, errorToast, toast, plural, fmtNum, confirmDialog, starsHtml } from "../ui.js";
+import { t } from "../i18n.js";
 import { findItems, favoriteTagId, setFavorite, bulkUpdate, destroyItems } from "../api.js";
 import { toPiece, Hang } from "../pieces.js";
 import { app, setQuery, go, setQueueCount } from "../main.js";
@@ -9,6 +10,8 @@ import { tagPicker } from "./tagpicker.js";
 import { openEditor } from "./edit.js";
 
 export const KIND_NAME = { scene: ["Scene", "Scenes"], image: ["Image", "Images"], gallery: ["Gallery", "Galleries"] };
+// Unit words for counts ("12 scenes") – separate from the titles above, other languages need that
+export const KIND_UNIT = { scene: ["scene", "scenes"], image: ["image", "images"], gallery: ["gallery", "galleries"] };
 
 const SORTS = {
   scene: [["created_at", "Recently added"], ["date", "Date"], ["last_played_at", "Last watched"], ["play_count", "Most watched"], ["rating", "Rating"], ["duration", "Duration"], ["title", "Title"], ["filesize", "File size"], ["path", "Path"], ["random", "Random"]],
@@ -71,15 +74,15 @@ export function mediaBrowser(host, opts) {
   host.innerHTML = `
     <div class="kb-browser">
       <div class="kb-toolbar">
-        ${kinds.length > 1 ? `<div class="kb-seg kb-kinds" role="tablist">${kinds.map((k) => `<button role="tab" data-kind="${k}">${KIND_NAME[k][1]} <span data-kcount="${k}"></span></button>`).join("")}</div>` : ""}
-        ${opts.search === false ? "" : `<label class="kb-search">${icon("search")}<input class="kb-field" type="search" data-q placeholder="Search this view" value="${esc(st.q)}"></label>`}
-        <select class="kb-field" data-sort aria-label="Sort order"></select>
-        <button class="kb-btn is-icon" data-dir title="Reverse direction" aria-label="Reverse direction"></button>
-        <button class="kb-btn" data-filter>${icon("filter")}<span>Filter</span></button>
+        ${kinds.length > 1 ? `<div class="kb-seg kb-kinds" role="tablist">${kinds.map((k) => `<button role="tab" data-kind="${k}">${t(KIND_NAME[k][1])} <span data-kcount="${k}"></span></button>`).join("")}</div>` : ""}
+        ${opts.search === false ? "" : `<label class="kb-search">${icon("search")}<input class="kb-field" type="search" data-q placeholder="${t("Search this view")}" value="${esc(st.q)}"></label>`}
+        <select class="kb-field" data-sort aria-label="${t("Sort order")}"></select>
+        <button class="kb-btn is-icon" data-dir title="${t("Reverse direction")}" aria-label="${t("Reverse direction")}"></button>
+        <button class="kb-btn" data-filter>${icon("filter")}<span>${t("Filter")}</span></button>
         <span class="kb-spacer"></span>
-        <label class="kb-range" title="Thumbnail size">${icon("image")}<input type="range" min="130" max="480" step="10" data-rowh value="${rowH()}" aria-label="Size"></label>
-        <button class="kb-btn" data-play title="Play everything as a queue">${icon("play")}<span>Play</span></button>
-        <button class="kb-btn is-icon" data-select title="Select" aria-label="Select">${icon("select")}</button>
+        <label class="kb-range" title="${t("Thumbnail size")}">${icon("image")}<input type="range" min="130" max="480" step="10" data-rowh value="${rowH()}" aria-label="${t("Size")}"></label>
+        <button class="kb-btn" data-play title="${t("Play everything as a queue")}">${icon("play")}<span>${t("Play")}</span></button>
+        <button class="kb-btn is-icon" data-select title="${t("Select")}" aria-label="${t("Select")}">${icon("select")}</button>
       </div>
       <div class="kb-filters" data-filters hidden></div>
       <p class="kb-resultline" data-result></p>
@@ -93,7 +96,7 @@ export function mediaBrowser(host, opts) {
       b.setAttribute("aria-selected", b.dataset.kind === kind);
     });
     const sortSel = $("[data-sort]");
-    sortSel.innerHTML = SORTS[kind].map(([k, t]) => `<option value="${k}">${t}</option>`).join("");
+    sortSel.innerHTML = SORTS[kind].map(([k, name]) => `<option value="${k}">${t(name)}</option>`).join("");
     sortSel.value = SORTS[kind].some(([k]) => k === st.sort) ? st.sort : SORTS[kind][0][0];
     st.sort = sortSel.value;
     $("[data-dir]").innerHTML = st.dir === "ASC" ? "↑" : "↓";
@@ -110,24 +113,24 @@ export function mediaBrowser(host, opts) {
     if (!filterOpen) return;
     box.innerHTML = `
       <div class="kb-tagpick" data-tp></div>
-      <label class="kb-lab">Rating from
-        <select class="kb-field" data-f="rating">${[0, 1, 2, 3, 4, 5].map((n) => `<option value="${n}">${n ? "★".repeat(n) : "any"}</option>`).join("")}</select></label>
-      ${kind === "scene" ? `<label class="kb-lab">Watched
-        <select class="kb-field" data-f="played"><option value="">any</option><option value="yes">watched</option><option value="no">never</option><option value="resume">started</option></select></label>
-      <label class="kb-lab">Resolution
-        <select class="kb-field" data-f="res"><option value="">any</option><option value="WEB_HD">720p and up</option><option value="STANDARD_HD">1080p and up</option><option value="QUAD_HD">4K</option></select></label>
-      <label class="kb-lab">Duration
-        <select class="kb-field" data-f="len"><option value="">any</option><option value="short">under 1 min</option><option value="mid">1–10 min</option><option value="long">over 10 min</option></select></label>` : ""}
-      ${kind !== "gallery" ? `<label class="kb-lab">Format
-        <select class="kb-field" data-f="ori"><option value="">any</option><option value="PORTRAIT">Portrait</option><option value="LANDSCAPE">Landscape</option><option value="SQUARE">Square</option></select></label>` : ""}
-      <label class="kb-check"><input type="checkbox" data-f="fav"${st.fav ? " checked" : ""}>Favorites only</label>
-      <button class="kb-btn is-ghost" data-clear>Reset</button>`;
+      <label class="kb-lab">${t("Rating from")}
+        <select class="kb-field" data-f="rating">${[0, 1, 2, 3, 4, 5].map((n) => `<option value="${n}">${n ? "★".repeat(n) : t("any")}</option>`).join("")}</select></label>
+      ${kind === "scene" ? `<label class="kb-lab">${t("Watched")}
+        <select class="kb-field" data-f="played"><option value="">${t("any")}</option><option value="yes">${t("watched")}</option><option value="no">${t("never")}</option><option value="resume">${t("started")}</option></select></label>
+      <label class="kb-lab">${t("Resolution")}
+        <select class="kb-field" data-f="res"><option value="">${t("any")}</option><option value="WEB_HD">${t("720p and up")}</option><option value="STANDARD_HD">${t("1080p and up")}</option><option value="QUAD_HD">4K</option></select></label>
+      <label class="kb-lab">${t("Duration")}
+        <select class="kb-field" data-f="len"><option value="">${t("any")}</option><option value="short">${t("under 1 min")}</option><option value="mid">${t("1–10 min")}</option><option value="long">${t("over 10 min")}</option></select></label>` : ""}
+      ${kind !== "gallery" ? `<label class="kb-lab">${t("Format")}
+        <select class="kb-field" data-f="ori"><option value="">${t("any")}</option><option value="PORTRAIT">${t("Portrait")}</option><option value="LANDSCAPE">${t("Landscape")}</option><option value="SQUARE">${t("Square")}</option></select></label>` : ""}
+      <label class="kb-check"><input type="checkbox" data-f="fav"${st.fav ? " checked" : ""}>${t("Favorites only")}</label>
+      <button class="kb-btn is-ghost" data-clear>${t("Reset")}</button>`;
     box.querySelectorAll("select[data-f]").forEach((s) => (s.value = st[s.dataset.f] || (s.dataset.f === "rating" ? "0" : "")));
     picker = tagPicker(box.querySelector("[data-tp]"), {
       include: st.tags,
       exclude: st.xtags,
       allowExclude: true,
-      placeholder: "Add tag (right-click a tag to exclude it)",
+      placeholder: t("Add tag (right-click a tag to exclude it)"),
       onChange: (inc, exc) => {
         st.tags = inc;
         st.xtags = exc;
@@ -175,13 +178,13 @@ export function mediaBrowser(host, opts) {
         return { count: r.count, pieces: r.items.map((x) => toPiece(kind, x, app.favId)) };
       },
       onLoaded: (h) => {
-        $("[data-result]").textContent = h.count ? plural(h.count, KIND_NAME[kind][0], KIND_NAME[kind][1]) : "";
+        $("[data-result]").textContent = h.count ? plural(h.count, KIND_UNIT[kind][0], KIND_UNIT[kind][1]) : "";
         const kc = host.querySelector(`[data-kcount="${kind}"]`);
         if (kc) kc.textContent = fmtNum(h.count);
         if (!h.count) {
-          box.innerHTML = `<div class="kb-empty"><b>Nothing found</b><p>${
-            filterOpen || st.q ? "Nothing matches this search and these filters. Loosen the filters or reset them." : "Nothing here yet."
-          }</p>${filterOpen || st.q ? '<button class="kb-btn" data-clearall>Reset filters</button>' : ""}</div>`;
+          box.innerHTML = `<div class="kb-empty"><b>${t("Nothing found")}</b><p>${
+            filterOpen || st.q ? t("Nothing matches this search and these filters. Loosen the filters or reset them.") : t("Nothing here yet.")
+          }</p>${filterOpen || st.q ? `<button class="kb-btn" data-clearall>${t("Reset filters")}</button>` : ""}</div>`;
         }
         opts.onCount && opts.onCount(kind, h.count);
       },
@@ -231,15 +234,15 @@ export function mediaBrowser(host, opts) {
       document.body.appendChild(bulkEl);
       bulkEl.addEventListener("click", onBulk);
     }
-    bulkEl.innerHTML = `<b>${plural(set.size, "item", "items")} selected</b>
-      <button class="kb-btn" data-b="all">Select all${h.done ? "" : " loaded"}</button>
-      <button class="kb-btn" data-b="fav"><span class="kb-dotmini"></span>Favorite</button>
-      <button class="kb-btn" data-b="unfav">Remove favorite</button>
-      <button class="kb-btn" data-b="edit">${icon("edit")}Edit</button>
-      ${kind !== "gallery" ? `<button class="kb-btn" data-b="queue">${icon("queue")}Add to queue</button>` : ""}
-      <button class="kb-btn is-danger" data-b="delete">${icon("trash")}Delete</button>
+    bulkEl.innerHTML = `<b>${t("{what} selected", { what: plural(set.size, "item", "items") })}</b>
+      <button class="kb-btn" data-b="all">${h.done ? t("Select all") : t("Select all loaded")}</button>
+      <button class="kb-btn" data-b="fav"><span class="kb-dotmini"></span>${t("Favorite")}</button>
+      <button class="kb-btn" data-b="unfav">${t("Remove favorite")}</button>
+      <button class="kb-btn" data-b="edit">${icon("edit")}${t("Edit")}</button>
+      ${kind !== "gallery" ? `<button class="kb-btn" data-b="queue">${icon("queue")}${t("Add to queue")}</button>` : ""}
+      <button class="kb-btn is-danger" data-b="delete">${icon("trash")}${t("Delete")}</button>
       <span class="kb-spacer"></span>
-      <button class="kb-btn" data-b="none">Done</button>`;
+      <button class="kb-btn" data-b="none">${t("Done")}</button>`;
   }
   async function onBulk(e) {
     const b = e.target.closest("[data-b]");
@@ -256,7 +259,7 @@ export function mediaBrowser(host, opts) {
           await setFavorite(kind, ids, on);
           app.favId = await favoriteTagId(false);
           pieces.forEach((p) => hang.update(Object.assign({}, p, { fav: on })));
-          toast(on ? `${plural(ids.length, "item", "items")} marked as favorite` : "Favorites removed", "ok");
+          toast(on ? t("{what} marked as favorite", { what: plural(ids.length, "item", "items") }) : t("Favorites removed"), "ok");
           return;
         }
         case "queue": {
@@ -264,7 +267,7 @@ export function mediaBrowser(host, opts) {
           pieces.forEach((p) => q.push({ kind: p.kind, id: p.id, title: p.title, thumb: p.thumb }));
           store.set("queue", q);
           setQueueCount();
-          toast(`${plural(ids.length, "item", "items")} added to the queue`, "ok");
+          toast(t("{what} added to the queue", { what: plural(ids.length, "item", "items") }), "ok");
           return exitSelect();
         }
         case "edit":
@@ -273,16 +276,16 @@ export function mediaBrowser(host, opts) {
           });
         case "delete": {
           const r = await confirmDialog({
-            title: `Delete ${plural(ids.length, KIND_NAME[kind][0].toLowerCase(), KIND_NAME[kind][1].toLowerCase())}?`,
-            text: "The items disappear from Stash. With the box ticked, the files on disk are deleted too – this can't be undone.",
-            ok: "Delete",
+            title: t("Delete {what}?", { what: plural(ids.length, KIND_UNIT[kind][0], KIND_UNIT[kind][1]) }),
+            text: t("The items disappear from Stash. With the box ticked, the files on disk are deleted too – this can't be undone."),
+            ok: t("Delete"),
             danger: true,
-            checkbox: "Also delete the files from disk",
+            checkbox: t("Also delete the files from disk"),
           });
           if (!r.ok) return;
           await destroyItems(kind, ids, r.checked);
           hang.remove(pieces.map((p) => p.kind + ":" + p.id));
-          toast(`${plural(ids.length, "item", "items")} deleted`, "ok");
+          toast(t("{what} deleted", { what: plural(ids.length, "item", "items") }), "ok");
           return exitSelect();
         }
       }
@@ -325,17 +328,17 @@ export function mediaBrowser(host, opts) {
     if (e.target.closest("[data-play]")) return playAll();
   });
   host.addEventListener("change", (e) => {
-    const t = e.target;
-    if (t.matches("[data-sort]")) {
-      st.sort = t.value;
+    const el = e.target;
+    if (el.matches("[data-sort]")) {
+      st.sort = el.value;
       st.dir = ["title", "path"].includes(st.sort) ? "ASC" : "DESC";
       st.seed = "";
       renderTools();
       return apply();
     }
-    if (t.dataset && t.dataset.f) {
-      const f = t.dataset.f;
-      st[f] = t.type === "checkbox" ? t.checked : f === "rating" ? Number(t.value) : t.value;
+    if (el.dataset && el.dataset.f) {
+      const f = el.dataset.f;
+      st[f] = el.type === "checkbox" ? el.checked : f === "rating" ? Number(el.value) : el.value;
       return apply();
     }
   });
@@ -361,7 +364,7 @@ export function mediaBrowser(host, opts) {
       const base = opts.base ? opts.base(kind) : null;
       const sort = st.sort === "random" ? "random_" + (st.seed || seed().replace("random_", "")) : st.sort;
       const r = await findItems(kind, { q: st.q || undefined, per_page: 200, sort, direction: st.dir }, buildFilter(kind, st, base));
-      if (!r.items.length) return toast("Nothing to play");
+      if (!r.items.length) return toast(t("Nothing to play"));
       const list = r.items.map((x) => toPiece(kind, x, app.favId));
       store.set("queue", list.map((p) => ({ kind: p.kind, id: p.id, title: p.title, thumb: p.thumb })));
       store.set("queuePos", 0);

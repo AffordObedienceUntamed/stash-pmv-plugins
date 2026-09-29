@@ -5,6 +5,7 @@
 // Without performers/tags/studio (e.g. freshly downloaded clips) only the look decides – then from random scenes.
 
 import { gql } from "./api.js";
+import { t } from "./i18n.js";
 import { analyze, matchDist } from "./pmvsmart.js";
 
 const F = `id title paths { screenshot } files { duration basename parent_folder { id } } tags { id name } performers { id name } studio { id name }`;
@@ -49,7 +50,7 @@ async function find(id, limit) {
     const sp = s.performers.filter((p) => perf.includes(p.id));
     if (sp.length) {
       score += Math.min(6, 3 * sp.length);
-      why.push(sp.length === 1 ? sp[0].name : `${sp.length} shared performers`);
+      why.push(sp.length === 1 ? sp[0].name : t("{n} shared performers", { n: sp.length }));
     }
     if (studio && s.studio && s.studio.id === studio) {
       score += 2;
@@ -59,11 +60,11 @@ async function find(id, limit) {
     if (shared) {
       const all = new Set([...tags, ...s.tags.map((t) => t.id)]).size;
       score += 5 * (shared / all);
-      why.push(shared === 1 ? `Tag ${s.tags.find((t) => tagSet.has(t.id)).name}` : `${shared} shared tags`);
+      why.push(shared === 1 ? t("Tag {name}", { name: s.tags.find((x) => tagSet.has(x.id)).name }) : t("{n} shared tags", { n: shared }));
     }
     if (folder && (s.files[0] && s.files[0].parent_folder || {}).id === folder) {
       score += 1;
-      why.push("same folder");
+      why.push(t("same folder"));
     }
     return { s, score, why };
   });
@@ -79,7 +80,7 @@ async function find(id, limit) {
         if (!sig) return;
         const sim = Math.max(0, 1 - matchDist(baseSig, sig)); // 1 = identical
         c.score += 2.5 * sim;
-        if (sim > 0.75) c.why.push("similar look");
+        if (sim > 0.75) c.why.push(t("similar look"));
       })
     );
     top.sort((a, b) => b.score - a.score);
@@ -89,7 +90,7 @@ async function find(id, limit) {
     title: s.title || (s.files[0] || {}).basename || "Scene " + s.id,
     thumb: s.paths.screenshot,
     duration: (s.files[0] || {}).duration || 0,
-    why: why.slice(0, 2).join(" · ") || "similar",
+    why: why.slice(0, 2).join(" · ") || t("similar"),
   }));
 }
 

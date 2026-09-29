@@ -6,7 +6,7 @@ Three plugins for [Stash](https://github.com/stashapp/stash).
 |---|---|
 | [**PMV Generator**](plugins/pmvGenerator/README.md) | Pick a song – on every beat it cuts to a clip from your library, with split-screen layouts, effects, speed ramps and clip audio. Live in the browser, optionally recorded and saved back to Stash. Can also rebuild an existing PMV with your own clips, and mix in clips from RedGifs. |
 | [**Media Storm**](plugins/mediaStorm/README.md) | Random images and videos from your library appear in waves in their own tab – eight layouts, effects, moods, folder and tag filters, waves on the beat of a song. |
-| [**Stash UI**](plugins/stashui/README.md) | A complete new interface for Stash in the Media Storm look: browsing, player with highlights and “similar”, image viewer, folders, tags, queue, tasks, all settings. Classic Stash stays available in the same look. |
+| [**Stash UI**](plugins/stashui/README.md) | A complete new interface for Stash in the Media Storm look: browsing, player with highlights and “similar”, image viewer, folders, tags, queue, tasks, all settings. Classic Stash stays available in the same look. In English and Simplified Chinese. |
 
 Each plugin works on its own – install just the ones you want. They share the same look and work together: with Stash UI installed, Media Storm and the PMV Generator show up in its menu, and the PMV Generator leads back into Stash UI.
 

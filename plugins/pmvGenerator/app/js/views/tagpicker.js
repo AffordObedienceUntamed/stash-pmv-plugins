@@ -2,6 +2,7 @@
 // Enter on an unknown name creates a new tag (optional).
 
 import { esc, fmtNum } from "../ui.js";
+import { t } from "../i18n.js";
 import { findTags, createTag } from "../api.js";
 
 let allTags = null;
@@ -18,17 +19,17 @@ export function tagPicker(host, opts) {
   let shown = [];
 
   host.innerHTML = `<div class="kb-chips" data-chips></div>
-    <input class="kb-field" type="text" placeholder="${esc(opts.placeholder || "Add tag …")}" autocomplete="off" spellcheck="false" aria-label="Add tag">
+    <input class="kb-field" type="text" placeholder="${esc(opts.placeholder || t("Add tag …"))}" autocomplete="off" spellcheck="false" aria-label="${t("Add tag")}">
     <div class="kb-sugg" hidden role="listbox"></div>`;
   const chips = host.querySelector("[data-chips]");
   const input = host.querySelector("input");
   const sugg = host.querySelector(".kb-sugg");
 
-  const name = (id) => (tags.find((t) => t.id === id) || { name: "#" + id }).name;
+  const name = (id) => (tags.find((tg) => tg.id === id) || { name: "#" + id }).name;
   function renderChips() {
     chips.innerHTML =
-      inc.map((id) => `<span class="kb-chip is-on" data-id="${id}" title="${opts.allowExclude ? "Right-click: exclude" : ""}">${esc(name(id))}<button type="button" data-rm="${id}" aria-label="Remove">×</button></span>`).join("") +
-      exc.map((id) => `<span class="kb-chip is-not" data-id="${id}" title="Excluded">${esc(name(id))}<button type="button" data-rm="${id}" aria-label="Remove">×</button></span>`).join("");
+      inc.map((id) => `<span class="kb-chip is-on" data-id="${id}" title="${opts.allowExclude ? t("Right-click: exclude") : ""}">${esc(name(id))}<button type="button" data-rm="${id}" aria-label="${t("Remove")}">×</button></span>`).join("") +
+      exc.map((id) => `<span class="kb-chip is-not" data-id="${id}" title="${t("Excluded")}">${esc(name(id))}<button type="button" data-rm="${id}" aria-label="${t("Remove")}">×</button></span>`).join("");
     chips.hidden = !inc.length && !exc.length;
   }
   const emit = () => opts.onChange && opts.onChange([...inc], [...exc]);
@@ -40,21 +41,21 @@ export function tagPicker(host, opts) {
       return;
     }
     shown = tags
-      .filter((t) => !inc.includes(t.id) && !exc.includes(t.id))
-      .filter((t) => !q || t.name.toLowerCase().includes(q) || (t.aliases || []).some((a) => a.toLowerCase().includes(q)))
+      .filter((tg) => !inc.includes(tg.id) && !exc.includes(tg.id))
+      .filter((tg) => !q || tg.name.toLowerCase().includes(q) || (tg.aliases || []).some((a) => a.toLowerCase().includes(q)))
       .slice(0, 30);
-    const exact = tags.some((t) => t.name.toLowerCase() === q);
+    const exact = tags.some((tg) => tg.name.toLowerCase() === q);
     const create = opts.allowCreate && q && !exact;
     sugg.innerHTML =
-      shown.map((t, i) => `<button type="button" role="option" data-i="${i}" class="${i === active ? "is-active" : ""}">${esc(t.name)}<small>${fmtNum(t.scene_count + t.image_count + t.gallery_count)}</small></button>`).join("") +
-      (create ? `<button type="button" data-create class="${active === shown.length ? "is-active" : ""}">New tag “${esc(input.value.trim())}”</button>` : "") +
-      (!shown.length && !create ? `<button type="button" disabled>No matching tag</button>` : "");
+      shown.map((tg, i) => `<button type="button" role="option" data-i="${i}" class="${i === active ? "is-active" : ""}">${esc(tg.name)}<small>${fmtNum(tg.scene_count + tg.image_count + tg.gallery_count)}</small></button>`).join("") +
+      (create ? `<button type="button" data-create class="${active === shown.length ? "is-active" : ""}">${esc(t("New tag “{name}”", { name: input.value.trim() }))}</button>` : "") +
+      (!shown.length && !create ? `<button type="button" disabled>${t("No matching tag")}</button>` : "");
     sugg.hidden = false;
   }
 
-  async function add(t) {
-    if (!t) return;
-    if (!inc.includes(t.id)) inc.push(t.id);
+  async function add(tg) {
+    if (!tg) return;
+    if (!inc.includes(tg.id)) inc.push(tg.id);
     input.value = "";
     active = -1;
     renderChips();
@@ -64,10 +65,10 @@ export function tagPicker(host, opts) {
   async function createFromInput() {
     const n = input.value.trim();
     if (!n) return;
-    const t = await createTag(n);
-    tags.push(Object.assign({ scene_count: 0, image_count: 0, gallery_count: 0 }, t));
+    const tg = await createTag(n);
+    tags.push(Object.assign({ scene_count: 0, image_count: 0, gallery_count: 0 }, tg));
     tagsCache(true);
-    add(t);
+    add(tg);
   }
 
   input.addEventListener("focus", showSugg);
@@ -123,8 +124,8 @@ export function tagPicker(host, opts) {
     emit();
   });
 
-  tagsCache().then((t) => {
-    tags = t;
+  tagsCache().then((tg) => {
+    tags = tg;
     renderChips();
   });
   renderChips();

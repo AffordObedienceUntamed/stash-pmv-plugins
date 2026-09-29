@@ -1,6 +1,7 @@
 // Stash UI – app frame: router, navigation rail, overlays.
 
-import { esc, icon, store, errorToast, $ } from "./ui.js";
+import { esc, icon, store, errorToast, fmtNum, $ } from "./ui.js";
+import { t, initLang } from "./i18n.js";
 import { gql, loadFolders, favoriteTagId, stats } from "./api.js";
 
 // ---------- Routes ----------
@@ -154,7 +155,7 @@ async function mountBase(r, main, seq) {
     if (seq !== routeSeq) return;
     app.base.cleanup = await mod.render(main, r.params, r.query, r);
   } catch (e) {
-    main.innerHTML = `<div class="kb-empty"><b>That didn't work</b><p>${esc(e.message || e)}</p><a class="kb-btn" href="#/">Go to the home page</a></div>`;
+    main.innerHTML = `<div class="kb-empty"><b>${t("That didn't work")}</b><p>${esc(e.message || e)}</p><a class="kb-btn" href="#/">${t("Go to the home page")}</a></div>`;
     console.error("[Stash UI]", e);
   }
 }
@@ -191,17 +192,17 @@ const folderOpen = new Set(store.get("folderOpen", []));
 function renderRail() {
   const rail = document.getElementById("rail");
   rail.innerHTML =
-    `<a class="kb-mark" href="#/" aria-label="Stash, home page"><span>Stash</span></a>` +
+    `<a class="kb-mark" href="#/" aria-label="${t("Stash, home page")}"><span>Stash</span></a>` +
     NAV.map((g) =>
-      (g.group ? `<div class="kb-rail-group">${g.group}</div>` : "") +
+      (g.group ? `<div class="kb-rail-group">${t(g.group)}</div>` : "") +
       `<nav class="kb-nav">` +
       g.items.map((it) =>
         it.action
-          ? `<button type="button" data-action="${it.action}"${it.plugin ? ` data-plugin="${it.plugin}"` : ""}>${icon(it.icon)}<span>${it.label}</span></button>`
-          : `<a href="#/${it.href}" data-match="${it.match.source}">${icon(it.icon)}<span>${it.label}</span>${it.count ? `<span class="kb-count" data-count="${it.count}"></span>` : ""}</a>`
+          ? `<button type="button" data-action="${it.action}"${it.plugin ? ` data-plugin="${it.plugin}"` : ""}>${icon(it.icon)}<span>${t(it.label)}</span></button>`
+          : `<a href="#/${it.href}" data-match="${it.match.source}">${icon(it.icon)}<span>${t(it.label)}</span>${it.count ? `<span class="kb-count" data-count="${it.count}"></span>` : ""}</a>`
       ).join("") +
       `</nav>` +
-      (g.group === "Library" ? `<div class="kb-rail-group">Folders</div><div class="kb-tree" id="tree"><div class="kb-rail-foot">Loading …</div></div>` : "")
+      (g.group === "Library" ? `<div class="kb-rail-group">${t("Folders")}</div><div class="kb-tree" id="tree"><div class="kb-rail-foot">${t("Loading …")}</div></div>` : "")
     ).join("") +
     `<div class="kb-rail-foot" id="rail-foot"></div>`;
 
@@ -250,7 +251,7 @@ async function renderTree() {
   try {
     treeData = treeData || (await loadFolders());
   } catch (e) {
-    box.innerHTML = `<div class="kb-rail-foot">Couldn't load folders</div>`;
+    box.innerHTML = `<div class="kb-rail-foot">${t("Couldn't load folders")}</div>`;
     return;
   }
   const cur = parseHash();
@@ -272,7 +273,7 @@ async function renderTree() {
   const row = (n, d) => {
     const open = folderOpen.has(n.id);
     const caret = n.kids.length
-      ? `<button class="kb-tree-caret${open ? " is-open" : ""}" data-fold="${n.id}" aria-label="${open ? "Collapse" : "Expand"}" aria-expanded="${open}">▸</button>`
+      ? `<button class="kb-tree-caret${open ? " is-open" : ""}" data-fold="${n.id}" aria-label="${open ? t("Collapse") : t("Expand")}" aria-expanded="${open}">▸</button>`
       : '<span class="kb-tree-caret"></span>';
     return (
       `<div class="kb-tree-row" style="--d:${d}">${caret}<a href="#/folder/${n.id}" class="${n.id === activeId ? "is-active" : ""}" title="${esc(n.path)}">${esc(n.name)}</a></div>` +
@@ -296,10 +297,10 @@ export async function refreshCounts() {
       const k = c.dataset.count;
       if (k === "queue") c.textContent = (store.get("queue", []).length || "") + "";
       else if (k === "jobs") return;
-      else c.textContent = s[k] != null ? Number(s[k]).toLocaleString("en-US") : "";
+      else c.textContent = s[k] != null ? fmtNum(s[k]) : "";
     });
     const foot = document.getElementById("rail-foot");
-    if (foot) foot.textContent = `${Math.round(s.scenes_duration / 3600)} h of video, ${(s.images_size / 1e9 + s.scenes_size / 1e9).toFixed(0)} GB`;
+    if (foot) foot.textContent = t("{h} h of video, {gb} GB", { h: fmtNum(Math.round(s.scenes_duration / 3600)), gb: fmtNum(Math.round(s.images_size / 1e9 + s.scenes_size / 1e9)) });
   } catch (e) { /* counts are just extras */ }
 }
 
@@ -333,7 +334,7 @@ export function openStorm() {
       const s = document.createElement("script");
       s.src = "/plugin/mediaStorm/javascript";
       s.onload = resolve;
-      s.onerror = () => reject(new Error("Media Storm is not installed"));
+      s.onerror = () => reject(new Error(t("Media Storm is not installed")));
       document.head.appendChild(s);
     });
   }
@@ -345,7 +346,14 @@ export function openStorm() {
 // ---------- Start ----------
 
 async function init() {
-  document.body.insertAdjacentHTML("beforeend", `<button class="kb-btn is-icon kb-menu-btn" id="menu-btn" aria-label="Open navigation">${icon("menu")}</button>`);
+  // Language first: "auto" follows the interface language set in Stash
+  let stashLang = "";
+  try {
+    stashLang = (await gql(`query { configuration { interface { language } } }`)).configuration.interface.language || "";
+  } catch (e) { /* older Stash or no answer – the browser language decides */ }
+  await initLang(stashLang);
+  document.getElementById("rail").setAttribute("aria-label", t("Navigation"));
+  document.body.insertAdjacentHTML("beforeend", `<button class="kb-btn is-icon kb-menu-btn" id="menu-btn" aria-label="${t("Open navigation")}">${icon("menu")}</button>`);
   $("#menu-btn").onclick = () => document.getElementById("app").classList.toggle("is-rail-open");
   renderRail();
   try {

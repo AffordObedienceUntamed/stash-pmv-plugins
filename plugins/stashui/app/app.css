@@ -29,9 +29,10 @@
   --hatch: repeating-linear-gradient(-60deg, var(--pink) 0 2px, transparent 2px 5px);
   --tone: radial-gradient(circle, rgba(255, 62, 138, .22) 1.1px, transparent 1.7px);
 
-  --f-text: Bahnschrift, "DIN Alternate", "Segoe UI", system-ui, sans-serif;
-  --f-display: "Bahnschrift Condensed", Bahnschrift, "Arial Narrow", "Segoe UI", sans-serif;
-  --f-label: Bahnschrift, "DIN Alternate", "Segoe UI", system-ui, sans-serif;
+  /* Chinese characters aren't in Bahnschrift – the CJK fonts after it take over for those */
+  --f-text: Bahnschrift, "DIN Alternate", "Segoe UI", "Microsoft YaHei", "PingFang SC", "Noto Sans SC", "Source Han Sans SC", system-ui, sans-serif;
+  --f-display: "Bahnschrift Condensed", Bahnschrift, "Arial Narrow", "Segoe UI", "Microsoft YaHei", "PingFang SC", "Noto Sans SC", "Source Han Sans SC", sans-serif;
+  --f-label: Bahnschrift, "DIN Alternate", "Segoe UI", "Microsoft YaHei", "PingFang SC", "Noto Sans SC", "Source Han Sans SC", system-ui, sans-serif;
 
   --r: 4px;
   --rail: 236px;

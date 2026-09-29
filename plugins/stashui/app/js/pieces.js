@@ -1,6 +1,7 @@
 // Common model for scenes, images and galleries ("pieces") and the salon hanging.
 
 import { esc, icon, fmtDuration, fmtRes, fmtDate, fmtBytes, invNo, plural } from "./ui.js";
+import { t } from "./i18n.js";
 
 export function toPiece(kind, x, favId) {
   const tags = x.tags || [];
@@ -11,12 +12,12 @@ export function toPiece(kind, x, favId) {
     const dur = f.duration || 0;
     return {
       kind, id: x.id, raw: x, fav,
-      title: x.title || f.basename || "Scene " + x.id,
+      title: x.title || f.basename || t("Scene {id}", { id: x.id }),
       w: f.width || 16, h: f.height || 9,
       thumb: x.paths && x.paths.screenshot,
       preview: x.paths && x.paths.preview,
       stamp: fmtDuration(dur),
-      meta: ["Video", fmtDuration(dur), res, x.date ? fmtDate(x.date) : ""].filter(Boolean).join(", "),
+      meta: [t("Video"), fmtDuration(dur), res, x.date ? fmtDate(x.date) : ""].filter(Boolean).join(", "),
       resume: dur && x.resume_time ? Math.min(1, x.resume_time / dur) : 0,
       rating: x.rating100 || 0,
     };
@@ -26,13 +27,13 @@ export function toPiece(kind, x, favId) {
     const isVid = vf.__typename === "VideoFile";
     return {
       kind, id: x.id, raw: x, fav,
-      title: x.title || vf.basename || "Image " + x.id,
+      title: x.title || vf.basename || t("Image {id}", { id: x.id }),
       w: vf.width || 3, h: vf.height || 4,
       thumb: x.paths && x.paths.thumbnail,
       preview: isVid ? x.paths.preview || x.paths.image : null,
       isVid,
-      stamp: isVid ? (vf.duration ? fmtDuration(vf.duration) : "Clip") : "",
-      meta: [isVid ? "Clip" : "Image", vf.width ? `${vf.width} × ${vf.height}` : "", fmtBytes(vf.size)].filter(Boolean).join(", "),
+      stamp: isVid ? (vf.duration ? fmtDuration(vf.duration) : t("Clip")) : "",
+      meta: [isVid ? t("Clip") : t("Image"), vf.width ? `${vf.width} × ${vf.height}` : "", fmtBytes(vf.size)].filter(Boolean).join(", "),
       rating: x.rating100 || 0,
     };
   }
@@ -42,11 +43,11 @@ export function toPiece(kind, x, favId) {
   const base = path.split(/[\\/]/).filter(Boolean).pop();
   return {
     kind, id: x.id, raw: x, fav,
-    title: x.title || base || "Gallery " + x.id,
+    title: x.title || base || t("Gallery {id}", { id: x.id }),
     w: cv.width || 4, h: cv.height || 3,
     thumb: x.paths && x.paths.cover,
     stamp: plural(x.image_count, "image", "images"),
-    meta: ["Gallery", plural(x.image_count, "image", "images"), x.date ? fmtDate(x.date) : ""].filter(Boolean).join(", "),
+    meta: [t("Gallery"), plural(x.image_count, "image", "images"), x.date ? fmtDate(x.date) : ""].filter(Boolean).join(", "),
     rating: x.rating100 || 0,
   };
 }
@@ -59,8 +60,8 @@ function pieceHtml(p) {
     (p.thumb ? `<img alt="" loading="lazy" decoding="async" src="${esc(p.thumb)}">` : "") +
     (p.stamp ? `<span class="kb-stamp">${esc(p.stamp)}</span>` : "") +
     (p.resume ? `<span class="kb-resume"><i style="width:${(p.resume * 100).toFixed(1)}%"></i></span>` : "") +
-    (p.fav ? '<span class="kb-dot" title="Favorite"></span>' : "") +
-    `<span class="kb-pick" role="checkbox" aria-checked="false" aria-label="Select">${icon("check")}</span>` +
+    (p.fav ? `<span class="kb-dot" title="${t("Favorite")}"></span>` : "") +
+    `<span class="kb-pick" role="checkbox" aria-checked="false" aria-label="${t("Select")}">${icon("check")}</span>` +
     `<span class="kb-placard"><b>${esc(p.title)}</b><small>${esc(p.meta)}</small></span>` +
     `</${tag}>`
   );
@@ -84,7 +85,7 @@ export class Hang {
     this.rowH = opts.rowHeight || 240;
     this.gap = 10;
     el.classList.add("kb-hang");
-    el.innerHTML = '<div class="kb-rows"></div><div class="kb-loading" hidden>Loading …</div><div class="kb-sentinel"></div>';
+    el.innerHTML = `<div class="kb-rows"></div><div class="kb-loading" hidden>${t("Loading …")}</div><div class="kb-sentinel"></div>`;
     this.rowsEl = el.querySelector(".kb-rows");
     this.loadingEl = el.querySelector(".kb-loading");
     this.sentinel = el.querySelector(".kb-sentinel");
@@ -139,9 +140,9 @@ export class Hang {
     const key = p.kind + ":" + p.id;
     let n = this.nodes.get(key);
     if (!n) {
-      const t = document.createElement("template");
-      t.innerHTML = pieceHtml(p);
-      n = t.content.firstChild;
+      const tpl = document.createElement("template");
+      tpl.innerHTML = pieceHtml(p);
+      n = tpl.content.firstChild;
       const img = n.querySelector("img");
       if (img) {
         if (img.complete && img.naturalWidth) img.classList.add("is-loaded");

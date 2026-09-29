@@ -1,6 +1,7 @@
 // Watches Stash's job queue: counter in the navigation, message when done.
 
 import { gql, libraryChanged } from "./api.js";
+import { t } from "./i18n.js";
 import { toast } from "./ui.js";
 import { setJobCount } from "./main.js";
 
@@ -24,14 +25,14 @@ async function poll() {
     let finished = false;
     last.forEach((j, id) => {
       if (!now.has(id)) {
-        toast(`Done: ${j.description}`, "ok");
+        toast(t("Done: {what}", { what: j.description }), "ok");
         finished = true;
       }
     });
     // Scan, clean etc. may have changed folders and items
     if (finished) libraryChanged();
     jobs.forEach((j) => {
-      if (j.status === "FAILED" && (!last.get(j.id) || last.get(j.id).status !== "FAILED")) toast(`Failed: ${j.description}${j.error ? " – " + j.error : ""}`, "error");
+      if (j.status === "FAILED" && (!last.get(j.id) || last.get(j.id).status !== "FAILED")) toast(t("Failed: {what}", { what: j.description }) + (j.error ? " – " + j.error : ""), "error");
     });
     last = now;
     setJobCount(jobs.filter((j) => j.status === "RUNNING" || j.status === "READY").length);

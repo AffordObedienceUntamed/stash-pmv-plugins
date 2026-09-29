@@ -1,5 +1,7 @@
 // Small helpers for display, formatting, messages and dialogs.
 
+import { t, locale } from "./i18n.js";
+
 export const esc = (s) =>
   String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
@@ -89,19 +91,20 @@ export function fmtDate(iso) {
   if (!iso) return "";
   const d = new Date(iso);
   if (isNaN(d)) return iso;
-  return d.toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" });
+  return d.toLocaleDateString(locale(), { day: "numeric", month: "short", year: "numeric" });
 }
 export function fmtAgo(iso) {
   if (!iso) return "";
   const s = (Date.now() - new Date(iso)) / 1000;
-  if (s < 90) return "just now";
-  if (s < 3600) return `${Math.round(s / 60)} min ago`;
-  if (s < 86400) return `${Math.round(s / 3600)} h ago`;
-  if (s < 86400 * 30) return `${Math.round(s / 86400)} days ago`;
+  if (s < 90) return t("just now");
+  if (s < 3600) return t("{n} min ago", { n: Math.round(s / 60) });
+  if (s < 86400) return t("{n} h ago", { n: Math.round(s / 3600) });
+  if (s < 86400 * 30) return t("{n} days ago", { n: Math.round(s / 86400) });
   return fmtDate(iso);
 }
-export const fmtNum = (n) => Number(n || 0).toLocaleString("en-US");
-export const plural = (n, one, many) => `${fmtNum(n)} ${n === 1 ? one : many}`;
+export const fmtNum = (n) => Number(n || 0).toLocaleString(locale());
+// The unit words are translated too: plural(3, "scene", "scenes") → "3 scenes" / "3 个场景"
+export const plural = (n, one, many) => `${fmtNum(n)} ${t(n === 1 ? one : many)}`;
 
 // Inventory number like in a museum: S-12 (scene), I-40 (image), G-3 (gallery)
 export const invNo = (kind, id) => `${{ scene: "S", image: "I", gallery: "G" }[kind]}-${id}`;
@@ -140,7 +143,7 @@ export function toast(msg, type) {
 
 export function errorToast(e, what) {
   console.error("[Stash UI]", e);
-  toast(`${what || "Error"}: ${e.message || e}`, "error");
+  toast(`${what ? t(what) : t("Error")}: ${e.message || e}`, "error");
 }
 
 // ---------- Dialogs ----------
@@ -148,7 +151,7 @@ export function errorToast(e, what) {
 const overlayRoot = () => document.getElementById("overlay-root");
 
 // Confirmation with an optional checkbox. Returns { ok, checked }.
-export function confirmDialog({ title, text, ok = "OK", danger = false, checkbox }) {
+export function confirmDialog({ title, text, ok = t("OK"), danger = false, checkbox }) {
   return new Promise((resolve) => {
     const wrap = document.createElement("div");
     wrap.innerHTML = `
@@ -158,7 +161,7 @@ export function confirmDialog({ title, text, ok = "OK", danger = false, checkbox
         ${text ? `<p>${esc(text)}</p>` : ""}
         ${checkbox ? `<label class="kb-check"><input type="checkbox" data-c>${esc(checkbox)}</label>` : ""}
         <div class="kb-actions">
-          <button class="kb-btn" data-no>Cancel</button>
+          <button class="kb-btn" data-no>${t("Cancel")}</button>
           <button class="kb-btn ${danger ? "is-danger" : "is-primary"}" data-yes>${esc(ok)}</button>
         </div>
       </div>`;
@@ -184,7 +187,7 @@ export function confirmDialog({ title, text, ok = "OK", danger = false, checkbox
 }
 
 // Input with its own dialog instead of prompt(). Returns the text or null.
-export function promptDialog({ title, label, value = "", ok = "OK" }) {
+export function promptDialog({ title, label, value = "", ok = t("OK") }) {
   return new Promise((resolve) => {
     const wrap = document.createElement("div");
     wrap.innerHTML = `
@@ -193,7 +196,7 @@ export function promptDialog({ title, label, value = "", ok = "OK" }) {
         <h2>${esc(title)}</h2>
         <label class="kb-form-row"><span class="kb-dialog-label">${esc(label || "")}</span><input class="kb-field kb-dialog-input" value="${esc(value)}" required></label>
         <div class="kb-actions">
-          <button type="button" class="kb-btn" data-no>Cancel</button>
+          <button type="button" class="kb-btn" data-no>${t("Cancel")}</button>
           <button type="submit" class="kb-btn is-primary">${esc(ok)}</button>
         </div>
       </form>`;
@@ -228,7 +231,7 @@ export function openDrawer({ title, body, foot, onClose }) {
   wrap.innerHTML = `
     <div class="kb-scrim"></div>
     <aside class="kb-drawer" role="dialog" aria-modal="true" aria-label="${esc(title)}">
-      <div class="kb-drawer-head"><h2>${esc(title)}</h2><button class="kb-btn is-icon is-ghost" data-close aria-label="Close">${icon("close")}</button></div>
+      <div class="kb-drawer-head"><h2>${esc(title)}</h2><button class="kb-btn is-icon is-ghost" data-close aria-label="${t("Close")}">${icon("close")}</button></div>
       <div class="kb-drawer-body">${body || ""}</div>
       ${foot ? `<div class="kb-drawer-foot">${foot}</div>` : ""}
     </aside>`;
@@ -253,9 +256,9 @@ export function openDrawer({ title, body, foot, onClose }) {
 export function starsHtml(rating100, interactive) {
   const n = Math.round((rating100 || 0) / 20);
   return (
-    `<span class="kb-stars"${interactive ? ' role="group" aria-label="Rating"' : ""}>` +
+    `<span class="kb-stars"${interactive ? ` role="group" aria-label="${t("Rating")}"` : ""}>` +
     [1, 2, 3, 4, 5]
-      .map((i) => (interactive ? `<button type="button" data-star="${i}" class="${i <= n ? "is-on" : ""}" aria-label="${i} stars">★</button>` : `<span class="${i <= n ? "is-on" : ""}">★</span>`))
+      .map((i) => (interactive ? `<button type="button" data-star="${i}" class="${i <= n ? "is-on" : ""}" aria-label="${t("{n} stars", { n: i })}">★</button>` : `<span class="${i <= n ? "is-on" : ""}">★</span>`))
       .join("") +
     "</span>"
   );

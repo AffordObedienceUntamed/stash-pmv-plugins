@@ -3,6 +3,7 @@
 
 import { gql } from "./api.js";
 import { esc } from "./ui.js";
+import { t } from "./i18n.js";
 
 const typeCache = new Map();
 export async function typeInfo(name) {
@@ -183,8 +184,9 @@ export const ENUM_LABELS = {
 };
 
 const humanize = (n) => n.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
-export const labelOf = (n) => (LABELS[n] ? LABELS[n][0] : humanize(n));
-export const helpOf = (n) => (LABELS[n] ? LABELS[n][1] : "");
+// Labels and explanations are translated here (the English text is the key)
+export const labelOf = (n) => (LABELS[n] ? t(LABELS[n][0]) : humanize(n));
+export const helpOf = (n) => (LABELS[n] && LABELS[n][1] ? t(LABELS[n][1]) : "");
 
 // ---------- Fields ----------
 // Returns HTML for a field; values are collected again with readFields.
@@ -196,29 +198,29 @@ export async function fieldHtml(name, type, value, path) {
   const help = helpOf(name);
   const helpHtml = help ? `<small>${esc(help)}</small>` : "";
   if (u.kind === "INPUT_OBJECT" && !u.list) {
-    const t = await typeInfo(u.named);
-    const inner = await Promise.all(t.inputFields.map((f) => fieldHtml(f.name, f.type, (value || {})[f.name], id)));
+    const ti = await typeInfo(u.named);
+    const inner = await Promise.all(ti.inputFields.map((f) => fieldHtml(f.name, f.type, (value || {})[f.name], id)));
     return `<fieldset class="kb-set-group" data-obj="${esc(id)}"><legend>${esc(label)}</legend>${helpHtml}${inner.join("")}</fieldset>`;
   }
   if (u.kind === "INPUT_OBJECT" && u.list) {
-    return `<div class="kb-set" data-skip="${esc(id)}"><div class="kb-set-label"><b>${esc(label)}</b>${helpHtml}</div><p class="kb-hint">Edit this list in classic Stash.</p></div>`;
+    return `<div class="kb-set" data-skip="${esc(id)}"><div class="kb-set-label"><b>${esc(label)}</b>${helpHtml}</div><p class="kb-hint">${t("Edit this list in classic Stash.")}</p></div>`;
   }
   if (u.named === "Boolean") {
     return `<label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${esc(label)}</b>${helpHtml}</span><span class="kb-switch"><input type="checkbox" data-field="${esc(id)}" data-t="bool"${value ? " checked" : ""}><i></i></span></label>`;
   }
   let control;
   if (u.kind === "ENUM") {
-    const t = await typeInfo(u.named);
+    const ti = await typeInfo(u.named);
     const names = ENUM_LABELS[name] || ENUM_LABELS[u.named] || {};
-    control = `<select class="kb-field" data-field="${esc(id)}" data-t="enum">${type.kind === "NON_NULL" ? "" : '<option value="">(not set)</option>'}${t.enumValues
-      .map((e) => `<option value="${e.name}"${e.name === value ? " selected" : ""}>${esc(names[e.name] || names[e.name.toLowerCase()] || e.name)}</option>`)
+    control = `<select class="kb-field" data-field="${esc(id)}" data-t="enum">${type.kind === "NON_NULL" ? "" : `<option value="">${t("(not set)")}</option>`}${ti.enumValues
+      .map((e) => `<option value="${e.name}"${e.name === value ? " selected" : ""}>${esc(t(names[e.name] || names[e.name.toLowerCase()] || e.name))}</option>`)
       .join("")}</select>`;
   } else if (u.list) {
     control = `<textarea class="kb-field" rows="3" data-field="${esc(id)}" data-t="list" spellcheck="false">${esc((value || []).join("\n"))}</textarea>`;
   } else if (u.named === "Int" || u.named === "Float") {
     control = `<input class="kb-field kb-num" type="number" step="${u.named === "Float" ? "any" : "1"}" data-field="${esc(id)}" data-t="${u.named === "Int" ? "int" : "float"}" value="${value == null ? "" : esc(value)}">`;
   } else if (name === "password") {
-    control = `<input class="kb-field" type="password" autocomplete="new-password" data-field="${esc(id)}" data-t="password" placeholder="unchanged">`;
+    control = `<input class="kb-field" type="password" autocomplete="new-password" data-field="${esc(id)}" data-t="password" placeholder="${t("unchanged")}">`;
   } else if (["css", "javascript", "customLocales"].includes(name)) {
     control = `<textarea class="kb-field kb-code" rows="8" data-field="${esc(id)}" data-t="str" spellcheck="false">${esc(value || "")}</textarea>`;
   } else {
