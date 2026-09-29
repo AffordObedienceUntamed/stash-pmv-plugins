@@ -181,11 +181,15 @@ export const ENUM_LABELS = {
   StreamingResolutionEnum: { LOW: "240p", STANDARD: "480p", STANDARD_HD: "720p", FULL_HD: "1080p", FOUR_K: "4K", ORIGINAL: "Original" },
   BlobsStorageType: { DATABASE: "Database", FILESYSTEM: "File system" },
   HashAlgorithm: { MD5: "MD5", OSHASH: "oshash (fast)" },
+  ImageLightboxDisplayMode: { ORIGINAL: "Original size", FIT_XY: "Fit to screen", FIT_X: "Fit width" },
+  ImageLightboxScrollMode: { ZOOM: "Zoom", PAN_Y: "Scroll up and down" },
 };
+// Text settings that only allow a few values → dropdown
+const STRING_CHOICES = { wallPlayback: { video: "Video", animation: "Animation", image: "Image" } };
 
 const humanize = (n) => n.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
 // Labels and explanations are translated here (the English text is the key)
-export const labelOf = (n) => (LABELS[n] ? t(LABELS[n][0]) : humanize(n));
+export const labelOf = (n) => (LABELS[n] ? t(LABELS[n][0]) : t(humanize(n)));
 export const helpOf = (n) => (LABELS[n] && LABELS[n][1] ? t(LABELS[n][1]) : "");
 
 // ---------- Fields ----------
@@ -219,6 +223,11 @@ export async function fieldHtml(name, type, value, path) {
     control = `<textarea class="kb-field" rows="3" data-field="${esc(id)}" data-t="list" spellcheck="false">${esc((value || []).join("\n"))}</textarea>`;
   } else if (u.named === "Int" || u.named === "Float") {
     control = `<input class="kb-field kb-num" type="number" step="${u.named === "Float" ? "any" : "1"}" data-field="${esc(id)}" data-t="${u.named === "Int" ? "int" : "float"}" value="${value == null ? "" : esc(value)}">`;
+  } else if (STRING_CHOICES[name]) {
+    const ch = STRING_CHOICES[name];
+    control = `<select class="kb-field" data-field="${esc(id)}" data-t="str">${Object.keys(ch).includes(value) ? "" : `<option value="${esc(value || "")}">${esc(value || t("(not set)"))}</option>`}${Object.entries(ch)
+      .map(([v, l]) => `<option value="${v}"${v === value ? " selected" : ""}>${t(l)}</option>`)
+      .join("")}</select>`;
   } else if (name === "password") {
     control = `<input class="kb-field" type="password" autocomplete="new-password" data-field="${esc(id)}" data-t="password" placeholder="${t("unchanged")}">`;
   } else if (["css", "javascript", "customLocales"].includes(name)) {
