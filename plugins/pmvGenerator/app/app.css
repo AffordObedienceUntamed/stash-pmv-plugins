@@ -664,6 +664,10 @@ a.kb-chip:hover, button.kb-chip:hover { background: rgba(180, 140, 255, .28); }
 /* ---------- Mobile ---------- */
 
 .kb-menu-btn { display: none; }
+.kb-rail-scrim { display: none; }
+@media (max-width: 860px) {
+  .kb-rail-scrim { display: block; }
+}
 @media (max-width: 860px) {
   .kb-app { grid-template-columns: 1fr; }
   .kb-rail {
@@ -677,6 +681,9 @@ a.kb-chip:hover, button.kb-chip:hover { background: rgba(180, 140, 255, .28); }
     transition: transform .3s var(--ease);
   }
   .kb-app.is-rail-open .kb-rail { transform: none; box-shadow: 30px 0 80px rgba(0, 0, 0, .7); }
+  /* Tapping next to the open menu closes it (instead of reaching the page behind) */
+  .kb-rail-scrim { position: fixed; inset: 0; z-index: 49; background: rgba(10, 3, 9, .55); opacity: 0; pointer-events: none; transition: opacity .3s var(--ease); }
+  .kb-app.is-rail-open .kb-rail-scrim { opacity: 1; pointer-events: auto; }
   .kb-menu-btn { display: inline-flex; position: fixed; left: 12px; top: 12px; z-index: 45; }
   .kb-head { padding-top: 64px; }
   .kb-bulk { left: 12px; right: 12px; }

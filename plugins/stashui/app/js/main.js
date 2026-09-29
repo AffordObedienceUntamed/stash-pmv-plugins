@@ -217,6 +217,7 @@ function renderRail() {
       return;
     }
     const a = e.target.closest("[data-action]");
+    if (a) document.getElementById("app").classList.remove("is-rail-open");
     if (a && a.dataset.action === "storm") openStorm();
     if (a && a.dataset.action === "pmv") location.href = PMV_PAGE;
   });
@@ -354,7 +355,16 @@ async function init() {
   await initLang(stashLang);
   document.getElementById("rail").setAttribute("aria-label", t("Navigation"));
   document.body.insertAdjacentHTML("beforeend", `<button class="kb-btn is-icon kb-menu-btn" id="menu-btn" aria-label="${t("Open navigation")}">${icon("menu")}</button>`);
-  $("#menu-btn").onclick = () => document.getElementById("app").classList.toggle("is-rail-open");
+  // Mobile menu: the button opens it; tapping the dimmed page next to it or Esc closes it
+  const appEl = document.getElementById("app");
+  appEl.insertAdjacentHTML("beforeend", `<div class="kb-rail-scrim" data-rail-scrim aria-hidden="true"></div>`);
+  const setRail = (open) => {
+    appEl.classList.toggle("is-rail-open", open);
+    $("#menu-btn").setAttribute("aria-expanded", open);
+  };
+  $("#menu-btn").onclick = () => setRail(!appEl.classList.contains("is-rail-open"));
+  appEl.querySelector("[data-rail-scrim]").addEventListener("click", () => setRail(false));
+  document.addEventListener("keydown", (e) => e.key === "Escape" && appEl.classList.contains("is-rail-open") && setRail(false));
   renderRail();
   try {
     app.favId = await favoriteTagId(false);
