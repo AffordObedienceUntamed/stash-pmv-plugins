@@ -321,7 +321,7 @@
       "Typing shows matching niches, tags and creators live – click (or ↑/↓ + Enter) to add them. Several are possible; one of them is picked at random per fetch. Without a choice you get trending. RedGifs only plays in the storm tab.": "输入时会实时显示匹配的分区、标签和创作者——点击（或 ↑/↓ + 回车）即可添加。可以添加多个，每次获取时随机选其中一个。不做选择时显示热门内容。RedGifs 只在风暴标签页中播放。",
       "HUD on/off": "状态栏 开/关",
       "Full videos at once": "同时播放的完整视频",
-      "Browsers keep only about 6 connections to Stash, and every full video playing takes one. When they're all taken, Stash stops answering in this browser. Further videos play as preview clips instead. With HTTPS (HTTP/2) you can go higher.": "浏览器与 Stash 之间只保持大约 6 个连接，每个正在播放的完整视频都会占用一个。连接全部被占用时，Stash 在此浏览器中会停止响应。更多的视频将改为播放预览片段。使用 HTTPS（HTTP/2）时可以调高。",
+      "0 = automatic: Media Storm measures how quickly Stash still answers and plays as many full videos as the connection allows. Over plain HTTP, browsers keep only about 6 connections to one server – when they're all taken, Stash stops answering in this browser. Further videos play as preview clips (or show their cover).": "0 = 自动：媒体风暴会测量 Stash 的响应速度，并按连接允许的数量播放完整视频。在普通 HTTP 下，浏览器与同一服务器只保持大约 6 个连接——连接全部被占用时，Stash 在此浏览器中会停止响应。更多的视频将播放预览片段（或显示封面）。",
     },
     patterns: [
       ["On the beat (\\d+) new, max (\\d+) endless", "随节拍 · 每波 $1 个，最多 $2 个 · 无尽"],

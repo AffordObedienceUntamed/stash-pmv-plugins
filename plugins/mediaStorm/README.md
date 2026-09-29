@@ -174,7 +174,7 @@ Settings and presets are stored in the browser's `localStorage`.
 
 ## Performance: full videos at once
 
-Browsers keep only about 6 connections to one server, and every full video that plays keeps one of them busy. When all are taken, Stash stops answering in that browser – every tab, not just Media Storm. So Media Storm plays at most **4 full videos at once** (Media → “Full videos at once”); further videos play as preview clips, or show their cover if no previews are generated (Tasks → Generate → Previews). With Stash behind HTTPS (HTTP/2) the limit can go higher. RedGifs comes from another server and doesn't count.
+Over plain HTTP, browsers keep only about 6 connections to one server, and every full video that plays keeps one busy while it loads. When all are taken, Stash stops answering in that browser – every tab, not just Media Storm. Media Storm handles this by itself (Media → “Full videos at once”, 0 = automatic): with Stash on the same computer or behind HTTPS it plays up to 24 full videos to begin with, over the network up to 5; while the storm runs it checks every few seconds how quickly Stash answers – quick means more full videos (up to 60), slow means fewer, and the oldest full videos fade out before Stash stops answering. Further videos play as preview clips, or show their cover if no previews are generated (Tasks → Generate → Previews). RedGifs comes from another server and doesn't count. A fixed number can be set instead.
 
 ## Languages
 

@@ -28,7 +28,7 @@
     audioMode: "all", // all | hover | newest | mute
     randomStart: true,
     videoSource: "stream", // stream | preview
-    maxStreams: 4, // full videos from Stash at once – browsers keep only 6 connections per server
+    streamLimit: 0, // full videos from Stash at once; 0 = automatic (measured while it runs)
     // Layout
     layout: "chaos", // chaos | pile | grid | mosaic | spotlight | spiral | ticker | rain
     sizeMin: 18,
@@ -121,6 +121,7 @@
     if (typeof s.rgDlDir !== "string") s.rgDlDir = "";
     if (typeof s.artName !== "string") s.artName = DEFAULTS.artName;
     if (!["chaos", "pile", "grid", "mosaic", "spotlight", "spiral", "ticker", "rain"].includes(s.layout)) s.layout = DEFAULTS.layout;
+    delete s.maxStreams; // 2.3.0's fixed limit – replaced by streamLimit (automatic)
     delete s.rgSearch;
     delete s.rgUser;
     return s;
@@ -1077,10 +1078,45 @@
 
   // Full videos from Stash each keep one of the browser's ~6 connections to the server busy for as long
   // as they play (they load ahead bit by bit). With all of them taken, every other request to Stash waits –
-  // the storm tab and every Stash tab in this browser hang. So only S.maxStreams full videos run at once;
+  // the storm tab and every Stash tab in this browser hang. So only streamBudget() full videos run at once;
   // the rest use the preview clip (small, loaded quickly, the connection is free again right away).
   // RedGifs comes from another server and doesn't count.
   const liveStreams = new Set();
+  // Automatic limit: generous when Stash is on this computer or behind HTTPS (HTTP/2 has no such limit),
+  // careful over plain HTTP in the network – then measured while the storm runs (probeStash)
+  const streams = {
+    auto: /^(localhost|127\.|\[?::1\]?$)/.test(location.hostname) || location.protocol === "https:" ? 24 : 5,
+    busy: false,
+  };
+  const streamBudget = () => (S.streamLimit > 0 ? S.streamLimit : streams.auto);
+
+  // Every few seconds a tiny request to Stash: quick answer = connections to spare, the limit grows;
+  // slow answer = they're running out – the limit shrinks and the oldest full videos go right away,
+  // before Stash stops answering at all.
+  async function probeStash() {
+    if (!run.active || run.paused || S.streamLimit > 0 || streams.busy || liveStreams.size < 3) return;
+    streams.busy = true;
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 3000);
+    const t0 = performance.now();
+    let failed = false;
+    try {
+      await fetch("/graphql", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: "{ __typename }" }), signal: ctl.signal, cache: "no-store", credentials: "same-origin" });
+    } catch (e) {
+      failed = true;
+    }
+    clearTimeout(timer);
+    streams.busy = false;
+    const ms = performance.now() - t0;
+    if (!run.active) return;
+    if (failed || ms > 1200) {
+      streams.auto = Math.max(3, Math.min(streams.auto, liveStreams.size) - 2);
+      const full = run.items.filter((it) => liveStreams.has(it));
+      for (let i = 0; i < full.length - streams.auto; i++) removeItem(full[i]);
+    } else if (ms < 300 && liveStreams.size >= streams.auto - 1) {
+      streams.auto = Math.min(60, streams.auto + 2);
+    }
+  }
   const fromStash = (u) => {
     try {
       return new URL(u, location.href).origin === location.origin;
@@ -1107,7 +1143,7 @@
       liveStreams.delete(it);
       // Full video only while there's room – otherwise straight to the next (lighter) source
       let skipped = false;
-      while (idx < sources.length && isFull(sources[idx]) && liveStreams.size >= Math.max(1, S.maxStreams || 4)) {
+      while (idx < sources.length && isFull(sources[idx]) && liveStreams.size >= streamBudget()) {
         idx++;
         skipped = true;
       }
@@ -2104,6 +2140,7 @@
     closePanel();
     wave(true);
     run.tick = setInterval(tick, 250);
+    run.probe = setInterval(probeStash, 2500);
     beatStart();
     syncState();
   }
@@ -2117,6 +2154,7 @@
     run.paused = false;
     run.session++;
     clearInterval(run.tick);
+    clearInterval(run.probe);
     beatStop();
 
     const dom = run.dom;
@@ -2711,7 +2749,7 @@
     batchSize: (v) => v,
     firstBatch: (v) => v,
     maxItems: (v) => v,
-    maxStreams: (v) => v,
+    streamLimit: (v) => (v ? v : "auto"),
     videoPct: (v) => `${100 - v} % images, ${v} % videos`,
     volume: (v) => (v ? v + " %" : "muted"),
     sizeMin: (v) => v + " %",
@@ -2846,8 +2884,8 @@
         rng("videoPct", "Mix", 0, 100, 5) +
         sel("imageQuality", "Image quality", [["full", "Original"], ["thumb", "Thumbnail (faster)"]]) +
         sel("videoSource", "Video source", [["stream", "Full video"], ["preview", "Preview clip (lighter)"]]) +
-        rng("maxStreams", "Full videos at once", 1, 12) +
-        hint("Browsers keep only about 6 connections to Stash, and every full video playing takes one. When they're all taken, Stash stops answering in this browser. Further videos play as preview clips instead. With HTTPS (HTTP/2) you can go higher.") +
+        rng("streamLimit", "Full videos at once", 0, 60) +
+        hint("0 = automatic: Media Storm measures how quickly Stash still answers and plays as many full videos as the connection allows. Over plain HTTP, browsers keep only about 6 connections to one server – when they're all taken, Stash stops answering in this browser. Further videos play as preview clips (or show their cover).") +
         chk("loop", "Loop videos (off = fade out after the end)") +
         chk("randomStart", "Random start point in the video"),
     },
@@ -3064,7 +3102,7 @@
               `<button class="ms-tile" data-page="${p.id}">${p.badge || icon(p.icon)}<b>${p.title}</b><small data-sum="${p.id}"></small></button>`).join("")}
           </div>
           <button class="ms-link" data-page="keys">${icon("keyboard")}<span>Hotkeys &amp; mouse</span></button>
-          <div class="ms-foot">Media Storm 2.3.0</div>
+          <div class="ms-foot">Media Storm 2.3.1</div>
         </div>
         ${PAGES.map((p) => `
           <section class="ms-page" data-page-id="${p.id}" hidden>
