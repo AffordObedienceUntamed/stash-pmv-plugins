@@ -8,6 +8,7 @@ import { gql } from "../api.js";
 import { typeInfo, selection, fieldHtml, readFields, unwrap } from "../forms.js";
 import { go } from "../main.js";
 import { pokeJobs } from "../jobs.js";
+import { themeHtml, bindTheme } from "../theme.js";
 
 const AREAS = {
   general: { result: "ConfigGeneralResult", input: "ConfigGeneralInput", mutation: "configureGeneral" },
@@ -251,6 +252,7 @@ async function renderApp(body) {
     <form class="kb-set-form" data-form>
       <label class="kb-set"><span class="kb-set-label"><b>${t("Language")}</b><small>${t("“Automatic” follows the language set in Stash (classic Stash → Settings → Interface).")}</small></span>
         <select class="kb-field" data-lang><option value="auto">${t("Automatic")}</option>${LANGS.map(([code, name]) => `<option value="${code}">${esc(name)}</option>`).join("")}</select></label>
+      ${themeHtml()}
       <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("Folders in the navigation and on the home page")}</b><small>${t("Counting the folders reads the whole library once (then it's remembered). Off = folders only load when you open “Folders”.")}</small></span>
         <span class="kb-switch"><input type="checkbox" data-railfolders${store.get("railFolders", true) ? " checked" : ""}><i></i></span></label>
       <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("This interface as home page")}</b><small>${t("Opening Stash goes straight to this interface. Off = classic Stash stays the home page.")}</small></span>
@@ -264,6 +266,7 @@ async function renderApp(body) {
         <button type="button" class="kb-btn" data-resetlocal>${t("Reset")}</button></div>
     </form>`;
   // Language: applies after reloading, so the menu and every page switch at once
+  bindTheme(body);
   const langSel = body.querySelector("[data-lang]");
   langSel.value = chosen();
   langSel.onchange = () => {
@@ -286,7 +289,7 @@ async function renderApp(body) {
   body.querySelector("[data-rowh]").onchange = (e) => store.set("rowHeight", Number(e.target.value));
   body.querySelector("[data-auto]").onchange = (e) => store.set("player", Object.assign(store.get("player", {}), { auto: e.target.checked }));
   body.querySelector("[data-resetlocal]").onclick = () => {
-    Object.keys(localStorage).filter((k) => k.startsWith("stashui.") && k !== "stashui.queue").forEach((k) => localStorage.removeItem(k));
+    Object.keys(localStorage).filter((k) => k.startsWith("stashui.") && k !== "stashui.queue" && k !== "stashui.theme").forEach((k) => localStorage.removeItem(k));
     toast(t("Reset"), "ok");
     go("settings/this-ui", true);
   };

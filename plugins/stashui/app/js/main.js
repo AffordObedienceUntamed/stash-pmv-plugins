@@ -3,6 +3,9 @@
 import { esc, icon, store, errorToast, fmtNum, $ } from "./ui.js";
 import { t, initLang } from "./i18n.js";
 import { gql, loadFolders, favoriteTagId, stats } from "./api.js";
+import { applyTheme } from "./theme.js";
+
+applyTheme(); // chosen colors before anything is drawn
 
 // ---------- Routes ----------
 // Base views replace the content; overlays (player, image viewer) sit on top.

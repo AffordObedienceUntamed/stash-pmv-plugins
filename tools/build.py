@@ -30,6 +30,7 @@ GEN = os.path.join(PLUGINS, "pmvGenerator")
 STORM = os.path.join(PLUGINS, "mediaStorm")
 
 SHARED = [
+    "app/js/theme.js",
     "app/app.css",
     "app/stage.css",
     "app/admin.css",
