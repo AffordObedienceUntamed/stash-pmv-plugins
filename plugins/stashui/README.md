@@ -96,7 +96,7 @@ Stash UI works on its own. If you also install **Media Storm** or the **PMV Gene
 
 - `app/` is the interface (plain JavaScript ES modules, no build step), `classic/` styles classic Stash and redirects the home page.
 - **Favorites** = the Stash tag “Favorite” (created with the first heart).
-- **Colors**: Settings → This interface → Colors. Pick a preset (Plum, Midnight, OLED black, Forest, Ember, Ocean, Violet, Classic Stash) or set each color – accent, backgrounds, text, success/error – with the color wheel. Saved in the browser; the PMV Generator uses the same colors.
+- **Colors**: Settings → This interface → Colors. Pick a preset (Plum, Midnight, OLED black, Forest, Ember, Ocean, Violet, Classic Stash) or set each color – accent, backgrounds, text, success/error – with the color wheel. Optional **Liquid glass**: see-through, blurred panels with a light edge over a soft glow in the theme colors. Saved in the browser; the PMV Generator uses the same look.
 - **Keep the classic home page**: Settings → This interface → “This interface as home page” off (or the plugin setting “Keep classic home page”). For a single tab: `http://localhost:9999/?classic=1`.
 - Pages that only exist in classic Stash (registered by other plugins) are embedded through classic Stash; its navigation is hidden there.
 - After changing files in `app/`: run `python tools/build.py --sync-only` from the repository root – it copies the shared files to the PMV Generator plugin and sets version stamps so browsers don't load stale files from their cache.

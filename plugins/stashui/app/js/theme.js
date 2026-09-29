@@ -34,6 +34,7 @@ export const themeColors = () => Object.assign({}, PRESETS[0][1], (store.get("th
 
 // Sets the variables, plus the ones derived from them (lighter/darker accent, lines, text on accent)
 export function applyTheme(theme = store.get("theme")) {
+  document.documentElement.classList.toggle("kb-glass", !!store.get("glass"));
   const s = document.documentElement.style;
   if (!theme || !theme.colors) {
     TOKENS.forEach(([v]) => s.removeProperty(v));
@@ -175,6 +176,7 @@ export function themeHtml() {
     <div class="kb-theme-body">
       <div class="kb-theme-presets">${PRESETS.map(([name, pc]) => `<button type="button" class="kb-theme-preset${(cur.preset || "Plum") === name && !cur.custom ? " is-on" : ""}" data-preset="${esc(name)}" style="--p-bg:${pc["--bg"]};--p-2:${pc["--bg-2"]};--p-acc:${pc["--pink"]};--p-text:${pc["--text"]}"><i></i><span>${esc(t(name))}</span></button>`).join("")}</div>
       <div class="kb-theme-tokens">${TOKENS.map(([v, label, hint]) => `<button type="button" class="kb-theme-token" data-token="${v}"><i style="background:${c[v]}"></i><span><b>${t(label)}</b><small>${t(hint)}</small></span><code>${c[v]}</code></button>`).join("")}</div>
+      <label class="kb-theme-glass"><span class="kb-switch"><input type="checkbox" data-glass${store.get("glass") ? " checked" : ""}><i></i></span><span><b>${t("Liquid glass")}</b><small>${t("See-through, blurred panels with a light edge. Needs a bit more graphics power.")}</small></span></label>
       <button type="button" class="kb-btn is-ghost" data-themereset>${t("Back to default colors")}</button>
     </div>
   </div>`;
@@ -186,6 +188,10 @@ export function bindTheme(root) {
     box.outerHTML = themeHtml();
     bindTheme(root);
   };
+  box.querySelector("[data-glass]").addEventListener("change", (e) => {
+    store.set("glass", e.target.checked);
+    applyTheme();
+  });
   box.addEventListener("click", (e) => {
     const p = e.target.closest("[data-preset]");
     if (p) {
