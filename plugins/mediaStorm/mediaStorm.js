@@ -2916,12 +2916,11 @@
       <button class="ms-icbtn ms-p-close" data-act="close" title="Close (Esc)" aria-label="Close panel">${icon("close")}</button>
       <div class="ms-p-body">
         <div class="ms-home">
-          <div class="ms-glassrow">${chk("glass", "Liquid glass")}</div>
           <div class="ms-cover ms-cover-plain" data-cover>
             <div class="ms-cover-art"></div>
             <h2 class="ms-title"><span>Media</span><span>Storm</span></h2>
           </div>
-          <div class="ms-state" data-state="idle"><span class="ms-state-mark"></span><b data-status>Ready</b><span class="ms-state-nums" data-nums></span></div>
+          <div class="ms-state" data-state="idle"><span class="ms-state-mark"></span><b data-status>Ready</b><span class="ms-state-nums" data-nums></span><span class="ms-state-glass">${chk("glass", "Liquid glass")}</span></div>
           <div class="ms-ctrl">
             <button class="ms-big" data-act="toggle">${icon("play")}<span>Start</span></button>
             <button class="ms-icbtn ms-sq" data-act="pause" title="Pause / resume (Space)">${icon("pause")}</button>

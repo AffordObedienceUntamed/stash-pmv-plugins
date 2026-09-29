@@ -1211,7 +1211,8 @@ body::after { transition: background-image .9s ease; }
    the buttons on the stage become frosted glass over the storm; controls turn
    into tinted glass capsules. Off = the look above, unchanged.
    ========================================================================== */
-.ms-glassrow { display: flex; margin: 0 44px 12px 0; }
+.ms-state-glass { margin-left: auto; }
+.ms-state-glass .ms-chk { gap: 8px; font-size: 12.5px; white-space: nowrap; }
 html.ms-glass {
   --ms-glass: color-mix(in srgb, var(--ms-ink) 44%, transparent);
   --ms-glass-2: color-mix(in srgb, var(--ms-ink-2) 42%, transparent);
