@@ -119,7 +119,7 @@ export async function render(main) {
       <section class="kb-card kb-statcard"><h2>${t("Most watched")}</h2>${sceneList(topScenes("play_count"), "play_count", t("plays"))}</section>
       <section class="kb-card kb-statcard"><h2>${t("Most O")}</h2>${sceneList(topScenes("o_counter"), "o_counter", t("O"))}</section>
       <section class="kb-card kb-statcard"><h2>${t("Top tags")}</h2>${nameList(topTags, (x) => "#/tag/" + x.id)}</section>
-      <section class="kb-card kb-statcard"><h2>${t("Top performers")}</h2>${nameList(topPerformers, (x) => "#/extern/classic?path=" + encodeURIComponent("/performers/" + x.id))}</section>
+      <section class="kb-card kb-statcard"><h2>${t("Top performers")}</h2>${nameList(topPerformers, (x) => "#/performer/" + x.id)}</section>
       <section class="kb-card kb-statcard"><h2>${t("Top studios")}</h2>${nameList(topStudios, (x) => "#/extern/classic?path=" + encodeURIComponent("/studios/" + x.id))}</section>
     </div>
     <p class="kb-hint">${t("Top tags, performers and studios count plays and O of their scenes.")}</p>`;

@@ -21,12 +21,14 @@ export const F_SCENE = `id title details date rating100 o_counter play_count pla
   files { id width height duration size path basename video_codec frame_rate bit_rate }
   paths { screenshot preview webp stream sprite vtt }
   tags { id name }
+  performers { id name image_path }
   galleries { id title }`;
 
 export const F_IMAGE = `id title details date rating100 o_counter organized created_at urls
   visual_files { __typename ... on ImageFile { id width height size path basename } ... on VideoFile { id width height size path basename duration } }
   paths { thumbnail image preview }
   tags { id name }
+  performers { id name image_path }
   galleries { id title folder { path } files { path } }`;
 
 export const F_GALLERY = `id title details date rating100 organized created_at image_count urls
@@ -87,8 +89,36 @@ export async function findTags(q, perPage, sort) {
   return d.findTags;
 }
 
+// Performers. Career fields are left out: Stash 0.31 has career_start/career_end, older versions career_length.
+export const F_PERFORMER = `id name disambiguation alias_list gender birthdate death_date country ethnicity eye_color hair_color height_cm weight
+  measurements tattoos piercings details urls favorite rating100 o_counter scene_count image_count gallery_count image_path created_at
+  tags { id name }`;
+
+export async function findPerformers({ q, page = 1, perPage = 60, sort = "name", dir, filter } = {}) {
+  const d = await gql(`query($f: FindFilterType, $p: PerformerFilterType) { findPerformers(filter: $f, performer_filter: $p) { count performers { id name disambiguation gender favorite rating100 scene_count image_count o_counter image_path birthdate country } } }`, {
+    f: { q: q || undefined, page, per_page: perPage, sort, direction: dir || (sort === "name" ? "ASC" : "DESC") },
+    p: filter || {},
+  });
+  return d.findPerformers;
+}
+
+export async function getPerformer(id) {
+  const d = await gql(`query($id: ID!) { findPerformer(id: $id) { ${F_PERFORMER} } }`, { id });
+  return d.findPerformer;
+}
+
+export async function updatePerformer(input) {
+  const d = await gql(`mutation($i: PerformerUpdateInput!) { performerUpdate(input: $i) { id } }`, { i: input });
+  return d.performerUpdate;
+}
+
+export async function createPerformer(name) {
+  const d = await gql(`mutation($i: PerformerCreateInput!) { performerCreate(input: $i) { id } }`, { i: { name } });
+  return d.performerCreate;
+}
+
 export async function stats() {
-  const d = await gql(`query { stats { scene_count image_count gallery_count tag_count scenes_duration scenes_size images_size total_play_count total_play_duration } }`);
+  const d = await gql(`query { stats { scene_count image_count gallery_count tag_count performer_count scenes_duration scenes_size images_size total_play_count total_play_duration } }`);
   return d.stats;
 }
 

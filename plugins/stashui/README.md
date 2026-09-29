@@ -22,6 +22,7 @@ Open it: just open Stash (e.g. `http://localhost:9999`) – the home page redire
 | Search | Across everything: tags, folders, scenes, images, galleries |
 | Scenes / Images / Galleries | Justified rows with search, sorting, filters (include/exclude tags, rating, favorites, watched, resolution, duration, format), infinite scrolling, preview video on hover |
 | Folders | Every folder with cover images, subfolders and its items; “Include subfolders” shows everything below. The folder tree sits in the navigation on the left. Folders without scenes and images are hidden |
+| Performers | Photo cards with search, sorting (name, scenes, O counter, rating, most watched, newest, random), gender and favorites filter; the heart on a card marks a favorite right away. The performer page shows photo, facts (age, country, height, measurements …), rating, heart, tags and links, then all their scenes, images and galleries with the usual filters. Edit name, aliases, gender, birthdate, country, links and bio there; photo and scraping stay in classic Stash. Performers also show in the player's info bar and in search |
 | Tags | List of all tags, tag page with all items, edit/delete tags, create new tags |
 | Gallery | All images, slideshow, rating, heart, edit |
 | Queue | Play items one after another, reorder by dragging, shuffle |
@@ -33,7 +34,7 @@ Open it: just open Stash (e.g. `http://localhost:9999`) – the home page redire
 | Duplicates | Scenes that look the same (Stash's perceptual hashes), side by side with resolution, codec, bitrate and size – the best copy is marked. Delete single copies or “keep the best” in one click; deleting the files from disk is an extra checkbox. “Not duplicates” hides a group. Needs phashes (Tasks → Generate) |
 | Settings | All Stash settings in sections: library, previews, playback, paths, login, log (with viewer), classic interface, DLNA, scrapers, more options, database (back up, optimize, clean up), this interface |
 | Plugins | Installed: on/off, settings, run tasks, check for updates, update (one or all), uninstall. Browse: install plugins from your sources, with search. Sources: add, edit, remove plugin sources – no need to go to classic Stash |
-| Classic Stash | The original Stash in the same look, embedded with quick picks: performers, studios, groups, markers, scene tagger, duplicates, scrapers, tools, settings |
+| Classic Stash | The original Stash in the same look, embedded with quick picks: performers, studios, groups, markers, scene tagger, scrapers, tools, settings |
 
 ## Languages
 
@@ -70,7 +71,7 @@ Stash UI works on its own. If you also install **Media Storm** or the **PMV Gene
 - Portrait videos (9:16) are fitted completely, nothing is cropped.
 - **Resume**: starts where you left off (button “From the start”), saves progress and counts plays like Stash.
 - **Random**, **Endless** (continue automatically) and **Loop** as switches; “Up next” in the info bar.
-- The info bar on the right (key **I**): rating, heart, O counter (right-click subtracts one), tags, edit, queue, folder.
+- The info bar on the right (key **I**): rating, heart, O counter (right-click subtracts one), performers, tags, edit, queue, folder.
 - **Highlights** (switch in the bar): a heat curve sits above the timeline, diamonds mark the best spots – click or press **J** to jump to the next one. The curve combines two things:
   - **Motion**: from Stash's preview sprites (timeline thumbnails) – how much the picture changes, plus the share of skin. Needs generated sprites (Tasks → Generate previews).
   - **Your watching**: which parts you actually watch and where you seek to. Stored only in this browser (the last 400 scenes).

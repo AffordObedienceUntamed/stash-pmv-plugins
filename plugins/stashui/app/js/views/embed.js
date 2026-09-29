@@ -6,7 +6,7 @@ import { t } from "../i18n.js";
 
 const TOOLS = {
   // title/text are translated when shown
-  classic: { title: "Classic Stash", text: "The original interface – for everything that isn't built in here directly: performers, studios, scrapers, tagger, duplicates.", src: "/" },
+  classic: { title: "Classic Stash", text: "The original interface – for everything that isn't built in here directly: studios, groups, scrapers, tagger.", src: "/" },
   "classic-settings": { title: "Classic Stash: settings", text: "The settings in classic Stash.", src: "/settings" },
 };
 
