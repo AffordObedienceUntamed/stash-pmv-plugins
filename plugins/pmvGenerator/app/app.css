@@ -703,6 +703,10 @@ a.kb-chip:hover, button.kb-chip:hover { background: rgba(180, 140, 255, .28); }
     transition: transform .3s var(--ease);
   }
   .kb-app.is-rail-open .kb-rail { transform: none; box-shadow: 30px 0 80px rgba(0, 0, 0, .7); }
+  /* The visible height (100vh reaches behind the browser bars – the end of the menu was out of reach),
+     scrolling stays inside the menu, and the page behind doesn't move while it's open */
+  .kb-rail { height: 100vh; height: 100dvh; bottom: auto; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
+  body:has(.kb-app.is-rail-open) { overflow: hidden; }
   /* Tapping next to the open menu closes it (instead of reaching the page behind) */
   .kb-rail-scrim { position: fixed; inset: 0; z-index: 49; background: rgba(10, 3, 9, .55); opacity: 0; pointer-events: none; transition: opacity .3s var(--ease); }
   .kb-app.is-rail-open .kb-rail-scrim { opacity: 1; pointer-events: auto; }

@@ -1,6 +1,6 @@
 name: Stash UI
 description: A complete new interface for Stash in the Media Storm look – browsing, player, image viewer, folders, tags, queue, tasks and all settings. Opens instead of the Stash home page; classic Stash stays available in the same look. Links to Media Storm and the PMV Generator when they're installed.
-version: 3.15.0
+version: 3.15.1
 url: https://github.com/anonym88312/stash-pmv-plugins
 settings:
   keepClassicHome:
