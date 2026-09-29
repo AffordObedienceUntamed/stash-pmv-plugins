@@ -71,3 +71,7 @@ Needs a browser with `requestVideoFrameCallback` (Chrome, Edge, current Firefox)
 
 - A current Chrome, Edge or Firefox.
 - Saving to Stash and saving RedGifs clips use the small backend `backend.py` (needs `python` in the PATH). With ffmpeg (Stash's own or from the PATH) the recording is remuxed without re-encoding so duration and seeking work – browser recordings otherwise carry no duration.
+
+## Languages
+
+English and **Simplified Chinese (简体中文)**. The language follows Stash UI's choice (Settings → General → Language); on “Automatic” it follows the interface language set in Stash.

@@ -131,6 +131,88 @@
   const applyGlass = () => document.documentElement.classList.toggle("ms-glass", S.glass !== false);
   applyGlass();
 
+  // Languages: the texts are English in the code; a dictionary (mediaStorm-zh.js) swaps them as they are
+  // shown – only inside Media Storm's own parts of the page. The language follows Stash UI's choice
+  // ("stashui.lang"), with "automatic" Stash's interface language.
+  (function startI18n() {
+    const locales = window.MediaStormLocales || {};
+    const ROOTS = ".ms-panel, .ms-overlay, .ms-toasts, .ms-nav-btn";
+    // Names from the library stay as they are: tags, folders, song, own presets, RedGifs picks
+    const DATA = ".ms-title, .ms-chip, .ms-fn-label, .ms-sug:not(.ms-none), .ms-sug-rich, [data-songname], [data-preset]"; // + the logo
+    const ATTRS = ["title", "placeholder", "aria-label"];
+    async function language() {
+      let pick = "auto";
+      try {
+        pick = localStorage.getItem("stashui.lang") || "auto";
+      } catch (e) { /* blocked */ }
+      if (pick !== "auto") return pick;
+      let l = "";
+      try {
+        l = (await gql("query { configuration { interface { language } } }")).configuration.interface.language || "";
+      } catch (e) { /* older Stash */ }
+      l = String(l || navigator.language || "").toLowerCase();
+      return /^zh[-_](cn|sg|hans)/.test(l) || l === "zh" ? "zh-CN" : "en";
+    }
+    function run({ texts, patterns }) {
+      const exact = new Map(Object.entries(texts));
+      const pats = patterns.map(([re, out]) => [new RegExp("^" + re + "$"), out]);
+      const neutral = (p) => !/[a-z]{2,}/.test(p);
+      const tr = (raw, depth) => {
+        depth = depth || 0;
+        const s = raw.replace(/\s+/g, " ").trim();
+        if (!s || !/[A-Za-z]/.test(s) || depth > 4) return null;
+        if (exact.has(s)) return exact.get(s);
+        for (const [re, out] of pats) {
+          const m = s.match(re);
+          if (m) return out.replace(/\$(\d)/g, (x, i) => (m[+i] == null ? "" : tr(m[+i], depth + 1) ?? m[+i]));
+        }
+        for (const [sep, join] of [[" · ", " · "], [", ", "、"]]) {
+          if (!s.includes(sep)) continue;
+          const parts = s.split(sep).map((p) => tr(p, depth + 1) ?? (neutral(p) ? p : null));
+          if (parts.every((p) => p != null)) return parts.join(join);
+        }
+        return null;
+      };
+      const doText = (n) => {
+        const p = n.parentElement;
+        if (!p || p.tagName === "SCRIPT" || p.tagName === "STYLE" || !p.closest(ROOTS) || p.closest(DATA)) return;
+        const v = n.nodeValue;
+        const out = tr(v);
+        if (out != null && out !== v.trim()) n.nodeValue = v.match(/^\s*/)[0] + out + v.match(/\s*$/)[0];
+      };
+      const doEl = (el) => {
+        if (!el.closest || !el.closest(ROOTS) || el.matches(DATA)) return;
+        for (const a of ATTRS) {
+          const v = el.getAttribute(a);
+          if (v) {
+            const out = tr(v);
+            if (out != null && out !== v) el.setAttribute(a, out);
+          }
+        }
+      };
+      const walk = (node) => {
+        if (node.nodeType === 3) return doText(node);
+        if (node.nodeType !== 1) return;
+        const inside = node.closest(ROOTS);
+        const roots = inside ? [node] : [...node.querySelectorAll(ROOTS)];
+        roots.forEach((r) => {
+          doEl(r);
+          const w = document.createTreeWalker(r, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
+          for (let n = w.nextNode(); n; n = w.nextNode()) n.nodeType === 3 ? doText(n) : doEl(n);
+        });
+      };
+      walk(document.body);
+      new MutationObserver((list) => {
+        for (const m of list) {
+          if (m.type === "characterData") doText(m.target);
+          else if (m.type === "attributes") doEl(m.target);
+          else m.addedNodes.forEach(walk);
+        }
+      }).observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ATTRS });
+    }
+    language().then((code) => locales[code] && run(locales[code])).catch(() => {});
+  })();
+
   // ==========================================================================
   // Helpers
   // ==========================================================================
@@ -2945,7 +3027,7 @@
               `<button class="ms-tile" data-page="${p.id}">${p.badge || icon(p.icon)}<b>${p.title}</b><small data-sum="${p.id}"></small></button>`).join("")}
           </div>
           <button class="ms-link" data-page="keys">${icon("keyboard")}<span>Hotkeys &amp; mouse</span></button>
-          <div class="ms-foot">Media Storm 2.0.0</div>
+          <div class="ms-foot">Media Storm 2.2.0</div>
         </div>
         ${PAGES.map((p) => `
           <section class="ms-page" data-page-id="${p.id}" hidden>

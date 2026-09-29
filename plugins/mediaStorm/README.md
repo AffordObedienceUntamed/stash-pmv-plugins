@@ -171,3 +171,7 @@ Settings and presets are stored in the browser's `localStorage`.
 - Stash with the plugin installed (see the repository README).
 - `python` in the PATH – only needed for the RedGifs features (suggestions in the Stash tab, saving clips).
 - Optional: the Random Backgrounds plugin for wallpapers behind the storm.
+
+## Languages
+
+English and **Simplified Chinese (简体中文)**. The language follows Stash UI's choice (Settings → General → Language); on “Automatic” it follows the interface language set in Stash.
