@@ -68,7 +68,7 @@ export async function render(main, params, query = {}) {
       <nav class="kb-set-nav" aria-label="${t("Sections")}">
         <label class="kb-search kb-set-search">${icon("search")}<input class="kb-field" type="search" data-setq placeholder="${t("Search settings")}" autocomplete="off"></label>
         <div class="kb-set-results" data-setres hidden></div>
-        ${SECTIONS.map((s) => (s.group !== group ? `<div class="kb-set-group">${t((group = s.group))}</div>` : "") + `<a href="#/settings/${s.id}" class="${s === sec ? "is-active" : ""}">${esc(t(s.title))}</a>`).join("")}
+        ${SECTIONS.map((s) => (s.group !== group ? `<div class="kb-set-navgroup">${t((group = s.group))}</div>` : "") + `<a href="#/settings/${s.id}" class="${s === sec ? "is-active" : ""}">${esc(t(s.title))}</a>`).join("")}
         <a href="#/extern/classic-settings">${t("Open in classic Stash")}</a></nav>
       <div class="kb-set-body" data-body><div class="kb-loading">${t("Loading …")}</div></div>
     </div>`;

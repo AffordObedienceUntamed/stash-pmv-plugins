@@ -1,8 +1,9 @@
 // Colors: presets and a color wheel per color token. The theme lives in the browser (store "theme")
 // and is applied through CSS variables – every page and the PMV Generator build on them.
 
-import { esc, store } from "./ui.js";
+import { esc, icon, store, toast, promptDialog, seed } from "./ui.js";
 import { t } from "./i18n.js";
+import { gql } from "./api.js";
 
 // [CSS variable, label, hint]
 export const TOKENS = [
@@ -35,6 +36,9 @@ export const themeColors = () => Object.assign({}, PRESETS[0][1], (store.get("th
 // Sets the variables, plus the ones derived from them (lighter/darker accent, lines, text on accent)
 export function applyTheme(theme = store.get("theme")) {
   document.documentElement.classList.toggle("kb-glass", !!store.get("glass"));
+  // Glass transparency: the slider says how see-through, the CSS needs how much color
+  document.documentElement.style.setProperty("--glass-mix", 100 - store.get("glassClear", 58) + "%");
+  applyWallpaper();
   const s = document.documentElement.style;
   if (!theme || !theme.colors) {
     TOKENS.forEach(([v]) => s.removeProperty(v));
@@ -51,6 +55,46 @@ export function applyTheme(theme = store.get("theme")) {
   s.setProperty("--paper", c["--text"]);
   s.setProperty("--tone", `radial-gradient(circle, color-mix(in srgb, ${c["--pink"]} 22%, transparent) 1.1px, transparent 1.7px)`);
 }
+
+// ---------- Background image ----------
+// A random image with the tag "background" (the same images the Random Backgrounds plugin uses in
+// classic Stash), darkened by a veil so text stays readable. A new one on every start.
+
+let wall = null;
+let wallSrc = "";
+export async function applyWallpaper(shuffle) {
+  const on = store.get("wallpaper", false);
+  if (!on) {
+    if (wall) wall.hidden = true;
+    return;
+  }
+  if (!wall) {
+    wall = document.createElement("div");
+    wall.id = "kb-wall";
+    document.body.prepend(wall);
+  }
+  wall.hidden = false;
+  wall.style.setProperty("--wall-dim", store.get("wallDim", 60) / 100);
+  if (wallSrc && !shuffle) return;
+  try {
+    const tag = (await gql(`query { findTags(tag_filter: { name: { value: "background", modifier: EQUALS } }, filter: { per_page: 1 }) { tags { id } } }`)).findTags.tags[0];
+    if (!tag) return toast(t("No tag “background” found – tag the images you want as background with it."), "error");
+    const d = await gql(`query($x: ImageFilterType, $f: FindFilterType) { findImages(image_filter: $x, filter: $f) { images { paths { image } } } }`, {
+      x: { tags: { value: [tag.id], modifier: "INCLUDES" } },
+      f: { per_page: 1, sort: seed() },
+    });
+    const img = d.findImages.images[0];
+    if (!img) return;
+    wallSrc = img.paths.image;
+    const pre = new Image();
+    pre.onload = () => wall.style.setProperty("--wall", `url("${wallSrc}")`);
+    pre.src = wallSrc;
+  } catch (e) { /* no Stash (standalone) or no images */ }
+}
+
+// ---------- Own presets ----------
+
+const ownPresets = () => store.get("themePresets", []);
 
 // ---------- Ambient light (liquid glass) ----------
 // The glass should show what's around it: the thumbnail under the mouse fades in blurred behind the
@@ -243,12 +287,21 @@ export function themeHtml() {
   return `<div class="kb-set kb-theme" data-theme>
     <div class="kb-set-label"><b>${t("Colors")}</b><small>${t("Pick a preset or set each color with the wheel. Saved in this browser.")}</small></div>
     <div class="kb-theme-body">
-      <div class="kb-theme-presets">${PRESETS.map(([name, pc]) => `<button type="button" class="kb-theme-preset${(cur.preset || "Plum") === name && !cur.custom ? " is-on" : ""}" data-preset="${esc(name)}" style="--p-bg:${pc["--bg"]};--p-2:${pc["--bg-2"]};--p-acc:${pc["--pink"]};--p-text:${pc["--text"]}"><i></i><span>${esc(t(name))}</span></button>`).join("")}</div>
+      <div class="kb-theme-presets">${PRESETS.map(([name, pc]) => presetBtn(name, pc, t(name), (cur.preset || "Plum") === name && !cur.custom)).join("")}${ownPresets()
+        .map(([name, pc], i) => presetBtn("own:" + i, pc, name, cur.preset === "own:" + i && !cur.custom, i))
+        .join("")}<button type="button" class="kb-theme-preset kb-theme-save" data-savepreset>${icon("plus")}<span>${t("Save current colors")}</span></button></div>
       <div class="kb-theme-tokens">${TOKENS.map(([v, label, hint]) => `<button type="button" class="kb-theme-token" data-token="${v}"><i style="background:${c[v]}"></i><span><b>${t(label)}</b><small>${t(hint)}</small></span><code>${c[v]}</code></button>`).join("")}</div>
       <label class="kb-theme-glass"><span class="kb-switch"><input type="checkbox" data-glass${store.get("glass") ? " checked" : ""}><i></i></span><span><b>${t("Liquid glass")}</b><small>${t("See-through, blurred panels with a light edge. Needs a bit more graphics power.")}</small></span></label>
+      <label class="kb-theme-range"${store.get("glass") ? "" : " hidden"} data-glassrow><span>${t("Glass transparency")}</span><input type="range" min="10" max="95" step="1" data-glassclear value="${store.get("glassClear", 58)}"><output>${store.get("glassClear", 58)} %</output></label>
+      <label class="kb-theme-glass"><span class="kb-switch"><input type="checkbox" data-wall${store.get("wallpaper") ? " checked" : ""}><i></i></span><span><b>${t("Background image")}</b><small>${t("A random image with the tag “background” – the same ones the Random Backgrounds plugin shows in classic Stash. A new one on every start.")}</small></span></label>
+      <div class="kb-theme-range"${store.get("wallpaper") ? "" : " hidden"} data-wallrow><span>${t("Darken")}</span><input type="range" min="0" max="90" step="1" data-walldim value="${store.get("wallDim", 60)}"><output>${store.get("wallDim", 60)} %</output><button type="button" class="kb-btn is-ghost" data-wallnext>${icon("shuffle")}${t("Another image")}</button></div>
       <button type="button" class="kb-btn is-ghost" data-themereset>${t("Back to default colors")}</button>
     </div>
   </div>`;
+}
+
+function presetBtn(id, pc, label, on, own) {
+  return `<button type="button" class="kb-theme-preset${on ? " is-on" : ""}" data-preset="${esc(id)}" style="--p-bg:${pc["--bg"]};--p-2:${pc["--bg-2"]};--p-acc:${pc["--pink"]};--p-text:${pc["--text"]}"><i></i><span>${esc(label)}</span>${own != null ? `<b class="kb-theme-del" data-delpreset="${own}" title="${t("Delete")}">×</b>` : ""}</button>`;
 }
 
 export function bindTheme(root) {
@@ -259,13 +312,51 @@ export function bindTheme(root) {
   };
   box.querySelector("[data-glass]").addEventListener("change", (e) => {
     store.set("glass", e.target.checked);
+    box.querySelector("[data-glassrow]").hidden = !e.target.checked;
     applyTheme();
   });
+  box.querySelector("[data-glassclear]").addEventListener("input", (e) => {
+    store.set("glassClear", Number(e.target.value));
+    e.target.nextElementSibling.textContent = e.target.value + " %";
+    applyTheme();
+  });
+  box.querySelector("[data-wall]").addEventListener("change", (e) => {
+    store.set("wallpaper", e.target.checked);
+    box.querySelector("[data-wallrow]").hidden = !e.target.checked;
+    applyWallpaper();
+  });
+  box.querySelector("[data-walldim]").addEventListener("input", (e) => {
+    store.set("wallDim", Number(e.target.value));
+    e.target.nextElementSibling.textContent = e.target.value + " %";
+    applyWallpaper();
+  });
+  box.querySelector("[data-wallnext]").addEventListener("click", () => applyWallpaper(true));
   box.addEventListener("click", (e) => {
+    const del = e.target.closest("[data-delpreset]");
+    if (del) {
+      const list = ownPresets();
+      list.splice(Number(del.dataset.delpreset), 1);
+      store.set("themePresets", list);
+      const cur = store.get("theme");
+      if (cur && String(cur.preset).startsWith("own:")) store.set("theme", Object.assign(cur, { custom: true }));
+      return rerender();
+    }
+    if (e.target.closest("[data-savepreset]")) {
+      return promptDialog({ title: t("Save current colors"), label: t("Name of the preset"), value: t("My colors"), ok: t("Save") }).then((name) => {
+        if (!name) return;
+        const list = ownPresets();
+        list.push([name.trim().slice(0, 40), themeColors()]);
+        store.set("themePresets", list);
+        store.set("theme", { preset: "own:" + (list.length - 1), colors: themeColors() });
+        rerender();
+      });
+    }
     const p = e.target.closest("[data-preset]");
     if (p) {
-      const preset = PRESETS.find(([n]) => n === p.dataset.preset);
-      store.set("theme", { preset: preset[0], colors: Object.assign({}, preset[1]) });
+      const id = p.dataset.preset;
+      const preset = id.startsWith("own:") ? ownPresets()[Number(id.slice(4))] : PRESETS.find(([n]) => n === id);
+      if (!preset) return;
+      store.set("theme", { preset: id, colors: Object.assign({}, PRESETS[0][1], preset[1]) });
       applyTheme();
       return rerender();
     }
