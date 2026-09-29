@@ -8,6 +8,7 @@ import { toPiece } from "../pieces.js";
 import { app, go, closeOverlay } from "../main.js";
 import { placardHtml, bindPlacard } from "./placard.js";
 import { similarScenes } from "../similar.js";
+import { createVR, guessVR } from "../vr.js";
 import { BINS, watchRecorder, watchBins, motionBins, combine, peaks } from "../heat.js";
 
 // Read Stash's sprite VTT: time ranges → region in the sprite image
@@ -133,8 +134,13 @@ export async function render(host, params) {
     const row = (attr, val, label, active) => `<button type="button" class="kb-pmenu-opt${active ? " is-on" : ""}" ${attr}="${val}">${active ? icon("check") : "<i></i>"}${esc(label)}</button>`;
     return `<div class="kb-pmenu-sec"><b>${t("Quality")}</b>${q.map(([i, l]) => row("data-q", i, l, i === srcIdx)).join("")}</div>` +
       (caps.length ? `<div class="kb-pmenu-sec"><b>${t("Subtitles")}</b>${row("data-sub", -1, t("Off"), on < 0)}${[...v.textTracks].map((tt, k) => row("data-sub", k, tt.label, on === k)).join("")}</div>` : "") +
+      (vr ? `<div class="kb-pmenu-sec"><b>VR</b>${[["", t("Off")], ["180", "180°"], ["180sbs", t("180° side by side")], ["360", "360°"], ["360tb", t("360° top/bottom")], ["360sbs", t("360° side by side")]].map(([m, l]) => row("data-vr", m, l, vr.mode === m)).join("")}</div>` : "") +
       `<div class="kb-pmenu-sec"><b>${t("Speed")}</b><div class="kb-pmenu-speeds">${[0.5, 0.75, 1, 1.25, 1.5, 2].map((s) => `<button type="button" class="kb-chip${v.playbackRate === s ? " is-on" : ""}" data-rate="${s}">${s}×</button>`).join("")}</div></div>`;
   }
+  // VR: remembered choice for this scene, otherwise guessed from file name and tags
+  const vr = createVR($(".kb-screen"), v);
+  const vrSaved = store.get("vrScenes", {});
+  if (vr) vr.setMode(x.id in vrSaved ? vrSaved[x.id] : guessVR(f.basename, x.tags));
   const menu = $("[data-menu]");
   const closeMenu = () => (menu.hidden = true);
   const onDocDown = (e) => {
@@ -155,6 +161,9 @@ export async function render(host, params) {
       setSubs(i);
       prefs.subs = i < 0 ? null : v.textTracks[i].language;
       savePrefs();
+    } else if (b.dataset.vr != null) {
+      vr.setMode(b.dataset.vr);
+      store.set("vrScenes", Object.assign(store.get("vrScenes", {}), { [x.id]: b.dataset.vr }));
     } else if (b.dataset.rate) v.playbackRate = v.defaultPlaybackRate = Number(b.dataset.rate); // default: survives a quality switch
     menu.innerHTML = menuHtml();
   });
@@ -367,6 +376,7 @@ export async function render(host, params) {
     if (el.closest("[data-close]")) return closeOverlay();
     if (el.closest("[data-play]") || el.closest("[data-bigplay]")) return toggle();
     if (el === v) return woke ? undefined : toggle();
+    if (el.closest(".kb-vr")) return woke || vr.dragged() ? undefined : toggle(); // a drag looks around, a click pauses
     if (el.closest("[data-next]")) return next(1);
     if (el.closest("[data-prev]")) return next(-1);
     if (el.closest("[data-fs]")) return fullscreen();
@@ -437,7 +447,15 @@ export async function render(host, params) {
     }
     toast(t("Fullscreen not allowed"));
   }
+  // Fullscreen: mouse at the right edge slides the info panel in (can be switched off in the settings)
+  stage.addEventListener("pointermove", (e) => {
+    if (document.fullscreenElement !== stage || e.pointerType !== "mouse" || prefs.fsPanel === false) return;
+    const side = $("[data-side]");
+    if (e.clientX >= innerWidth - 12) stage.classList.add("is-peek");
+    else if (stage.classList.contains("is-peek") && e.clientX < innerWidth - side.offsetWidth - 40) stage.classList.remove("is-peek");
+  });
   const onFsChange = () => {
+    stage.classList.remove("is-peek");
     if (!document.fullscreenElement && screen.orientation && screen.orientation.unlock) {
       try {
         screen.orientation.unlock();
@@ -585,6 +603,7 @@ export async function render(host, params) {
     document.removeEventListener("keydown", onKey);
     document.removeEventListener("fullscreenchange", onFsChange);
     document.removeEventListener("pointerdown", onDocDown, true);
+    if (vr) vr.destroy();
     flushActivity(true);
     const tEnd = v.currentTime;
     v.pause();

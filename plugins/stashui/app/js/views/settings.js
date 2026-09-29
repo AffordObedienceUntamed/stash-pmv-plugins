@@ -261,6 +261,8 @@ async function renderApp(body) {
         <input type="range" min="130" max="480" step="10" data-rowh value="${store.get("rowHeight", 250)}"></label>
       <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("Autoplay next in the player")}</b><small>${t("Start the next scene when one ends.")}</small></span>
         <span class="kb-switch"><input type="checkbox" data-auto${player.auto === false ? "" : " checked"}><i></i></span></label>
+      <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("Info panel in fullscreen")}</b><small>${t("Move the mouse to the right edge in fullscreen to slide in the info panel.")}</small></span>
+        <span class="kb-switch"><input type="checkbox" data-fspanel${player.fsPanel === false ? "" : " checked"}><i></i></span></label>
       <div class="kb-set"><div class="kb-set-label"><b>${t("Favorites")}</b><small>${t("The heart is the Stash tag “Favorite”. You'll find it in classic Stash too.")}</small></div></div>
       <div class="kb-set"><div class="kb-set-label"><b>${t("Reset saved view")}</b><small>${t("Expanded folders, player and viewer settings, thumbnail size.")}</small></div>
         <button type="button" class="kb-btn" data-resetlocal>${t("Reset")}</button></div>
@@ -287,6 +289,7 @@ async function renderApp(body) {
     location.reload(); // the navigation is built once – rebuild it with or without folders
   };
   body.querySelector("[data-rowh]").onchange = (e) => store.set("rowHeight", Number(e.target.value));
+  body.querySelector("[data-fspanel]").onchange = (e) => store.set("player", Object.assign(store.get("player", {}), { fsPanel: e.target.checked }));
   body.querySelector("[data-auto]").onchange = (e) => store.set("player", Object.assign(store.get("player", {}), { auto: e.target.checked }));
   body.querySelector("[data-resetlocal]").onclick = () => {
     Object.keys(localStorage).filter((k) => k.startsWith("stashui.") && k !== "stashui.queue" && k !== "stashui.theme").forEach((k) => localStorage.removeItem(k));
