@@ -327,6 +327,7 @@ export default {
   "Installed manually": "已手动安装",
   "Colors": "颜色",
   "Liquid glass": "液态玻璃",
+  "Extensions": "扩展",
   "Empty – add scenes with “Queue”.": "空——点击“播放队列”即可添加场景。",
   "Open the queue": "打开播放队列",
   "Remove from the queue": "从播放队列中移除",

@@ -206,6 +206,7 @@ function renderRail() {
           : `<a href="#/${it.href}" data-match="${it.match.source}">${icon(it.icon)}<span>${t(it.label)}</span>${it.count ? `<span class="kb-count" data-count="${it.count}"></span>` : ""}</a>`
       ).join("") +
       `</nav>` +
+      (g.group === "Watch" ? `<div data-extplugins hidden><div class="kb-rail-group">${t("Extensions")}</div><nav class="kb-nav" data-extlist></nav></div>` : "") +
       (g.group === "Library" && folderMode() === "all" ? `<div class="kb-rail-group">${t("Folders")}</div><div class="kb-tree" id="tree"><div class="kb-rail-foot">${t("Loading …")}</div></div>` : "")
     ).join("") +
     `<div class="kb-rail-foot" id="rail-foot"></div>`;
@@ -237,13 +238,81 @@ async function refreshPluginLinks() {
   // name (e.g. "MediaStorm", "media-storm") is still found
   const norm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
   let on;
+  let plugins;
   try {
-    const d = await gql(`query { plugins { id name enabled } }`);
-    on = new Set(d.plugins.filter((p) => p.enabled).flatMap((p) => [norm(p.id), norm(p.name)]));
+    // paths only exists on newer Stash versions – without it, only own pages are found
+    plugins = (await gql(`query { plugins { id name version enabled paths { javascript } } }`).catch(() => gql(`query { plugins { id name version enabled } }`))).plugins;
+    on = new Set(plugins.filter((p) => p.enabled).flatMap((p) => [norm(p.id), norm(p.name)]));
   } catch (e) {
     return; // unknown – leave the entries visible
   }
   document.querySelectorAll("#rail [data-plugin]").forEach((b) => (b.hidden = !on.has(norm(b.dataset.plugin))));
+  paintExtensions(plugins.filter((p) => p.enabled && !OWN.has(norm(p.id))));
+}
+
+// ---------- Other people's plugins ----------
+// A plugin gets a menu entry when it has a page: its own web page in its assets (e.g. Stash TV's
+// /plugin/stash-tv/assets/app/) – opened directly – or a page it registers inside classic Stash
+// (PluginApi.register.route) – opened embedded. What was found is kept per plugin version.
+const OWN = new Set(["stashui", "mediastorm", "pmvgenerator"]);
+const EXT_KEY = "extPlugins";
+
+async function pageExists(url) {
+  try {
+    const r = await fetch(url, { method: "GET", cache: "no-store" });
+    return r.ok && /html/.test(r.headers.get("content-type") || "");
+  } catch (e) {
+    return false;
+  }
+}
+
+async function findPages(p) {
+  const base = `/plugin/${encodeURIComponent(p.id)}/assets/`;
+  const pages = [];
+  for (const [probe, open] of [[base + "app/index.html", base + "app/"], [base + "index.html", base + "index.html"]]) {
+    if (await pageExists(probe)) {
+      // Cross-check: if a page that can't exist also "exists", the server answers everything with its
+      // own start page – then this one doesn't count either
+      if (!(await pageExists(base + "kb-no-such-page-" + Date.now() + ".html"))) pages.push({ kind: "page", url: open });
+      break;
+    }
+  }
+  // Pages registered in classic Stash: found in the plugin's own JavaScript
+  for (const js of ((p.paths && p.paths.javascript) || []).slice(0, 4)) {
+    try {
+      const src = await (await fetch(js)).text();
+      const re = /register\.route\(\s*["'`](\/[^"'`\s]+)["'`]/g;
+      let m;
+      while ((m = re.exec(src)) && pages.length < 4) {
+        if (!pages.some((x) => x.route === m[1])) pages.push({ kind: "route", route: m[1] });
+      }
+    } catch (e) { /* not readable */ }
+  }
+  return pages;
+}
+
+async function paintExtensions(list) {
+  const box = document.querySelector("#rail [data-extplugins]");
+  if (!box) return;
+  const cache = store.get(EXT_KEY, {});
+  const found = [];
+  for (const p of list) {
+    const key = p.id + "@" + (p.version || "");
+    if (!cache[key]) cache[key] = await findPages(p);
+    cache[key].forEach((pg, i) => found.push({ name: p.name + (i && pg.route ? " – " + pg.route.split("/").pop() : ""), id: p.id, ...pg }));
+  }
+  // Only keep what belongs to installed versions
+  const keep = new Set(list.map((p) => p.id + "@" + (p.version || "")));
+  Object.keys(cache).forEach((k) => keep.has(k) || delete cache[k]);
+  store.set(EXT_KEY, cache);
+  box.querySelector("[data-extlist]").innerHTML = found
+    .map((f) =>
+      f.kind === "page"
+        ? `<a href="${esc(f.url)}" data-ext="${esc(f.id)}" title="${esc(f.name)}">${icon("plug")}<span>${esc(f.name)}</span></a>`
+        : `<a href="#/extern/classic?path=${encodeURIComponent(f.route)}" title="${esc(f.name)}">${icon("plug")}<span>${esc(f.name)}</span></a>`
+    )
+    .join("");
+  box.hidden = !found.length;
 }
 window.addEventListener("stash:plugins-changed", refreshPluginLinks);
 

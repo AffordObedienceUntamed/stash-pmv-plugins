@@ -57,6 +57,9 @@ export default {
 
 ## Works with the other plugins
 
+Other people's plugins with a page of their own show up in the menu under **Extensions** – e.g. Stash TV (its own web page opens directly) or plugins that add a page to classic Stash (opened embedded). Plugins without a page (e.g. overlays for classic Stash) keep working in classic Stash.
+
+
 Stash UI works on its own. If you also install **Media Storm** or the **PMV Generator** (same plugin source), they show up in the menu under **Watch** – entries of plugins that aren't installed or are turned off are hidden. The PMV Generator opens as its own page; its back link and saved scenes lead back into Stash UI.
 
 ## Player
