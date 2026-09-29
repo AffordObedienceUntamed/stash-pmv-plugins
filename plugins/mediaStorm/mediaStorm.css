@@ -1259,5 +1259,16 @@ html.ms-glass .ms-tools button {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .2);
 }
 html.ms-glass .ms-tools button:hover { color: var(--ms-ink); background: var(--ms-flush); }
+/* Speech bubbles ("Click or press a key for sound", messages): glass pill, no comic tail */
+html.ms-glass :is(.ms-toast, .ms-unmute) {
+  color: var(--ms-paper);
+  border: 1px solid var(--ms-glass-edge);
+  border-radius: 999px;
+  background: var(--ms-glass-shine), color-mix(in srgb, var(--ms-ink) 48%, transparent);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+  backdrop-filter: blur(22px) saturate(170%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .24), 0 12px 30px rgba(0, 0, 0, .4);
+}
+html.ms-glass :is(.ms-toast, .ms-unmute)::before, html.ms-glass :is(.ms-toast, .ms-unmute)::after { display: none; }
 html.ms-glass .ms-tools button.ms-dl-done { color: var(--ms-ink); background: #5ee39a; }
 html.ms-glass .ms-tools button.ms-dl-error { color: var(--ms-paper); background: #e0433f; }
