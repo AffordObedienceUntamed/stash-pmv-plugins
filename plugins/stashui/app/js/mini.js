@@ -1,6 +1,6 @@
-// Mini player: the video keeps playing small in a corner while you browse. The player hands over its
-// <video> element (moved, not copied – so it doesn't stop); history keeps counting through the player's
-// own listeners. Drag it into any corner; "Back to the player" continues at the same spot.
+// Mini player: the video keeps playing small while you browse. The player hands over its <video>
+// element (moved, not copied – so it doesn't stop); history keeps counting through the player's own
+// listeners. Move it anywhere, resize it at the corners; "Back to the player" continues at the same spot.
 
 import { esc, icon, store } from "./ui.js";
 import { t } from "./i18n.js";
@@ -12,7 +12,7 @@ export function startMini({ video, id, title, onLeave }) {
   stopMini();
   const wasPlaying = !video.paused;
   const el = document.createElement("div");
-  el.className = "kb-mini is-" + store.get("miniCorner", "br");
+  el.className = "kb-mini";
   el.innerHTML = `
     <div class="kb-mini-screen" data-mscreen></div>
     <div class="kb-mini-bar">
@@ -22,7 +22,8 @@ export function startMini({ video, id, title, onLeave }) {
       <button type="button" data-mopen title="${t("Back to the player")}">${icon("expand")}</button>
       <button type="button" data-mclose title="${t("Close")}">${icon("close")}</button>
     </div>
-    <div class="kb-mini-prog"><i data-mprog></i></div>`;
+    <div class="kb-mini-prog"><i data-mprog></i></div>
+    ${["nw", "ne", "sw", "se"].map((c) => `<span class="kb-mini-grip is-${c}" data-grip="${c}" title="${t("Drag to resize")}"></span>`).join("")}`;
   el.querySelector("[data-mscreen]").appendChild(video);
   document.body.appendChild(el);
   if (wasPlaying && video.paused) video.play().catch(() => {});
@@ -38,38 +39,85 @@ export function startMini({ video, id, title, onLeave }) {
   paint();
   tick();
 
-  // Drag anywhere, let go → it snaps into the nearest corner
+  // Where and how big: free position (left/top) and a size – the longer side of the video in pixels.
+  // The box takes the video's own shape, so portrait clips don't get black bars.
+  const saved = store.get("miniBox", null);
+  const box = { size: (saved && saved.size) || 380, x: saved ? saved.x : null, y: saved ? saved.y : null };
+  const ratio = () => (video.videoWidth && video.videoHeight ? video.videoWidth / video.videoHeight : 16 / 9);
+  const dims = (size) => {
+    const r = ratio();
+    return r >= 1 ? { w: size, h: size / r } : { w: size * r, h: size };
+  };
+  const maxSize = () => Math.max(160, Math.min(innerWidth, innerHeight) * 0.9);
+  function place() {
+    box.size = Math.min(Math.max(box.size, 160), maxSize());
+    const { w, h } = dims(box.size);
+    if (box.x == null) {
+      box.x = innerWidth - w - 18;
+      box.y = innerHeight - h - 18;
+    }
+    // Always fully on screen
+    box.x = Math.min(Math.max(box.x, 4), innerWidth - w - 4);
+    box.y = Math.min(Math.max(box.y, 4), innerHeight - h - 4);
+    Object.assign(el.style, { left: box.x + "px", top: box.y + "px", width: w + "px", height: h + "px" });
+    el.classList.toggle("is-small", w < 260);
+  }
+  const save = () => store.set("miniBox", { x: Math.round(box.x), y: Math.round(box.y), size: Math.round(box.size) });
+  place();
+  video.addEventListener("loadedmetadata", place);
+  const onWinResize = () => place();
+  addEventListener("resize", onWinResize);
+
+  // Move: drag the picture anywhere. Resize: drag a corner – the opposite corner stays put.
   let drag = null;
-  el.querySelector("[data-mscreen]").addEventListener("pointerdown", (e) => {
+  el.addEventListener("pointerdown", (e) => {
     if (e.button !== 0) return;
-    const r = el.getBoundingClientRect();
-    drag = { x: e.clientX, y: e.clientY, left: r.left, top: r.top, moved: false };
+    const grip = e.target.closest("[data-grip]");
+    if (!grip && !e.target.closest("[data-mscreen]")) return;
+    const { w, h } = dims(box.size);
+    drag = { grip: grip && grip.dataset.grip, sx: e.clientX, sy: e.clientY, x: box.x, y: box.y, w, h, moved: false };
     el.setPointerCapture(e.pointerId);
+    e.preventDefault();
   });
   el.addEventListener("pointermove", (e) => {
     if (!drag) return;
-    const dx = e.clientX - drag.x;
-    const dy = e.clientY - drag.y;
-    if (!drag.moved && Math.hypot(dx, dy) < 6) return;
+    const dx = e.clientX - drag.sx;
+    const dy = e.clientY - drag.sy;
+    if (!drag.moved && Math.hypot(dx, dy) < 5) return;
     drag.moved = true;
     el.classList.add("is-dragging");
-    Object.assign(el.style, { left: drag.left + dx + "px", top: drag.top + dy + "px", right: "auto", bottom: "auto" });
-  });
-  el.addEventListener("pointerup", (e) => {
-    if (!drag) return;
-    const moved = drag.moved;
-    drag = null;
-    if (!moved) {
-      if (e.target.closest("[data-mscreen]")) video.paused ? video.play().catch(() => {}) : video.pause();
-      return;
+    if (!drag.grip) {
+      box.x = drag.x + dx;
+      box.y = drag.y + dy;
+    } else {
+      const east = drag.grip.includes("e");
+      const south = drag.grip.includes("s");
+      // New width/height from the pointer, whichever grows more decides (the shape stays the video's)
+      const w = drag.w + (east ? dx : -dx);
+      const h = drag.h + (south ? dy : -dy);
+      const r = ratio();
+      const scale = Math.max(w / drag.w, h / drag.h);
+      box.size = Math.min(Math.max((r >= 1 ? drag.w : drag.h) * scale, 160), maxSize());
+      // Not past the screen edge – the corner you hold stops there, the opposite one stays put
+      const room = { w: east ? innerWidth - 4 - drag.x : drag.x + drag.w - 4, h: south ? innerHeight - 4 - drag.y : drag.y + drag.h - 4 };
+      const want = dims(box.size);
+      box.size *= Math.min(1, room.w / want.w, room.h / want.h);
+      const n = dims(box.size);
+      box.x = east ? drag.x : drag.x + drag.w - n.w;
+      box.y = south ? drag.y : drag.y + drag.h - n.h;
     }
-    const r = el.getBoundingClientRect();
-    const corner = (r.top + r.height / 2 < innerHeight / 2 ? "t" : "b") + (r.left + r.width / 2 < innerWidth / 2 ? "l" : "r");
-    store.set("miniCorner", corner);
-    el.classList.remove("is-dragging", "is-tl", "is-tr", "is-bl", "is-br");
-    el.classList.add("is-" + corner);
-    el.style.left = el.style.top = el.style.right = el.style.bottom = "";
+    place();
   });
+  const endDrag = (e) => {
+    if (!drag) return;
+    const d = drag;
+    drag = null;
+    el.classList.remove("is-dragging");
+    if (d.moved) return save();
+    if (!d.grip && e.type === "pointerup") video.paused ? video.play().catch(() => {}) : video.pause(); // a click on the picture
+  };
+  el.addEventListener("pointerup", endDrag);
+  el.addEventListener("pointercancel", endDrag);
 
   el.addEventListener("click", (e) => {
     if (e.target.closest("[data-mplay]")) video.paused ? video.play().catch(() => {}) : video.pause();
@@ -81,14 +129,15 @@ export function startMini({ video, id, title, onLeave }) {
       go("scene/" + id);
     } else if (e.target.closest("[data-mclose]")) stopMini();
   });
-  cur = { el, v: video, id, onLeave };
+  cur = { el, v: video, id, onLeave, off: () => removeEventListener("resize", onWinResize) };
 }
 
 // Ends the mini player (saves the watching progress through the player). Returns { id, at } or null.
 export function stopMini() {
   if (!cur) return null;
-  const { el, v, id, onLeave } = cur;
+  const { el, v, id, onLeave, off } = cur;
   cur = null;
+  off();
   const at = v.currentTime;
   try {
     onLeave && onLeave();
