@@ -1,6 +1,6 @@
 // Stash UI – app frame: router, navigation rail, overlays.
 
-import { esc, icon, store, errorToast, fmtNum, $ } from "./ui.js";
+import { esc, icon, store, errorToast, fmtNum, $, folderMode } from "./ui.js";
 import { t, initLang } from "./i18n.js";
 import { gql, loadFolders, favoriteTagId, stats } from "./api.js";
 import { applyTheme, initAmbient } from "./theme.js";
@@ -206,7 +206,7 @@ function renderRail() {
           : `<a href="#/${it.href}" data-match="${it.match.source}">${icon(it.icon)}<span>${t(it.label)}</span>${it.count ? `<span class="kb-count" data-count="${it.count}"></span>` : ""}</a>`
       ).join("") +
       `</nav>` +
-      (g.group === "Library" && store.get("railFolders", true) ? `<div class="kb-rail-group">${t("Folders")}</div><div class="kb-tree" id="tree"><div class="kb-rail-foot">${t("Loading …")}</div></div>` : "")
+      (g.group === "Library" && folderMode() === "all" ? `<div class="kb-rail-group">${t("Folders")}</div><div class="kb-tree" id="tree"><div class="kb-rail-foot">${t("Loading …")}</div></div>` : "")
     ).join("") +
     `<div class="kb-rail-foot" id="rail-foot"></div>`;
 

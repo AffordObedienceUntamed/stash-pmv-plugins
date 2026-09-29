@@ -1,6 +1,6 @@
 // Home page: figures, continue watching, favorites, new arrivals, folders, random hanging.
 
-import { esc, icon, fmtNum, store, seed, errorToast } from "../ui.js";
+import { esc, icon, fmtNum, store, seed, errorToast, folderMode } from "../ui.js";
 import { t } from "../i18n.js";
 import { stats, findItems, loadFolders } from "../api.js";
 import { toPiece, Hang } from "../pieces.js";
@@ -96,7 +96,7 @@ export async function render(main) {
 
   let stopCovers = () => {};
   // Folders can be switched off (Settings → This interface) – then they only load on the Folders page
-  if (!store.get("railFolders", true)) $("[data-rooms-sec]").hidden = true;
+  if (folderMode() !== "all") $("[data-rooms-sec]").hidden = true;
   else loadFolders()
     .then((tree) => {
       const top = (tree.roots.length === 1 && tree.roots[0].kids.length ? tree.roots[0].kids : tree.roots).slice().sort((a, b) => b.timg + b.tvid - (a.timg + a.tvid)).slice(0, 8);

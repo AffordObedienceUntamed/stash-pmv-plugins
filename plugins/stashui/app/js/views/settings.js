@@ -2,7 +2,7 @@
 // translated when shown (the English text is the key).
 // Fields and types come live from Stash; unknown options end up under "More options".
 
-import { esc, icon, toast, errorToast, store, confirmDialog, fmtDate } from "../ui.js";
+import { esc, icon, toast, errorToast, store, confirmDialog, fmtDate, folderMode } from "../ui.js";
 import { t, locale, LANGS, chosen, choose } from "../i18n.js";
 import { gql } from "../api.js";
 import { typeInfo, selection, fieldHtml, readFields, unwrap, labelOf, LABELS } from "../forms.js";
@@ -47,7 +47,7 @@ SECTIONS.splice(SECTIONS.findIndex((x) => x.id === "classic-ui"), 0, Object.assi
 const CUSTOM_ENTRIES = {
   look: ["Colors", "Liquid glass"],
   "player-ui": ["Autoplay next in the player", "Info panel in fullscreen", "Sound in previews"],
-  "this-ui": ["Language", "Folders in the navigation and on the home page", "This interface as home page", "Thumbnail size", "Favorites", "Reset saved view"],
+  "this-ui": ["Language", "Folder loading", "This interface as home page", "Thumbnail size", "Favorites", "Reset saved view"],
   database: ["Back up database", "Optimize database", "Clean up generated files"],
   login: ["API key"],
 };
@@ -357,8 +357,8 @@ async function renderApp(body) {
     <form class="kb-set-form" data-form>
       <label class="kb-set"><span class="kb-set-label"><b>${t("Language")}</b><small>${t("“Automatic” follows the language set in Stash (classic Stash → Settings → Interface).")}</small></span>
         <select class="kb-field" data-lang><option value="auto">${t("Automatic")}</option>${LANGS.map(([code, name]) => `<option value="${code}">${esc(name)}</option>`).join("")}</select></label>
-      <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("Folders in the navigation and on the home page")}</b><small>${t("Counting the folders reads the whole library once (then it's remembered). Off = folders only load when you open “Folders”.")}</small></span>
-        <span class="kb-switch"><input type="checkbox" data-railfolders${store.get("railFolders", true) ? " checked" : ""}><i></i></span></label>
+      <label class="kb-set"><span class="kb-set-label"><b>${t("Folder loading")}</b><small>${t("Counting the folders reads the whole library once (then it's remembered) – on very big libraries that can take very long. “Off” loads no folders at all.")}</small></span>
+        <select class="kb-field" data-foldermode>${[["all", "Everywhere"], ["page", "Only on the Folders page"], ["off", "Off"]].map(([v, l]) => `<option value="${v}"${folderMode() === v ? " selected" : ""}>${t(l)}</option>`).join("")}</select></label>
       <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("This interface as home page")}</b><small>${t("Opening Stash goes straight to this interface. Off = classic Stash stays the home page.")}</small></span>
         <span class="kb-switch"><input type="checkbox" data-home${cfg.keepClassicHome ? "" : " checked"}><i></i></span></label>
       <label class="kb-set"><span class="kb-set-label"><b>${t("Thumbnail size")}</b><small>${t("How tall a row in the lists is.")}</small></span>
@@ -383,8 +383,9 @@ async function renderApp(body) {
       errorToast(err, "Save");
     }
   };
-  body.querySelector("[data-railfolders]").onchange = (e) => {
-    store.set("railFolders", e.target.checked);
+  body.querySelector("[data-foldermode]").onchange = (e) => {
+    store.set("folderMode", e.target.value);
+    sessionStorage.removeItem("stashui.foldersOnce");
     location.reload(); // the navigation is built once – rebuild it with or without folders
   };
   body.querySelector("[data-rowh]").onchange = (e) => store.set("rowHeight", Number(e.target.value));

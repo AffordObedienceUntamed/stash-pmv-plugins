@@ -111,6 +111,9 @@ export const invNo = (kind, id) => `${{ scene: "S", image: "I", gallery: "G" }[k
 
 // ---------- Storage ----------
 
+// Folders: "all" (navigation, home page, Folders page), "page" (only the Folders page) or "off"
+export const folderMode = () => store.get("folderMode") || (store.get("railFolders", true) ? "all" : "page");
+
 export const store = {
   get(key, fallback) {
     try {

@@ -1,6 +1,6 @@
 // Folders as rooms: overview of the top folders and single rooms with subfolders and items.
 
-import { esc, icon, plural, errorToast } from "../ui.js";
+import { esc, icon, plural, errorToast, folderMode } from "../ui.js";
 import { t } from "../i18n.js";
 import { loadFolders, findItems } from "../api.js";
 import { mediaBrowser } from "./media.js";
@@ -52,6 +52,17 @@ export function fillRoomCovers(root) {
 }
 
 export async function render(main, params, query) {
+  // Folder loading switched off: nothing is loaded unless asked for (in this tab)
+  if (folderMode() === "off" && !sessionStorage.getItem("stashui.foldersOnce")) {
+    main.innerHTML = `<div class="kb-empty"><b>${t("Folder loading is switched off")}</b>
+      <p>${t("Counting folders reads the whole library, which can take very long on big libraries. Switch it back on under Settings → General.")}</p>
+      <p><button class="kb-btn is-primary" data-loadonce>${t("Load anyway")}</button> <a class="kb-btn" href="#/settings/this-ui?find=${encodeURIComponent(t("Folder loading"))}">${t("Settings")}</a></p></div>`;
+    main.querySelector("[data-loadonce]").onclick = () => {
+      sessionStorage.setItem("stashui.foldersOnce", "1");
+      render(main, params, query);
+    };
+    return;
+  }
   let tree;
   try {
     tree = await loadFolders();

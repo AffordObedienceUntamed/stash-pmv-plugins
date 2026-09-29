@@ -36,6 +36,7 @@ export const themeColors = () => Object.assign({}, PRESETS[0][1], (store.get("th
 // Sets the variables, plus the ones derived from them (lighter/darker accent, lines, text on accent)
 export function applyTheme(theme = store.get("theme")) {
   document.documentElement.classList.toggle("kb-glass", !!store.get("glass"));
+  document.documentElement.classList.toggle("kb-noblur", store.get("glassBlur", true) === false);
   // Glass transparency: the slider says how see-through, the CSS needs how much color
   document.documentElement.style.setProperty("--glass-mix", 100 - store.get("glassClear", 58) + "%");
   applyWallpaper();
@@ -156,6 +157,17 @@ export function initAmbient() {
       };
       next.src = src;
     }, 160);
+  });
+  // Leaving the photos/videos: after a moment the tint fades back to the theme colors
+  document.addEventListener("pointerout", (e) => {
+    const from = e.target.closest && e.target.closest(".kb-piece, .kb-tile, [data-amb]");
+    const to = e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest(".kb-piece, .kb-tile, [data-amb]");
+    if (!from || to) return;
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      last = "";
+      ambient.querySelectorAll("img").forEach((i) => i.classList.remove("is-on"));
+    }, 450);
   });
 }
 
@@ -321,7 +333,10 @@ export function themeHtml() {
         .join("")}<button type="button" class="kb-theme-preset kb-theme-save" data-savepreset>${icon("plus")}<span>${t("Save current colors")}</span></button></div>
       <div class="kb-theme-tokens">${TOKENS.map(([v, label, hint]) => `<button type="button" class="kb-theme-token" data-token="${v}"><i style="background:${c[v]}"></i><span><b>${t(label)}</b><small>${t(hint)}</small></span><code>${c[v]}</code></button>`).join("")}</div>
       <label class="kb-theme-glass"><span class="kb-switch"><input type="checkbox" data-glass${store.get("glass") ? " checked" : ""}><i></i></span><span><b>${t("Liquid glass")}</b><small>${t("See-through, blurred panels with a light edge. Needs a bit more graphics power.")}</small></span></label>
-      <label class="kb-theme-range"${store.get("glass") ? "" : " hidden"} data-glassrow><span>${t("Glass transparency")}</span><input type="range" min="0" max="100" step="1" data-glassclear value="${store.get("glassClear", 58)}"><output>${store.get("glassClear", 58)} %</output></label>
+      <div class="kb-theme-wall"${store.get("glass") ? "" : " hidden"} data-glassrow>
+        <label class="kb-theme-range"><span>${t("Glass transparency")}</span><input type="range" min="0" max="100" step="1" data-glassclear value="${store.get("glassClear", 58)}"><output>${store.get("glassClear", 58)} %</output></label>
+        <label class="kb-theme-inline"><span class="kb-switch"><input type="checkbox" data-glassblur${store.get("glassBlur", true) === false ? "" : " checked"}><i></i></span>${t("Blur behind the glass")}</label>
+      </div>
       <label class="kb-theme-glass"><span class="kb-switch"><input type="checkbox" data-wall${store.get("wallpaper") ? " checked" : ""}><i></i></span><span><b>${t("Background image")}</b><small>${t("A random image with the tag “background” – the same ones the Random Backgrounds plugin shows in classic Stash. A new one on every start.")}</small></span></label>
       <div class="kb-theme-wall"${store.get("wallpaper") ? "" : " hidden"} data-wallrow>
         <div class="kb-seg" role="tablist"><button type="button" data-wallmode="random"${store.get("wallMode", "random") === "random" ? ' class="is-on"' : ""}>${t("Random")}</button><button type="button" data-wallmode="fixed"${store.get("wallMode", "random") === "fixed" ? ' class="is-on"' : ""}>${t("Chosen image")}</button></div>
@@ -353,6 +368,10 @@ export function bindTheme(root) {
   box.querySelector("[data-glass]").addEventListener("change", (e) => {
     store.set("glass", e.target.checked);
     box.querySelector("[data-glassrow]").hidden = !e.target.checked;
+    applyTheme();
+  });
+  box.querySelector("[data-glassblur]").addEventListener("change", (e) => {
+    store.set("glassBlur", e.target.checked);
     applyTheme();
   });
   box.querySelector("[data-glassclear]").addEventListener("input", (e) => {
