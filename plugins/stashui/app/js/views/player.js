@@ -453,7 +453,7 @@ export async function render(host, params) {
   stage.addEventListener("pointermove", (e) => {
     if (document.fullscreenElement !== stage || e.pointerType !== "mouse" || prefs.fsPanel === false) return;
     const side = $("[data-side]");
-    if (e.clientX >= innerWidth - 12) stage.classList.add("is-peek");
+    if (e.clientX >= innerWidth - Math.max(70, innerWidth * 0.05)) stage.classList.add("is-peek");
     else if (stage.classList.contains("is-peek") && e.clientX < innerWidth - side.offsetWidth - 40) stage.classList.remove("is-peek");
   });
   const onFsChange = () => {

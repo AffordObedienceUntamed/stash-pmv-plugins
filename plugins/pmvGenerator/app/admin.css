@@ -128,6 +128,18 @@
 .kb-theme-token code { color: var(--text-2); font: 12px/1 Consolas, monospace; }
 .kb-theme-range { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: -4px 0 0 56px; color: var(--text-2); font: 500 13.5px/1.2 var(--f-label); }
 .kb-theme-range[hidden] { display: none; }
+.kb-theme-wall { display: flex; flex-direction: column; gap: 12px; margin: -4px 0 0 56px; }
+.kb-theme-wall[hidden], .kb-theme-wall [hidden] { display: none !important; }
+.kb-theme-wall .kb-seg { align-self: flex-start; }
+.kb-theme-wall .kb-theme-range { margin: 0; }
+.kb-theme-wall [data-wallrandom] { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+.kb-theme-inline { display: inline-flex; align-items: center; gap: 10px; color: var(--text-2); font: 500 13.5px/1.2 var(--f-label); cursor: pointer; }
+.kb-wall-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; max-width: 640px; max-height: 260px; overflow-y: auto; }
+.kb-wall-grid button { padding: 0; border: 2px solid transparent; border-radius: 6px; overflow: hidden; background: var(--base); aspect-ratio: 16 / 10; cursor: pointer; }
+.kb-wall-grid button.is-on { border-color: var(--pink); }
+.kb-wall-grid img { width: 100%; height: 100%; object-fit: cover; }
+.kb-wall-url { margin-top: 10px; }
+.kb-wall-url .kb-field { width: min(420px, 60vw); }
 .kb-theme-range input { width: 200px; accent-color: var(--pink); }
 .kb-theme-range output { min-width: 42px; color: var(--faint); font-variant-numeric: tabular-nums; }
 .kb-theme-preset { position: relative; }

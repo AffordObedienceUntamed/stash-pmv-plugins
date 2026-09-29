@@ -57,11 +57,42 @@ export function applyTheme(theme = store.get("theme")) {
 }
 
 // ---------- Background image ----------
-// A random image with the tag "background" (the same images the Random Backgrounds plugin uses in
-// classic Stash), darkened by a veil so text stays readable. A new one on every start.
+// Either a random image with the tag "background" (the same images the Random Backgrounds plugin uses
+// in classic Stash) – on every start or on every page – or one image chosen for good. A veil in the
+// background color darkens it so text stays readable; changes fade over.
 
 let wall = null;
 let wallSrc = "";
+let pool = null; // image URLs with the tag, loaded once
+let front = 0;
+
+export async function bgImages() {
+  if (pool) return pool;
+  const tag = (await gql(`query { findTags(tag_filter: { name: { value: "background", modifier: EQUALS } }, filter: { per_page: 1 }) { tags { id } } }`)).findTags.tags[0];
+  if (!tag) return (pool = []);
+  const d = await gql(`query($x: ImageFilterType, $f: FindFilterType) { findImages(image_filter: $x, filter: $f) { images { id paths { image thumbnail } } } }`, {
+    x: { tags: { value: [tag.id], modifier: "INCLUDES" } },
+    f: { per_page: 300, sort: seed() },
+  });
+  return (pool = d.findImages.images.map((i) => ({ id: i.id, image: i.paths.image, thumb: i.paths.thumbnail || i.paths.image })));
+}
+
+function showWall(src) {
+  if (!src || src === wallSrc) return;
+  wallSrc = src;
+  const pre = new Image();
+  pre.onload = () => {
+    if (wallSrc !== src) return;
+    const layers = wall.children;
+    const next = layers[1 - front];
+    next.style.backgroundImage = `url("${src}")`;
+    next.classList.add("is-on");
+    layers[front].classList.remove("is-on");
+    front = 1 - front;
+  };
+  pre.src = src;
+}
+
 export async function applyWallpaper(shuffle) {
   const on = store.get("wallpaper", false);
   if (!on) {
@@ -71,24 +102,22 @@ export async function applyWallpaper(shuffle) {
   if (!wall) {
     wall = document.createElement("div");
     wall.id = "kb-wall";
+    wall.innerHTML = "<i></i><i></i>";
     document.body.prepend(wall);
+    // New random image when the page changes (if switched on)
+    window.addEventListener("hashchange", () => {
+      if (store.get("wallpaper") && store.get("wallMode", "random") === "random" && store.get("wallPerPage", false)) applyWallpaper(true);
+    });
   }
   wall.hidden = false;
   wall.style.setProperty("--wall-dim", store.get("wallDim", 60) / 100);
+  if (store.get("wallMode", "random") === "fixed" && store.get("wallFixed")) return showWall(store.get("wallFixed"));
   if (wallSrc && !shuffle) return;
   try {
-    const tag = (await gql(`query { findTags(tag_filter: { name: { value: "background", modifier: EQUALS } }, filter: { per_page: 1 }) { tags { id } } }`)).findTags.tags[0];
-    if (!tag) return toast(t("No tag “background” found – tag the images you want as background with it."), "error");
-    const d = await gql(`query($x: ImageFilterType, $f: FindFilterType) { findImages(image_filter: $x, filter: $f) { images { paths { image } } } }`, {
-      x: { tags: { value: [tag.id], modifier: "INCLUDES" } },
-      f: { per_page: 1, sort: seed() },
-    });
-    const img = d.findImages.images[0];
-    if (!img) return;
-    wallSrc = img.paths.image;
-    const pre = new Image();
-    pre.onload = () => wall.style.setProperty("--wall", `url("${wallSrc}")`);
-    pre.src = wallSrc;
+    const list = await bgImages();
+    if (!list.length) return toast(t("No tag “background” found – tag the images you want as background with it."), "error");
+    const others = list.filter((x) => x.image !== wallSrc);
+    showWall((others.length ? others : list)[Math.floor(Math.random() * (others.length || list.length))].image);
   } catch (e) { /* no Stash (standalone) or no images */ }
 }
 
@@ -292,9 +321,20 @@ export function themeHtml() {
         .join("")}<button type="button" class="kb-theme-preset kb-theme-save" data-savepreset>${icon("plus")}<span>${t("Save current colors")}</span></button></div>
       <div class="kb-theme-tokens">${TOKENS.map(([v, label, hint]) => `<button type="button" class="kb-theme-token" data-token="${v}"><i style="background:${c[v]}"></i><span><b>${t(label)}</b><small>${t(hint)}</small></span><code>${c[v]}</code></button>`).join("")}</div>
       <label class="kb-theme-glass"><span class="kb-switch"><input type="checkbox" data-glass${store.get("glass") ? " checked" : ""}><i></i></span><span><b>${t("Liquid glass")}</b><small>${t("See-through, blurred panels with a light edge. Needs a bit more graphics power.")}</small></span></label>
-      <label class="kb-theme-range"${store.get("glass") ? "" : " hidden"} data-glassrow><span>${t("Glass transparency")}</span><input type="range" min="10" max="95" step="1" data-glassclear value="${store.get("glassClear", 58)}"><output>${store.get("glassClear", 58)} %</output></label>
+      <label class="kb-theme-range"${store.get("glass") ? "" : " hidden"} data-glassrow><span>${t("Glass transparency")}</span><input type="range" min="0" max="100" step="1" data-glassclear value="${store.get("glassClear", 58)}"><output>${store.get("glassClear", 58)} %</output></label>
       <label class="kb-theme-glass"><span class="kb-switch"><input type="checkbox" data-wall${store.get("wallpaper") ? " checked" : ""}><i></i></span><span><b>${t("Background image")}</b><small>${t("A random image with the tag “background” – the same ones the Random Backgrounds plugin shows in classic Stash. A new one on every start.")}</small></span></label>
-      <div class="kb-theme-range"${store.get("wallpaper") ? "" : " hidden"} data-wallrow><span>${t("Darken")}</span><input type="range" min="0" max="90" step="1" data-walldim value="${store.get("wallDim", 60)}"><output>${store.get("wallDim", 60)} %</output><button type="button" class="kb-btn is-ghost" data-wallnext>${icon("shuffle")}${t("Another image")}</button></div>
+      <div class="kb-theme-wall"${store.get("wallpaper") ? "" : " hidden"} data-wallrow>
+        <div class="kb-seg" role="tablist"><button type="button" data-wallmode="random"${store.get("wallMode", "random") === "random" ? ' class="is-on"' : ""}>${t("Random")}</button><button type="button" data-wallmode="fixed"${store.get("wallMode", "random") === "fixed" ? ' class="is-on"' : ""}>${t("Chosen image")}</button></div>
+        <div data-wallrandom${store.get("wallMode", "random") === "random" ? "" : " hidden"}>
+          <label class="kb-theme-inline"><span class="kb-switch"><input type="checkbox" data-wallperpage${store.get("wallPerPage", false) ? " checked" : ""}><i></i></span>${t("New image on every page")}</label>
+          <button type="button" class="kb-btn is-ghost" data-wallnext>${icon("shuffle")}${t("Another image")}</button>
+        </div>
+        <div data-wallfixed${store.get("wallMode", "random") === "fixed" ? "" : " hidden"}>
+          <div class="kb-wall-grid" data-wallgrid><div class="kb-loading">${t("Loading …")}</div></div>
+          <label class="kb-theme-inline kb-wall-url"><span>${t("Or an image URL")}</span><input class="kb-field" data-wallurl placeholder="https://…" value="${esc(store.get("wallMode") === "fixed" && !String(store.get("wallFixed") || "").startsWith("/") ? store.get("wallFixed") || "" : "")}" spellcheck="false"></label>
+        </div>
+        <div class="kb-theme-range"><span>${t("Darken")}</span><input type="range" min="0" max="90" step="1" data-walldim value="${store.get("wallDim", 60)}"><output>${store.get("wallDim", 60)} %</output></div>
+      </div>
       <button type="button" class="kb-btn is-ghost" data-themereset>${t("Back to default colors")}</button>
     </div>
   </div>`;
@@ -331,6 +371,45 @@ export function bindTheme(root) {
     applyWallpaper();
   });
   box.querySelector("[data-wallnext]").addEventListener("click", () => applyWallpaper(true));
+  box.querySelector("[data-wallperpage]").addEventListener("change", (e) => store.set("wallPerPage", e.target.checked));
+  // Chosen image: the images with the tag "background" to pick from, or any URL
+  const fillGrid = async () => {
+    const grid = box.querySelector("[data-wallgrid]");
+    try {
+      const list = await bgImages();
+      grid.innerHTML = list.length
+        ? list.slice(0, 120).map((x) => `<button type="button" data-wallpick="${esc(x.image)}" class="${store.get("wallFixed") === x.image ? "is-on" : ""}"><img alt="" loading="lazy" src="${esc(x.thumb)}"></button>`).join("")
+        : `<p class="kb-hint">${t("No tag “background” found – tag the images you want as background with it.")}</p>`;
+    } catch (e) {
+      grid.innerHTML = `<p class="kb-hint">${esc(e.message)}</p>`;
+    }
+  };
+  if (store.get("wallMode", "random") === "fixed") fillGrid();
+  box.querySelectorAll("[data-wallmode]").forEach((b) =>
+    b.addEventListener("click", () => {
+      const mode = b.dataset.wallmode;
+      store.set("wallMode", mode);
+      box.querySelectorAll("[data-wallmode]").forEach((x) => x.classList.toggle("is-on", x === b));
+      box.querySelector("[data-wallrandom]").hidden = mode !== "random";
+      box.querySelector("[data-wallfixed]").hidden = mode !== "fixed";
+      if (mode === "fixed") fillGrid();
+      applyWallpaper(mode === "random");
+    })
+  );
+  box.querySelector("[data-wallgrid]").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-wallpick]");
+    if (!b) return;
+    store.set("wallFixed", b.dataset.wallpick);
+    box.querySelectorAll("[data-wallpick]").forEach((x) => x.classList.toggle("is-on", x === b));
+    applyWallpaper();
+  });
+  box.querySelector("[data-wallurl]").addEventListener("change", (e) => {
+    const url = e.target.value.trim();
+    if (!/^(https?:\/\/|\/)/.test(url)) return;
+    store.set("wallFixed", url);
+    box.querySelectorAll("[data-wallpick]").forEach((x) => x.classList.remove("is-on"));
+    applyWallpaper();
+  });
   box.addEventListener("click", (e) => {
     const del = e.target.closest("[data-delpreset]");
     if (del) {
