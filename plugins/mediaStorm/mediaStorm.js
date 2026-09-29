@@ -2619,10 +2619,10 @@
     "</select></label>";
   const txt = (key, label, placeholder) =>
     `<label class="ms-row ms-text"><span>${label}</span>` +
-    `<input class="ms-input" type="text" data-key="${key}" placeholder="${placeholder}" autocomplete="off" spellcheck="false"></label>`;
+    `<input class="ms-input" type="text" data-key="${key}" placeholder="${placeholder}" autocomplete="off" spellcheck="false" data-fb-done="1"></label>`;
   const tagBox = (key, label) =>
     `<div class="ms-tags" data-tags="${key}"><span>${label}</span><div class="ms-chips"></div>` +
-    `<input class="ms-input" type="text" placeholder="Search tag…" autocomplete="off"><div class="ms-sugg" hidden></div></div>`;
+    `<input class="ms-input" type="text" placeholder="Search tag…" autocomplete="off" data-fb-done="1"><div class="ms-sugg" hidden></div></div>`; // data-fb-done: see "Robust against themes" in the CSS
   // Only visible if the current layout is in the list
   const cond = (when, body) => `<div class="ms-cond" data-when="${when}">${body}</div>`;
   const hint = (t) => `<p class="ms-hint">${t}</p>`;
@@ -2806,7 +2806,7 @@
       body: () =>
         rng("rgPct", "RedGifs share", 0, 100, 5) +
         '<div class="ms-rgpick"><span>Niches, tags &amp; creators</span><div class="ms-chips" data-rgchips></div>' +
-        '<input class="ms-input" type="text" data-rgq placeholder="Search niches, tags, creators …" autocomplete="off" spellcheck="false">' +
+        '<input class="ms-input" type="text" data-rgq placeholder="Search niches, tags, creators …" autocomplete="off" spellcheck="false" data-fb-done="1">' +
         '<div class="ms-sugg ms-sugg-rg" hidden></div></div>' +
         sel("rgOrder", "Sort order", [["trending", "Trending"], ["top7", "Top of the week"], ["top28", "Top of the month"], ["top", "Top (all time)"], ["latest", "Latest"]]) +
         sel("rgQuality", "Quality", [["sd", "SD (faster)"], ["hd", "HD"]]) +

@@ -1186,3 +1186,22 @@ body::after { transition: background-image .9s ease; }
   .ms-big, .ms-big:hover, .ms-big:active { transition: none; transform: none; }
   .ms-item.ms-in:hover { --s: 1; --r: var(--rot, 0deg); }
 }
+
+/* ---------- Robust against themes (e.g. Refract) ----------
+   Themes restyle classic Stash with page-wide rules, and Media Storm's panel lives on that page.
+   - Refract forces its font on every element through the variable --theme-font-stack: inside Media
+     Storm that variable points to Media Storm's own fonts (the narrow display font where it's used).
+   - Refract marks the container around the first "Search…" field with ≥ 4 buttons as a Stash filter
+     toolbar (display: flex) – that caught the panel body and made it 1200 px wide. The search fields
+     carry data-fb-done (Refract's own "already handled" mark), and the body keeps its layout anyway. */
+.ms-panel, .ms-overlay, .ms-toasts { --theme-font-stack: var(--ms-font); }
+.ms-title,
+.ms-big,
+.ms-empty b,
+.ms-block-head,
+.ms-vibe b,
+.ms-tile b,
+.ms-page-head h3,
+.ms-subhead,
+.ms-sug-head { --theme-font-stack: var(--ms-display); }
+.ms-panel .ms-p-body.ms-p-body { display: block; }
