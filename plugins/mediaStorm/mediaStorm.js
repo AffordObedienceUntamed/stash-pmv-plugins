@@ -28,6 +28,7 @@
     audioMode: "all", // all | hover | newest | mute
     randomStart: true,
     videoSource: "stream", // stream | preview
+    maxStreams: 4, // full videos from Stash at once – browsers keep only 6 connections per server
     // Layout
     layout: "chaos", // chaos | pile | grid | mosaic | spotlight | spiral | ticker | rain
     sizeMin: 18,
@@ -1074,6 +1075,20 @@
     it.media = img;
   }
 
+  // Full videos from Stash each keep one of the browser's ~6 connections to the server busy for as long
+  // as they play (they load ahead bit by bit). With all of them taken, every other request to Stash waits –
+  // the storm tab and every Stash tab in this browser hang. So only S.maxStreams full videos run at once;
+  // the rest use the preview clip (small, loaded quickly, the connection is free again right away).
+  // RedGifs comes from another server and doesn't count.
+  const liveStreams = new Set();
+  const fromStash = (u) => {
+    try {
+      return new URL(u, location.href).origin === location.origin;
+    } catch (e) {
+      return false;
+    }
+  };
+
   function createVideo(it, frame, ok, fail) {
     const v = document.createElement("video");
     v.className = "ms-media";
@@ -1086,10 +1101,28 @@
     let idx = 0;
     let ready = false;
 
+    const isFull = (u) => fromStash(u) && u !== it.d.preview;
     const tryNext = () => {
       if (ready || it.released) return;
-      if (idx >= sources.length) return fail();
+      liveStreams.delete(it);
+      // Full video only while there's room – otherwise straight to the next (lighter) source
+      let skipped = false;
+      while (idx < sources.length && isFull(sources[idx]) && liveStreams.size >= Math.max(1, S.maxStreams || 4)) {
+        idx++;
+        skipped = true;
+      }
+      if (idx >= sources.length) {
+        // No lighter source (no preview clips generated): the scene's cover image instead of nothing
+        if (skipped && it.d.poster) {
+          v.remove();
+          it.media = it.video = null;
+          it.d = Object.assign({}, it.d, { src: it.d.poster, alt: null });
+          return createImage(it, frame, ok, fail);
+        }
+        return fail();
+      }
       it.src = sources[idx++];
+      if (isFull(it.src)) liveStreams.add(it);
       v.src = it.src;
       v.load();
     };
@@ -1129,6 +1162,7 @@
     const m = it.media;
     if (!m || it.released) return;
     it.released = true;
+    liveStreams.delete(it);
     if (it.video) {
       try {
         m.pause();
@@ -2677,6 +2711,7 @@
     batchSize: (v) => v,
     firstBatch: (v) => v,
     maxItems: (v) => v,
+    maxStreams: (v) => v,
     videoPct: (v) => `${100 - v} % images, ${v} % videos`,
     volume: (v) => (v ? v + " %" : "muted"),
     sizeMin: (v) => v + " %",
@@ -2811,6 +2846,8 @@
         rng("videoPct", "Mix", 0, 100, 5) +
         sel("imageQuality", "Image quality", [["full", "Original"], ["thumb", "Thumbnail (faster)"]]) +
         sel("videoSource", "Video source", [["stream", "Full video"], ["preview", "Preview clip (lighter)"]]) +
+        rng("maxStreams", "Full videos at once", 1, 12) +
+        hint("Browsers keep only about 6 connections to Stash, and every full video playing takes one. When they're all taken, Stash stops answering in this browser. Further videos play as preview clips instead. With HTTPS (HTTP/2) you can go higher.") +
         chk("loop", "Loop videos (off = fade out after the end)") +
         chk("randomStart", "Random start point in the video"),
     },
@@ -3027,7 +3064,7 @@
               `<button class="ms-tile" data-page="${p.id}">${p.badge || icon(p.icon)}<b>${p.title}</b><small data-sum="${p.id}"></small></button>`).join("")}
           </div>
           <button class="ms-link" data-page="keys">${icon("keyboard")}<span>Hotkeys &amp; mouse</span></button>
-          <div class="ms-foot">Media Storm 2.2.0</div>
+          <div class="ms-foot">Media Storm 2.3.0</div>
         </div>
         ${PAGES.map((p) => `
           <section class="ms-page" data-page-id="${p.id}" hidden>

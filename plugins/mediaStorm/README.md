@@ -172,6 +172,10 @@ Settings and presets are stored in the browser's `localStorage`.
 - `python` in the PATH – only needed for the RedGifs features (suggestions in the Stash tab, saving clips).
 - Optional: the Random Backgrounds plugin for wallpapers behind the storm.
 
+## Performance: full videos at once
+
+Browsers keep only about 6 connections to one server, and every full video that plays keeps one of them busy. When all are taken, Stash stops answering in that browser – every tab, not just Media Storm. So Media Storm plays at most **4 full videos at once** (Media → “Full videos at once”); further videos play as preview clips, or show their cover if no previews are generated (Tasks → Generate → Previews). With Stash behind HTTPS (HTTP/2) the limit can go higher. RedGifs comes from another server and doesn't count.
+
 ## Languages
 
 English and **Simplified Chinese (简体中文)**. The language follows Stash UI's choice (Settings → General → Language); on “Automatic” it follows the interface language set in Stash.
