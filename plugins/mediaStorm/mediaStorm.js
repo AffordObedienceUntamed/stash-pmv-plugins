@@ -14,6 +14,7 @@
   const LS_PRESETS = "mediaStorm.presets.v1";
 
   const DEFAULTS = {
+    glass: true, // liquid glass look for the panel and the buttons on the stage
     // Timing & amount
     intervalSec: 4,
     batchSize: 3,
@@ -126,6 +127,9 @@
 
   let S = normalizeSettings(store.get(LS_SETTINGS, {}));
   const save = () => store.set(LS_SETTINGS, S);
+  // Liquid glass: a class on the page, the CSS does the rest
+  const applyGlass = () => document.documentElement.classList.toggle("ms-glass", S.glass !== false);
+  applyGlass();
 
   // ==========================================================================
   // Helpers
@@ -2470,6 +2474,9 @@
 
   function onSettingChanged(key) {
     switch (key) {
+      case "glass":
+        applyGlass();
+        break;
       case "volume":
       case "audioMode":
         applyAudio();
@@ -2909,6 +2916,7 @@
       <button class="ms-icbtn ms-p-close" data-act="close" title="Close (Esc)" aria-label="Close panel">${icon("close")}</button>
       <div class="ms-p-body">
         <div class="ms-home">
+          <div class="ms-glassrow">${chk("glass", "Liquid glass")}</div>
           <div class="ms-cover ms-cover-plain" data-cover>
             <div class="ms-cover-art"></div>
             <h2 class="ms-title"><span>Media</span><span>Storm</span></h2>

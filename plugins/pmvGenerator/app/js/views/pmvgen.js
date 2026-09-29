@@ -18,6 +18,7 @@ const BACKEND = window.PMVGEN_PLUGIN || "pmvGenerator"; // plugin whose backend 
 const SCENE_LINK = window.PMVGEN_SCENE_LINK || ((id) => "/scenes/" + id);
 
 const DEFAULTS = {
+  glass: true, // liquid glass look (own switch, independent of Stash UI's)
   mode: "song", // song = your own song, tpl = use a PMV as template
   source: "scene",
   folders: [], // [{ id, path }] – empty = all folders
@@ -149,12 +150,22 @@ export function render(main) {
   let song = null; // beat detection result + name
   let run = null; // running generator
   let alive = true;
+  // Liquid glass: the PMV Generator has its own switch (top right), on by default
+  const setGlass = () => document.documentElement.classList.toggle("kb-glass", S.glass !== false);
+  setGlass();
+  main.addEventListener("change", (e) => {
+    if (!e.target.matches("[data-pglass]")) return;
+    S.glass = e.target.checked;
+    save();
+    setGlass();
+  });
 
   main.innerHTML = `
     <header class="kb-head"><div class="kb-head-title">
       <h1 class="kb-h1">PMV Generator</h1>
       <p class="kb-sub">Pick a song – on every beat it cuts to a clip from your library. Live, and optionally recorded as a video in Stash.</p>
-    </div></header>
+    </div>
+    <div class="kb-head-tools"><label class="kb-theme-inline"><span class="kb-switch"><input type="checkbox" data-pglass${S.glass !== false ? " checked" : ""}><i></i></span>Liquid glass</label></div></header>
     <div class="kb-pmvg">
       <div class="kb-pmvg-main">
       <section class="kb-card kb-pmvg-song">

@@ -1205,3 +1205,58 @@ body::after { transition: background-image .9s ease; }
 .ms-subhead,
 .ms-sug-head { --theme-font-stack: var(--ms-display); }
 .ms-panel .ms-p-body.ms-p-body { display: block; }
+
+/* ==========================================================================
+   Liquid glass (switch at the top of the panel, on by default): the panel and
+   the buttons on the stage become frosted glass over the storm; controls turn
+   into tinted glass capsules. Off = the look above, unchanged.
+   ========================================================================== */
+.ms-glassrow { display: flex; margin: 0 44px 12px 0; }
+html.ms-glass {
+  --ms-glass: color-mix(in srgb, var(--ms-ink) 44%, transparent);
+  --ms-glass-2: color-mix(in srgb, var(--ms-ink-2) 42%, transparent);
+  --ms-glass-edge: rgba(255, 255, 255, .15);
+  --ms-glass-shine: linear-gradient(135deg, rgba(255, 255, 255, .13), rgba(255, 255, 255, .03) 38%, rgba(255, 255, 255, 0) 60%, rgba(255, 255, 255, .05));
+}
+html.ms-glass .ms-panel {
+  border-color: var(--ms-glass-edge);
+  border-radius: 22px;
+  background: var(--ms-glass-shine), var(--ms-glass);
+  -webkit-backdrop-filter: blur(26px) saturate(170%);
+  backdrop-filter: blur(26px) saturate(170%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .24), inset 0 -1px 0 rgba(255, 255, 255, .05), 0 22px 60px rgba(0, 0, 0, .5);
+}
+html.ms-glass .ms-page-head {
+  background: color-mix(in srgb, var(--ms-ink) 50%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+}
+html.ms-glass .ms-cover-art { border-radius: 16px; }
+html.ms-glass :is(.ms-tile, .ms-vibe, .ms-icbtn.ms-sq, .ms-row select, .ms-input) {
+  border: 1px solid var(--ms-glass-edge);
+  background: var(--ms-glass-shine), var(--ms-glass-2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16);
+}
+html.ms-glass :is(.ms-tile, .ms-vibe) { border-radius: 16px; }
+html.ms-glass :is(.ms-row select, .ms-input) { border-radius: 10px; }
+html.ms-glass .ms-row select option { background: var(--ms-ink-2); }
+html.ms-glass :is(.ms-tile, .ms-vibe, .ms-icbtn.ms-sq):hover { background: var(--ms-glass-shine), color-mix(in srgb, var(--ms-ink-3) 62%, transparent); }
+html.ms-glass .ms-vibe.ms-on { color: var(--ms-ink); border-color: transparent; background: var(--ms-glass-shine), color-mix(in srgb, var(--ms-flush) 82%, transparent); }
+html.ms-glass .ms-icbtn { border-radius: 14px; }
+html.ms-glass .ms-icbtn.ms-sq { border-radius: 16px; }
+html.ms-glass .ms-big { border-radius: 999px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), 0 8px 24px color-mix(in srgb, var(--ms-flush) 45%, transparent); }
+html.ms-glass .ms-big.ms-running { color: var(--ms-paper); border: 1px solid var(--ms-glass-edge); background: var(--ms-glass-shine), var(--ms-glass-2); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .2); }
+html.ms-glass .ms-p-close { border-radius: 50%; }
+html.ms-glass .ms-empty { color: var(--ms-paper); border: 1px solid var(--ms-glass-edge); border-radius: 16px; background: var(--ms-glass-shine), var(--ms-glass-2); }
+/* Buttons on the stage (download, open, …) */
+html.ms-glass .ms-tools button {
+  border: 1px solid var(--ms-glass-edge);
+  border-radius: 999px;
+  background: var(--ms-glass-shine), color-mix(in srgb, var(--ms-ink) 40%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  backdrop-filter: blur(14px) saturate(160%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .2);
+}
+html.ms-glass .ms-tools button:hover { color: var(--ms-ink); background: var(--ms-flush); }
+html.ms-glass .ms-tools button.ms-dl-done { color: var(--ms-ink); background: #5ee39a; }
+html.ms-glass .ms-tools button.ms-dl-error { color: var(--ms-paper); background: #e0433f; }
