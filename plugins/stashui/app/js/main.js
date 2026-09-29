@@ -241,7 +241,7 @@ async function refreshPluginLinks() {
   let plugins;
   try {
     // paths only exists on newer Stash versions – without it, only own pages are found
-    plugins = (await gql(`query { plugins { id name version enabled paths { javascript } } }`).catch(() => gql(`query { plugins { id name version enabled } }`))).plugins;
+    plugins = (await gql(`query { plugins { id name version enabled tasks { name } settings { name } paths { javascript } } }`).catch(() => gql(`query { plugins { id name version enabled tasks { name } settings { name } } }`))).plugins;
     on = new Set(plugins.filter((p) => p.enabled).flatMap((p) => [norm(p.id), norm(p.name)]));
   } catch (e) {
     return; // unknown – leave the entries visible
@@ -251,11 +251,14 @@ async function refreshPluginLinks() {
 }
 
 // ---------- Other people's plugins ----------
-// A plugin gets a menu entry when it has a page: its own web page in its assets (e.g. Stash TV's
-// /plugin/stash-tv/assets/app/) – opened directly – or a page it registers inside classic Stash
-// (PluginApi.register.route) – opened embedded. What was found is kept per plugin version.
+// Every enabled plugin gets a menu entry, pointing to the best place it has:
+// 1. its own web page in its assets (e.g. Stash TV's /plugin/stash-tv/assets/app/) – opened directly
+// 2. a page it registers inside classic Stash (PluginApi.register.route) – opened embedded
+// 3. only tasks/settings – its card on the Plugins page, unfolded
+// 4. only additions to classic Stash with a menu button there (e.g. an overlay) – classic Stash, where it runs
+// What was found is kept per plugin version.
 const OWN = new Set(["stashui", "mediastorm", "pmvgenerator"]);
-const EXT_KEY = "extPlugins3"; // v3: folders asked for directly, listings don't count
+const EXT_KEY = "extPlugins5"; // v4: every plugin, routes also via variables
 
 // A real page – not a folder listing: Stash's file server answers ".../index.html" of a folder without
 // that file by listing the folder (a bare <pre> with links, no head, body or scripts)
@@ -287,16 +290,27 @@ async function findPages(p) {
     }
   }
   // Pages registered in classic Stash: found in the plugin's own JavaScript
+  let navButton = false; // puts a button into classic Stash's menu
   for (const js of ((p.paths && p.paths.javascript) || []).slice(0, 4)) {
     try {
       const src = await (await fetch(js)).text();
+      if (/MainNavBar|navbar-nav|nav-link|navbar-buttons/.test(src)) navButton = true;
+      // register.route("/plugin/x", …) – or with the path in a variable: then the "/plugin/x" strings
+      // of a script that registers routes at all
       const re = /register\.route\(\s*["'`](\/[^"'`\s]+)["'`]/g;
+      const loose = /register\.route\(/.test(src) ? /["'`](\/plugins?\/[A-Za-z0-9_-]+)["'`]/g : null;
       let m;
-      while ((m = re.exec(src)) && pages.length < 4) {
-        if (!pages.some((x) => x.route === m[1])) pages.push({ kind: "route", route: m[1] });
+      for (const r of [re, loose].filter(Boolean)) {
+        while ((m = r.exec(src)) && pages.length < 4) {
+          if (!pages.some((x) => x.route === m[1])) pages.push({ kind: "route", route: m[1] });
+        }
       }
     } catch (e) { /* not readable */ }
   }
+  if (!pages.length && ((p.tasks && p.tasks.length) || (p.settings && p.settings.length))) pages.push({ kind: "card" });
+  // Only additions to classic Stash with a menu button of their own (e.g. an overlay you switch on there) –
+  // not libraries, font loaders or themes
+  else if (!pages.length && navButton && !/theme/i.test(p.name)) pages.push({ kind: "classic" });
   return pages;
 }
 
@@ -315,14 +329,15 @@ async function paintExtensions(list) {
   Object.keys(cache).forEach((k) => keep.has(k) || delete cache[k]);
   store.set(EXT_KEY, cache);
   try {
-    ["stashui.extPlugins", "stashui.extPlugins2"].forEach((k) => localStorage.removeItem(k)); // older results
+    ["stashui.extPlugins", "stashui.extPlugins2", "stashui.extPlugins3", "stashui.extPlugins4"].forEach((k) => localStorage.removeItem(k)); // older results
   } catch (e) { /* blocked */ }
+  const href = (f) =>
+    f.kind === "page" ? f.url
+    : f.kind === "route" ? "#/extern/classic?path=" + encodeURIComponent(f.route)
+    : f.kind === "card" ? "#/plugins?focus=" + encodeURIComponent(f.id)
+    : "#/extern/classic";
   box.querySelector("[data-extlist]").innerHTML = found
-    .map((f) =>
-      f.kind === "page"
-        ? `<a href="${esc(f.url)}" data-ext="${esc(f.id)}" title="${esc(f.name)}">${icon("plug")}<span>${esc(f.name)}</span></a>`
-        : `<a href="#/extern/classic?path=${encodeURIComponent(f.route)}" title="${esc(f.name)}">${icon("plug")}<span>${esc(f.name)}</span></a>`
-    )
+    .map((f) => `<a href="${esc(href(f))}" data-ext="${esc(f.id)}" title="${esc(f.name)}">${icon("plug")}<span>${esc(f.name)}</span></a>`)
     .join("");
   box.hidden = !found.length;
 }

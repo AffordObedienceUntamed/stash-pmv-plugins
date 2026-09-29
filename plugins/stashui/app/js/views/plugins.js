@@ -449,5 +449,15 @@ export async function render(main, params, query) {
     return () => (alive = false);
   }
   paint();
+  // Opened from the menu (Extensions): show that plugin's card unfolded – settings and tasks
+  if (query.focus && tab === "installed") {
+    const card = [...main.querySelectorAll("[data-id]")].find((c) => c.dataset.id === query.focus);
+    if (card) {
+      card.querySelectorAll("details").forEach((d) => (d.open = true));
+      card.scrollIntoView({ block: "center" });
+      card.classList.add("is-found");
+      setTimeout(() => card.classList.remove("is-found"), 2400);
+    }
+  }
   return () => (alive = false);
 }
