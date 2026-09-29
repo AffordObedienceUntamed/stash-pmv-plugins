@@ -400,7 +400,7 @@ a.kb-chip:hover, button.kb-chip:hover { background: rgba(180, 140, 255, .28); }
   bottom: 0;
   padding: 28px 10px 8px;
   color: var(--paper);
-  background: linear-gradient(transparent, rgba(26, 10, 23, .92));
+  background: linear-gradient(transparent, color-mix(in srgb, var(--base) 92%, transparent));
   opacity: 0;
   transform: translateY(6px);
   transition: opacity .2s ease, transform .25s var(--ease);
@@ -428,9 +428,9 @@ a.kb-chip:hover, button.kb-chip:hover { background: rgba(180, 140, 255, .28); }
   color: var(--paper);
   font: 600 11.5px/1.4 var(--f-label);
   font-variant-numeric: tabular-nums;
-  background: rgba(26, 10, 23, .82);
+  background: color-mix(in srgb, var(--base) 82%, transparent);
 }
-.kb-resume { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(26, 10, 23, .6); }
+.kb-resume { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: color-mix(in srgb, var(--base) 60%, transparent); }
 .kb-resume i { display: block; height: 100%; background: var(--pink); }
 
 /* Heart = favorite */
@@ -464,7 +464,7 @@ a.kb-chip:hover, button.kb-chip:hover { background: rgba(180, 140, 255, .28); }
   border: 2px solid var(--paper);
   border-radius: 4px;
   color: var(--ink);
-  background: rgba(26, 10, 23, .5);
+  background: color-mix(in srgb, var(--base) 50%, transparent);
   opacity: 0;
   transition: opacity .15s ease;
 }
@@ -707,13 +707,13 @@ a.kb-chip:hover, button.kb-chip:hover { background: rgba(180, 140, 255, .28); }
   gap: 8px;
   margin: 0 calc(var(--pad) * -1) 12px;
   padding: 10px var(--pad);
-  background: rgba(35, 15, 31, .94);
+  background: color-mix(in srgb, var(--bg) 94%, transparent);
   border-bottom: 1px solid var(--line);
   backdrop-filter: blur(8px);
 }
 .kb-spacer { flex: 1; }
 .kb-kinds button span { color: var(--faint); font-variant-numeric: tabular-nums; }
-.kb-kinds button.is-on span { color: rgba(35, 15, 31, .7); }
+.kb-kinds button.is-on span { color: color-mix(in srgb, var(--bg) 70%, transparent); }
 .kb-resultline { margin: 0 0 12px; color: var(--faint); font: 400 14px/1.3 var(--f-text); min-height: 1.3em; }
 .kb-lead { max-width: 70ch; margin: 12px 0 0; color: var(--text-2); }
 .kb-head-chips { margin-top: 14px; }
@@ -815,4 +815,19 @@ html.kb-glass .kb-btn:not(.is-primary):not(.is-ghost):not(.is-danger), html.kb-g
 }
 html.kb-glass .kb-btn.is-primary { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), 0 6px 20px color-mix(in srgb, var(--pink) 40%, transparent); }
 html.kb-glass .kb-field { border-color: var(--glass-edge); border-radius: 10px; background-color: color-mix(in srgb, var(--base) 45%, transparent); }
+/* Sticky list toolbar: glass over the scrolling tiles */
+html.kb-glass .kb-toolbar {
+  border-bottom-color: var(--glass-edge);
+  background: var(--glass-shine), var(--glass);
+  -webkit-backdrop-filter: var(--glass-filter);
+  backdrop-filter: var(--glass-filter);
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, .06), 0 10px 28px rgba(0, 0, 0, .25);
+}
+/* Navigation: hovered and active entries as small glass capsules */
+html.kb-glass .kb-nav :is(a, button) { border-radius: 12px; }
+html.kb-glass .kb-nav :is(a, button):hover { background: color-mix(in srgb, var(--bg-3) 30%, transparent); }
+html.kb-glass .kb-nav a.is-active {
+  background: var(--glass-shine), color-mix(in srgb, var(--bg-3) 45%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .2), inset 0 0 0 1px var(--glass-edge), 0 4px 14px rgba(0, 0, 0, .2);
+}
 html.kb-glass .kb-set-nav a.is-active { background: var(--glass-shine), color-mix(in srgb, var(--bg-3) 40%, transparent); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16), inset 3px 0 0 var(--pink); }

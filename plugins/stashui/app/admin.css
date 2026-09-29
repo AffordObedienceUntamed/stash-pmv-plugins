@@ -71,7 +71,7 @@
 .kb-logs .kb-h2 { margin-top: 0; }
 .kb-logs .kb-h2 .kb-field { height: 32px; }
 .kb-loglist { max-height: 60vh; overflow-y: auto; border: 1px solid var(--bg-3); border-radius: var(--r); background: var(--base); font: 12.5px/1.45 Consolas, "Cascadia Mono", monospace; }
-.kb-log { display: grid; grid-template-columns: 76px 70px 1fr; gap: 10px; padding: 4px 10px; border-bottom: 1px solid rgba(74, 35, 66, .5); }
+.kb-log { display: grid; grid-template-columns: 76px 70px 1fr; gap: 10px; padding: 4px 10px; border-bottom: 1px solid color-mix(in srgb, var(--bg-3) 50%, transparent); }
 .kb-log time { color: var(--faint); }
 .kb-log span { color: var(--text-2); overflow-wrap: anywhere; white-space: pre-wrap; }
 .kb-log.is-warning b { color: #ffc46b; }
