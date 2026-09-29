@@ -9,6 +9,7 @@ import { app, go, closeOverlay } from "../main.js";
 import { placardHtml, bindPlacard } from "./placard.js";
 import { similarScenes } from "../similar.js";
 import { createVR, guessVR } from "../vr.js";
+import { videoGlow } from "../theme.js";
 import { BINS, watchRecorder, watchBins, motionBins, combine, peaks } from "../heat.js";
 
 // Read Stash's sprite VTT: time ranges → region in the sprite image
@@ -139,6 +140,7 @@ export async function render(host, params) {
   }
   // VR: remembered choice for this scene, otherwise guessed from file name and tags
   const vr = createVR($(".kb-screen"), v);
+  const stopGlow = videoGlow(stage, v);
   const vrSaved = store.get("vrScenes", {});
   if (vr) vr.setMode(x.id in vrSaved ? vrSaved[x.id] : guessVR(f.basename, x.tags));
   const menu = $("[data-menu]");
@@ -604,6 +606,7 @@ export async function render(host, params) {
     document.removeEventListener("fullscreenchange", onFsChange);
     document.removeEventListener("pointerdown", onDocDown, true);
     if (vr) vr.destroy();
+    stopGlow();
     flushActivity(true);
     const tEnd = v.currentTime;
     v.pause();

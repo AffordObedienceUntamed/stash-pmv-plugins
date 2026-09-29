@@ -5,7 +5,7 @@
 import { esc, icon, toast, errorToast, store, confirmDialog, fmtDate } from "../ui.js";
 import { t, locale, LANGS, chosen, choose } from "../i18n.js";
 import { gql } from "../api.js";
-import { typeInfo, selection, fieldHtml, readFields, unwrap } from "../forms.js";
+import { typeInfo, selection, fieldHtml, readFields, unwrap, labelOf, LABELS } from "../forms.js";
 import { go } from "../main.js";
 import { pokeJobs } from "../jobs.js";
 import { themeHtml, bindTheme } from "../theme.js";
@@ -18,7 +18,10 @@ const AREAS = {
 };
 
 const SECTIONS = [
-  { id: "library", title: "Library", intro: "Which folders Stash scans and which files belong to the library.", area: "general",
+  { id: "look", group: "This interface", title: "Appearance", intro: "Colors, presets and liquid glass.", custom: "look" },
+  { id: "player-ui", group: "This interface", title: "Player and previews", intro: "How videos and hover previews play.", custom: "player" },
+  { id: "this-ui", group: "This interface", title: "General", intro: "Language, navigation, home page, thumbnail size.", custom: "app" },
+  { id: "library", group: "Stash", title: "Library", intro: "Which folders Stash scans and which files belong to the library.", area: "general",
     fields: ["stashes", "createGalleriesFromFolders", "galleryCoverRegex", "writeImageThumbnails", "createImageClipsFromVideos", "videoExtensions", "imageExtensions", "galleryExtensions", "excludes", "imageExcludes", "calculateMD5", "videoFileNamingAlgorithm"] },
   { id: "previews", title: "Previews", intro: "How hover previews and timeline images are generated.", area: "general",
     fields: ["parallelTasks", "previewSegments", "previewSegmentDuration", "previewExcludeStart", "previewExcludeEnd", "previewPreset", "previewAudio", "useCustomSpriteInterval", "spriteInterval", "minimumSprites", "maximumSprites", "spriteScreenshotSize"] },
@@ -28,19 +31,33 @@ const SECTIONS = [
     fields: ["databasePath", "backupDirectoryPath", "deleteTrashPath", "generatedPath", "metadataPath", "cachePath", "blobsStorage", "blobsPath", "scrapersPath", "pluginsPath", "customPerformerImageLocation", "pythonPath"] },
   { id: "login", title: "Login", intro: "With a username and password, Stash asks for a login when opened.", area: "general", fields: ["username", "password", "maxSessionAge"], apiKey: true },
   { id: "log", title: "Log", intro: "What Stash logs – and the latest entries.", area: "general", fields: ["logLevel", "logFile", "logOut", "logAccess", "logFileMaxSize"], logs: true },
-  { id: "classic-ui", title: "Classic interface", intro: "Applies to classic Stash, not to this interface.", area: "interface", fields: "*" },
+  { id: "classic-ui", group: "More", title: "Classic interface", intro: "Applies to classic Stash, not to this interface.", area: "interface", fields: "*" },
   { id: "dlna", title: "DLNA", intro: "Makes the library visible to TVs and other devices on your home network.", area: "dlna", fields: "*" },
   { id: "scraper", title: "Scraper", intro: "Connection settings for scrapers. Manage the scrapers themselves and Stash-Box logins in classic Stash.", area: "scraping", fields: "*", classic: "/settings?tab=metadata-providers" },
   { id: "more", title: "More options", intro: "Everything that isn't sorted in anywhere else.", area: "general", fields: "rest" },
   { id: "database", title: "Database", intro: "Back up, optimize, clean up.", custom: "system" },
-  { id: "this-ui", title: "This interface", intro: "Home page, thumbnail size, player.", custom: "app" },
 ];
+// Sections without a group belong to the one before them
+SECTIONS.reduce((g, sec) => (sec.group = sec.group || g), "");
+const DB = SECTIONS.find((x) => x.id === "database");
+SECTIONS.splice(SECTIONS.indexOf(DB), 1);
+SECTIONS.splice(SECTIONS.findIndex((x) => x.id === "classic-ui"), 0, Object.assign(DB, { group: "Stash" }));
+
+// Search: what the custom pages contain (their labels, as shown)
+const CUSTOM_ENTRIES = {
+  look: ["Colors", "Liquid glass"],
+  "player-ui": ["Autoplay next in the player", "Info panel in fullscreen", "Sound in previews"],
+  "this-ui": ["Language", "Folders in the navigation and on the home page", "This interface as home page", "Thumbnail size", "Favorites", "Reset saved view"],
+  database: ["Back up database", "Optimize database", "Clean up generated files"],
+  login: ["API key"],
+};
 
 // Fields never edited here (own tools or read-only)
 const SKIP = new Set(["stashBoxes", "scraperPackageSources", "pluginPackageSources", "apiKey", "configFilePath"]);
 
-export async function render(main, params) {
-  const sec = SECTIONS.find((s) => s.id === params.section) || SECTIONS[0];
+export async function render(main, params, query = {}) {
+  const sec = SECTIONS.find((s) => s.id === params.section) || SECTIONS.find((s) => s.id === "library");
+  let group = "";
   main.innerHTML = `
     <header class="kb-head"><div class="kb-head-title">
       <nav class="kb-crumbs"><span><a href="#/settings">${t("Settings")}</a></span></nav>
@@ -48,18 +65,87 @@ export async function render(main, params) {
       <p class="kb-sub">${esc(t(sec.intro))}</p>
     </div></header>
     <div class="kb-settings">
-      <nav class="kb-set-nav" aria-label="${t("Sections")}">${SECTIONS.map((s) => `<a href="#/settings/${s.id}" class="${s === sec ? "is-active" : ""}">${esc(t(s.title))}</a>`).join("")}
+      <nav class="kb-set-nav" aria-label="${t("Sections")}">
+        <label class="kb-search kb-set-search">${icon("search")}<input class="kb-field" type="search" data-setq placeholder="${t("Search settings")}" autocomplete="off"></label>
+        <div class="kb-set-results" data-setres hidden></div>
+        ${SECTIONS.map((s) => (s.group !== group ? `<div class="kb-set-group">${t((group = s.group))}</div>` : "") + `<a href="#/settings/${s.id}" class="${s === sec ? "is-active" : ""}">${esc(t(s.title))}</a>`).join("")}
         <a href="#/extern/classic-settings">${t("Open in classic Stash")}</a></nav>
       <div class="kb-set-body" data-body><div class="kb-loading">${t("Loading …")}</div></div>
     </div>`;
   const body = main.querySelector("[data-body]");
+  bindSearch(main);
   try {
-    if (sec.custom === "system") return renderSystem(body);
-    if (sec.custom === "app") return renderApp(body);
-    return await renderArea(body, sec);
+    if (sec.custom === "system") await renderSystem(body);
+    else if (sec.custom === "app") await renderApp(body);
+    else if (sec.custom === "look") renderLook(body);
+    else if (sec.custom === "player") renderPlayerUi(body);
+    else await renderArea(body, sec);
+    if (query.find) showFound(body, query.find);
   } catch (e) {
     body.innerHTML = `<div class="kb-empty"><b>${t("Couldn't load settings")}</b><p>${esc(e.message)}</p></div>`;
   }
+}
+
+// ---------- Search across all sections ----------
+
+let searchIndex = null;
+async function buildIndex() {
+  const out = [];
+  const add = (sec, label, hint) => out.push({ sec, label, hay: (label + " " + (hint || "")).toLowerCase() });
+  for (const sec of SECTIONS) {
+    add(sec, t(sec.title), t(sec.intro)); // the section itself
+    (CUSTOM_ENTRIES[sec.id] || []).forEach((l) => add(sec, t(l)));
+    if (!sec.area) continue;
+    let names = sec.fields;
+    if (!Array.isArray(names)) {
+      try {
+        const all = (await typeInfo(AREAS[sec.area].input)).inputFields.map((f) => f.name);
+        const used = new Set(SECTIONS.filter((x) => x.area === "general" && Array.isArray(x.fields)).flatMap((x) => x.fields));
+        names = sec.fields === "rest" ? all.filter((n) => !used.has(n)) : all;
+      } catch (e) {
+        names = [];
+      }
+    }
+    names.filter((n) => !SKIP.has(n)).forEach((n) => add(sec, n === "stashes" ? t("Library folders") : labelOf(n), LABELS[n] ? t(LABELS[n][1] || "") : ""));
+  }
+  return out;
+}
+
+function bindSearch(main) {
+  const q = main.querySelector("[data-setq]");
+  const box = main.querySelector("[data-setres]");
+  let seq = 0;
+  q.addEventListener("input", async () => {
+    const my = ++seq;
+    const words = q.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    if (!words.length) return (box.hidden = true);
+    searchIndex = searchIndex || (await buildIndex());
+    if (my !== seq) return;
+    const hits = searchIndex.filter((e) => words.every((w) => e.hay.includes(w))).slice(0, 14);
+    box.hidden = false;
+    box.innerHTML = hits.length
+      ? hits.map((h) => `<a href="#/settings/${h.sec.id}?find=${encodeURIComponent(h.label)}"><b>${esc(h.label)}</b><small>${esc(t(h.sec.title))}</small></a>`).join("")
+      : `<p class="kb-hint">${t("Nothing found")}</p>`;
+  });
+  q.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      const a = box.querySelector("a");
+      if (a) location.hash = a.getAttribute("href");
+    } else if (e.key === "Escape") {
+      q.value = "";
+      box.hidden = true;
+    }
+  });
+}
+
+// Scroll to the setting that was picked in the search and let it light up
+function showFound(body, label) {
+  const el = [...body.querySelectorAll("b, h2")].find((x) => x.textContent.trim() === label);
+  const row = el && (el.closest(".kb-set, .kb-card, .kb-theme-glass") || el);
+  if (!row) return;
+  row.scrollIntoView({ block: "center" });
+  row.classList.add("is-found");
+  setTimeout(() => row.classList.remove("is-found"), 2400);
 }
 
 async function renderArea(body, sec) {
@@ -244,31 +330,44 @@ async function renderSystem(body) {
 
 // ---------- This interface ----------
 
+function renderLook(body) {
+  body.innerHTML = `<form class="kb-set-form" data-form>${themeHtml()}</form>`;
+  bindTheme(body);
+}
+
+const setPlayer = (patch) => store.set("player", Object.assign(store.get("player", {}), patch));
+function renderPlayerUi(body) {
+  const player = store.get("player", {});
+  const sw = (attr, on, title, hint) => `<label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t(title)}</b><small>${t(hint)}</small></span>
+        <span class="kb-switch"><input type="checkbox" ${attr}${on ? " checked" : ""}><i></i></span></label>`;
+  body.innerHTML = `<form class="kb-set-form" data-form>
+      ${sw("data-auto", player.auto !== false, "Autoplay next in the player", "Start the next scene when one ends.")}
+      ${sw("data-fspanel", player.fsPanel !== false, "Info panel in fullscreen", "Move the mouse to the right edge in fullscreen to slide in the info panel.")}
+      ${sw("data-psound", store.get("previewSound", true), "Sound in previews", "Hover previews play with sound (at the player's volume). Stash only puts sound into previews when “Preview audio” is on under Previews – regenerate them after switching it on.")}
+    </form>`;
+  body.querySelector("[data-auto]").onchange = (e) => setPlayer({ auto: e.target.checked });
+  body.querySelector("[data-fspanel]").onchange = (e) => setPlayer({ fsPanel: e.target.checked });
+  body.querySelector("[data-psound]").onchange = (e) => store.set("previewSound", e.target.checked);
+}
+
 async function renderApp(body) {
   const d = await gql(`query { configuration { plugins(include: ["stashui"]) } }`);
   const cfg = (d.configuration.plugins && d.configuration.plugins.stashui) || {};
-  const player = store.get("player", {});
   body.innerHTML = `
     <form class="kb-set-form" data-form>
       <label class="kb-set"><span class="kb-set-label"><b>${t("Language")}</b><small>${t("“Automatic” follows the language set in Stash (classic Stash → Settings → Interface).")}</small></span>
         <select class="kb-field" data-lang><option value="auto">${t("Automatic")}</option>${LANGS.map(([code, name]) => `<option value="${code}">${esc(name)}</option>`).join("")}</select></label>
-      ${themeHtml()}
       <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("Folders in the navigation and on the home page")}</b><small>${t("Counting the folders reads the whole library once (then it's remembered). Off = folders only load when you open “Folders”.")}</small></span>
         <span class="kb-switch"><input type="checkbox" data-railfolders${store.get("railFolders", true) ? " checked" : ""}><i></i></span></label>
       <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("This interface as home page")}</b><small>${t("Opening Stash goes straight to this interface. Off = classic Stash stays the home page.")}</small></span>
         <span class="kb-switch"><input type="checkbox" data-home${cfg.keepClassicHome ? "" : " checked"}><i></i></span></label>
       <label class="kb-set"><span class="kb-set-label"><b>${t("Thumbnail size")}</b><small>${t("How tall a row in the lists is.")}</small></span>
         <input type="range" min="130" max="480" step="10" data-rowh value="${store.get("rowHeight", 250)}"></label>
-      <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("Autoplay next in the player")}</b><small>${t("Start the next scene when one ends.")}</small></span>
-        <span class="kb-switch"><input type="checkbox" data-auto${player.auto === false ? "" : " checked"}><i></i></span></label>
-      <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("Info panel in fullscreen")}</b><small>${t("Move the mouse to the right edge in fullscreen to slide in the info panel.")}</small></span>
-        <span class="kb-switch"><input type="checkbox" data-fspanel${player.fsPanel === false ? "" : " checked"}><i></i></span></label>
       <div class="kb-set"><div class="kb-set-label"><b>${t("Favorites")}</b><small>${t("The heart is the Stash tag “Favorite”. You'll find it in classic Stash too.")}</small></div></div>
       <div class="kb-set"><div class="kb-set-label"><b>${t("Reset saved view")}</b><small>${t("Expanded folders, player and viewer settings, thumbnail size.")}</small></div>
         <button type="button" class="kb-btn" data-resetlocal>${t("Reset")}</button></div>
     </form>`;
   // Language: applies after reloading, so the menu and every page switch at once
-  bindTheme(body);
   const langSel = body.querySelector("[data-lang]");
   langSel.value = chosen();
   langSel.onchange = () => {
@@ -289,10 +388,8 @@ async function renderApp(body) {
     location.reload(); // the navigation is built once – rebuild it with or without folders
   };
   body.querySelector("[data-rowh]").onchange = (e) => store.set("rowHeight", Number(e.target.value));
-  body.querySelector("[data-fspanel]").onchange = (e) => store.set("player", Object.assign(store.get("player", {}), { fsPanel: e.target.checked }));
-  body.querySelector("[data-auto]").onchange = (e) => store.set("player", Object.assign(store.get("player", {}), { auto: e.target.checked }));
   body.querySelector("[data-resetlocal]").onclick = () => {
-    Object.keys(localStorage).filter((k) => k.startsWith("stashui.") && k !== "stashui.queue" && k !== "stashui.theme").forEach((k) => localStorage.removeItem(k));
+    Object.keys(localStorage).filter((k) => k.startsWith("stashui.") && k !== "stashui.queue" && k !== "stashui.theme" && k !== "stashui.glass").forEach((k) => localStorage.removeItem(k));
     toast(t("Reset"), "ok");
     go("settings/this-ui", true);
   };

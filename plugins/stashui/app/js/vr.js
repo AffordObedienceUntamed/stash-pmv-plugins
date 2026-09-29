@@ -47,7 +47,8 @@ export function createVR(screen, video) {
   const cv = document.createElement("canvas");
   cv.className = "kb-vr";
   cv.hidden = true;
-  screen.appendChild(cv);
+  Object.assign(cv.style, { position: "absolute", inset: "0", width: "100%", height: "100%", gridArea: "1 / 1" });
+  video.after(cv); // right after the video: controls and overlays stay on top
   const gl = cv.getContext("webgl", { antialias: false, alpha: false });
   if (!gl) return null;
   const sh = (type, src) => {

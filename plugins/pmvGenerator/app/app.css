@@ -768,6 +768,19 @@ html.kb-glass body {
   background-attachment: fixed;
 }
 html.kb-glass body::before { opacity: .35; }
+/* Ambient light: hovered photo/video blurred behind the page */
+#kb-ambient { display: none; }
+html.kb-glass #kb-ambient { position: fixed; inset: 0; z-index: -2; display: block; overflow: hidden; pointer-events: none; }
+#kb-ambient img { position: absolute; inset: -8%; width: 116%; height: 116%; object-fit: cover; filter: blur(70px) saturate(1.7); opacity: 0; transition: opacity 1.1s ease; }
+#kb-ambient img.is-on { opacity: .5; }
+/* Player: the video glows behind the info panel and into the black bars */
+html.kb-glass .kb-amb { position: absolute; inset: -12%; z-index: 0; width: 124%; height: 124%; filter: blur(60px) saturate(1.6); opacity: .75; pointer-events: none; }
+html.kb-glass .kb-stage.kb-player { overflow: hidden; }
+html.kb-glass .kb-stage.kb-player > .kb-screen { z-index: 1; }
+html.kb-glass .kb-stage.kb-player > .kb-side { position: relative; z-index: 1; }
+html.kb-glass .kb-stage.kb-player:fullscreen > .kb-side { position: absolute; z-index: 6; }
+html.kb-glass .kb-player .kb-video { background: transparent; }
+html.kb-glass .kb-player .kb-side { background: var(--glass-shine), color-mix(in srgb, var(--base) 45%, transparent); }
 
 /* Big panels: blur + shine + light edge */
 html.kb-glass :is(.kb-rail, .kb-card, .kb-plugin, .kb-dialog, .kb-drawer, .kb-toast, .kb-side, .kb-pmenu, .kb-wheel-pop, .kb-pbusy, .kb-srcrow-box, .kb-pmvg .kb-card) {

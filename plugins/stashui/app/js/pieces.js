@@ -1,6 +1,6 @@
 // Common model for scenes, images and galleries ("pieces") and the salon hanging.
 
-import { esc, icon, fmtDuration, fmtRes, fmtDate, fmtBytes, invNo, plural } from "./ui.js";
+import { esc, icon, fmtDuration, fmtRes, fmtDate, fmtBytes, invNo, plural, store } from "./ui.js";
 import { t } from "./i18n.js";
 
 export function toPiece(kind, x, favId) {
@@ -291,14 +291,20 @@ export class Hang {
 
   startPreview(n, p) {
     const v = document.createElement("video");
-    v.muted = true;
+    const vol = store.get("player", {}).volume;
+    v.muted = !store.get("previewSound", true) || store.get("player", {}).muted === true;
+    v.volume = vol == null ? 0.8 : vol;
     v.loop = true;
     v.playsInline = true;
     v.preload = "auto";
     v.src = p.preview;
     v.addEventListener("playing", () => n.classList.add("is-previewing"), { once: true });
     n.appendChild(v);
-    v.play().catch(() => {});
+    // Browsers only allow sound after the first click on the page – until then: silent
+    v.play().catch(() => {
+      v.muted = true;
+      v.play().catch(() => {});
+    });
     this.previewEl = v;
     this.previewNode = n;
   }

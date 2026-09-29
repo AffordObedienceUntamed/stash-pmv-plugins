@@ -52,6 +52,62 @@ export function applyTheme(theme = store.get("theme")) {
   s.setProperty("--tone", `radial-gradient(circle, color-mix(in srgb, ${c["--pink"]} 22%, transparent) 1.1px, transparent 1.7px)`);
 }
 
+// ---------- Ambient light (liquid glass) ----------
+// The glass should show what's around it: the thumbnail under the mouse fades in blurred behind the
+// page, and the player lets the running video glow behind its panel and into the black bars.
+
+let ambient = null;
+export function initAmbient() {
+  if (ambient) return;
+  ambient = document.createElement("div");
+  ambient.id = "kb-ambient";
+  ambient.innerHTML = "<img alt=''><img alt=''>";
+  document.body.prepend(ambient);
+  let front = 0;
+  let timer = 0;
+  let last = "";
+  document.addEventListener("pointerover", (e) => {
+    if (!document.documentElement.classList.contains("kb-glass")) return;
+    const img = e.target.closest && e.target.closest(".kb-piece, .kb-tile, [data-amb]");
+    const src = img && ((img.querySelector("img") || {}).currentSrc || (img.querySelector("img") || {}).src);
+    if (!src || src === last) return;
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      last = src;
+      const imgs = ambient.querySelectorAll("img");
+      const next = imgs[1 - front];
+      next.onload = () => {
+        next.classList.add("is-on");
+        imgs[front].classList.remove("is-on");
+        front = 1 - front;
+      };
+      next.src = src;
+    }, 160);
+  });
+}
+
+// Draws the video small and often into a canvas behind the player; CSS blurs it. Returns stop().
+export function videoGlow(host, video) {
+  if (!document.documentElement.classList.contains("kb-glass")) return () => {};
+  const cv = document.createElement("canvas");
+  cv.className = "kb-amb";
+  cv.width = 48;
+  cv.height = 27;
+  host.prepend(cv);
+  const ctx = cv.getContext("2d");
+  const draw = () => {
+    try {
+      if (video.readyState >= 2 && getComputedStyle(video).visibility !== "hidden") ctx.drawImage(video, 0, 0, 48, 27);
+    } catch (e) { /* not drawable */ }
+  };
+  const iv = setInterval(draw, 200);
+  video.addEventListener("seeked", draw);
+  return () => {
+    clearInterval(iv);
+    cv.remove();
+  };
+}
+
 // ---------- Color math ----------
 
 const hex2rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
