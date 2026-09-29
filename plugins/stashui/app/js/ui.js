@@ -260,14 +260,19 @@ export function openDrawer({ title, body, foot, onClose }) {
 export function burst(el, kind = "drop", count = 11) {
   if (!el || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   const r = el.getBoundingClientRect();
-  const cx = r.left + r.width / 2;
-  const cy = r.top + r.height / 2;
+  let cx = r.left + r.width / 2;
+  let cy = r.top + r.height / 2;
+  // Button hidden (e.g. the info panel is tucked away in fullscreen, key O): from the middle of the screen
+  if (cx < 0 || cx > innerWidth || cy < 0 || cy > innerHeight || !r.width) {
+    cx = innerWidth / 2;
+    cy = innerHeight / 2;
+  }
   for (let i = 0; i < count; i++) {
     const p = document.createElement("i");
     p.className = "kb-particle is-" + kind;
     const size = kind === "heart" ? 9 + Math.random() * 7 : 4 + Math.random() * 5;
     p.style.cssText = `left:${cx}px;top:${cy}px;width:${size}px;height:${size}px`;
-    document.body.appendChild(p);
+    (document.fullscreenElement || document.body).appendChild(p); // in fullscreen only that element is visible
     // Mostly upwards, spread to the sides; drops fall a little at the end
     const a = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * (kind === "heart" ? 0.9 : 1.5);
     const d = (kind === "heart" ? 34 : 26) + Math.random() * 34;

@@ -256,7 +256,7 @@
 }
 /* Fullscreen: only the picture – the info bar steps aside */
 .kb-stage:fullscreen, .kb-stage.has-panel:fullscreen { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
-.kb-stage:fullscreen .kb-side { position: absolute; top: 0; right: 0; bottom: 0; z-index: 6; display: flex; width: min(400px, 90vw); border-left: 1px solid var(--bg-3); box-shadow: -24px 0 48px rgba(0, 0, 0, .5); transform: translateX(105%); transition: transform .28s var(--ease); }
+.kb-stage:fullscreen .kb-side { position: absolute; top: 0; right: 0; bottom: var(--ctrl-h, 0); z-index: 6; display: flex; width: min(400px, 90vw); border-left: 1px solid var(--bg-3); box-shadow: -24px 0 48px rgba(0, 0, 0, .5); transform: translateX(105%); transition: transform .28s var(--ease); }
 .kb-stage.is-peek:fullscreen .kb-side { transform: none; }
 .kb-vr { position: absolute; inset: 0; width: 100%; height: 100%; cursor: grab; touch-action: none; }
 .kb-vr:active { cursor: grabbing; }

@@ -453,7 +453,12 @@ export async function render(host, params) {
   stage.addEventListener("pointermove", (e) => {
     if (document.fullscreenElement !== stage || e.pointerType !== "mouse" || prefs.fsPanel === false) return;
     const side = $("[data-side]");
-    if (e.clientX >= innerWidth - Math.max(70, innerWidth * 0.05)) stage.classList.add("is-peek");
+    // Not over the control bar or the top bar – their buttons (fullscreen, info …) sit in that corner too
+    const bars = e.target.closest(".kb-controls, .kb-topbar") || e.clientY >= $(".kb-controls").getBoundingClientRect().top - 8 || e.clientY <= 64;
+    if (!bars && e.clientX >= innerWidth - Math.max(70, innerWidth * 0.05)) {
+      stage.style.setProperty("--ctrl-h", $(".kb-controls").offsetHeight + "px"); // the panel ends above the control bar
+      stage.classList.add("is-peek");
+    }
     else if (stage.classList.contains("is-peek") && e.clientX < innerWidth - side.offsetWidth - 40) stage.classList.remove("is-peek");
   });
   const onFsChange = () => {
