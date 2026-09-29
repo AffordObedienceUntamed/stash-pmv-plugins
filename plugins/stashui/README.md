@@ -29,6 +29,8 @@ Open it: just open Stash (e.g. `http://localhost:9999`) – the home page redire
 | Media Storm | Opens the Media Storm panel – shown when the Media Storm plugin is installed |
 | PMV Generator | Opens the PMV Generator – shown when the PMV Generator plugin is installed |
 | Tasks | Scan for new files, generate previews, auto tag, clean – with live progress and stop |
+| Statistics | Plays, watch time and O at a glance, weekly activity (3, 6 or 12 months), a weekday × hour heatmap of when you watch, and top lists: most watched, most O, top tags, performers and studios. Comes from the play and O history Stash keeps for every scene |
+| Duplicates | Scenes that look the same (Stash's perceptual hashes), side by side with resolution, codec, bitrate and size – the best copy is marked. Delete single copies or “keep the best” in one click; deleting the files from disk is an extra checkbox. “Not duplicates” hides a group. Needs phashes (Tasks → Generate) |
 | Settings | All Stash settings in sections: library, previews, playback, paths, login, log (with viewer), classic interface, DLNA, scrapers, more options, database (back up, optimize, clean up), this interface |
 | Plugins | Installed: on/off, settings, run tasks, check for updates, update (one or all), uninstall. Browse: install plugins from your sources, with search. Sources: add, edit, remove plugin sources – no need to go to classic Stash |
 | Classic Stash | The original Stash in the same look, embedded with quick picks: performers, studios, groups, markers, scene tagger, duplicates, scrapers, tools, settings |
@@ -72,6 +74,7 @@ Stash UI works on its own. If you also install **Media Storm** or the **PMV Gene
 - **Highlights** (switch in the bar): a heat curve sits above the timeline, diamonds mark the best spots – click or press **J** to jump to the next one. The curve combines two things:
   - **Motion**: from Stash's preview sprites (timeline thumbnails) – how much the picture changes, plus the share of skin. Needs generated sprites (Tasks → Generate previews).
   - **Your watching**: which parts you actually watch and where you seek to. Stored only in this browser (the last 400 scenes).
+- **Cast to TV** in the gear menu: sends the video to a Chromecast / Google TV (Chrome, Edge) or AirPlay (Safari) – the browser's own device picker.
 - **Similar** in the info bar: up to 8 matching scenes – shared performers count most, then studio, share of common tags and the same folder; the best ones are also sorted by the look of the thumbnail (color, brightness, composition). Every suggestion shows the reason (e.g. “3 shared tags”, “similar look”). If a scene has no metadata, only the look decides.
 
 | Key | Player | Image viewer |
@@ -89,6 +92,10 @@ Stash UI works on its own. If you also install **Media Storm** or the **PMV Gene
 | M, ↑/↓ | Mute, louder/quieter | – |
 | Z | – | Original size (also double-click; mouse wheel zooms) |
 | Esc | Close | Reset zoom, then close |
+
+## Install as an app
+
+Settings → General → **Install as app**: Stash UI gets its own window and a home screen / start menu icon, without the browser bar (Chrome, Edge, Safari on iPhone via Share → Add to Home Screen). Browsers only install apps from https or on the computer Stash runs on (localhost) – on a phone that opens Stash by its network address, “Add to Home screen” adds a normal shortcut instead.
 
 ## Selecting and editing
 

@@ -361,12 +361,44 @@ async function renderApp(body) {
         <select class="kb-field" data-foldermode>${[["all", "Everywhere"], ["page", "Only on the Folders page"], ["off", "Off"]].map(([v, l]) => `<option value="${v}"${folderMode() === v ? " selected" : ""}>${t(l)}</option>`).join("")}</select></label>
       <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("This interface as home page")}</b><small>${t("Opening Stash goes straight to this interface. Off = classic Stash stays the home page.")}</small></span>
         <span class="kb-switch"><input type="checkbox" data-home${cfg.keepClassicHome ? "" : " checked"}><i></i></span></label>
+      <div class="kb-set"><div class="kb-set-label"><b>${t("Install as app")}</b><small data-installhint></small></div><button type="button" class="kb-btn" data-install hidden>${icon("phone")}${t("Install")}</button></div>
       <label class="kb-set"><span class="kb-set-label"><b>${t("Thumbnail size")}</b><small>${t("How tall a row in the lists is.")}</small></span>
         <input type="range" min="130" max="480" step="10" data-rowh value="${store.get("rowHeight", 250)}"></label>
       <div class="kb-set"><div class="kb-set-label"><b>${t("Favorites")}</b><small>${t("The heart is the Stash tag “Favorite”. You'll find it in classic Stash too.")}</small></div></div>
       <div class="kb-set"><div class="kb-set-label"><b>${t("Reset saved view")}</b><small>${t("Expanded folders, player and viewer settings, thumbnail size.")}</small></div>
         <button type="button" class="kb-btn" data-resetlocal>${t("Reset")}</button></div>
     </form>`;
+  // Install as an app
+  const instBtn = body.querySelector("[data-install]");
+  const instHint = body.querySelector("[data-installhint]");
+  const paintInstall = () => {
+    const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+    const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    instBtn.hidden = !window.kbInstall || standalone;
+    instHint.textContent = standalone
+      ? t("You're using the app right now.")
+      : window.kbInstall
+        ? t("Its own window and a home screen icon, without the browser bar.")
+        : ios
+          ? t("In Safari: Share → Add to Home Screen.")
+          : !window.isSecureContext
+            ? t("Browsers only install apps from https or on the computer Stash runs on (localhost). On other devices: browser menu → Add to Home screen – that adds a shortcut.")
+            : t("Use the install icon in the address bar, or the browser menu → Install app. Firefox can't install web apps.");
+  };
+  paintInstall();
+  window.addEventListener("kb-installable", paintInstall);
+  instBtn.onclick = async () => {
+    const e = window.kbInstall;
+    if (!e) return;
+    e.prompt();
+    const r = await e.userChoice;
+    if (r.outcome === "accepted") {
+      window.kbInstall = null;
+      toast(t("Installed"), "ok");
+    }
+    paintInstall();
+  };
+
   // Language: applies after reloading, so the menu and every page switch at once
   const langSel = body.querySelector("[data-lang]");
   langSel.value = chosen();

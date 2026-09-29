@@ -8,6 +8,15 @@ import { applyTheme, initAmbient } from "./theme.js";
 applyTheme(); // chosen colors before anything is drawn
 initAmbient();
 
+// Install as an app: the worker only exists so browsers offer "Install" (needs https or localhost).
+// The install prompt comes early, Settings → General picks it up later.
+if ("serviceWorker" in navigator && window.isSecureContext) navigator.serviceWorker.register("sw.js").catch(() => {});
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  window.kbInstall = e;
+  window.dispatchEvent(new Event("kb-installable"));
+});
+
 // ---------- Routes ----------
 // Base views replace the content; overlays (player, image viewer) sit on top.
 
@@ -23,6 +32,8 @@ const ROUTES = [
   { re: /^tag\/(\d+)$/, view: "tag", keys: ["id"] },
   { re: /^search$/, view: "search" },
   { re: /^history$/, view: "history" },
+  { re: /^stats$/, view: "stats" },
+  { re: /^duplicates$/, view: "dupes" },
   { re: /^queue$/, view: "queue" },
   { re: /^tasks$/, view: "tasks" },
   { re: /^settings$/, view: "settings" },
@@ -88,6 +99,8 @@ const loaders = {
   tag: () => import("./views/tag.js"),
   search: () => import("./views/search.js"),
   history: () => import("./views/history.js"),
+  stats: () => import("./views/stats.js"),
+  dupes: () => import("./views/dupes.js"),
   queue: () => import("./views/queue.js"),
   tasks: () => import("./views/tasks.js"),
   settings: () => import("./views/settings.js"),
@@ -185,6 +198,8 @@ const NAV = [
   ] },
   { group: "Manage", items: [
     { href: "tasks", label: "Tasks", icon: "tasks", match: /^tasks/, count: "jobs" },
+    { href: "stats", label: "Statistics", icon: "chart", match: /^stats/ },
+    { href: "duplicates", label: "Duplicates", icon: "copies", match: /^duplicates/ },
     { href: "settings", label: "Settings", icon: "gear", match: /^settings/ },
     { href: "plugins", label: "Plugins", icon: "plug", match: /^plugins/ },
     { href: "extern/classic", label: "Classic Stash", icon: "door", match: /^extern\/classic/ },
