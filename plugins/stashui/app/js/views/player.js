@@ -135,7 +135,7 @@ export async function render(host, params) {
     const row = (attr, val, label, active) => `<button type="button" class="kb-pmenu-opt${active ? " is-on" : ""}" ${attr}="${val}">${active ? icon("check") : "<i></i>"}${esc(label)}</button>`;
     return `<div class="kb-pmenu-sec"><b>${t("Quality")}</b>${q.map(([i, l]) => row("data-q", i, l, i === srcIdx)).join("")}</div>` +
       (caps.length ? `<div class="kb-pmenu-sec"><b>${t("Subtitles")}</b>${row("data-sub", -1, t("Off"), on < 0)}${[...v.textTracks].map((tt, k) => row("data-sub", k, tt.label, on === k)).join("")}</div>` : "") +
-      (vr ? `<div class="kb-pmenu-sec"><b>VR</b>${[["", t("Off")], ["180", "180°"], ["180sbs", t("180° side by side")], ["360", "360°"], ["360tb", t("360° top/bottom")], ["360sbs", t("360° side by side")]].map(([m, l]) => row("data-vr", m, l, vr.mode === m)).join("")}</div>` : "") +
+      (vr ? `<div class="kb-pmenu-sec"><b>VR</b><div class="kb-pmenu-speeds">${[["", t("Off"), ""], ["180", "180°", ""], ["180sbs", "180° SBS", t("180° side by side")], ["360", "360°", ""], ["360tb", "360° TB", t("360° top/bottom")], ["360sbs", "360° SBS", t("360° side by side")]].map(([m, l, title]) => `<button type="button" class="kb-chip${vr.mode === m ? " is-on" : ""}" data-vr="${m}"${title ? ` title="${esc(title)}"` : ""}>${l}</button>`).join("")}</div></div>` : "") +
       `<div class="kb-pmenu-sec"><b>${t("Speed")}</b><div class="kb-pmenu-speeds">${[0.5, 0.75, 1, 1.25, 1.5, 2].map((s) => `<button type="button" class="kb-chip${v.playbackRate === s ? " is-on" : ""}" data-rate="${s}">${s}×</button>`).join("")}</div></div>`;
   }
   // VR: remembered choice for this scene, otherwise guessed from file name and tags
@@ -149,10 +149,23 @@ export async function render(host, params) {
     if (!menu.hidden && !e.target.closest(".kb-pmenu-wrap")) closeMenu();
   };
   document.addEventListener("pointerdown", onDocDown, true);
+  // After picking something, the menu closes by itself once the mouse leaves it
+  let menuPicked = false;
+  let leaveTimer = 0;
+  const wrap = menu.closest(".kb-pmenu-wrap");
+  wrap.addEventListener("pointerleave", (e) => {
+    if (!menuPicked || menu.hidden || e.pointerType !== "mouse") return;
+    leaveTimer = setTimeout(() => {
+      closeMenu();
+      menuPicked = false;
+    }, 280);
+  });
+  wrap.addEventListener("pointerenter", () => clearTimeout(leaveTimer));
   menu.addEventListener("click", (e) => {
     e.stopPropagation();
     const b = e.target.closest("button");
     if (!b) return;
+    menuPicked = true;
     if (b.dataset.q != null) {
       const i = Number(b.dataset.q);
       prefs.quality = i === 0 ? null : (streams.find((s) => s.url === sources[i]) || {}).label;
@@ -383,8 +396,12 @@ export async function render(host, params) {
     if (el.closest("[data-prev]")) return next(-1);
     if (el.closest("[data-fs]")) return fullscreen();
     if (el.closest("[data-menubtn]")) {
-      if (menu.hidden) menu.innerHTML = menuHtml();
+      if (menu.hidden) {
+        menu.innerHTML = menuHtml();
+        menuPicked = false;
+      }
       menu.hidden = !menu.hidden;
+      if (!menu.hidden) stage.classList.remove("is-peek"); // the info panel would cover the menu in fullscreen
       return;
     }
     if (el.closest("[data-mute]")) {
@@ -451,7 +468,7 @@ export async function render(host, params) {
   }
   // Fullscreen: mouse at the right edge slides the info panel in (can be switched off in the settings)
   stage.addEventListener("pointermove", (e) => {
-    if (document.fullscreenElement !== stage || e.pointerType !== "mouse" || prefs.fsPanel === false) return;
+    if (document.fullscreenElement !== stage || e.pointerType !== "mouse" || prefs.fsPanel === false || !menu.hidden) return;
     const side = $("[data-side]");
     // Not over the control bar or the top bar – their buttons (fullscreen, info …) sit in that corner too
     const bars = e.target.closest(".kb-controls, .kb-topbar") || e.clientY >= $(".kb-controls").getBoundingClientRect().top - 8 || e.clientY <= 64;
