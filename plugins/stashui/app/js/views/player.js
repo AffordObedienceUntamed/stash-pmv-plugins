@@ -74,9 +74,9 @@ export async function render(host, params) {
             <button class="kb-btn is-ghost kb-toggle${prefs.random ? " is-on" : ""}" data-random title="${t("Play something random next")}">${icon("shuffle")}<span>${t("Random")}</span></button>
             <button class="kb-btn is-ghost kb-toggle${prefs.auto ? " is-on" : ""}" data-auto title="${t("Continue automatically at the end")}">${icon("next")}<span>${t("Endless")}</span></button>
             <button class="kb-btn is-ghost kb-toggle${prefs.loop ? " is-on" : ""}" data-loop title="${t("Repeat this scene")}">${icon("repeat")}<span>${t("Loop")}</span></button>
-            <select class="kb-field kb-speed" data-speed aria-label="${t("Speed")}">${[0.5, 0.75, 1, 1.25, 1.5, 2].map((s) => `<option value="${s}"${s === 1 ? " selected" : ""}>${s}×</option>`).join("")}</select>
             <button class="kb-btn is-icon is-ghost" data-mute aria-label="${t("Sound on/off (M)")}" title="${t("Sound on/off (M)")}"></button>
             <input class="kb-vol" type="range" min="0" max="1" step="0.02" data-vol aria-label="${t("Volume")}">
+            <span class="kb-pmenu-wrap"><button class="kb-btn is-icon is-ghost" data-menubtn aria-label="${t("Quality, subtitles, speed")}" title="${t("Quality, subtitles, speed")}">${icon("gear")}</button><div class="kb-pmenu" data-menu hidden></div></span>
             <button class="kb-btn is-icon is-ghost" data-fs aria-label="${t("Fullscreen (F)")}" title="${t("Fullscreen (F)")}">${icon("expand")}</button>
           </div>
         </div>
@@ -95,8 +95,69 @@ export async function render(host, params) {
   const savePrefs = () => store.set("player", prefs);
 
   // ---------- Source: direct stream, otherwise transcode ----------
-  const sources = [x.paths.stream, ...(x.sceneStreams || []).filter((s) => /mp4|webm/.test(s.mime_type || s.url)).map((s) => s.url)].filter(Boolean);
-  let srcIdx = 0;
+  const streams = (x.sceneStreams || []).filter((s) => /mp4|webm/.test(s.mime_type || s.url));
+  const sources = [x.paths.stream, ...streams.map((s) => s.url)].filter(Boolean);
+  const picked = prefs.quality && streams.find((s) => s.label === prefs.quality);
+  let srcIdx = picked ? Math.max(0, sources.indexOf(picked.url)) : 0;
+  // Subtitles from Stash (served as WebVTT); the last chosen language comes on by itself
+  const caps = x.paths.caption ? x.captions || [] : [];
+  caps.forEach((c) => {
+    const tr = document.createElement("track");
+    tr.kind = "subtitles";
+    tr.srclang = c.language_code;
+    tr.label = c.language_code.toUpperCase() + (caps.filter((o) => o.language_code === c.language_code).length > 1 ? " (" + c.caption_type + ")" : "");
+    tr.src = `${x.paths.caption}?lang=${encodeURIComponent(c.language_code)}&type=${encodeURIComponent(c.caption_type)}`;
+    // Lines sit a bit higher so the control bar doesn't cover them (Chrome/Edge: via CSS in stage.css)
+    if (!CSS.supports("selector(::-webkit-media-text-track-container)")) tr.addEventListener("load", () => [...(tr.track.cues || [])].forEach((c) => (c.line = -4)));
+    v.appendChild(tr);
+  });
+  const setSubs = (i) => [...v.textTracks].forEach((tt, k) => (tt.mode = k === i ? "showing" : "disabled"));
+  const subsOn = () => [...v.textTracks].findIndex((tt) => tt.mode === "showing");
+  if (caps.length) {
+    const want = caps.findIndex((c) => c.language_code === prefs.subs);
+    setTimeout(() => setSubs(want));
+  }
+  function switchSource(i) {
+    if (i === srcIdx) return;
+    const at = v.currentTime;
+    const playing = !v.paused;
+    srcIdx = i;
+    v.src = sources[i];
+    v.currentTime = at;
+    if (playing) v.play().catch(() => {});
+  }
+  // Menu: quality, subtitles, speed (one button instead of three – the bar is full enough)
+  function menuHtml() {
+    const q = [[0, t("Original (direct)")], ...streams.map((s) => [sources.indexOf(s.url), s.label])];
+    const on = subsOn();
+    const row = (attr, val, label, active) => `<button type="button" class="kb-pmenu-opt${active ? " is-on" : ""}" ${attr}="${val}">${active ? icon("check") : "<i></i>"}${esc(label)}</button>`;
+    return `<div class="kb-pmenu-sec"><b>${t("Quality")}</b>${q.map(([i, l]) => row("data-q", i, l, i === srcIdx)).join("")}</div>` +
+      (caps.length ? `<div class="kb-pmenu-sec"><b>${t("Subtitles")}</b>${row("data-sub", -1, t("Off"), on < 0)}${[...v.textTracks].map((tt, k) => row("data-sub", k, tt.label, on === k)).join("")}</div>` : "") +
+      `<div class="kb-pmenu-sec"><b>${t("Speed")}</b><div class="kb-pmenu-speeds">${[0.5, 0.75, 1, 1.25, 1.5, 2].map((s) => `<button type="button" class="kb-chip${v.playbackRate === s ? " is-on" : ""}" data-rate="${s}">${s}×</button>`).join("")}</div></div>`;
+  }
+  const menu = $("[data-menu]");
+  const closeMenu = () => (menu.hidden = true);
+  const onDocDown = (e) => {
+    if (!menu.hidden && !e.target.closest(".kb-pmenu-wrap")) closeMenu();
+  };
+  document.addEventListener("pointerdown", onDocDown, true);
+  menu.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const b = e.target.closest("button");
+    if (!b) return;
+    if (b.dataset.q != null) {
+      const i = Number(b.dataset.q);
+      prefs.quality = i === 0 ? null : (streams.find((s) => s.url === sources[i]) || {}).label;
+      savePrefs();
+      switchSource(i);
+    } else if (b.dataset.sub != null) {
+      const i = Number(b.dataset.sub);
+      setSubs(i);
+      prefs.subs = i < 0 ? null : v.textTracks[i].language;
+      savePrefs();
+    } else if (b.dataset.rate) v.playbackRate = v.defaultPlaybackRate = Number(b.dataset.rate); // default: survives a quality switch
+    menu.innerHTML = menuHtml();
+  });
   v.addEventListener("error", () => {
     if (srcIdx < sources.length - 1) {
       const at = v.currentTime;
@@ -105,7 +166,7 @@ export async function render(host, params) {
       v.play().catch(() => {});
     } else toast(t("This video can't be played here"), "error");
   });
-  v.src = sources[0];
+  v.src = sources[srcIdx];
 
   // Resume
   const dur = f.duration || 0;
@@ -309,6 +370,11 @@ export async function render(host, params) {
     if (el.closest("[data-next]")) return next(1);
     if (el.closest("[data-prev]")) return next(-1);
     if (el.closest("[data-fs]")) return fullscreen();
+    if (el.closest("[data-menubtn]")) {
+      if (menu.hidden) menu.innerHTML = menuHtml();
+      menu.hidden = !menu.hidden;
+      return;
+    }
     if (el.closest("[data-mute]")) {
       v.muted = !v.muted;
       prefs.muted = v.muted;
@@ -352,7 +418,6 @@ export async function render(host, params) {
     savePrefs();
     syncVol();
   });
-  $("[data-speed]").onchange = (e) => (v.playbackRate = Number(e.target.value));
 
   // Fullscreen shows only the picture (the info bar steps aside via CSS). On phones a landscape video
   // turns the screen to landscape. iPhones only allow fullscreen for the video itself → native player.
@@ -519,6 +584,7 @@ export async function render(host, params) {
   return () => {
     document.removeEventListener("keydown", onKey);
     document.removeEventListener("fullscreenchange", onFsChange);
+    document.removeEventListener("pointerdown", onDocDown, true);
     flushActivity(true);
     const tEnd = v.currentTime;
     v.pause();

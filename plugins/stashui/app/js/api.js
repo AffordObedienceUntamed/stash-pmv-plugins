@@ -63,7 +63,7 @@ export async function countItems(kind, filter) {
 }
 
 export async function getScene(id) {
-  const d = await gql(`query($id: ID!) { findScene(id: $id) { ${F_SCENE} sceneStreams { url mime_type label } } }`, { id });
+  const d = await gql(`query($id: ID!) { findScene(id: $id) { ${F_SCENE} sceneStreams { url mime_type label } captions { language_code caption_type } paths { caption } } }`, { id });
   return d.findScene;
 }
 export async function getImage(id) {
