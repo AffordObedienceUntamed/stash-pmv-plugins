@@ -216,10 +216,32 @@
 .kb-similar .kb-upnext-item small { overflow: hidden; color: var(--faint); font-size: 12px; white-space: nowrap; text-overflow: ellipsis; }
 
 @media (max-width: 860px) {
-  .kb-stage.has-panel { grid-template-columns: minmax(0, 1fr); grid-template-rows: 58vh minmax(0, 1fr); }
   .kb-vol, .kb-speed { display: none; }
   .kb-toggle span { display: none; }
 }
+/* Phones upright: picture on top, info bar below. The player's picture area is exactly as tall as
+   the video (--ar = width/height, set by the player) – no big black bars, more room for the info. */
+@media (max-width: 860px) and (orientation: portrait) {
+  .kb-stage.has-panel { grid-template-columns: minmax(0, 1fr); grid-template-rows: 58vh minmax(0, 1fr); }
+  .kb-stage.kb-player.has-panel { grid-template-rows: min(calc(100vw / var(--ar, 1.7778)), 65vh) minmax(0, 1fr); }
+}
+/* Phones: one compact row of controls instead of two (they covered most of a 16:9 video).
+   The mute button goes – phones have volume keys. */
+@media (max-width: 560px) {
+  .kb-player .kb-controls { padding: 18px 8px 6px; }
+  .kb-player .kb-timeline { margin-bottom: 2px; }
+  .kb-player .kb-ctrl-row { flex-wrap: nowrap; gap: 0; }
+  .kb-player .kb-ctrl-row .kb-btn.is-icon, .kb-player .kb-ctrl-row .kb-toggle { flex: none; width: 34px; height: 34px; min-width: 0; padding: 0; justify-content: center; }
+  .kb-player .kb-ctrl-row .kb-spacer { min-width: 4px; }
+  .kb-player .kb-time { margin-left: 4px; font-size: 12.5px; white-space: nowrap; }
+  .kb-player [data-mute] { display: none; }
+}
+@media (max-width: 380px) {
+  .kb-player .kb-ctrl-row .kb-btn.is-icon, .kb-player .kb-ctrl-row .kb-toggle { width: 30px; }
+}
+/* Fullscreen: only the picture – the info bar steps aside */
+.kb-stage:fullscreen, .kb-stage.has-panel:fullscreen { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+.kb-stage:fullscreen .kb-side { display: none; }
 
 /* ==========================================================================
    PMV Generator

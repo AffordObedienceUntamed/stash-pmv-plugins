@@ -38,6 +38,7 @@ export async function render(host, params) {
     return;
   }
   const f = x.files[0] || {};
+  const setShape = (w, h) => w && h && host.querySelector(".kb-stage") && host.querySelector(".kb-stage").style.setProperty("--ar", (w / h).toFixed(4));
   const prefs = Object.assign({ volume: 0.8, muted: false, auto: true, random: false, loop: false, panel: true, heat: true }, store.get("player", {}));
   const ctx = app.context || {};
   const inQueue = !!ctx.queue;
@@ -86,6 +87,8 @@ export async function render(host, params) {
   const stage = host.querySelector(".kb-stage");
   const $ = (s) => host.querySelector(s);
   const v = $("video");
+  setShape(f.width, f.height);
+  v.addEventListener("loadedmetadata", () => setShape(v.videoWidth, v.videoHeight));
   v.volume = prefs.volume;
   v.muted = prefs.muted;
   v.loop = prefs.loop;
@@ -156,6 +159,7 @@ export async function render(host, params) {
     lastTick = null;
     flushActivity(true);
     syncPlay();
+    wake(); // show the controls right away (on touch screens there's no mouse movement that would)
   });
   v.addEventListener("play", syncPlay);
   v.addEventListener("progress", paintBuffer);
@@ -284,12 +288,24 @@ export async function render(host, params) {
   };
   stage.addEventListener("pointermove", wake);
   wake();
+  // Touch: the first tap on a player whose controls are hidden only brings them back (like other
+  // video apps) – the next tap pauses. Mouse clicks pause right away as before.
+  let tapWoke = false;
+  let lastPointer = "mouse";
+  stage.addEventListener("pointerdown", (e) => {
+    lastPointer = e.pointerType;
+    if (e.pointerType === "mouse") return;
+    tapWoke = stage.classList.contains("is-idle");
+    wake();
+  });
 
   host.addEventListener("click", (e) => {
     const el = e.target;
+    const woke = tapWoke;
+    tapWoke = false;
     if (el.closest("[data-close]")) return closeOverlay();
     if (el.closest("[data-play]") || el.closest("[data-bigplay]")) return toggle();
-    if (el === v) return toggle();
+    if (el === v) return woke ? undefined : toggle();
     if (el.closest("[data-next]")) return next(1);
     if (el.closest("[data-prev]")) return next(-1);
     if (el.closest("[data-fs]")) return fullscreen();
@@ -325,7 +341,9 @@ export async function render(host, params) {
     const up = el.closest("[data-upgo]");
     if (up) return jump(Number(up.dataset.upgo));
   });
-  v.addEventListener("dblclick", fullscreen);
+  // Double click = fullscreen with the mouse only: on touch screens two quick taps (show controls, pause)
+  // would count as a double click
+  v.addEventListener("dblclick", () => lastPointer === "mouse" && fullscreen());
   $("[data-vol]").addEventListener("input", (e) => {
     v.volume = Number(e.target.value);
     v.muted = v.volume === 0;
@@ -336,10 +354,32 @@ export async function render(host, params) {
   });
   $("[data-speed]").onchange = (e) => (v.playbackRate = Number(e.target.value));
 
-  function fullscreen() {
-    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-    else stage.requestFullscreen().catch(() => toast(t("Fullscreen not allowed")));
+  // Fullscreen shows only the picture (the info bar steps aside via CSS). On phones a landscape video
+  // turns the screen to landscape. iPhones only allow fullscreen for the video itself → native player.
+  async function fullscreen() {
+    if (document.fullscreenElement) return document.exitFullscreen().catch(() => {});
+    if (stage.requestFullscreen) {
+      try {
+        await stage.requestFullscreen({ navigationUI: "hide" });
+        if (v.videoWidth > v.videoHeight && screen.orientation && screen.orientation.lock) screen.orientation.lock("landscape").catch(() => {});
+        return;
+      } catch (e) { /* not allowed – try the video element below */ }
+    }
+    if (v.webkitEnterFullscreen) {
+      try {
+        return v.webkitEnterFullscreen();
+      } catch (e) { /* not available either */ }
+    }
+    toast(t("Fullscreen not allowed"));
   }
+  const onFsChange = () => {
+    if (!document.fullscreenElement && screen.orientation && screen.orientation.unlock) {
+      try {
+        screen.orientation.unlock();
+      } catch (e) { /* not locked */ }
+    }
+  };
+  document.addEventListener("fullscreenchange", onFsChange);
 
   // ---------- Next / previous ----------
   // Order: queue > list it was opened from > random from the library
@@ -478,6 +518,7 @@ export async function render(host, params) {
 
   return () => {
     document.removeEventListener("keydown", onKey);
+    document.removeEventListener("fullscreenchange", onFsChange);
     flushActivity(true);
     const tEnd = v.currentTime;
     v.pause();
