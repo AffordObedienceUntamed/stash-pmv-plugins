@@ -941,4 +941,10 @@ export default {
   "About": "简介",
   "Cut": "已割",
   "Uncut": "未割",
+  "Link": "关联",
+  "Link them": "关联它们",
+  "Linking …": "正在关联 …",
+  "Not this tag": "不是这个标签",
+  "{n} items linked to {name}": "已将 {n} 个项目关联到 {name}",
+  "{what} with the tag “{tag}” aren't linked to {name} yet – that's why they don't show here.": "带有标签“{tag}”的 {what} 还没有关联到 {name} – 所以它们没有显示在这里。",
 };

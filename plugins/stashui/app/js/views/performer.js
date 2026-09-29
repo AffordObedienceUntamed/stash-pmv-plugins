@@ -1,8 +1,8 @@
 // A performer: photo, facts, heart, rating, tags, links – and all their scenes, images and galleries.
 
-import { esc, icon, errorToast, toast, plural, starsHtml, fmtDate, pop, burst } from "../ui.js";
+import { esc, icon, errorToast, toast, plural, starsHtml, fmtDate, pop, burst, store } from "../ui.js";
 import { t } from "../i18n.js";
-import { getPerformer, updatePerformer } from "../api.js";
+import { getPerformer, updatePerformer, gql } from "../api.js";
 import { openPerformerEditor } from "./perfedit.js";
 import { mediaBrowser } from "./media.js";
 import { go, setQuery } from "../main.js";
@@ -65,8 +65,69 @@ export async function render(main, params, query) {
         ${p.details ? `<p class="kb-lead kb-perf-details">${esc(p.details)}</p>` : ""}
       </div>
     </header>
+    <div data-taglink></div>
     <section data-browser></section>`;
   const b = mediaBrowser(main.querySelector("[data-browser]"), { kinds, query, base: () => ({ filter: { performers: { value: [p.id], modifier: "INCLUDES" } } }) });
+
+  // A tag on a performer only describes them – it doesn't link anything. Items that carry one of the
+  // performer's tags (e.g. a creator tag from a downloader) but aren't linked get offered here.
+  const KINDS = [
+    ["scene", "findScenes", "scene_filter", "scenes", "bulkSceneUpdate", "BulkSceneUpdateInput"],
+    ["image", "findImages", "image_filter", "images", "bulkImageUpdate", "BulkImageUpdateInput"],
+    ["gallery", "findGalleries", "gallery_filter", "galleries", "bulkGalleryUpdate", "BulkGalleryUpdateInput"],
+  ];
+  const filterOf = (tagId) => `{ tags: { value: [${JSON.stringify(tagId)}], modifier: INCLUDES }, performers: { value: [${JSON.stringify(p.id)}], modifier: EXCLUDES } }`;
+  const HIDE_KEY = "perfTagLinkHidden";
+  async function offerLinks() {
+    const box = main.querySelector("[data-taglink]");
+    const hidden = new Set(store.get(HIDE_KEY, []));
+    const tags = p.tags.filter((tg) => !hidden.has(p.id + ":" + tg.id)).slice(0, 8);
+    if (!tags.length) return (box.innerHTML = "");
+    try {
+      const d = await gql(`query PerfTagLinks { ${tags.map((tg, i) => KINDS.map(([k, find, arg]) => `${k}${i}: ${find}(${arg}: ${filterOf(tg.id)}, filter: { per_page: 0 }) { count }`).join(" ")).join(" ")} }`);
+      box.innerHTML = tags
+      .map((tg, i) => {
+        const n = KINDS.map(([k]) => [k, d[k + i].count]).filter(([, c]) => c);
+        if (!n.length) return "";
+        const what = n.map(([k, c]) => plural(c, k, { scene: "scenes", image: "images", gallery: "galleries" }[k])).join(t(", "));
+        return `<div class="kb-taglink" data-tag="${tg.id}">${icon("tag")}<span>${t("{what} with the tag “{tag}” aren't linked to {name} yet – that's why they don't show here.", { what, tag: esc(tg.name), name: esc(p.name) })}</span>
+          <button type="button" class="kb-btn is-primary" data-linkall>${t("Link them")}</button><button type="button" class="kb-btn is-ghost" data-nolink>${t("Not this tag")}</button></div>`;
+        })
+        .join("");
+    } catch (e) {
+      box.innerHTML = ""; // only a hint – never in the way
+    }
+  }
+  main.querySelector("[data-taglink]").addEventListener("click", async (e) => {
+    const row = e.target.closest("[data-tag]");
+    if (!row) return;
+    const tagId = row.dataset.tag;
+    if (e.target.closest("[data-nolink]")) {
+      store.set(HIDE_KEY, [...new Set([...store.get(HIDE_KEY, []), p.id + ":" + tagId])]);
+      return row.remove();
+    }
+    const btn = e.target.closest("[data-linkall]");
+    if (!btn) return;
+    btn.disabled = true;
+    btn.textContent = t("Linking …");
+    try {
+      let total = 0;
+      for (const [, find, arg, list, bulk, type] of KINDS) {
+        const r = await gql(`query PerfTagIds { ${find}(${arg}: ${filterOf(tagId)}, filter: { per_page: -1 }) { ${list} { id } } }`);
+        const ids = r[find][list].map((x) => x.id);
+        if (!ids.length) continue;
+        await gql(`mutation($i: ${type}!) { ${bulk}(input: $i) { id } }`, { i: { ids, performer_ids: { ids: [p.id], mode: "ADD" } } });
+        total += ids.length;
+      }
+      toast(t("{n} items linked to {name}", { n: total, name: p.name }), "ok");
+      go("performer/" + p.id, true);
+    } catch (err) {
+      errorToast(err, "Link");
+      btn.disabled = false;
+      btn.textContent = t("Link them");
+    }
+  });
+  offerLinks();
 
   // Rating: click a star, the same star again removes it
   main.querySelector("[data-rate]").addEventListener("click", async (e) => {

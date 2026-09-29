@@ -997,3 +997,6 @@ html.kb-glass section.kb-pe-scrape { border-color: var(--glass-edge); background
   .kb-pe-grid { grid-template-columns: 1fr; }
   section.kb-pe-photo { grid-template-columns: 96px 1fr; }
 }
+.kb-taglink { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; margin: 0 0 18px; padding: 12px 14px; border: 1px solid color-mix(in srgb, var(--pink) 45%, transparent); border-radius: 8px; background: color-mix(in srgb, var(--pink) 9%, var(--bg-2)); }
+.kb-taglink > .kb-ic { flex: none; width: 18px; height: 18px; color: var(--pink); }
+.kb-taglink > span { flex: 1 1 280px; min-width: 0; color: var(--text); font: 500 14px/1.4 var(--f-text); }
