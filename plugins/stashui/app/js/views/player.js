@@ -5,7 +5,7 @@ import { esc, icon, fmtDuration, store, toast, errorToast } from "../ui.js";
 import { t } from "../i18n.js";
 import { getScene, findItems, saveActivity, addPlay } from "../api.js";
 import { toPiece } from "../pieces.js";
-import { app, go, closeOverlay } from "../main.js";
+import { app, go, closeOverlay, setQueueCount } from "../main.js";
 import { placardHtml, bindPlacard } from "./placard.js";
 import { similarScenes } from "../similar.js";
 import { createVR, guessVR } from "../vr.js";
@@ -83,7 +83,7 @@ export async function render(host, params) {
           </div>
         </div>
       </div>
-      <aside class="kb-side" data-side>${placardHtml("scene", x)}<div class="kb-upnext" data-upnext></div><div class="kb-upnext kb-similar" data-similar></div></aside>
+      <aside class="kb-side" data-side>${placardHtml("scene", x)}<div class="kb-upnext kb-queuebox" data-queuebox></div><div class="kb-upnext" data-upnext></div><div class="kb-upnext kb-similar" data-similar></div></aside>
     </div>`;
 
   const stage = host.querySelector(".kb-stage");
@@ -435,6 +435,27 @@ export async function render(host, params) {
     }
     const up = el.closest("[data-upgo]");
     if (up) return jump(Number(up.dataset.upgo));
+    const qg = el.closest("[data-qgo]");
+    if (qg) {
+      const q = store.get("queue", []);
+      const i = Number(qg.dataset.qgo);
+      if (!q[i]) return;
+      store.set("queuePos", i);
+      app.context = { queue: true };
+      return go((q[i].kind === "image" ? "image/" : "scene/") + q[i].id, true);
+    }
+    const qd = el.closest("[data-qdel]");
+    if (qd) {
+      const q = store.get("queue", []);
+      const i = Number(qd.dataset.qdel);
+      q.splice(i, 1);
+      store.set("queue", q);
+      const pos = store.get("queuePos", 0);
+      if (i < pos) store.set("queuePos", pos - 1);
+      setQueueCount();
+      paintQueue();
+      return paintUpnext();
+    }
   });
   // Double click = fullscreen with the mouse only: on touch screens two quick taps (show controls, pause)
   // would count as a double click
@@ -534,17 +555,44 @@ export async function render(host, params) {
     if (!prefs.loop && prefs.auto) next(1);
   });
 
-  // "Up next" in the placard
+  // Sections in the info bar (queue, up next, similar): open by default, each one can be folded away
+  // and stays that way
+  const secHtml = (key, title, body) =>
+    `<details class="kb-upsec" data-sec="${key}"${(prefs.closed || {})[key] ? "" : " open"}><summary><h3>${title}</h3></summary>${body}</details>`;
+  const thumbImg = (src) => (src ? `<img alt="" loading="lazy" src="${esc(src)}">` : "");
+
+  // The queue: every entry, the current one marked; click plays from there, × removes it
+  function paintQueue() {
+    const box = $("[data-queuebox]");
+    if (!box) return;
+    const q = store.get("queue", []);
+    const pos = inQueue ? store.get("queuePos", 0) : -1;
+    box.innerHTML = secHtml(
+      "queue",
+      `${t("Queue")}<small class="kb-upsec-n">${q.length || ""}</small>`,
+      q.length
+        ? q.map((it, i) => `<div class="kb-qrow${i === pos ? " is-now" : ""}"><button class="kb-upnext-item" data-qgo="${i}">${thumbImg(it.thumb)}<span>${esc(it.title || it.id)}</span></button><button class="kb-btn is-icon is-ghost kb-qdel" data-qdel="${i}" title="${t("Remove from the queue")}" aria-label="${t("Remove from the queue")}">${icon("close")}</button></div>`).join("") +
+          `<a class="kb-qall" href="#/queue">${t("Open the queue")}</a>`
+        : `<p class="kb-plc-meta">${t("Empty – add scenes with “Queue”.")}</p>`
+    );
+  }
+  paintQueue();
+  const onQueue = () => {
+    paintQueue();
+    paintUpnext();
+  };
+  window.addEventListener("stash:queue-changed", onQueue);
+
+  // "Up next" in the placard (when playing from the queue, the queue section shows it)
   function paintUpnext() {
+    const box = $("[data-upnext]");
+    if (!box) return;
     const { list, pos } = upcoming();
-    const rest = list.slice(pos + 1, pos + 6);
-    $("[data-upnext]").innerHTML = rest.length
-      ? `<h3>${inQueue ? t("Up next in the queue") : t("Up next")}</h3>` +
-        rest
-          .map((it, k) => `<button class="kb-upnext-item" data-upgo="${pos + 1 + k}">${it.thumb ? `<img alt="" src="${esc(it.thumb)}">` : ""}<span>${esc(it.title || it.id)}</span></button>`)
-          .join("")
+    const rest = inQueue ? [] : list.slice(pos + 1, pos + 6);
+    box.innerHTML = rest.length
+      ? secHtml("upnext", t("Up next"), rest.map((it, k) => `<button class="kb-upnext-item" data-upgo="${pos + 1 + k}">${thumbImg(it.thumb)}<span>${esc(it.title || it.id)}</span></button>`).join(""))
       : prefs.random
-      ? `<h3>${t("Up next")}</h3><p class="kb-plc-meta">${t("Something random from the library.")}</p>`
+      ? secHtml("upnext", t("Up next"), `<p class="kb-plc-meta">${t("Something random from the library.")}</p>`)
       : "";
   }
   paintUpnext();
@@ -553,15 +601,12 @@ export async function render(host, params) {
   async function paintSimilar() {
     const box = $("[data-similar]");
     if (!box) return;
-    box.innerHTML = `<h3>${t("Similar")}</h3><p class="kb-plc-meta">${t("Searching …")}</p>`;
+    box.innerHTML = secHtml("similar", t("Similar"), `<p class="kb-plc-meta">${t("Searching …")}</p>`);
     try {
       const list = await similarScenes(x.id, 8);
       if (!box.isConnected) return;
       box.innerHTML = list.length
-        ? `<h3>${t("Similar")}</h3>` +
-          list
-            .map((it) => `<button class="kb-upnext-item" data-simgo="${esc(it.id)}">${it.thumb ? `<img alt="" loading="lazy" src="${esc(it.thumb)}">` : ""}<span><b>${esc(it.title)}</b><small>${esc(it.why)}</small></span></button>`)
-            .join("")
+        ? secHtml("similar", t("Similar"), list.map((it) => `<button class="kb-upnext-item" data-simgo="${esc(it.id)}">${thumbImg(it.thumb)}<span><b>${esc(it.title)}</b><small>${esc(it.why)}</small></span></button>`).join(""))
         : "";
     } catch (e) {
       box.innerHTML = "";
@@ -571,10 +616,17 @@ export async function render(host, params) {
 
   // ---------- Placard ----------
   const side = $("[data-side]");
+  side.addEventListener("toggle", (e) => {
+    const d = e.target;
+    if (!d.matches || !d.matches("[data-sec]")) return;
+    prefs.closed = Object.assign({}, prefs.closed, { [d.dataset.sec]: !d.open });
+    savePrefs();
+  }, true); // "toggle" doesn't bubble – caught on the way down
   const plc = bindPlacard(side, "scene", () => x, {
     refresh: async () => {
       x = await getScene(x.id);
-      side.innerHTML = placardHtml("scene", x) + '<div class="kb-upnext" data-upnext></div><div class="kb-upnext kb-similar" data-similar></div>';
+      side.innerHTML = placardHtml("scene", x) + '<div class="kb-upnext kb-queuebox" data-queuebox></div><div class="kb-upnext" data-upnext></div><div class="kb-upnext kb-similar" data-similar></div>';
+      paintQueue();
       paintUpnext();
       paintSimilar();
     },
@@ -625,6 +677,7 @@ export async function render(host, params) {
 
   return () => {
     document.removeEventListener("keydown", onKey);
+    window.removeEventListener("stash:queue-changed", onQueue);
     document.removeEventListener("fullscreenchange", onFsChange);
     document.removeEventListener("pointerdown", onDocDown, true);
     if (vr) vr.destroy();

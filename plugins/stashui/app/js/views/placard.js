@@ -68,6 +68,7 @@ export function bindPlacard(host, kind, getItem, { refresh, onDeleted, goFolder 
         const q = store.get("queue", []);
         q.push({ kind, id: x.id, title: x.title || x.id, thumb: kind === "scene" ? x.paths.screenshot : x.paths.thumbnail });
         store.set("queue", q);
+        window.dispatchEvent(new Event("stash:queue-changed")); // the info bar shows the queue
         setQueueCount();
         return toast(t("Added to the queue"), "ok");
       }
