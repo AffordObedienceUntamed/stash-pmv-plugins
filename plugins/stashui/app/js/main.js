@@ -255,12 +255,17 @@ async function refreshPluginLinks() {
 // /plugin/stash-tv/assets/app/) – opened directly – or a page it registers inside classic Stash
 // (PluginApi.register.route) – opened embedded. What was found is kept per plugin version.
 const OWN = new Set(["stashui", "mediastorm", "pmvgenerator"]);
-const EXT_KEY = "extPlugins";
+const EXT_KEY = "extPlugins2"; // v2: folder listings no longer count as pages
 
+// A real page – not a folder listing: Stash's file server answers ".../index.html" of a folder without
+// that file by listing the folder (a bare <pre> with links, no head, body or scripts)
 async function pageExists(url) {
   try {
     const r = await fetch(url, { method: "GET", cache: "no-store" });
-    return r.ok && /html/.test(r.headers.get("content-type") || "");
+    if (!r.ok || !/html/.test(r.headers.get("content-type") || "")) return false;
+    const html = (await r.text()).slice(0, 4000);
+    const listing = /<pre>\s*(<a href=[^>]*>[^<]*<\/a>\s*)*<\/pre>/i.test(html) && !/<(head|body|script|title|div)\b/i.test(html);
+    return !listing && /<(html|head|body|script|div|title)\b/i.test(html);
   } catch (e) {
     return false;
   }
@@ -305,6 +310,9 @@ async function paintExtensions(list) {
   const keep = new Set(list.map((p) => p.id + "@" + (p.version || "")));
   Object.keys(cache).forEach((k) => keep.has(k) || delete cache[k]);
   store.set(EXT_KEY, cache);
+  try {
+    localStorage.removeItem("stashui.extPlugins"); // results of v1
+  } catch (e) { /* blocked */ }
   box.querySelector("[data-extlist]").innerHTML = found
     .map((f) =>
       f.kind === "page"
