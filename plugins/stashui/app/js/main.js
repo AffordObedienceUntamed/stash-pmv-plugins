@@ -255,7 +255,7 @@ async function refreshPluginLinks() {
 // /plugin/stash-tv/assets/app/) – opened directly – or a page it registers inside classic Stash
 // (PluginApi.register.route) – opened embedded. What was found is kept per plugin version.
 const OWN = new Set(["stashui", "mediastorm", "pmvgenerator"]);
-const EXT_KEY = "extPlugins2"; // v2: folder listings no longer count as pages
+const EXT_KEY = "extPlugins3"; // v3: folders asked for directly, listings don't count
 
 // A real page – not a folder listing: Stash's file server answers ".../index.html" of a folder without
 // that file by listing the folder (a bare <pre> with links, no head, body or scripts)
@@ -274,7 +274,11 @@ async function pageExists(url) {
 async function findPages(p) {
   const base = `/plugin/${encodeURIComponent(p.id)}/assets/`;
   const pages = [];
-  for (const [probe, open] of [[base + "app/index.html", base + "app/"], [base + "index.html", base + "index.html"]]) {
+  // Folders are asked for directly: Stash then delivers their index.html (or a listing, which doesn't
+  // count). ".../app/index.html" itself doesn't work – Stash redirects it to a wrong relative address.
+  for (const dir of ["app/", "dist/", "ui/", "web/", ""]) {
+    const probe = base + dir;
+    const open = probe;
     if (await pageExists(probe)) {
       // Cross-check: if a page that can't exist also "exists", the server answers everything with its
       // own start page – then this one doesn't count either
@@ -311,7 +315,7 @@ async function paintExtensions(list) {
   Object.keys(cache).forEach((k) => keep.has(k) || delete cache[k]);
   store.set(EXT_KEY, cache);
   try {
-    localStorage.removeItem("stashui.extPlugins"); // results of v1
+    ["stashui.extPlugins", "stashui.extPlugins2"].forEach((k) => localStorage.removeItem(k)); // older results
   } catch (e) { /* blocked */ }
   box.querySelector("[data-extlist]").innerHTML = found
     .map((f) =>
