@@ -95,15 +95,28 @@ export function videoGlow(host, video) {
   cv.height = 27;
   host.prepend(cv);
   const ctx = cv.getContext("2d");
-  const draw = () => {
+  // Every frame, but each new frame only blends in a little – colors glide instead of jumping.
+  // After pausing it keeps blending for a moment until it has caught up, then rests.
+  let raf = 0;
+  let settle = 0;
+  let first = true;
+  const loop = () => {
+    raf = requestAnimationFrame(loop);
+    if (video.readyState < 2) return;
+    if (!video.paused || video.seeking) settle = 45;
+    else if (settle-- <= 0) return;
     try {
-      if (video.readyState >= 2 && getComputedStyle(video).visibility !== "hidden") ctx.drawImage(video, 0, 0, 48, 27);
+      ctx.globalAlpha = first ? 1 : 0.1;
+      ctx.drawImage(video, 0, 0, 48, 27);
+      first = false;
     } catch (e) { /* not drawable */ }
   };
-  const iv = setInterval(draw, 200);
-  video.addEventListener("seeked", draw);
+  const wake = () => (settle = 45);
+  video.addEventListener("seeked", wake);
+  loop();
   return () => {
-    clearInterval(iv);
+    cancelAnimationFrame(raf);
+    video.removeEventListener("seeked", wake);
     cv.remove();
   };
 }
