@@ -260,6 +260,9 @@
   .kb-stage.has-panel .kb-screen { height: 58vh; }
   .kb-stage.kb-player.has-panel .kb-screen { height: min(calc(100vw / var(--ar, 1.7778)), 65vh); }
   .kb-stage.has-panel .kb-side { overflow: visible; min-height: 0; border-left: 0; border-top: 1px solid var(--bg-3); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  /* Liquid glass clips the stage for the video glow – here it has to scroll all the same */
+  html.kb-glass .kb-stage.kb-player.has-panel { overflow-x: hidden; overflow-y: auto; }
+  html.kb-glass .kb-stage.has-panel .kb-amb { position: fixed; inset: 0; width: 100%; height: 100%; }
 }
 /* Phones: one compact row of controls instead of two (they covered most of a 16:9 video).
    The mute button goes – phones have volume keys. */
