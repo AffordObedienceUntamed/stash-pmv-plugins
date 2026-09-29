@@ -14,7 +14,8 @@ export function startMini({ video, id, title, onLeave }) {
   const el = document.createElement("div");
   el.className = "kb-mini";
   el.innerHTML = `
-    <div class="kb-mini-screen" data-mscreen></div>
+    <div class="kb-mini-in">
+    <div class="kb-mini-screen" data-mscreen title="${t("Drag to move · pull an edge or corner, or use the mouse wheel, to resize")}"></div>
     <div class="kb-mini-bar">
       <button type="button" data-mplay aria-label="${t("Play/pause")}"></button>
       <button type="button" class="kb-mini-title" data-mopen title="${t("Back to the player")}">${esc(title)}</button>
@@ -23,7 +24,8 @@ export function startMini({ video, id, title, onLeave }) {
       <button type="button" data-mclose title="${t("Close")}">${icon("close")}</button>
     </div>
     <div class="kb-mini-prog"><i data-mprog></i></div>
-    ${["nw", "ne", "sw", "se"].map((c) => `<span class="kb-mini-grip is-${c}" data-grip="${c}" title="${t("Drag to resize")}"></span>`).join("")}`;
+    </div>
+    ${["n", "s", "e", "w", "nw", "ne", "sw", "se"].map((c) => `<span class="kb-mini-grip is-${c}" data-grip="${c}"></span>`).join("")}`;
   el.querySelector("[data-mscreen]").appendChild(video);
   document.body.appendChild(el);
   if (wasPlaying && video.paused) video.play().catch(() => {});
@@ -68,7 +70,8 @@ export function startMini({ video, id, title, onLeave }) {
   const onWinResize = () => place();
   addEventListener("resize", onWinResize);
 
-  // Move: drag the picture anywhere. Resize: drag a corner – the opposite corner stays put.
+  // Move: drag the picture anywhere. Resize: pull an edge or a corner (the opposite side stays put),
+  // or turn the mouse wheel over it.
   let drag = null;
   el.addEventListener("pointerdown", (e) => {
     if (e.button !== 0) return;
@@ -90,21 +93,24 @@ export function startMini({ video, id, title, onLeave }) {
       box.x = drag.x + dx;
       box.y = drag.y + dy;
     } else {
-      const east = drag.grip.includes("e");
-      const south = drag.grip.includes("s");
-      // New width/height from the pointer, whichever grows more decides (the shape stays the video's)
-      const w = drag.w + (east ? dx : -dx);
-      const h = drag.h + (south ? dy : -dy);
+      const g = drag.grip;
+      // Wanted width/height from the pointer; whichever grows more decides (the shape stays the video's)
+      const sw = g.includes("e") ? (drag.w + dx) / drag.w : g.includes("w") ? (drag.w - dx) / drag.w : 0;
+      const sh = g.includes("s") ? (drag.h + dy) / drag.h : g.includes("n") ? (drag.h - dy) / drag.h : 0;
       const r = ratio();
-      const scale = Math.max(w / drag.w, h / drag.h);
-      box.size = Math.min(Math.max((r >= 1 ? drag.w : drag.h) * scale, 160), maxSize());
-      // Not past the screen edge – the corner you hold stops there, the opposite one stays put
-      const room = { w: east ? innerWidth - 4 - drag.x : drag.x + drag.w - 4, h: south ? innerHeight - 4 - drag.y : drag.y + drag.h - 4 };
-      const want = dims(box.size);
-      box.size *= Math.min(1, room.w / want.w, room.h / want.h);
-      const n = dims(box.size);
-      box.x = east ? drag.x : drag.x + drag.w - n.w;
-      box.y = south ? drag.y : drag.y + drag.h - n.h;
+      box.size = Math.min(Math.max((r >= 1 ? drag.w : drag.h) * Math.max(sw, sh), 160), maxSize());
+      let n = dims(box.size);
+      // The side opposite the grip stays put; along a single edge the box grows evenly to both sides
+      const ax = g.includes("e") ? "l" : g.includes("w") ? "r" : "c";
+      const ay = g.includes("s") ? "t" : g.includes("n") ? "b" : "c";
+      const cx = drag.x + drag.w / 2;
+      const cy = drag.y + drag.h / 2;
+      const roomW = ax === "l" ? innerWidth - 4 - drag.x : ax === "r" ? drag.x + drag.w - 4 : 2 * Math.min(cx - 4, innerWidth - 4 - cx);
+      const roomH = ay === "t" ? innerHeight - 4 - drag.y : ay === "b" ? drag.y + drag.h - 4 : 2 * Math.min(cy - 4, innerHeight - 4 - cy);
+      box.size *= Math.min(1, roomW / n.w, roomH / n.h); // stops at the screen edge instead of pushing the box
+      n = dims(box.size);
+      box.x = ax === "l" ? drag.x : ax === "r" ? drag.x + drag.w - n.w : cx - n.w / 2;
+      box.y = ay === "t" ? drag.y : ay === "b" ? drag.y + drag.h - n.h : cy - n.h / 2;
     }
     place();
   });
@@ -118,6 +124,23 @@ export function startMini({ video, id, title, onLeave }) {
   };
   el.addEventListener("pointerup", endDrag);
   el.addEventListener("pointercancel", endDrag);
+  // Mouse wheel: bigger/smaller around its middle
+  let wheelSave = 0;
+  el.addEventListener(
+    "wheel",
+    (e) => {
+      e.preventDefault();
+      const o = dims(box.size);
+      box.size = Math.min(Math.max(box.size * (e.deltaY < 0 ? 1.08 : 1 / 1.08), 160), maxSize());
+      const n = dims(box.size);
+      box.x += (o.w - n.w) / 2;
+      box.y += (o.h - n.h) / 2;
+      place();
+      clearTimeout(wheelSave);
+      wheelSave = setTimeout(save, 300);
+    },
+    { passive: false }
+  );
 
   el.addEventListener("click", (e) => {
     if (e.target.closest("[data-mplay]")) video.paused ? video.play().catch(() => {}) : video.pause();

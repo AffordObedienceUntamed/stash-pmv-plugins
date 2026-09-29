@@ -1002,22 +1002,35 @@ html.kb-glass section.kb-pe-scrape { border-color: var(--glass-edge); background
 .kb-taglink > span { flex: 1 1 280px; min-width: 0; color: var(--text); font: 500 14px/1.4 var(--f-text); }
 
 /* Mini player */
-.kb-mini { position: fixed; z-index: 58; overflow: hidden; border: 1px solid var(--bg-3); border-radius: 12px; background: #000; box-shadow: 0 18px 50px rgba(0, 0, 0, .55); touch-action: none; user-select: none; }
-.kb-mini.is-dragging { cursor: grabbing; }
-.kb-mini.is-dragging .kb-mini-screen { cursor: grabbing; }
+.kb-mini { position: fixed; z-index: 58; border-radius: 12px; box-shadow: 0 18px 50px rgba(0, 0, 0, .55); touch-action: none; user-select: none; }
+.kb-mini-in { position: absolute; inset: 0; overflow: hidden; border: 1px solid var(--bg-3); border-radius: 12px; background: #000; }
+.kb-mini.is-dragging, .kb-mini.is-dragging .kb-mini-screen { cursor: grabbing; }
 .kb-mini-screen { width: 100%; height: 100%; cursor: grab; }
-.kb-mini-grip { position: absolute; z-index: 2; width: 14px; height: 14px; }
-.kb-mini-grip.is-nw { left: 0; top: 0; cursor: nwse-resize; }
-.kb-mini-grip.is-se { right: 0; bottom: 0; cursor: nwse-resize; }
-.kb-mini-grip.is-ne { right: 0; top: 0; cursor: nesw-resize; }
-.kb-mini-grip.is-sw { left: 0; bottom: 0; cursor: nesw-resize; }
-.kb-mini-grip::after { content: ""; position: absolute; inset: 3px; border: 2px solid rgba(255, 255, 255, .7); opacity: 0; transition: opacity .15s; }
-.kb-mini-grip.is-nw::after { border-right: 0; border-bottom: 0; border-top-left-radius: 6px; }
-.kb-mini-grip.is-ne::after { border-left: 0; border-bottom: 0; border-top-right-radius: 6px; }
-.kb-mini-grip.is-sw::after { border-right: 0; border-top: 0; border-bottom-left-radius: 6px; }
-.kb-mini-grip.is-se::after { border-left: 0; border-top: 0; border-bottom-right-radius: 6px; }
-.kb-mini:hover .kb-mini-grip::after { opacity: 1; }
-@media (hover: none) { .kb-mini-grip { width: 28px; height: 28px; } .kb-mini-grip::after { opacity: 1; } }
+/* Resize: edges and corners, reaching a little outside the box so they're easy to catch */
+.kb-mini-grip { position: absolute; z-index: 2; }
+.kb-mini-grip.is-n, .kb-mini-grip.is-s { left: 16px; right: 16px; height: 12px; cursor: ns-resize; }
+.kb-mini-grip.is-n { top: -6px; }
+.kb-mini-grip.is-s { bottom: -6px; }
+.kb-mini-grip.is-e, .kb-mini-grip.is-w { top: 16px; bottom: 16px; width: 12px; cursor: ew-resize; }
+.kb-mini-grip.is-e { right: -6px; }
+.kb-mini-grip.is-w { left: -6px; }
+.kb-mini-grip.is-nw, .kb-mini-grip.is-ne, .kb-mini-grip.is-sw, .kb-mini-grip.is-se { width: 24px; height: 24px; }
+.kb-mini-grip.is-nw { left: -8px; top: -8px; cursor: nwse-resize; }
+.kb-mini-grip.is-se { right: -8px; bottom: -8px; cursor: nwse-resize; }
+.kb-mini-grip.is-ne { right: -8px; top: -8px; cursor: nesw-resize; }
+.kb-mini-grip.is-sw { left: -8px; bottom: -8px; cursor: nesw-resize; }
+/* Hints: corner brackets while hovering, the edge lights up under the mouse */
+.kb-mini-grip::after { content: ""; position: absolute; opacity: 0; transition: opacity .15s; }
+.kb-mini-grip.is-nw::after, .kb-mini-grip.is-ne::after, .kb-mini-grip.is-sw::after, .kb-mini-grip.is-se::after { inset: 11px; width: 10px; height: 10px; border: 3px solid #fff; filter: drop-shadow(0 0 2px rgba(0, 0, 0, .8)); }
+.kb-mini-grip.is-nw::after { left: 11px; top: 11px; border-right: 0; border-bottom: 0; border-top-left-radius: 7px; }
+.kb-mini-grip.is-ne::after { left: 3px; top: 11px; border-left: 0; border-bottom: 0; border-top-right-radius: 7px; }
+.kb-mini-grip.is-sw::after { left: 11px; top: 3px; border-right: 0; border-top: 0; border-bottom-left-radius: 7px; }
+.kb-mini-grip.is-se::after { left: 3px; top: 3px; border-left: 0; border-top: 0; border-bottom-right-radius: 7px; }
+.kb-mini:hover .kb-mini-grip.is-nw::after, .kb-mini:hover .kb-mini-grip.is-ne::after, .kb-mini:hover .kb-mini-grip.is-sw::after, .kb-mini:hover .kb-mini-grip.is-se::after { opacity: .9; }
+.kb-mini-grip.is-n::after, .kb-mini-grip.is-s::after { left: 0; right: 0; top: 5px; height: 2px; background: var(--pink); }
+.kb-mini-grip.is-e::after, .kb-mini-grip.is-w::after { top: 0; bottom: 0; left: 5px; width: 2px; background: var(--pink); }
+.kb-mini-grip:hover::after { opacity: 1; }
+@media (hover: none) { .kb-mini-grip.is-nw::after, .kb-mini-grip.is-ne::after, .kb-mini-grip.is-sw::after, .kb-mini-grip.is-se::after { opacity: .9; } }
 .kb-mini.is-small .kb-mini-title, .kb-mini.is-small [data-mpip] { display: none; }
 .kb-mini.is-small .kb-mini-bar { justify-content: space-between; }
 .kb-mini .kb-mini-bar { padding-left: 14px; padding-right: 14px; }
@@ -1032,7 +1045,7 @@ html.kb-glass section.kb-pe-scrape { border-color: var(--glass-edge); background
 .kb-mini-bar .kb-mini-title { display: block; flex: 1; width: auto; min-width: 0; padding: 0 6px; overflow: hidden; font: 600 13px/32px var(--f-label); text-align: left; white-space: nowrap; text-overflow: ellipsis; }
 .kb-mini-prog { position: absolute; inset: auto 0 0; height: 3px; background: rgba(255, 255, 255, .15); }
 .kb-mini-prog i { display: block; height: 100%; background: var(--pink); }
-html.kb-glass .kb-mini { border-color: var(--glass-edge); }
+html.kb-glass .kb-mini-in { border-color: var(--glass-edge); }
 
 /* Music from a video */
 .kb-music-range { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; }

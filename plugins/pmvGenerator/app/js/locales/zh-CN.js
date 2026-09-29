@@ -966,5 +966,5 @@ export default {
   "To": "到",
   "Use the music in the PMV Generator, or save it as a sound file": "在 PMV 生成器中使用音乐，或保存为音频文件",
   "“Here” takes the current position of the video. The whole video is {d}.": "“此处”使用视频当前的位置。整个视频长 {d}。",
-  "Drag to resize": "拖动以调整大小",
+  "Drag to move · pull an edge or corner, or use the mouse wheel, to resize": "拖动以移动 · 拉动边缘或角落，或使用鼠标滚轮来调整大小",
 };
