@@ -633,7 +633,29 @@ a.kb-chip:hover, button.kb-chip:hover { background: rgba(180, 140, 255, .28); }
 .kb-stars { display: inline-flex; gap: 2px; }
 .kb-stars button { padding: 2px; border: 0; color: var(--bg-3); background: none; font-size: 20px; line-height: 1; }
 .kb-stars button.is-on { color: var(--pink); }
-.kb-stars button:hover { color: var(--pink-2); }
+/* Hover: the star under the mouse and all before it light up, one after the other */
+.kb-stars button { transition: color .18s, transform .22s cubic-bezier(.3, 1.6, .5, 1), text-shadow .22s, opacity .18s; }
+.kb-stars button:nth-child(2) { transition-delay: 25ms; }
+.kb-stars button:nth-child(3) { transition-delay: 50ms; }
+.kb-stars button:nth-child(4) { transition-delay: 75ms; }
+.kb-stars button:nth-child(5) { transition-delay: 100ms; }
+.kb-stars:hover button { opacity: .45; }
+.kb-stars button:hover, .kb-stars button:has(~ button:hover) {
+  opacity: 1;
+  color: var(--pink-2);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--pink) 85%, transparent), 0 0 18px color-mix(in srgb, var(--pink) 50%, transparent);
+  transform: scale(1.18) translateY(-1px);
+}
+/* Particles: O counter drops and favorite hearts */
+.kb-particle { position: fixed; z-index: 9999; pointer-events: none; }
+.kb-particle.is-drop { border-radius: 50% 0 50% 50%; background: #fff; box-shadow: 0 0 6px rgba(255, 255, 255, .7); }
+.kb-particle.is-heart {
+  --heart: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21s-7.5-4.6-9.6-9.3C.9 8.1 3.1 4.4 6.8 4.4c2.1 0 3.8 1.2 5.2 3.1 1.4-1.9 3.1-3.1 5.2-3.1 3.7 0 5.9 3.7 4.4 7.3C19.5 16.4 12 21 12 21z'/%3E%3C/svg%3E");
+  background: var(--pink);
+  -webkit-mask: var(--heart) center / contain no-repeat;
+  mask: var(--heart) center / contain no-repeat;
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--pink) 70%, transparent));
+}
 
 /* ---------- Messages: speech bubbles ---------- */
 

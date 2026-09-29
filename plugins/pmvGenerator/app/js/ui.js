@@ -256,6 +256,41 @@ export function openDrawer({ title, body, foot, onClose }) {
   return { el: wrap.querySelector(".kb-drawer"), close };
 }
 
+// Little particles flying out of an element (O counter drops, favorite hearts). kind: "drop" | "heart"
+export function burst(el, kind = "drop", count = 11) {
+  if (!el || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const r = el.getBoundingClientRect();
+  const cx = r.left + r.width / 2;
+  const cy = r.top + r.height / 2;
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement("i");
+    p.className = "kb-particle is-" + kind;
+    const size = kind === "heart" ? 9 + Math.random() * 7 : 4 + Math.random() * 5;
+    p.style.cssText = `left:${cx}px;top:${cy}px;width:${size}px;height:${size}px`;
+    document.body.appendChild(p);
+    // Mostly upwards, spread to the sides; drops fall a little at the end
+    const a = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * (kind === "heart" ? 0.9 : 1.5);
+    const d = (kind === "heart" ? 34 : 26) + Math.random() * 34;
+    const x = Math.cos(a) * d;
+    const y = Math.sin(a) * d;
+    const rot = kind === "drop" ? (Math.atan2(y, x) * 180) / Math.PI + 225 : (Math.random() - 0.5) * 50;
+    p.animate(
+      [
+        { transform: `translate(-50%, -50%) rotate(${rot}deg) scale(.3)`, opacity: 1 },
+        { transform: `translate(calc(-50% + ${x * 0.75}px), calc(-50% + ${y * 0.75}px)) rotate(${rot}deg) scale(1)`, opacity: 1, offset: 0.55 },
+        { transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y + (kind === "drop" ? 14 : -12)}px)) rotate(${rot}deg) scale(.6)`, opacity: 0 },
+      ],
+      { duration: 650 + Math.random() * 350, easing: "cubic-bezier(.2,.8,.3,1)", delay: Math.random() * 60 }
+    ).onfinish = () => p.remove();
+  }
+}
+
+// A quick "boing" on a button
+export function pop(el, scale = 1.25) {
+  if (!el || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  el.animate([{ transform: "scale(1)" }, { transform: `scale(${scale})` }, { transform: "scale(.94)" }, { transform: "scale(1)" }], { duration: 420, easing: "cubic-bezier(.3,1.6,.5,1)" });
+}
+
 export function starsHtml(rating100, interactive) {
   const n = Math.round((rating100 || 0) / 20);
   return (

@@ -1,6 +1,6 @@
 // The big placard next to the player and image viewer: details, rating, red dot, O counter, tags, actions.
 
-import { esc, icon, fmtDuration, fmtRes, fmtBytes, fmtDate, fmtAgo, invNo, starsHtml, toast, errorToast, store, plural } from "../ui.js";
+import { esc, icon, fmtDuration, fmtRes, fmtBytes, fmtDate, fmtAgo, invNo, starsHtml, toast, errorToast, store, plural, burst, pop } from "../ui.js";
 import { t } from "../i18n.js";
 import { updateItem, setFavorite, favoriteTagId, addO, removeO } from "../api.js";
 import { app, setQueueCount } from "../main.js";
@@ -89,6 +89,10 @@ export function bindPlacard(host, kind, getItem, { refresh, onDeleted, goFolder 
     await updateItem(kind, { id: x.id, rating100: v });
     x.rating100 = v;
     host.querySelector("[data-rate]").innerHTML = starsHtml(v, true);
+    // The new stars light up one after the other
+    host.querySelectorAll("[data-rate] [data-star].is-on").forEach((s, i) =>
+      s.animate([{ transform: "scale(1)" }, { transform: "scale(1.45)", filter: "brightness(1.6)" }, { transform: "scale(1)" }], { duration: 380, delay: i * 55, easing: "cubic-bezier(.3,1.6,.5,1)" })
+    );
     toast(v ? plural(n, "star", "stars") : t("Rating removed"));
   }
   async function fav() {
@@ -101,6 +105,11 @@ export function bindPlacard(host, kind, getItem, { refresh, onDeleted, goFolder 
     const b = host.querySelector("[data-fav]");
     b.classList.toggle("is-on", on);
     b.innerHTML = `<span class="kb-dotmini"></span>${on ? t("Favorite") : t("Add to favorites")}`;
+    const heart = b.querySelector(".kb-dotmini");
+    if (on) {
+      pop(heart, 1.8);
+      burst(heart, "heart", 7);
+    } else pop(heart, 0.7);
     toast(on ? t("Marked as favorite") : t("Favorite removed"));
     if (app.context && app.context.hang) {
       const p = app.context.hang.pieces.find((q) => q.kind === kind && q.id === x.id);
@@ -109,6 +118,12 @@ export function bindPlacard(host, kind, getItem, { refresh, onDeleted, goFolder 
   }
   async function o(delta) {
     const x = getItem();
+    const btn = host.querySelector("[data-o]");
+    if (delta > 0 && btn) {
+      // Right away – the counter follows when Stash has answered
+      pop(btn, 1.18);
+      burst(btn.querySelector(".kb-ic") || btn, "drop");
+    }
     const n = delta > 0 ? await addO(kind, x.id) : await removeO(kind, x.id);
     x.o_counter = n;
     host.querySelector("[data-ocount]").textContent = n;
