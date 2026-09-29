@@ -176,8 +176,13 @@ export function videoGlow(host, video) {
   if (!document.documentElement.classList.contains("kb-glass")) return () => {};
   const cv = document.createElement("canvas");
   cv.className = "kb-amb";
-  cv.width = 48;
-  cv.height = 27;
+  // Blur off: a sharp copy of the video behind the clear glass (bigger, no blending – blending would smear
+  // the motion); blur on: tiny and blended, the CSS blur turns it into a soft glow
+  const sharp = document.documentElement.classList.contains("kb-noblur");
+  const W = sharp ? 480 : 48;
+  const H = sharp ? 270 : 27;
+  cv.width = W;
+  cv.height = H;
   host.prepend(cv);
   const ctx = cv.getContext("2d");
   // Every frame, but each new frame only blends in a little – colors glide instead of jumping.
@@ -191,8 +196,8 @@ export function videoGlow(host, video) {
     if (!video.paused || video.seeking) settle = 45;
     else if (settle-- <= 0) return;
     try {
-      ctx.globalAlpha = first ? 1 : 0.1;
-      ctx.drawImage(video, 0, 0, 48, 27);
+      ctx.globalAlpha = first || sharp ? 1 : 0.1;
+      ctx.drawImage(video, 0, 0, W, H);
       first = false;
     } catch (e) { /* not drawable */ }
   };
