@@ -96,6 +96,9 @@ Stash UI works on its own. If you also install **Media Storm** or the **PMV Gene
 
 - `app/` is the interface (plain JavaScript ES modules, no build step), `classic/` styles classic Stash and redirects the home page.
 - **Favorites** = the Stash tag “Favorite” (created with the first heart).
+- **Player menu** (gear next to fullscreen): quality (original or Stash's transcodes), subtitles (Stash's captions – the section appears when a scene has some), VR and speed.
+- **VR**: 180°/360° videos, mono, side by side or top/bottom – drag to look around, wheel or two fingers to zoom. Guessed from the file name (e.g. `_180_LR`) or a "VR" tag, and remembered per scene. Shows one eye on a normal screen; headsets aren't supported yet.
+- **Fullscreen**: move the mouse to the right edge to slide in the info panel (Settings → This interface → “Info panel in fullscreen”).
 - **Colors**: Settings → This interface → Colors. Pick a preset (Plum, Midnight, OLED black, Forest, Ember, Ocean, Violet, Classic Stash) or set each color – accent, backgrounds, text, success/error – with the color wheel. Optional **Liquid glass**: see-through, blurred panels with a light edge over a soft glow in the theme colors. Saved in the browser; the PMV Generator uses the same look.
 - **Keep the classic home page**: Settings → This interface → “This interface as home page” off (or the plugin setting “Keep classic home page”). For a single tab: `http://localhost:9999/?classic=1`.
 - Pages that only exist in classic Stash (registered by other plugins) are embedded through classic Stash; its navigation is hidden there.
