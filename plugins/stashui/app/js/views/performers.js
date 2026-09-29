@@ -171,7 +171,7 @@ export async function render(main, params, query) {
     if (!name || !name.trim()) return;
     try {
       const p = await createPerformer(name.trim());
-      go("performer/" + p.id);
+      go("performer/" + p.id + "?edit=1"); // straight into the editor, already searching by the name
     } catch (e) {
       errorToast(e, "Create performer");
     }

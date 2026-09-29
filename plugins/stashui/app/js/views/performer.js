@@ -1,10 +1,11 @@
 // A performer: photo, facts, heart, rating, tags, links – and all their scenes, images and galleries.
 
-import { esc, icon, errorToast, toast, plural, starsHtml, openDrawer, confirmDialog, fmtDate, pop, burst } from "../ui.js";
+import { esc, icon, errorToast, toast, plural, starsHtml, fmtDate, pop, burst } from "../ui.js";
 import { t } from "../i18n.js";
-import { getPerformer, updatePerformer, gql } from "../api.js";
+import { getPerformer, updatePerformer } from "../api.js";
+import { openPerformerEditor } from "./perfedit.js";
 import { mediaBrowser } from "./media.js";
-import { go } from "../main.js";
+import { go, setQuery } from "../main.js";
 import { GENDERS, ageOf, countryOf } from "./performers.js";
 
 const hostOf = (u) => {
@@ -46,7 +47,7 @@ export async function render(main, params, query) {
 
   main.innerHTML = `
     <header class="kb-perfhead">
-      <img class="kb-perfhead-img" alt="" src="${esc(p.image_path || "")}">
+      <button type="button" class="kb-perfhead-img" data-photo title="${t("Change photo")}"><img alt="" src="${esc(p.image_path || "")}"><span>${icon("camera")}${t("Change photo")}</span></button>
       <div class="kb-perfhead-body">
         <nav class="kb-crumbs"><span><a href="#/performers">${t("Performers")}</a></span></nav>
         <h1 class="kb-h1">${esc(p.name)}${p.disambiguation ? ` <small>(${esc(p.disambiguation)})</small>` : ""}</h1>
@@ -102,56 +103,13 @@ export async function render(main, params, query) {
     }
   };
 
-  // Edit the everyday fields here; the rest (photo, scraping, StashDB) stays in classic Stash
-  main.querySelector("[data-edit]").onclick = () => {
-    const d = openDrawer({
-      title: t("Edit performer"),
-      body: `
-        <label class="kb-form-row"><span>${t("Name")}</span><input class="kb-field" data-e="name" value="${esc(p.name)}"></label>
-        <label class="kb-form-row"><span>${t("Disambiguation")}</span><input class="kb-field" data-e="disambiguation" value="${esc(p.disambiguation || "")}"></label>
-        <label class="kb-form-row"><span>${t("Aliases (comma separated)")}</span><input class="kb-field" data-e="aliases" value="${esc((p.alias_list || []).join(", "))}"></label>
-        <label class="kb-form-row"><span>${t("Gender")}</span><select class="kb-field" data-e="gender"><option value="">–</option>${GENDERS.map(([v, l]) => `<option value="${v}"${p.gender === v ? " selected" : ""}>${t(l)}</option>`).join("")}</select></label>
-        <label class="kb-form-row"><span>${t("Birthdate")}</span><input class="kb-field" type="date" data-e="birthdate" value="${esc(p.birthdate || "")}"></label>
-        <label class="kb-form-row"><span>${t("Country")}</span><input class="kb-field" data-e="country" value="${esc(p.country || "")}" placeholder="US, DE, JP …"></label>
-        <label class="kb-form-row"><span>${t("Links (one per line)")}</span><textarea class="kb-field" data-e="urls">${esc((p.urls || []).join("\n"))}</textarea></label>
-        <label class="kb-form-row"><span>${t("Details")}</span><textarea class="kb-field" data-e="details">${esc(p.details || "")}</textarea></label>
-        <p class="kb-hint"><a href="#/extern/classic?path=${encodeURIComponent("/performers/" + p.id)}">${t("Photo, scraping and everything else: open in classic Stash")}</a></p>`,
-      foot: `<button class="kb-btn is-danger" data-del>${t("Delete performer")}</button><span class="kb-spacer"></span><button class="kb-btn" data-cancel>${t("Cancel")}</button><button class="kb-btn is-primary" data-save>${t("Save")}</button>`,
-    });
-    const v = (k) => d.el.querySelector(`[data-e="${k}"]`).value;
-    d.el.querySelector("[data-cancel]").onclick = d.close;
-    d.el.querySelector("[data-save]").onclick = async () => {
-      try {
-        await updatePerformer({
-          id: p.id,
-          name: v("name").trim(),
-          disambiguation: v("disambiguation").trim(),
-          alias_list: v("aliases").split(",").map((a) => a.trim()).filter(Boolean),
-          gender: v("gender") || null,
-          birthdate: v("birthdate") || null,
-          country: v("country").trim(),
-          urls: v("urls").split("\n").map((u) => u.trim()).filter(Boolean),
-          details: v("details"),
-        });
-        toast(t("Performer saved"), "ok");
-        d.close();
-        go("performer/" + p.id, true);
-      } catch (e) {
-        errorToast(e, "Save");
-      }
-    };
-    d.el.querySelector("[data-del]").onclick = async () => {
-      const r = await confirmDialog({ title: t("Delete performer “{name}”?", { name: p.name }), text: t("The performer is removed from all scenes, images and galleries. The items themselves stay."), ok: t("Delete"), danger: true });
-      if (!r.ok) return;
-      try {
-        await gql(`mutation($id: ID!) { performerDestroy(input: { id: $id }) }`, { id: p.id });
-        d.close();
-        toast(t("Performer deleted"), "ok");
-        go("performers", true);
-      } catch (e) {
-        errorToast(e, "Delete");
-      }
-    };
-  };
+  // Edit everything, photo and scraping included
+  const edit = (scrape) => openPerformerEditor(p.id, { scrape, onSaved: () => go("performer/" + p.id, true), onDeleted: () => go("performers", true) });
+  main.querySelector("[data-edit]").onclick = () => edit(false);
+  main.querySelector("[data-photo]").onclick = () => edit(false);
+  if (query.edit === "1") {
+    setQuery({ edit: "" });
+    edit(true);
+  }
   return () => b.destroy();
 }
