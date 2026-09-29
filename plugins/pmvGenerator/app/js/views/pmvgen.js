@@ -6,7 +6,8 @@
 import { esc, icon, toast, errorToast, fmtDuration, fmtBytes, fmtNum, store } from "../ui.js";
 import * as rg from "../redgifs.js";
 import { gql, favoriteTagId, countItems } from "../api.js";
-import { analyzeSong, rescale, shift } from "../beats.js";
+import { analyzeSong, analyzeBuffer, sliceBuffer, rescale, shift } from "../beats.js";
+import { extractAudio, parseTime, fmtTime } from "../audiox.js";
 import { scanPmv } from "../pmvscan.js";
 import { analyze, spotScore, matchDist } from "../pmvsmart.js";
 import { tagPicker } from "./tagpicker.js";
@@ -195,9 +196,25 @@ export function render(main) {
         </div>
         <div data-songpane>
         <label class="kb-pmvg-drop" data-drop>
-          <input type="file" accept="audio/*,.mp3,.m4a,.wav,.ogg,.flac,.opus" data-file hidden>
-          ${icon("music")}<b>Drop a song here</b><small>or click · MP3, M4A, WAV, OGG, FLAC</small>
+          <input type="file" accept="audio/*,video/*,.mp3,.m4a,.wav,.ogg,.flac,.opus,.mp4,.webm,.mov,.m4v" data-file hidden>
+          ${icon("music")}<b>Drop a song here</b><small>or click · MP3, M4A, WAV, OGG, FLAC – or a video, then its music is used</small>
         </label>
+        <details class="kb-pmvg-fromvid" data-fromvid>
+          <summary>${icon("film")}Music from a video in your library</summary>
+          <label class="kb-search kb-pmvg-tplq" data-vqwrap>${icon("search")}<input class="kb-field" type="search" data-vq placeholder="Search a video …"></label>
+          <div class="kb-pmvg-tplist" data-vlist></div>
+          <div class="kb-pmvg-vpick" data-vpick hidden>
+            <div class="kb-pmvg-songhead"><b data-vname></b><span data-vdur></span></div>
+            <div class="kb-pmvg-vrange">
+              <label>From <input class="kb-field" data-vfrom value="0:00" inputmode="numeric"></label>
+              <label>to <input class="kb-field" data-vto inputmode="numeric"></label>
+              <small class="kb-hint" data-vhint></small>
+            </div>
+            <label class="kb-check"><input type="checkbox" data-vsave> Also keep the sound as a file (library folder “PMV Generator/Songs”)</label>
+            <div class="kb-card-acts"><button class="kb-btn is-ghost" type="button" data-vback>Other video</button><span class="kb-spacer"></span><button class="kb-btn is-primary" type="button" data-vgo>${icon("music")}Use this music</button></div>
+            <div class="kb-job-bar" data-vbarwrap hidden><i data-vbar style="width:0%"></i></div>
+          </div>
+        </details>
         <div data-songinfo hidden>
           <div class="kb-pmvg-songhead"><b data-songname></b><span data-bpm></span></div>
           <canvas class="kb-pmvg-wave" data-wave width="1200" height="120"></canvas>
@@ -208,6 +225,14 @@ export function render(main) {
             <button class="kb-btn is-ghost" data-nudge="0.02" title="Cuts 20 ms later">Later</button>
             <span class="kb-spacer"></span>
             <button class="kb-btn is-ghost" data-other>Other song</button>
+          </div>
+          <div class="kb-pmvg-trim">
+            <span>Only use</span>
+            <input class="kb-field" data-tfrom value="0:00" aria-label="From">
+            <span>–</span>
+            <input class="kb-field" data-tto aria-label="To">
+            <button class="kb-btn" type="button" data-trim>Cut</button>
+            <button class="kb-btn is-ghost" type="button" data-untrim hidden>Whole song again</button>
           </div>
         </div>
         </div>
@@ -650,13 +675,16 @@ export function render(main) {
   drop.addEventListener("drop", (e) => {
     e.preventDefault();
     drop.classList.remove("is-over");
-    const f = [...e.dataTransfer.files].find((x) => x.type.startsWith("audio/") || /\.(mp3|m4a|wav|ogg|flac|opus|aac)$/i.test(x.name));
+    const f = [...e.dataTransfer.files].find((x) => /^(audio|video)\//.test(x.type) || /\.(mp3|m4a|wav|ogg|flac|opus|aac|mp4|webm|mov|m4v)$/i.test(x.name));
     if (f) loadSong(f);
-    else toast("That's not an audio file", "error");
+    else toast("That's not an audio or video file", "error");
   });
   $("[data-other]").onclick = () => file.click();
 
+  let songFull = null; // the whole decoded song, so "Cut" can be changed again
   async function loadSong(f) {
+    // A video file is decoded completely in the browser – beyond ~1.5 GB that runs out of memory
+    if (/^video\//.test(f.type) && f.size > 1.5e9) return toast("This video is too big to read in the browser – pick it from your library instead (“Music from a video”)", "error");
     drop.classList.add("is-busy");
     drop.querySelector("b").textContent = "Detecting beats …";
     try {
@@ -664,9 +692,14 @@ export function render(main) {
       if (!alive) return;
       if (r.beats.length < 8) throw new Error("Too few beats detected – is this a song with a rhythm?");
       song = Object.assign(r, { name: f.name.replace(/\.[^.]+$/, "") });
+      songFull = { buffer: r.buffer, name: song.name };
+      $("[data-tfrom]").value = "0:00";
+      $("[data-tto]").value = fmtTime(r.duration);
+      $("[data-untrim]").hidden = true;
+      $("[data-fromvid]").open = false;
       paintSong();
     } catch (err) {
-      errorToast(err.name === "EncodingError" ? new Error("The browser can't read this audio file") : err, "Song");
+      errorToast(err.name === "EncodingError" ? new Error("The browser can't read the sound of this file") : err, "Song");
     } finally {
       drop.classList.remove("is-busy");
       drop.querySelector("b").textContent = "Drop a song here";
@@ -682,6 +715,139 @@ export function render(main) {
     drawWave($("[data-wave]"), song);
     paintStart();
   }
+  // Only a part of the song: cut the decoded sound and detect the beats again
+  $("[data-trim]").onclick = async () => {
+    if (!songFull) return;
+    const full = songFull.buffer.duration;
+    const a = parseTime($("[data-tfrom]").value);
+    const b = parseTime($("[data-tto]").value) || full;
+    if (!(a >= 0) || !(b > a) || a >= full) return toast("From/to don't fit – e.g. 0:45 to 3:30", "error");
+    try {
+      const r = await analyzeBuffer(sliceBuffer(songFull.buffer, a, Math.min(b, full)));
+      if (r.beats.length < 8) throw new Error("Too few beats in this part");
+      song = Object.assign(r, { name: songFull.name });
+      $("[data-untrim]").hidden = false;
+      paintSong();
+    } catch (err) {
+      errorToast(err, "Song");
+    }
+  };
+  $("[data-untrim]").onclick = async () => {
+    if (!songFull) return;
+    const r = await analyzeBuffer(songFull.buffer);
+    song = Object.assign(r, { name: songFull.name });
+    $("[data-tfrom]").value = "0:00";
+    $("[data-tto]").value = fmtTime(r.duration);
+    $("[data-untrim]").hidden = true;
+    paintSong();
+  };
+
+  // Music from a video in the library: ffmpeg (PMV Generator backend) cuts out the sound
+  let vScene = null;
+  let vSeq = 0;
+  async function listVideos(q) {
+    const seq = ++vSeq;
+    const box = $("[data-vlist]");
+    try {
+      const d = await gql(`query($f: FindFilterType) { findScenes(filter: $f) { scenes { id title paths { screenshot } files { duration basename } } } }`, {
+        f: { q: q || undefined, per_page: 12, sort: q ? "title" : "last_played_at", direction: q ? "ASC" : "DESC" },
+      });
+      if (seq !== vSeq || !alive) return;
+      const list = d.findScenes.scenes;
+      box.innerHTML = list.length
+        ? list
+            .map((x) => {
+              const name = x.title || ((x.files[0] || {}).basename || "").replace(/\.[^.]+$/, "") || "Scene " + x.id;
+              const dur = (x.files[0] || {}).duration || 0;
+              return `<button type="button" class="kb-pmvg-tpl" data-vid="${x.id}" data-name="${esc(name)}" data-dur="${dur}">
+                ${x.paths.screenshot ? `<img src="${esc(x.paths.screenshot)}" alt="" loading="lazy">` : ""}
+                <span><b>${esc(name)}</b><small>${esc(fmtDuration(dur))}</small></span></button>`;
+            })
+            .join("")
+        : `<p class="kb-hint">Nothing found.</p>`;
+    } catch (err) {
+      box.innerHTML = `<p class="kb-hint">Couldn't load the list: ${esc(err.message)}</p>`;
+    }
+  }
+  function pickVideo(id, name, dur) {
+    vScene = { id, name, dur };
+    $("[data-vlist]").hidden = true;
+    $("[data-vqwrap]").hidden = true;
+    $("[data-vpick]").hidden = false;
+    $("[data-vname]").textContent = name;
+    $("[data-vdur]").textContent = dur ? fmtDuration(dur) : "";
+    // Long videos: only the first 5 minutes – the whole sound of an hour-long video is too much for the browser
+    $("[data-vfrom]").value = "0:00";
+    $("[data-vto]").value = fmtTime(dur && dur > 20 * 60 ? 5 * 60 : dur);
+    $("[data-vhint]").textContent = dur > 20 * 60 ? "Long video – pick the part with the song (at most 20 minutes)." : "";
+  }
+  $("[data-fromvid]").addEventListener("toggle", () => $("[data-fromvid]").open && !vScene && listVideos($("[data-vq]").value.trim()));
+  let vqTimer;
+  $("[data-vq]").addEventListener("input", (e) => {
+    clearTimeout(vqTimer);
+    vqTimer = setTimeout(() => listVideos(e.target.value.trim()), 300);
+  });
+  $("[data-vlist]").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-vid]");
+    if (b) pickVideo(b.dataset.vid, b.dataset.name, Number(b.dataset.dur) || 0);
+  });
+  $("[data-vback]").onclick = () => {
+    vScene = null;
+    $("[data-vpick]").hidden = true;
+    $("[data-vlist]").hidden = false;
+    $("[data-vqwrap]").hidden = false;
+    listVideos($("[data-vq]").value.trim());
+  };
+  $("[data-vgo]").onclick = async () => {
+    if (!vScene) return;
+    const a = parseTime($("[data-vfrom]").value);
+    const b = parseTime($("[data-vto]").value);
+    if (!(a >= 0) || !(b >= 0) || (b && b <= a)) return toast("From/to don't fit – e.g. 0:45 to 3:30", "error");
+    if ((b || vScene.dur) - a > 20 * 60) return toast("At most 20 minutes of music at once", "error");
+    const btn = $("[data-vgo]");
+    const bar = $("[data-vbar]");
+    btn.disabled = true;
+    $("[data-vbarwrap]").hidden = false;
+    try {
+      const r = await extractAudio({
+        sceneId: vScene.id,
+        start: a,
+        end: b && b < vScene.dur - 0.5 ? b : 0,
+        save: $("[data-vsave]").checked,
+        plugin: BACKEND,
+        onProgress: (p, step) => {
+          bar.style.width = `${Math.round((step === "extract" ? 0.05 : 0.05 + 0.95 * p) * 100)}%`;
+          btn.textContent = step === "extract" ? "Cutting out the sound …" : `Loading … ${Math.round(p * 100)} %`;
+        },
+      });
+      if (r.saved) toast(`Saved: ${r.saved}`, "ok");
+      await loadSong(new File([r.blob], vScene.name + ".m4a", { type: "audio/mp4" }));
+    } catch (err) {
+      errorToast(err, "Music from a video");
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `${icon("music")}Use this music`;
+      $("[data-vbarwrap]").hidden = true;
+      bar.style.width = "0%";
+    }
+  };
+  // Opened from Stash UI's player ("Music → PMV Generator"): that scene is already picked
+  const askQ = new URLSearchParams(location.search);
+  const askSong = askQ.get("song");
+  if (askSong && /^\d+$/.test(askSong)) {
+    gql(`query($id: ID!) { findScene(id: $id) { id title files { duration basename } } }`, { id: askSong })
+      .then((d) => {
+        const x = d.findScene;
+        if (!x || !alive) return;
+        $("[data-fromvid]").open = true;
+        pickVideo(x.id, x.title || ((x.files[0] || {}).basename || "").replace(/\.[^.]+$/, "") || "Scene " + x.id, (x.files[0] || {}).duration || 0);
+        if (askQ.get("t0")) $("[data-vfrom]").value = fmtTime(Number(askQ.get("t0")));
+        if (askQ.get("t1")) $("[data-vto]").value = fmtTime(Number(askQ.get("t1")));
+        $("[data-fromvid]").scrollIntoView({ block: "center" });
+      })
+      .catch(() => {});
+  }
+
   main.querySelectorAll("[data-tempo]").forEach((b) => (b.onclick = () => song && ((song = Object.assign(rescale(song, Number(b.dataset.tempo)), { name: song.name })), paintSong())));
   main.querySelectorAll("[data-nudge]").forEach((b) => (b.onclick = () => song && ((song = Object.assign(shift(song, Number(b.dataset.nudge)), { name: song.name })), paintSong())));
 

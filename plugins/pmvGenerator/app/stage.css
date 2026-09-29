@@ -549,3 +549,20 @@
 .kb-pmvg-legend .kb-chip { box-shadow: none; background: var(--base); }
 .kb-pmvg-sw { width: 10px; height: 10px; border-radius: 2px; }
 .kb-pmvg .is-dim { opacity: .4; pointer-events: none; }
+
+/* PMV Generator: music from a video, cutting the song */
+.kb-pmvg-fromvid { margin-top: 12px; border: 1px solid var(--bg-3); border-radius: 6px; background: var(--base); }
+.kb-pmvg-fromvid > summary { display: flex; align-items: center; gap: 8px; padding: 11px 14px; color: var(--text); font: 600 14px/1.2 var(--f-label); cursor: pointer; list-style: none; }
+.kb-pmvg-fromvid > summary::-webkit-details-marker { display: none; }
+.kb-pmvg-fromvid > summary::after { content: "▾"; margin-left: auto; color: var(--faint); transition: transform .2s; }
+.kb-pmvg-fromvid[open] > summary::after { transform: rotate(180deg); }
+.kb-pmvg-fromvid > summary .kb-ic { width: 18px; height: 18px; color: var(--pink); }
+.kb-pmvg-fromvid > summary:hover { color: var(--pink); }
+.kb-pmvg-fromvid[open] { padding-bottom: 14px; }
+.kb-pmvg-fromvid > :not(summary) { margin-left: 14px; margin-right: 14px; }
+.kb-pmvg-vpick { display: flex; flex-direction: column; gap: 12px; }
+.kb-pmvg-vrange, .kb-pmvg-trim { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; color: var(--text-2); font: 500 13.5px/1.2 var(--f-label); }
+.kb-pmvg-vrange label { display: inline-flex; align-items: center; gap: 8px; }
+.kb-pmvg-vrange .kb-field, .kb-pmvg-trim .kb-field { width: 86px; text-align: center; font-variant-numeric: tabular-nums; }
+.kb-pmvg-trim { margin-top: 10px; }
+html.kb-glass .kb-pmvg-fromvid { border-color: var(--glass-edge); background: var(--glass-shine), var(--glass); }

@@ -49,13 +49,14 @@ export function placardHtml(kind, x) {
         <button class="kb-plc-btn" data-edit>${icon("edit")}${t("Edit")}</button>
         <button class="kb-plc-btn" data-queue>${icon("queue")}${t("Queue")}</button>
         ${folder ? `<button class="kb-plc-btn" data-folder title="${esc(folder)}">${icon("folder")}${t("Folder")}</button>` : ""}
+        ${kind === "scene" && app.pmvPlugin !== null ? `<button class="kb-plc-btn" data-music title="${t("Use the music in the PMV Generator, or save it as a sound file")}">${icon("music")}${t("Music")}</button>` : ""}
       </div>
       ${info.path ? `<p class="kb-plc-path">${esc(info.path)}</p>` : ""}
     </div>`;
 }
 
 // Binds the buttons; refresh() reloads the details and redraws the placard.
-export function bindPlacard(host, kind, getItem, { refresh, onDeleted, goFolder }) {
+export function bindPlacard(host, kind, getItem, { refresh, onDeleted, goFolder, music }) {
   host.addEventListener("click", async (e) => {
     const x = getItem();
     if (!x) return;
@@ -74,6 +75,7 @@ export function bindPlacard(host, kind, getItem, { refresh, onDeleted, goFolder 
         return toast(t("Added to the queue"), "ok");
       }
       if (e.target.closest("[data-folder]")) return goFolder && goFolder();
+      if (e.target.closest("[data-music]")) return music && music();
     } catch (err) {
       errorToast(err, "Action failed");
     }

@@ -6,6 +6,7 @@ import { t } from "../i18n.js";
 import { getScene, findItems, saveActivity, addPlay } from "../api.js";
 import { toPiece } from "../pieces.js";
 import { app, go, closeOverlay, setQueueCount } from "../main.js";
+import { startMini, stopMini } from "../mini.js";
 import { placardHtml, bindPlacard } from "./placard.js";
 import { similarScenes } from "../similar.js";
 import { createVR, guessVR } from "../vr.js";
@@ -32,6 +33,11 @@ async function loadSprites(vttUrl, spriteUrl) {
 
 export async function render(host, params) {
   document.body.classList.add("kb-noscroll");
+  // A mini player ends here; back from it = continue at its spot
+  const stopped = stopMini();
+  const handoff = app.miniResume && app.miniResume.id === params.id ? app.miniResume.at : stopped && stopped.id === params.id ? stopped.at : null;
+  app.miniResume = null;
+  let mini = false; // true = the video goes on in the mini player when this closes
   host.innerHTML = `<div class="kb-stage kb-player"><div class="kb-loading">${t("Loading …")}</div></div>`;
   let x = await getScene(params.id);
   if (!x) {
@@ -79,6 +85,7 @@ export async function render(host, params) {
             <button class="kb-btn is-icon is-ghost" data-mute aria-label="${t("Sound on/off (M)")}" title="${t("Sound on/off (M)")}"></button>
             <input class="kb-vol" type="range" min="0" max="1" step="0.02" data-vol aria-label="${t("Volume")}">
             <span class="kb-pmenu-wrap"><button class="kb-btn is-icon is-ghost" data-menubtn aria-label="${t("Quality, subtitles, speed")}" title="${t("Quality, subtitles, speed")}">${icon("gear")}</button><div class="kb-pmenu" data-menu hidden></div></span>
+            <button class="kb-btn is-icon is-ghost" data-mini aria-label="${t("Mini player – keeps playing while you browse (X)")}" title="${t("Mini player – keeps playing while you browse (X)")}">${icon("pip")}</button>
             <button class="kb-btn is-icon is-ghost" data-fs aria-label="${t("Fullscreen (F)")}" title="${t("Fullscreen (F)")}">${icon("expand")}</button>
           </div>
         </div>
@@ -211,7 +218,8 @@ export async function render(host, params) {
 
   // Resume
   const dur = f.duration || 0;
-  const resumeAt = x.resume_time && dur && x.resume_time > 5 && x.resume_time < dur * 0.95 ? x.resume_time : 0;
+  const resumeAt = handoff == null && x.resume_time && dur && x.resume_time > 5 && x.resume_time < dur * 0.95 ? x.resume_time : 0;
+  if (handoff != null) v.currentTime = handoff;
   if (resumeAt) {
     v.currentTime = resumeAt;
     const r = $("[data-resume]");
@@ -412,6 +420,7 @@ export async function render(host, params) {
     if (el.closest("[data-next]")) return next(1);
     if (el.closest("[data-prev]")) return next(-1);
     if (el.closest("[data-fs]")) return fullscreen();
+    if (el.closest("[data-mini]")) return toMini();
     if (el.closest("[data-menubtn]")) {
       if (menu.hidden) {
         menu.innerHTML = menuHtml();
@@ -569,7 +578,7 @@ export async function render(host, params) {
   }
   v.addEventListener("ended", () => {
     flushActivity(true);
-    if (!prefs.loop && prefs.auto) next(1);
+    if (!prefs.loop && prefs.auto && !mini) next(1); // the mini player just stops
   });
 
   // Sections in the info bar (queue, up next, similar): open by default, each one can be folded away
@@ -652,6 +661,7 @@ export async function render(host, params) {
       if (ctx.hang) ctx.hang.remove(["scene:" + x.id]);
     },
     goFolder: () => goToFolder(f.path),
+    music: () => import("./music.js").then((m) => m.openMusic(x, v)),
   });
   async function goToFolder(path) {
     const { loadFolders } = await import("../api.js");
@@ -676,6 +686,7 @@ export async function render(host, params) {
     else if (k === "arrowdown") (v.volume = Math.max(0, v.volume - 0.05)), (prefs.volume = v.volume), syncVol();
     else if (k === "m") (v.muted = !v.muted), syncVol();
     else if (k === "f") fullscreen();
+    else if (k === "x") toMini();
     else if (k === "n") next(1);
     else if (k === "p") next(-1);
     else if (k === "i") $("[data-panel]").click();
@@ -692,6 +703,14 @@ export async function render(host, params) {
   document.addEventListener("keydown", onKey);
   stage.focus();
 
+  // Mini player: close the player, the video moves into a corner and keeps running
+  function toMini() {
+    if (!sources.length) return;
+    mini = true;
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    closeOverlay();
+  }
+
   return () => {
     document.removeEventListener("keydown", onKey);
     window.removeEventListener("stash:queue-changed", onQueue);
@@ -701,9 +720,12 @@ export async function render(host, params) {
     stopGlow();
     flushActivity(true);
     const tEnd = v.currentTime;
-    v.pause();
-    v.removeAttribute("src");
-    v.load();
+    if (mini) startMini({ video: v, id: x.id, title: x.title || f.basename || "", onLeave: () => flushActivity(true) });
+    else {
+      v.pause();
+      v.removeAttribute("src");
+      v.load();
+    }
     savePrefs();
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
     // Update progress in the grid

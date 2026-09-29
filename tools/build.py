@@ -39,6 +39,7 @@ SHARED = [
     "app/js/i18n.js",
     "app/js/locales/zh-CN.js",
     "app/js/pmvsmart.js",
+    "app/js/audiox.js",
     "app/js/views/tagpicker.js",
 ]
 SKIP_DIRS = {"__pycache__", ".cache", "tools"}

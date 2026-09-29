@@ -48,6 +48,7 @@ const ROUTES = [
 
 export const app = {
   favId: null,
+  pmvPlugin: undefined, // PMV Generator's plugin ID once known (null = not installed)
   base: null, // { key, cleanup }
   overlay: null,
   context: null, // list an overlay was opened from (for next/previous)
@@ -252,7 +253,7 @@ function renderRail() {
 }
 
 // Menu entries of companion plugins (Media Storm, PMV Generator) only show when they're installed and on
-const PMV_PAGE = "/plugin/pmvGenerator/assets/index.html?from=stashui"; // so its links lead back here
+export const PMV_PAGE = "/plugin/pmvGenerator/assets/index.html?from=stashui"; // so its links lead back here
 async function refreshPluginLinks() {
   // Matched by ID or name, ignoring case and separators – a copy installed under another folder
   // name (e.g. "MediaStorm", "media-storm") is still found
@@ -263,6 +264,9 @@ async function refreshPluginLinks() {
     // paths only exists on newer Stash versions – without it, only own pages are found
     plugins = (await gql(`query { plugins { id name version enabled tasks { name } settings { name } paths { javascript } } }`).catch(() => gql(`query { plugins { id name version enabled tasks { name } settings { name } } }`))).plugins;
     on = new Set(plugins.filter((p) => p.enabled).flatMap((p) => [norm(p.id), norm(p.name)]));
+    // Its backend cuts sound out of videos – the real ID is needed, the folder may be named differently
+    const pmv = plugins.find((p) => p.enabled && (norm(p.id) === "pmvgenerator" || norm(p.name) === "pmvgenerator"));
+    app.pmvPlugin = pmv ? pmv.id : null;
   } catch (e) {
     return; // unknown – leave the entries visible
   }
