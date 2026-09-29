@@ -30,7 +30,7 @@ Open it: just open Stash (e.g. `http://localhost:9999`) – the home page redire
 | PMV Generator | Opens the PMV Generator – shown when the PMV Generator plugin is installed |
 | Tasks | Scan for new files, generate previews, auto tag, clean – with live progress and stop |
 | Settings | All Stash settings in sections: library, previews, playback, paths, login, log (with viewer), classic interface, DLNA, scrapers, more options, database (back up, optimize, clean up), this interface |
-| Plugins | On/off, settings, run plugin tasks, reload |
+| Plugins | Installed: on/off, settings, run tasks, check for updates, update (one or all), uninstall. Browse: install plugins from your sources, with search. Sources: add, edit, remove plugin sources – no need to go to classic Stash |
 | Classic Stash | The original Stash in the same look, embedded with quick picks: performers, studios, groups, markers, scene tagger, duplicates, scrapers, tools, settings |
 
 ## Languages
