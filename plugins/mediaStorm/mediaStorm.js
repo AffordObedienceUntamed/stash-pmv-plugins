@@ -808,8 +808,52 @@
       // On the beat, the beat loop takes over the timing
       if (now >= run.nextAt && !beatActive()) wave(false);
       if (S.fxGlitch > 0 && Math.random() < S.fxGlitch / 30) glitchOne();
+      if ((run.cullN = (run.cullN || 0) + 1) % 2 === 0) cullHidden();
     }
     updateHud();
+  }
+
+  // Videos you can't see anyway pause – almost completely covered by newer items (chaos, pile …) or
+  // outside the screen (ticker, rain). Every video playing costs the graphics chip a decode per frame, and
+  // with 25+ at once that is what makes it stutter. A paused, covered video looks exactly the same;
+  // as soon as it comes to light again it plays on. Checked twice a second with 5×5 points per item.
+  function cullHidden() {
+    if (!run.dom || !run.items.length) return;
+    const vw = innerWidth;
+    const vh = innerHeight;
+    const inset = S.frame === "circle" ? 0.15 : 0.06; // stay on the safe side at rounded/rotated edges
+    const list = run.items.map((it) => ({ it, r: it.el.getBoundingClientRect(), z: +it.el.style.zIndex || 0, out: it.el.classList.contains("ms-out") }));
+    for (const a of list) {
+      const v = a.it.video;
+      if (!v || a.it.released) continue;
+      const r = a.r;
+      let seen = 0;
+      for (let i = 0; i < 5; i++) {
+        for (let j = 0; j < 5; j++) {
+          const x = r.left + ((i + 0.5) * r.width) / 5;
+          const y = r.top + ((j + 0.5) * r.height) / 5;
+          if (x < 0 || y < 0 || x > vw || y > vh) continue;
+          let covered = false;
+          for (const b of list) {
+            if (b === a || b.out || b.z <= a.z) continue;
+            const q = b.r;
+            if (x > q.left + q.width * inset && x < q.right - q.width * inset && y > q.top + q.height * inset && y < q.bottom - q.height * inset) {
+              covered = true;
+              break;
+            }
+          }
+          if (!covered) seen++;
+        }
+      }
+      const visible = seen / 25;
+      if (!a.it.hiddenPause && visible < 0.12) {
+        a.it.hiddenPause = true;
+        v.pause();
+      } else if (a.it.hiddenPause && visible > 0.2) {
+        a.it.hiddenPause = false;
+        playSafe(v);
+      }
+    }
   }
 
 
@@ -1177,7 +1221,7 @@
       ok();
     });
     v.addEventListener("pause", () => {
-      if (run.active && !run.paused && !v.ended && !it.released && run.items.includes(it)) playSafe(v);
+      if (run.active && !run.paused && !it.hiddenPause && !v.ended && !it.released && run.items.includes(it)) playSafe(v);
     });
     v.addEventListener("ended", () => {
       // Loop off: the video fades out after its end and makes room for new ones.
@@ -2206,7 +2250,7 @@
     } else {
       run.nextAt = now + run.pauseLeft;
       if (run.sleepAt) run.sleepAt = now + run.sleepLeft;
-      run.items.forEach((it) => it.video && playSafe(it.video));
+      run.items.forEach((it) => it.video && !it.hiddenPause && playSafe(it.video));
       if (beat.ac) beat.ac.resume();
     }
     syncState();
@@ -3102,7 +3146,7 @@
               `<button class="ms-tile" data-page="${p.id}">${p.badge || icon(p.icon)}<b>${p.title}</b><small data-sum="${p.id}"></small></button>`).join("")}
           </div>
           <button class="ms-link" data-page="keys">${icon("keyboard")}<span>Hotkeys &amp; mouse</span></button>
-          <div class="ms-foot">Media Storm 2.3.1</div>
+          <div class="ms-foot">Media Storm 2.3.2</div>
         </div>
         ${PAGES.map((p) => `
           <section class="ms-page" data-page-id="${p.id}" hidden>
