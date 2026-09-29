@@ -102,13 +102,13 @@ export async function render(main) {
     <div class="kb-stats">
       ${tile(fmtNum(st.total_play_count), t("plays"), t("{n} of {m} scenes watched ({p} %)", { n: fmtNum(st.scenes_played), m: fmtNum(st.scene_count), p: pct }))}
       ${tile(fmtNum(hours(st.total_play_duration)) + " h", t("watched"), t("of {h} h in the library", { h: fmtNum(hours(st.scenes_duration)) }))}
-      ${tile(fmtNum(st.total_o_count), t("O"), plays.length ? t("{n} this month", { n: fmtNum(os.filter((x) => x > new Date(Date.now() - 30 * 864e5)).length) }) : "")}
+      ${tile(fmtNum(st.total_o_count), t("O counter"), os.length ? t("{n} in the last 30 days", { n: fmtNum(os.filter((x) => x > new Date(Date.now() - 30 * 864e5)).length) }) : "")}
       ${tile(fmtBytes(st.scenes_size), t("videos"), plural(st.image_count, "image", "images"))}
     </div>
     <section class="kb-card kb-statcard">
       <div class="kb-statcard-head"><h2>${t("Activity")}</h2>
         <div class="kb-seg" data-range>${RANGES.map(([w, l]) => `<button type="button" data-w="${w}"${w === weeks ? ' class="is-on"' : ""}>${t(l)}</button>`).join("")}</div></div>
-      <div class="kb-legend"><span class="is-plays">${t("Plays")}</span><span class="is-o">${t("O")}</span></div>
+      <div class="kb-legend"><span class="is-plays">${t("Plays")}</span><span class="is-o">${t("O counter")}</span></div>
       <div class="kb-chart" data-chart></div>
     </section>
     <section class="kb-card kb-statcard">

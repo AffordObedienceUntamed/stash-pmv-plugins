@@ -849,7 +849,7 @@ export default {
   "this week": "本周",
   "{day} {h}:00 – {n} plays": "{day} {h}:00 – {n} 次播放",
   "{n} of {m} scenes watched ({p} %)": "已观看 {m} 个场景中的 {n} 个（{p} %）",
-  "{n} this month": "本月 {n} 次",
+  "{n} in the last 30 days": "最近 30 天 {n} 次",
   "3 months": "3 个月",
   "6 months": "6 个月",
   "1 year": "1 年",
