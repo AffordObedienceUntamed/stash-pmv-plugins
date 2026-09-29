@@ -461,6 +461,8 @@ export default {
   "“Automatic” follows the language set in Stash (classic Stash → Settings → Interface).": "“自动”会跟随 Stash 中设置的语言（经典 Stash → 设置 → 界面）。",
   "Automatic": "自动",
   "This interface as home page": "将此界面设为首页",
+  "Folders in the navigation and on the home page": "在导航栏和主页中显示文件夹",
+  "Counting the folders reads the whole library once (then it's remembered). Off = folders only load when you open “Folders”.": "统计文件夹时会读取一次整个媒体库（之后会记住结果）。关闭后，只有打开“文件夹”时才会加载文件夹。",
   "Opening Stash goes straight to this interface. Off = classic Stash stays the home page.": "打开 Stash 时直接进入此界面。关闭后，经典 Stash 仍为首页。",
   "How tall a row in the lists is.": "列表中每一行的高度。",
   "Autoplay next in the player": "播放器中自动播放下一个",

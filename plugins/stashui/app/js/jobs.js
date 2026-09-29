@@ -6,6 +6,7 @@ import { toast } from "./ui.js";
 import { setJobCount } from "./main.js";
 
 const listeners = new Set();
+const CHANGES_LIBRARY = /scan|clean|delet|import|migrat/i; // Stash's job descriptions are always English
 let last = new Map();
 export let jobs = [];
 
@@ -22,15 +23,16 @@ async function poll() {
     jobs = d.jobQueue || [];
     const now = new Map(jobs.map((j) => [j.id, j]));
     // Jobs that disappeared are finished
-    let finished = false;
+    let changed = false;
     last.forEach((j, id) => {
       if (!now.has(id)) {
         toast(t("Done: {what}", { what: j.description }), "ok");
-        finished = true;
+        if (CHANGES_LIBRARY.test(j.description || "")) changed = true;
       }
     });
-    // Scan, clean etc. may have changed folders and items
-    if (finished) libraryChanged();
+    // Only jobs that add, move or remove files change folders and counts – not every generate or
+    // plugin task (reloading after each of them kept the folder tree loading on busy servers)
+    if (changed) libraryChanged();
     jobs.forEach((j) => {
       if (j.status === "FAILED" && (!last.get(j.id) || last.get(j.id).status !== "FAILED")) toast(t("Failed: {what}", { what: j.description }) + (j.error ? " – " + j.error : ""), "error");
     });

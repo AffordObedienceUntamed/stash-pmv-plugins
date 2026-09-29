@@ -202,7 +202,7 @@ function renderRail() {
           : `<a href="#/${it.href}" data-match="${it.match.source}">${icon(it.icon)}<span>${t(it.label)}</span>${it.count ? `<span class="kb-count" data-count="${it.count}"></span>` : ""}</a>`
       ).join("") +
       `</nav>` +
-      (g.group === "Library" ? `<div class="kb-rail-group">${t("Folders")}</div><div class="kb-tree" id="tree"><div class="kb-rail-foot">${t("Loading …")}</div></div>` : "")
+      (g.group === "Library" && store.get("railFolders", true) ? `<div class="kb-rail-group">${t("Folders")}</div><div class="kb-tree" id="tree"><div class="kb-rail-foot">${t("Loading …")}</div></div>` : "")
     ).join("") +
     `<div class="kb-rail-foot" id="rail-foot"></div>`;
 
@@ -229,14 +229,17 @@ function renderRail() {
 // Menu entries of companion plugins (Media Storm, PMV Generator) only show when they're installed and on
 const PMV_PAGE = "/plugin/pmvGenerator/assets/index.html?from=stashui"; // so its links lead back here
 async function refreshPluginLinks() {
+  // Matched by ID or name, ignoring case and separators – a copy installed under another folder
+  // name (e.g. "MediaStorm", "media-storm") is still found
+  const norm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
   let on;
   try {
-    const d = await gql(`query { plugins { id enabled } }`);
-    on = new Set(d.plugins.filter((p) => p.enabled).map((p) => p.id));
+    const d = await gql(`query { plugins { id name enabled } }`);
+    on = new Set(d.plugins.filter((p) => p.enabled).flatMap((p) => [norm(p.id), norm(p.name)]));
   } catch (e) {
     return; // unknown – leave the entries visible
   }
-  document.querySelectorAll("#rail [data-plugin]").forEach((b) => (b.hidden = !on.has(b.dataset.plugin)));
+  document.querySelectorAll("#rail [data-plugin]").forEach((b) => (b.hidden = !on.has(norm(b.dataset.plugin))));
 }
 window.addEventListener("stash:plugins-changed", refreshPluginLinks);
 

@@ -99,4 +99,5 @@ Stash UI works on its own. If you also install **Media Storm** or the **PMV Gene
 - **Keep the classic home page**: Settings → This interface → “This interface as home page” off (or the plugin setting “Keep classic home page”). For a single tab: `http://localhost:9999/?classic=1`.
 - Pages that only exist in classic Stash (registered by other plugins) are embedded through classic Stash; its navigation is hidden there.
 - After changing files in `app/`: run `python tools/build.py --sync-only` from the repository root – it copies the shared files to the PMV Generator plugin and sets version stamps so browsers don't load stale files from their cache.
+- **Folders** in the navigation and on the home page need one count of the whole library. The result is remembered in the browser and only counted again when the number of scenes/images changes or after a scan, clean or deletion. On very large libraries you can switch them off under Settings → This interface – folders then only load when you open “Folders”.
 - Classic Stash gets its look directly from this plugin. Other themes that restyle classic Stash may clash with it – turn them off if things look odd.

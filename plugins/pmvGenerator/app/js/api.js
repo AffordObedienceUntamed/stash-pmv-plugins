@@ -98,24 +98,49 @@ let folderCache = null;
 // All folders with their number of images/videos (including subfolders); empty ones are hidden.
 // Scenes and images are counted, not files: Stash keeps folder and file entries even after
 // deleting (without "delete file" the file stays, with it the folder stays) – such folders should disappear.
+//
+// Counting needs every scene and image once – heavy on big libraries. So the counted result is kept in
+// the browser and reused as long as the number of scenes and images hasn't changed; scans, cleans and
+// deletions (libraryChanged) throw it away.
+const TREE_KEY = "stashui.folderTree";
+async function folderData() {
+  let key = null;
+  try {
+    const s = (await gql(`query { stats { scene_count image_count } }`)).stats;
+    key = s.scene_count + "/" + s.image_count;
+    const cached = JSON.parse(localStorage.getItem(TREE_KEY) || "null");
+    if (cached && cached.v === 1 && cached.key === key) return cached;
+  } catch (e) { /* no stats or no stored tree – count below */ }
+  const d = await gql(`query {
+    findFolders(filter: { per_page: -1 }) { folders { id path basename parent_folder { id } } }
+    findScenes(filter: { per_page: -1 }) { scenes { files { parent_folder { id } } } }
+    findImages(filter: { per_page: -1 }) { images { visual_files { ... on ImageFile { parent_folder { id } } ... on VideoFile { parent_folder { id } } } } }
+  }`);
+  const counts = {}; // folder id → [videos, images]
+  const add = (file, i) => {
+    const id = file && file.parent_folder && file.parent_folder.id;
+    if (id) (counts[id] = counts[id] || [0, 0])[i]++;
+  };
+  d.findScenes.scenes.forEach((x) => add(x.files[0], 0));
+  d.findImages.images.forEach((x) => add(x.visual_files[0], 1));
+  const data = { v: 1, key, folders: d.findFolders.folders.map((f) => [f.id, f.path, f.basename || f.path, f.parent_folder ? f.parent_folder.id : null]), counts };
+  if (key) {
+    try {
+      localStorage.setItem(TREE_KEY, JSON.stringify(data));
+    } catch (e) { /* too big or blocked – counted again next time */ }
+  }
+  return data;
+}
+
 export function loadFolders(force) {
   if (folderCache && !force) return folderCache;
   folderCache = (async () => {
-    const d = await gql(`query {
-      findFolders(filter: { per_page: -1 }) { folders { id path basename parent_folder { id } } }
-      findScenes(filter: { per_page: -1 }) { scenes { files { parent_folder { id } } } }
-      findImages(filter: { per_page: -1 }) { images { visual_files { ... on ImageFile { parent_folder { id } } ... on VideoFile { parent_folder { id } } } } }
-    }`);
+    const data = await folderData();
     const nodes = new Map();
-    for (const f of d.findFolders.folders) {
-      nodes.set(f.id, { id: f.id, path: f.path, name: f.basename || f.path, parent: f.parent_folder && f.parent_folder.id, kids: [], img: 0, vid: 0 });
+    for (const [id, path, name, parent] of data.folders) {
+      const c = data.counts[id] || [0, 0];
+      nodes.set(id, { id, path, name, parent, kids: [], vid: c[0], img: c[1] });
     }
-    const count = (file, key) => {
-      const n = file && file.parent_folder && nodes.get(file.parent_folder.id);
-      if (n) n[key]++;
-    };
-    d.findScenes.scenes.forEach((x) => count(x.files[0], "vid"));
-    d.findImages.images.forEach((x) => count(x.visual_files[0], "img"));
     for (const n of nodes.values()) {
       const p = n.parent && nodes.get(n.parent);
       if (p) p.kids.push(n);
@@ -152,6 +177,9 @@ export function loadFolders(force) {
 // After deleting, scanning, cleaning …: recount folders and refresh all displays (navigation, counts)
 export function libraryChanged() {
   folderCache = null;
+  try {
+    localStorage.removeItem(TREE_KEY);
+  } catch (e) { /* blocked */ }
   window.dispatchEvent(new Event("stash:library-changed"));
 }
 

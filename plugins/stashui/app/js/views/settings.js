@@ -251,6 +251,8 @@ async function renderApp(body) {
     <form class="kb-set-form" data-form>
       <label class="kb-set"><span class="kb-set-label"><b>${t("Language")}</b><small>${t("“Automatic” follows the language set in Stash (classic Stash → Settings → Interface).")}</small></span>
         <select class="kb-field" data-lang><option value="auto">${t("Automatic")}</option>${LANGS.map(([code, name]) => `<option value="${code}">${esc(name)}</option>`).join("")}</select></label>
+      <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("Folders in the navigation and on the home page")}</b><small>${t("Counting the folders reads the whole library once (then it's remembered). Off = folders only load when you open “Folders”.")}</small></span>
+        <span class="kb-switch"><input type="checkbox" data-railfolders${store.get("railFolders", true) ? " checked" : ""}><i></i></span></label>
       <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("This interface as home page")}</b><small>${t("Opening Stash goes straight to this interface. Off = classic Stash stays the home page.")}</small></span>
         <span class="kb-switch"><input type="checkbox" data-home${cfg.keepClassicHome ? "" : " checked"}><i></i></span></label>
       <label class="kb-set"><span class="kb-set-label"><b>${t("Thumbnail size")}</b><small>${t("How tall a row in the lists is.")}</small></span>
@@ -276,6 +278,10 @@ async function renderApp(body) {
     } catch (err) {
       errorToast(err, "Save");
     }
+  };
+  body.querySelector("[data-railfolders]").onchange = (e) => {
+    store.set("railFolders", e.target.checked);
+    location.reload(); // the navigation is built once – rebuild it with or without folders
   };
   body.querySelector("[data-rowh]").onchange = (e) => store.set("rowHeight", Number(e.target.value));
   body.querySelector("[data-auto]").onchange = (e) => store.set("player", Object.assign(store.get("player", {}), { auto: e.target.checked }));

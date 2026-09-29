@@ -95,7 +95,9 @@ export async function render(main) {
   );
 
   let stopCovers = () => {};
-  loadFolders()
+  // Folders can be switched off (Settings → This interface) – then they only load on the Folders page
+  if (!store.get("railFolders", true)) $("[data-rooms-sec]").hidden = true;
+  else loadFolders()
     .then((tree) => {
       const top = (tree.roots.length === 1 && tree.roots[0].kids.length ? tree.roots[0].kids : tree.roots).slice().sort((a, b) => b.timg + b.tvid - (a.timg + a.tvid)).slice(0, 8);
       $("[data-rooms]").innerHTML = roomsHtml(top);
