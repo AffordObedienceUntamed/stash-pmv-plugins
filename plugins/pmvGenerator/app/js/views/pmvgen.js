@@ -2283,8 +2283,22 @@ class Generator {
     if (m.kind === "video") {
       m.el.playbackRate = this.rate || 1;
       m.el.play().catch(() => {});
+      this.watchFrames(m);
     }
     return m;
+  }
+
+  // A clip on screen got a new picture → draw soon (see loop)
+  watchFrames(m) {
+    const v = m.el;
+    if (m.vfc || !v.requestVideoFrameCallback) return;
+    m.vfc = true;
+    const cb = () => {
+      if (this.done || !this.groups.includes(m)) return (m.vfc = false);
+      this.freshFrame = true;
+      v.requestVideoFrameCallback(cb);
+    };
+    v.requestVideoFrameCallback(cb);
   }
 
   dropUnused(old) {
@@ -2658,11 +2672,15 @@ class Generator {
       if (ev.type === "stutter") this.stutter(t);
       if (ev.type === "strobe") this.comp.strobe(t);
     }
-    // Draw at most ~60 times a second: 120/144 Hz screens would double the work for nothing
-    // (beats and cuts above are still checked on every frame, so the timing stays exact)
+    // Draw when a clip on screen has a new picture (every clip frame shows up, evenly – also on 144/240 Hz
+    // screens, where a fixed ~60 per second skipped and bunched clip frames), at most every 7 ms;
+    // without a new picture ~60 times a second for the effects.
+    // (beats and cuts above are checked on every frame, so the timing stays exact)
     const ms = performance.now();
-    if (!this.drawMs || ms - this.drawMs >= 15) {
+    const since = ms - (this.drawMs || -1e9);
+    if (since >= 15 || (this.freshFrame && since >= 4)) {
       this.drawMs = ms;
+      this.freshFrame = false;
       this.trackFocus();
       this.st.t = t;
       this.st.slots = this.slots;
