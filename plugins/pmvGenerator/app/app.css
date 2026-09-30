@@ -1152,6 +1152,13 @@ html.kb-glass .kb-home-row { border-color: var(--glass-edge); background: var(--
 .kb-vs-pos { color: var(--faint); font: 800 18px/1 var(--f-display); text-align: center; }
 .kb-vs-pos.is-podium { color: var(--pink); }
 .kb-vs-pts { color: var(--pink); font: 700 15px/1 var(--f-label); font-variant-numeric: tabular-nums; }
+/* Versus in fullscreen: the two cards fill the screen */
+.kb-vs:fullscreen { grid-template-rows: auto minmax(0, 1fr) auto auto; gap: 12px; height: 100vh; padding: 16px 20px 14px; overflow: hidden; background: var(--bg); }
+.kb-vs:fullscreen .kb-vs-arena { min-height: 0; }
+.kb-vs:fullscreen .kb-vs-card { min-height: 0; }
+.kb-vs:fullscreen .kb-vs-media { flex: 1; height: auto; min-height: 0; }
+.kb-vs:fullscreen .kb-vs-mid b { font-size: 48px; }
+.kb-vs:fullscreen .kb-toasts { position: fixed; }
 @media (max-width: 760px) {
   .kb-vs-arena { grid-template-columns: minmax(0, 1fr); }
   .kb-vs-media { height: 32vh; }

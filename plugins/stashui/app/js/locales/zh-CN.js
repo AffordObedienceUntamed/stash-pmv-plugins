@@ -1095,4 +1095,8 @@ export default {
   "From the next scene on: a random spot": "从下一个场景开始：随机位置",
   "Scenes start normally again": "场景恢复正常开始",
   "Random spot: {time}": "随机位置：{time}",
+  "Fullscreen": "全屏",
+  "Leave fullscreen": "退出全屏",
+  "← left wins · → right wins · ↓ skip · U undo · F fullscreen": "← 左边胜 · → 右边胜 · ↓ 跳过 · U 撤销 · F 全屏",
+  "Tags (optional)": "标签（可选）",
 };

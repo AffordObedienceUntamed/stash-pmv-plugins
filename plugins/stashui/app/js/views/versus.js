@@ -154,10 +154,11 @@ export function render(main, params = {}) {
       </div>
       <div class="kb-vs-arena" data-arena><div class="kb-loading">${t("Loading …")}</div></div>
       <div class="kb-vs-foot">
-        <span class="kb-hint">${t("← left wins · → right wins · ↓ skip · U undo")}</span>
+        <span class="kb-hint">${t("← left wins · → right wins · ↓ skip · U undo · F fullscreen")}</span>
         <span class="kb-spacer"></span>
         <button type="button" class="kb-btn is-ghost" data-skip>${t("Skip")}</button>
         <button type="button" class="kb-btn is-ghost" data-undo>${t("Undo")}</button>
+        <button type="button" class="kb-btn is-ghost" data-fs title="${esc(t("Fullscreen (F)"))}">${icon("expand")}${t("Fullscreen")}</button>
       </div>
       <div class="kb-vs-level" data-level></div>`;
     const paintMode = () => body.querySelectorAll("[data-mode] [data-v]").forEach((b) => b.classList.toggle("is-on", b.dataset.v === S.mode));
@@ -174,7 +175,7 @@ export function render(main, params = {}) {
     });
     tagPicker(body.querySelector("[data-tags]"), {
       include: S.tags,
-      placeholder: t("Only with these tags (optional)"),
+      placeholder: t("Tags (optional)"),
       onChange: (inc) => {
         S.tags = inc;
         saveView();
@@ -183,9 +184,13 @@ export function render(main, params = {}) {
     });
     body.querySelector("[data-skip]").onclick = () => showNext();
     body.querySelector("[data-undo]").onclick = () => undoLast();
+    body.querySelector("[data-fs]").onclick = () => fullscreen();
     body.querySelector("[data-arena]").addEventListener("click", (e) => {
       const open = e.target.closest("[data-open]");
-      if (open) return go(KINDS[S.kind].open(open.dataset.open));
+      if (open) {
+        if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); // the player opens outside of it
+        return go(KINDS[S.kind].open(open.dataset.open));
+      }
       const c = e.target.closest("[data-side]");
       if (c) vote(Number(c.dataset.side));
     });
@@ -370,6 +375,21 @@ export function render(main, params = {}) {
     }
   }
 
+  // ---------- Fullscreen ----------
+  // The arena fills the screen; messages (level up …) move along, else they'd sit behind it
+  function fullscreen() {
+    if (document.fullscreenElement) return document.exitFullscreen().catch(() => {});
+    if (body.requestFullscreen) body.requestFullscreen().catch(() => {});
+  }
+  const onFs = () => {
+    const toasts = document.getElementById("toasts");
+    const on = document.fullscreenElement === body;
+    if (toasts) (on ? body : document.body).appendChild(toasts);
+    const b = body.querySelector("[data-fs]");
+    if (b) b.innerHTML = `${icon("expand")}${on ? t("Leave fullscreen") : t("Fullscreen")}`;
+  };
+  document.addEventListener("fullscreenchange", onFs);
+
   // ---------- Keys ----------
   const onKey = (e) => {
     const tg = e.target;
@@ -379,6 +399,7 @@ export function render(main, params = {}) {
     else if (e.key === "ArrowRight") vote(1);
     else if (e.key === "ArrowDown" || e.key === "s" || e.key === "S") showNext();
     else if (e.key === "u" || e.key === "U") undoLast();
+    else if (e.key === "f" || e.key === "F") fullscreen();
     else return;
     e.preventDefault();
   };
@@ -388,5 +409,9 @@ export function render(main, params = {}) {
   return () => {
     alive = false;
     document.removeEventListener("keydown", onKey);
+    document.removeEventListener("fullscreenchange", onFs);
+    if (document.fullscreenElement === body) document.exitFullscreen().catch(() => {});
+    const toasts = document.getElementById("toasts");
+    if (toasts && toasts.parentNode !== document.body) document.body.appendChild(toasts);
   };
 }
