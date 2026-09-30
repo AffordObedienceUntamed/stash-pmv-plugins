@@ -22,11 +22,10 @@ export async function render(main, params, query) {
     main.innerHTML = `<div class="kb-empty"><b>${t("This performer no longer exists")}</b><a class="kb-btn" href="#/performers">${t("All performers")}</a></div>`;
     return;
   }
-  const kinds = [];
-  if (p.scene_count) kinds.push("scene");
-  if (p.image_count) kinds.push("image");
-  if (p.gallery_count) kinds.push("gallery");
-  if (!kinds.length) kinds.push("scene");
+  // All three always there (with their numbers) – you can look at images even when there are none yet;
+  // it opens on the first kind that has something
+  const kinds = ["scene", "image", "gallery"];
+  const initialKind = kinds.find((k) => p[k + "_count"]) || "scene";
 
   const age = ageOf(p.birthdate, p.death_date);
   const gender = (GENDERS.find(([v]) => v === p.gender) || [])[1];
@@ -67,43 +66,65 @@ export async function render(main, params, query) {
     </header>
     <div data-taglink></div>
     <section data-browser></section>`;
-  const b = mediaBrowser(main.querySelector("[data-browser]"), { kinds, query, base: () => ({ filter: { performers: { value: [p.id], modifier: "INCLUDES" } } }) });
+  const b = mediaBrowser(main.querySelector("[data-browser]"), { kinds, initialKind, query, base: () => ({ filter: { performers: { value: [p.id], modifier: "INCLUDES" } } }) });
 
   // A tag on a performer only describes them – it doesn't link anything. Items that carry one of the
-  // performer's tags (e.g. a creator tag from a downloader) but aren't linked get offered here.
+  // performer's tags (e.g. a creator tag from a downloader), or lie in a folder named like the
+  // performer (name, alias or one of their tags – e.g. "…\7sinns\"), but aren't linked get offered here.
   const KINDS = [
     ["scene", "findScenes", "scene_filter", "scenes", "bulkSceneUpdate", "BulkSceneUpdateInput"],
     ["image", "findImages", "image_filter", "images", "bulkImageUpdate", "BulkImageUpdateInput"],
     ["gallery", "findGalleries", "gallery_filter", "galleries", "bulkGalleryUpdate", "BulkGalleryUpdateInput"],
   ];
-  const filterOf = (tagId) => `{ tags: { value: [${JSON.stringify(tagId)}], modifier: INCLUDES }, performers: { value: [${JSON.stringify(p.id)}], modifier: EXCLUDES } }`;
+  const notLinked = `performers: { value: [${JSON.stringify(p.id)}], modifier: EXCLUDES }`;
+  const reEsc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  // "Seven Sinns", "seven_sinns" and "seven-sinns" are the same folder name; at the end of a path too
+  // (a folder gallery's path is the folder itself)
+  const folderRe = (name) => "(?i)[\\\\/]" + name.trim().split(/[\s_.-]+/).map(reEsc).join("[ _.-]?") + "([\\\\/]|$)";
+  const sources = () => {
+    const out = p.tags.map((tg) => ({ key: tg.id, type: "tag", label: tg.name, filter: `{ tags: { value: [${JSON.stringify(tg.id)}], modifier: INCLUDES }, ${notLinked} }` }));
+    const seen = new Set();
+    for (const n of [p.name, ...(p.alias_list || []), ...p.tags.map((tg) => tg.name)]) {
+      const k = String(n || "").trim().toLowerCase().replace(/[\s_.-]+/g, " ");
+      if (k.length < 3 || seen.has(k)) continue;
+      seen.add(k);
+      out.push({ key: "f:" + k, type: "folder", label: n.trim(), filter: `{ path: { value: ${JSON.stringify(folderRe(n))}, modifier: MATCHES_REGEX }, ${notLinked} }` });
+    }
+    return out;
+  };
   const HIDE_KEY = "perfTagLinkHidden";
   async function offerLinks() {
     const box = main.querySelector("[data-taglink]");
     const hidden = new Set(store.get(HIDE_KEY, []));
-    const tags = p.tags.filter((tg) => !hidden.has(p.id + ":" + tg.id)).slice(0, 8);
-    if (!tags.length) return (box.innerHTML = "");
+    const list = sources().filter((s) => !hidden.has(p.id + ":" + s.key)).slice(0, 12);
+    if (!list.length) return (box.innerHTML = "");
     try {
-      const d = await gql(`query PerfTagLinks { ${tags.map((tg, i) => KINDS.map(([k, find, arg]) => `${k}${i}: ${find}(${arg}: ${filterOf(tg.id)}, filter: { per_page: 0 }) { count }`).join(" ")).join(" ")} }`);
-      box.innerHTML = tags
-      .map((tg, i) => {
-        const n = KINDS.map(([k]) => [k, d[k + i].count]).filter(([, c]) => c);
-        if (!n.length) return "";
-        const what = n.map(([k, c]) => plural(c, k, { scene: "scenes", image: "images", gallery: "galleries" }[k])).join(t(", "));
-        return `<div class="kb-taglink" data-tag="${tg.id}">${icon("tag")}<span>${t("{what} with the tag “{tag}” aren't linked to {name} yet – that's why they don't show here.", { what, tag: esc(tg.name), name: esc(p.name) })}</span>
-          <button type="button" class="kb-btn is-primary" data-linkall>${t("Link them")}</button><button type="button" class="kb-btn is-ghost" data-nolink>${t("Not this tag")}</button></div>`;
+      const d = await gql(`query PerfTagLinks { ${list.map((s, i) => KINDS.map(([k, find, arg]) => `${k}${i}: ${find}(${arg}: ${s.filter}, filter: { per_page: 0 }) { count }`).join(" ")).join(" ")} }`);
+      box.innerHTML = list
+        .map((s, i) => {
+          const n = KINDS.map(([k]) => [k, d[k + i].count]).filter(([, c]) => c);
+          if (!n.length) return "";
+          const what = n.map(([k, c]) => plural(c, k, { scene: "scenes", image: "images", gallery: "galleries" }[k])).join(t(", "));
+          const text =
+            s.type === "tag"
+              ? t("{what} with the tag “{tag}” aren't linked to {name} yet – that's why they don't show here.", { what, tag: esc(s.label), name: esc(p.name) })
+              : t("{what} in a folder named “{folder}” aren't linked to {name} yet – that's why they don't show here.", { what, folder: esc(s.label), name: esc(p.name) });
+          return `<div class="kb-taglink" data-src="${i}">${icon(s.type === "tag" ? "tag" : "folder")}<span>${text}</span>
+          <button type="button" class="kb-btn is-primary" data-linkall>${t("Link them")}</button><button type="button" class="kb-btn is-ghost" data-nolink>${s.type === "tag" ? t("Not this tag") : t("Not this folder")}</button></div>`;
         })
         .join("");
+      box.sources = list;
     } catch (e) {
       box.innerHTML = ""; // only a hint – never in the way
     }
   }
   main.querySelector("[data-taglink]").addEventListener("click", async (e) => {
-    const row = e.target.closest("[data-tag]");
-    if (!row) return;
-    const tagId = row.dataset.tag;
+    const row = e.target.closest("[data-src]");
+    const box = e.currentTarget;
+    if (!row || !box.sources) return;
+    const src = box.sources[Number(row.dataset.src)];
     if (e.target.closest("[data-nolink]")) {
-      store.set(HIDE_KEY, [...new Set([...store.get(HIDE_KEY, []), p.id + ":" + tagId])]);
+      store.set(HIDE_KEY, [...new Set([...store.get(HIDE_KEY, []), p.id + ":" + src.key])]);
       return row.remove();
     }
     const btn = e.target.closest("[data-linkall]");
@@ -113,7 +134,7 @@ export async function render(main, params, query) {
     try {
       let total = 0;
       for (const [, find, arg, list, bulk, type] of KINDS) {
-        const r = await gql(`query PerfTagIds { ${find}(${arg}: ${filterOf(tagId)}, filter: { per_page: -1 }) { ${list} { id } } }`);
+        const r = await gql(`query PerfTagIds { ${find}(${arg}: ${src.filter}, filter: { per_page: -1 }) { ${list} { id } } }`);
         const ids = r[find][list].map((x) => x.id);
         if (!ids.length) continue;
         await gql(`mutation($i: ${type}!) { ${bulk}(input: $i) { id } }`, { i: { ids, performer_ids: { ids: [p.id], mode: "ADD" } } });

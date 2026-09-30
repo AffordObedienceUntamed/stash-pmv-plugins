@@ -54,11 +54,10 @@ export async function render(main, params, query) {
     main.innerHTML = `<div class="kb-empty"><b>${t("This tag no longer exists")}</b><a class="kb-btn" href="#/tags">${t("All tags")}</a></div>`;
     return;
   }
-  const kinds = [];
-  if (tag.scene_count) kinds.push("scene");
-  if (tag.image_count) kinds.push("image");
-  if (tag.gallery_count) kinds.push("gallery");
-  if (!kinds.length) kinds.push("scene");
+  // All three always there (with their numbers) – you can look at images even when there are none yet;
+  // it opens on the first kind that has something
+  const kinds = ["scene", "image", "gallery"];
+  const initialKind = kinds.find((k) => tag[k + "_count"]) || "scene";
   main.innerHTML = `
     <header class="kb-head">
       <div class="kb-head-title">
@@ -75,7 +74,7 @@ export async function render(main, params, query) {
     <section class="kb-tagperfs" data-tperfs hidden></section>
     <section data-browser></section>`;
   tagPerformers(main.querySelector("[data-tperfs]"), tag);
-  const b = mediaBrowser(main.querySelector("[data-browser]"), { kinds, query, base: () => ({ tagId: tag.id }) });
+  const b = mediaBrowser(main.querySelector("[data-browser]"), { kinds, initialKind, query, base: () => ({ tagId: tag.id }) });
 
   main.querySelector("[data-edit]").onclick = () => {
     const d = openDrawer({

@@ -977,4 +977,6 @@ export default {
   "With this tag": "带有此标签",
   "all of them": "全部同时",
   "any of them": "任意一个",
+  "{what} in a folder named “{folder}” aren't linked to {name} yet – that's why they don't show here.": "名为“{folder}”的文件夹中的 {what} 还没有关联到 {name}——所以它们没有显示在这里。",
+  "Not this folder": "不是这个文件夹",
 };
