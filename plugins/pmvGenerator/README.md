@@ -66,10 +66,10 @@ The browser talks to plex.tv and to your server directly. Stash on `http://local
 
 ## Spotify & other apps (live)
 
-Switch step 1 to **Spotify & apps**. The generator listens to one program on this PC – Spotify by default, any other by its name as in the Task Manager (TIDAL, foobar2000, a browser …) – and finds the beats while the music plays: after about three seconds it has the tempo, then it cuts on the beat and follows along (a new song, pause, skipping). Only that program is heard – a game, Discord or anything else running at the same time stays out. You play music in the app as usual; the song title comes from Spotify's window. Nothing is recorded in this mode.
+Switch step 1 to **Spotify & apps**. The generator listens to one program on this PC – Spotify by default, any other by its name as in the Task Manager (TIDAL, foobar2000, a browser …) – and cuts on the hits you hear – kick and snare, not the hi-hats – about when your speakers play them, at most about once per beat (the tempo is measured along the way). There's no guessed beat grid: in trap, hip-hop or phonk the hits sit on thirds of the beat and a predicted grid keeps slipping; this way every cut lands on a real hit. Calm parts without clear hits get a quiet cut every few seconds instead of pumping on nothing. A new song, pause and skipping are followed. Only that program is heard – a game, Discord or anything else running at the same time stays out. You play music in the app as usual; the song title comes from Spotify's window. Nothing is recorded in this mode.
 
-- The cuts are announced a beat ahead so they land on time; if your speakers are late (Bluetooth, TV), tap **T** along to the beat or use **− / +** / **[ / ]** – remembered per app.
-- How it works: the plugin's backend compiles a small helper (`applisten.cs`) once with the C# compiler that comes with Windows and starts it. It uses Windows' per-app audio capture and hands only that app's sound to this page, on `127.0.0.1` with a secret key; it stops by itself when nobody listens for 90 s.
+- If your speakers are late (Bluetooth, TV), the cuts come early: tap **T** along to the beat or use **−** / **[** – remembered per app.
+- How it works: the plugin's backend compiles a small helper (`applisten.cs`) once with the C# compiler that comes with Windows and starts it. It uses Windows' per-app audio capture and hands only that app's sound to this page, on `127.0.0.1` with a secret key; it stops by itself when nobody listens for 90 s (one helper per app).
 - Needs Stash on **Windows 11** (or Windows 10 from 2022) and the browser on the same computer.
 
 ## PMV as template

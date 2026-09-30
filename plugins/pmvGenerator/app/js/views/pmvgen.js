@@ -2350,11 +2350,18 @@ class Generator {
       this.liveHeld = quiet;
       this.videos().forEach((m) => (quiet ? m.el.pause() : m.el.play().catch(() => {})));
     }
-    const beats = song.beats;
     if (L.ended && !L.stopped) this.sayPlex(`Listening to ${L.app} stopped${L.error ? ": " + L.error : ""}`);
     else if (quiet) this.sayPlex(L.running === false ? `${L.app} isn't running` : `Nothing is playing in ${L.app}`);
-    else if (!beats.length || beats[beats.length - 1] < this.pos() - 1.5) this.sayPlex("Listening … finding the beat");
+    else if (L.lastHit == null) this.sayPlex("Listening …");
     else this.sayPlex("");
+    // A calm part without clear hits: now and then a quiet cut (no flash, no pulse) so the picture moves on
+    const now = this.now();
+    const lastBeat = song.beats.length ? song.beats[song.beats.length - 1] : -Infinity;
+    if (!quiet && L.lastHit != null && this.pos() - lastBeat > 4 && now - (this.calmT || 0) > 4 && this.layout) {
+      this.calmT = now;
+      const gi = this.nextGroup % LAYOUTS[this.layout].groups;
+      if (this.cutGroup(gi, now)) this.nextGroup = gi + 1;
+    }
   }
 
   // Direction: decide what happens on each beat

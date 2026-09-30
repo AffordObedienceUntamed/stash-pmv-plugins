@@ -391,7 +391,7 @@ export default {
     "the program's name, as in the Task Manager (e.g. Spotify, TIDAL, foobar2000)": "程序名称，与任务管理器中显示的一致（例如 Spotify、TIDAL、foobar2000）",
     "Connecting …": "正在连接 …",
     "Listening isn't available": "无法使用监听功能",
-    "Listening … finding the beat": "正在监听 … 寻找节拍",
+    "Listening …": "正在监听 …",
     "The listening helper can't be reached – the browser has to run on the Stash computer": "无法连接监听助手——浏览器必须在运行 Stash 的电脑上",
     "No answer from the PMV Generator backend – is Python in the PATH?": "PMV 生成器后端没有响应——PATH 中有 Python 吗？",
     "Listening to an app only works when Stash runs on Windows": "只有当 Stash 运行在 Windows 上时才能监听应用",

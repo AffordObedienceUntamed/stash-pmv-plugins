@@ -297,19 +297,15 @@ def live_start(args):
     if not APP_NAME.match(app):
         raise ValueError("App name: letters, digits, spaces, . _ - only")
     exe = live_helper()
-    state_path = os.path.join(live_dir(), "applisten.json")
+    # One helper per app (several pages may listen to different apps); each stops when unused
+    state_path = os.path.join(live_dir(), "applisten-" + re.sub(r"[^a-z0-9]+", "_", app.lower()) + ".json")
     try:
         with open(state_path, encoding="utf-8") as f:
             st = json.load(f)
     except (OSError, ValueError):
         st = None
-    if st and live_ping(st) is not None:
-        if st.get("app", "").lower() == app.lower() and st.get("exe") == exe:
-            return {"port": st["port"], "token": st["token"], "app": app}
-        try:  # our helper for another app (it answered with our token) – replace it
-            os.kill(int(st["pid"]), 9)
-        except (OSError, ValueError, KeyError):
-            pass
+    if st and st.get("exe") == exe and live_ping(st) is not None:
+        return {"port": st["port"], "token": st["token"], "app": app}
     with socket.socket() as sock:
         sock.bind(("127.0.0.1", 0))
         port = sock.getsockname()[1]
