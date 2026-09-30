@@ -14,7 +14,7 @@ Works with classic Stash and with the **Stash UI** plugin: with Stash UI install
 
 Open it with the **PMV** button in the Stash navbar, from **Watch → PMV Generator** in Stash UI, or directly at `/plugin/pmvGenerator/assets/index.html`. Three steps on the left; on the right the **Go** card with a summary of all settings and the start button (on narrow screens it sticks to the bottom). Every function is its own row with a switch and a short explanation.
 
-1. **Music**: drop or choose a song (MP3, M4A, WAV, OGG, FLAC). Tempo and beats are detected in the browser (under 1 s per minute of music). The waveform shows loudness and bars; if the tempo is off, **½ tempo** / **2× tempo** help, and **Earlier** / **Later** shift the cuts by 20 ms. **Music from a video**: drop a video instead of a song, or open **Music from a video in your library**, pick a scene and the part with the song (from/to) – ffmpeg cuts the sound out on the Stash computer (optionally also kept as a file in “PMV Generator/Songs”). Stash UI's player has the same as **Music → Open in PMV Generator**. **Only use … Cut** takes just a part of any song. Or use **PMV as template** (see below).
+1. **Music**: drop or choose a song (MP3, M4A, WAV, OGG, FLAC). Tempo and beats are detected in the browser (under 1 s per minute of music). The waveform shows loudness and bars; if the tempo is off, **½ tempo** / **2× tempo** help, and **Earlier** / **Later** shift the cuts by 20 ms. **Music from a video**: drop a video instead of a song, or open **Music from a video in your library**, pick a scene and the part with the song (from/to) – ffmpeg cuts the sound out on the Stash computer (optionally also kept as a file in “PMV Generator/Songs”). Stash UI's player has the same as **Music → Open in PMV Generator**. **Only use … Cut** takes just a part of any song. **Several songs**: drop or choose several files (or a whole folder) – the show plays them one after another, optionally shuffled. Or take the music from **Plex**, or use **PMV as template** (both below).
 2. **Clips**
    - **What**: scenes, images or both · **Clip shape**: all, portrait only, landscape only · include/exclude **tags** (right-click) · **Favorites only**.
    - **Folders**: pick one or more folders (searchable, with video/image counts); subfolders are included. Without a choice: all folders.
@@ -32,7 +32,7 @@ Open it with the **PMV** button in the Stash navbar, from **Watch → PMV Genera
    - **Look & picture**: **color look** for all clips – Original, Warm, Pink, Cold, Vivid, Black & white, Noir · **Even out brightness** (clips that are too dark get brightened, too bright ones toned down) · color rush, VHS, **image drift** (Ken Burns on still images), **glowing dividers** · format 16:9 or 9:16 · **Fit** (default: the whole clip, with a blurred border) or **Fill** (crops the clip to fill the field).
    - **Sound**: sliders for the volume of the **song** and the **clips** (0–100 % each) · **clip audio** on/off · **clip audio plays** *only on drops* (the original audio of the biggest clip fades in for a few beats, like the voice-overs in real PMVs) or *always* (all visible clips play audibly under the song; in split screens they share the clip volume). Everything ends up in the recording exactly like this.
    - **Output**: **intro** (your title slams in on a pink hatched bar, ~3 s) and **outro** (the picture fades dark, title and number of clips, the last second black); title of your choice, empty = song name · **Record** in 720p or 1080p.
-4. **Go**: runs as a fullscreen show (Space pause, F fullscreen, Esc stop). The bar at the top lets you adjust the sound live: sliders for **song** and **clips**, and the button next to them cycles clip audio through *off → on drops → always*. This applies right away (including the recording) and is remembered for the next show. With **Record** you get a video (WebM): preview, **Download** or **Save to Stash** – it lands in `<first video library>/PMV Generator`, gets scanned and receives the title “PMV – song” and the tag “PMV Generator”.
+4. **Go**: runs as a fullscreen show (Space pause, F fullscreen, Esc stop; with several songs N / P or the buttons in the bar skip, and shuffle can be switched there too). The bar at the top lets you adjust the sound live: sliders for **song** and **clips**, and the button next to them cycles clip audio through *off → on drops → always*. This applies right away (including the recording) and is remembered for the next show. With **Record** you get a video (WebM): preview, **Download** or **Save to Stash** – it lands in `<first video library>/PMV Generator`, gets scanned and receives the title “PMV – song” and the tag “PMV Generator”.
 
 Tip: three full-size portrait clips side by side = format **16:9** + layout 3-way + “Portrait only” (each column is then almost exactly 9:16).
 
@@ -53,6 +53,16 @@ Step 2 → **RedGifs** – the same source as in Media Storm:
 - Stash then scans just this folder and the new scene gets the RedGifs link, a title, the description and the tag **RedGifs**. Files that already exist aren't downloaded twice.
 
 Technical notes: the page talks to the RedGifs API directly when Stash is opened via `localhost`; opened via its network address, the browser isn't allowed to, so the requests go through the plugin backend (`rgbackend.py`, shared with Media Storm – needs `python` in the PATH). Downloads only come from `media.redgifs.com`.
+
+## Music from Plex
+
+Switch step 1 to **Plex** and **Sign in with Plex** – you confirm on plex.tv like with any Plex app (no password passes through the generator, the key stays in this browser). With one server it's picked right away, otherwise you choose. Then:
+
+- **Follow what's playing**: the generator becomes a visualizer for whatever you play in Plex – Plexamp, your phone, the Plex web app, a TV. The sound stays in your Plex player; the show only brings the pictures and follows along: the next song (its beats are detected as soon as it starts), pause, seeking. Players report their position only every few seconds, so in between the time runs on here and is corrected with each report. If the cuts land a little early or late on your setup, the **− / +** buttons in the bar shift them in 50 ms steps (remembered). Nothing is recorded in this mode.
+- **A playlist**: one of your Plex music playlists, in order or shuffled – played here, like several songs of your own.
+- **Shuffle all**: random songs from all your music libraries.
+
+The browser talks to plex.tv and to your server directly. Stash on `http://localhost` can reach your server in the local network; on a `https` page (e.g. the web version) only a server reachable over https works (Plex's secure connections or Remote Access).
 
 ## PMV as template
 
