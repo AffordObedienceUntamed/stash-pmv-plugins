@@ -27,6 +27,7 @@ const DEFAULTS = {
   plexWhat: "follow", // follow = visualize what plays in Plex, list = a Plex playlist, all = all music shuffled
   plexList: "", // chosen Plex playlist
   plexSync: 0, // following Plex: cuts shifted by this (seconds)
+  plexSyncs: {}, // … remembered per Plex player (phone over Bluetooth ≠ PC)
   source: "scene",
   folders: [], // [{ id, path }] – empty = all folders
   tags: [],
@@ -1287,6 +1288,7 @@ export function render(main) {
     ["songVol", "clipVol", "voiceMode"].forEach((k) => saved[k] != null && (S[k] = saved[k]));
     if (saved.fx) S.fx.voice = !!saved.fx.voice;
     if (saved.plexSync != null) S.plexSync = saved.plexSync;
+    if (saved.plexSyncs) S.plexSyncs = saved.plexSyncs;
     paintSegs();
     pollNp();
   }
@@ -1385,6 +1387,9 @@ function drawWave(canvas, song) {
 // Generator: prepare clips, cut to the beat, draw, record
 // ==========================================================================
 
+// Following Plex: a position report is about this much older than it looks when it arrives (seconds)
+const LEAD = 0.1;
+
 class Generator {
   // tpl (optional): template from pmvscan.js – then its cuts, layouts and flashes drive the show.
   // music (optional): { type: "list", list: Playlist } – song after song – or
@@ -1462,7 +1467,7 @@ class Generator {
           }
           ${
             this.music && this.music.type === "follow"
-              ? `<span class="kb-pmvg-sync" title="If the cuts come too early or too late: shift them"><button class="kb-btn is-ghost" data-act="sync-">−</button><span data-h="sync"></span><button class="kb-btn is-ghost" data-act="sync+">+</button></span>`
+              ? `<span class="kb-pmvg-sync" title="If the cuts come too early or too late: shift them ([ / ])"><button class="kb-btn is-ghost" data-act="sync-">−</button><span data-h="sync"></span><button class="kb-btn is-ghost" data-act="sync+">+</button><button class="kb-btn is-ghost" data-act="tap" title="Tap along to the beat you hear (T) – the sync sets itself">Tap</button></span>`
               : `<button class="kb-btn is-icon is-ghost" data-act="pause" title="Pause (Space)">${icon("pause")}</button>`
           }
           <button class="kb-btn is-icon is-ghost" data-act="full" title="Fullscreen (F)">${icon("expand")}</button>
@@ -1496,6 +1501,7 @@ class Generator {
         this.paintTrack();
       }
       if (a === "sync-" || a === "sync+") this.nudge(a === "sync+" ? 0.05 : -0.05);
+      if (a === "tap") this.tap();
       if (a === "rgsave") this.saveOnScreen();
       if (a === "voicemode") this.cycleVoiceMode();
       if (a === "full") this.fullscreen();
@@ -1506,6 +1512,8 @@ class Generator {
       else if (e.key === " " && !this.done && !(this.music && this.music.type === "follow")) this.togglePause();
       else if ((e.key === "n" || e.key === "N") && this.music && this.music.type === "list") this.skip(1);
       else if ((e.key === "p" || e.key === "P") && this.music && this.music.type === "list") this.skip(-1);
+      else if ((e.key === "t" || e.key === "T") && this.ext && !e.repeat) this.tap();
+      else if ((e.key === "[" || e.key === "]") && this.ext) this.nudge(e.key === "]" ? 0.05 : -0.05);
       else if (e.key === "f" || e.key === "F") this.fullscreen();
       else if ((e.key === "d" || e.key === "D") && this.rg) this.saveOnScreen();
       else return;
@@ -1947,13 +1955,16 @@ class Generator {
     if (this.music && this.music.type === "follow") {
       // No sound of our own: the clock is Plex's position (estimated between its reports)
       const np = this.music.np;
-      this.ext = { pos: np.pos + 0.25, perf: np.at || performance.now(), playing: true };
+      this.ext = { pos: np.pos + LEAD, perf: np.at || performance.now(), playing: true };
+      this.usePlayer(np.player);
       this.extHeld = !np.playing;
       this.rebase();
       this.vOff = -this.pos(); // the show starts at 0 (intro), wherever the song is
       this.music.follow.attach(this);
-      if (this.extHeld) this.say("Paused on Plex");
+      if (this.extHeld) this.sayPlex("Paused on Plex");
       this.paintSync();
+      if (!this.extHeld) this.say("Cuts early or late? Tap T along to the beat – or use − / +");
+      setTimeout(() => this.h("msg").textContent.startsWith("Cuts early") && this.say(""), 6000);
     } else {
       this.playSource(0);
       this.rebase();
@@ -2078,19 +2089,20 @@ class Generator {
   follow(u) {
     if (this.done || !this.ext) return;
     const t0 = this.now();
-    if (u.error) return this.say("Plex: " + u.error);
-    if (u.loading) return this.say("Next song: " + u.loading + " …");
+    if (u.error) return this.sayPlex("Plex: " + u.error);
+    if (u.loading) return this.sayPlex("Next song: " + u.loading + " …");
     if (u.idle) {
       this.setHeld(true);
-      return this.say("Nothing is playing on Plex");
+      return this.sayPlex("Nothing is playing on Plex");
     }
-    const at = (p) => ({ pos: p + 0.25, perf: performance.now(), playing: true });
+    if (u.player) this.usePlayer(u.player);
+    const at = (p) => ({ pos: p + LEAD, perf: performance.now(), playing: true });
     if (u.song) {
       this.setSong(u.song);
       this.ext = at(u.pos);
       this.setHeld(!u.playing);
       this.rebase(t0);
-      this.say(u.playing ? "" : "Paused on Plex");
+      this.sayPlex(u.playing ? "" : "Paused on Plex");
       return;
     }
     if (u.playing === !!this.extHeld) {
@@ -2098,16 +2110,25 @@ class Generator {
       if (u.playing && u.fresh) this.ext = at(u.pos);
       this.setHeld(!u.playing);
       this.rebase(t0);
-      this.say(u.playing ? "" : "Paused on Plex");
+      this.sayPlex(u.playing ? "" : "Paused on Plex");
       return;
     }
-    // A fresh report that's clearly off (seeking, or drift) – take it over
+    // A fresh report is a lower bound: the song is at least there now (the report is already a bit
+    // old when it arrives). Behind it → catch up; far ahead of it → seeking back (or the player stalled).
+    // Otherwise the estimate stays – so it keeps the best of all reports instead of jumping around.
     const est = this.pos() - (this.S.plexSync || 0);
-    if (u.fresh && u.playing && Math.abs(u.pos + 0.25 - est) > 0.4) {
+    const lb = u.pos + LEAD;
+    if (u.fresh && u.playing && (lb > est + 0.02 || lb < est - 1.2)) {
       this.ext = at(u.pos);
       this.rebase(t0);
     }
-    if (u.playing) this.say("");
+    if (u.playing) this.sayPlex("");
+  }
+  // Plex's own messages (paused, nothing playing …) – clearing them leaves other messages alone
+  sayPlex(t) {
+    if (!t && !this.plexSaid) return;
+    this.plexSaid = !!t;
+    this.say(t);
   }
   // Plex paused: freeze the clock and the clips
   setHeld(held) {
@@ -2118,13 +2139,51 @@ class Generator {
     this.videos().forEach((m) => (held ? m.el.pause() : m.el.play().catch(() => {})));
   }
   nudge(d) {
+    this.setSync((this.S.plexSync || 0) + d);
+  }
+  setSync(v) {
     const t0 = this.now();
-    this.S.plexSync = Math.round(((this.S.plexSync || 0) + d) * 100) / 100;
+    this.S.plexSync = Math.max(-5, Math.min(5, Math.round(v * 100) / 100));
     const saved = store.get("pmvgen", {});
     saved.plexSync = this.S.plexSync;
+    if (this.syncPlayer) saved.plexSyncs = Object.assign({}, saved.plexSyncs, { [this.syncPlayer]: this.S.plexSync });
     store.set("pmvgen", saved);
     this.rebase(t0);
     this.paintSync();
+  }
+  // Each Plex player keeps its own offset (Bluetooth speakers are late, a PC isn't)
+  usePlayer(id) {
+    if (!id || id === this.syncPlayer) return;
+    this.syncPlayer = id;
+    const own = (store.get("pmvgen", {}).plexSyncs || {})[id];
+    if (own == null) return;
+    const t0 = this.now();
+    this.S.plexSync = own;
+    if (this.ext) this.rebase(t0);
+    this.paintSync();
+  }
+  // Tap sync: tap along to the beat you hear; after 4 taps the offset is set (tap on to refine)
+  tap() {
+    const beats = this.song.beats;
+    if (this.extHeld || beats.length < 2) return;
+    const ms = performance.now();
+    if (!this.taps || ms - this.tapMs > 2500) this.taps = [];
+    this.tapMs = ms;
+    const x = this.pos();
+    const k = Math.max(1, Math.min(beats.length - 1, beats.findIndex((b) => b > x)));
+    const b = Math.abs(beats[k] - x) < Math.abs(x - beats[k - 1]) ? beats[k] : beats[k - 1];
+    this.taps.push(x - b); // > 0: the cuts run ahead of what you hear
+    this.stage.classList.remove("is-tap");
+    void this.stage.offsetWidth;
+    this.stage.classList.add("is-tap");
+    if (this.taps.length < 4) return this.say(`Tap along to the beat … ${this.taps.length}/4`);
+    const sorted = this.taps.slice().sort((a, c) => a - c);
+    const med = (sorted[1] + sorted[2]) / 2; // middle two of four: a stray tap doesn't count
+    this.taps = [];
+    this.setSync((this.S.plexSync || 0) - med);
+    this.say(`Sync set: ${this.h("sync").textContent} – tap on to refine`);
+    clearTimeout(this.tapSayT);
+    this.tapSayT = setTimeout(() => this.h("msg").textContent.startsWith("Sync set") && this.say(""), 2500);
   }
   paintSync() {
     const el = this.h("sync");

@@ -381,6 +381,10 @@ export default {
     "Your Plex server can't be reached over https from here – try the Stash plugin on your PC, or check Remote Access in Plex": "从这里无法通过 https 连接你的 Plex 服务器——请在电脑上使用 Stash 插件，或检查 Plex 的远程访问设置",
     "Cancelled": "已取消",
     "or click · MP3, M4A, WAV, OGG, FLAC – or a video, then its music is used · several songs or a folder: they play one after another": "或点击 · MP3、M4A、WAV、OGG、FLAC——也可以是视频，会使用其中的音乐 · 多首歌曲或一个文件夹：依次播放",
+    "Tap": "打拍",
+    "Tap along to the beat you hear (T) – the sync sets itself": "跟着听到的节拍敲击（T）——同步会自动设定",
+    "If the cuts come too early or too late: shift them ([ / ])": "如果剪切来得太早或太晚：在这里调整（[ / ]）",
+    "Cuts early or late? Tap T along to the beat – or use − / +": "剪切太早或太晚？跟着节拍按 T——或使用 − / +",
   },
   patterns: [
     ["Saved: (.+)", "已保存：$1"],
@@ -424,5 +428,7 @@ export default {
     ["Plex couldn't deliver “(.+)” \\(HTTP (.+)\\)", "Plex 无法提供“$1”（HTTP $2）"],
     ["plex\\.tv can't be reached \\((.+)\\)", "无法连接 plex.tv（$1）"],
     ["Plex: (.+)", "Plex：$1"],
+    ["Tap along to the beat … (\\d+)/4", "跟着节拍敲击 … $1/4"],
+    ["Sync set: (.+) – tap on to refine", "同步已设定：$1——继续敲击可以微调"],
   ],
 };

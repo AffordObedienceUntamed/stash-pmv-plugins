@@ -225,12 +225,17 @@ export class PlexFollow {
       await new Promise((res) => setTimeout(res, 2000));
     }
   }
+  // About twice a second, a little irregular: then some polls land right after a report – the
+  // generator keeps the tightest one (see Generator.follow)
   attach(gen) {
     this.gen = gen;
-    this.timer = setInterval(() => this.tick(), 500);
+    const next = () => {
+      this.timer = setTimeout(() => this.tick().finally(() => this.gen && next()), 350 + Math.random() * 300);
+    };
+    next();
   }
   detach() {
-    clearInterval(this.timer);
+    clearTimeout(this.timer);
     this.gen = null;
   }
   async tick() {
@@ -252,13 +257,13 @@ export class PlexFollow {
         this.trackKey = np.key;
         this.lastPos = np.pos;
         const again = await this.client.nowPlaying(this.player).catch(() => np);
-        this.gen.follow({ song, pos: again && again.key === np.key ? again.pos : np.pos, playing: np.playing, fresh: true });
+        this.gen.follow({ song, pos: again && again.key === np.key ? again.pos : np.pos, playing: np.playing, fresh: true, player: np.player });
         return;
       }
       // Same song: a changed position is a fresh report
       const fresh = np.pos !== this.lastPos;
       this.lastPos = np.pos;
-      this.gen.follow({ pos: np.pos, playing: np.playing, fresh });
+      this.gen.follow({ pos: np.pos, playing: np.playing, fresh, player: np.player });
     } catch (e) {
       this.gen && this.gen.follow({ error: e.message });
     } finally {

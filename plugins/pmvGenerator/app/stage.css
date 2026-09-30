@@ -557,6 +557,8 @@
 .kb-pmvg-sync { display: inline-flex; align-items: center; gap: 2px; font-variant-numeric: tabular-nums; }
 .kb-pmvg-sync .kb-btn { min-width: 30px; padding-inline: 8px; }
 .kb-pmvg-sync [data-h="sync"] { min-width: 54px; text-align: center; }
+.kb-pmvg-stage.is-tap [data-act="tap"] { animation: kb-pmvg-tap .3s ease-out; }
+@keyframes kb-pmvg-tap { from { color: var(--paper); background: var(--pink); } }
 .kb-pmvg-hud [data-h="track"] { color: var(--faint); font-variant-numeric: tabular-nums; }
 .kb-pmvg-tplprog { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 6px 12px; padding: 14px 16px; border: 1px solid var(--pink); border-radius: 6px; background: var(--base); }
 .kb-pmvg-tplprog b { font: 700 18px/1.2 var(--f-display); font-stretch: 85%; }
