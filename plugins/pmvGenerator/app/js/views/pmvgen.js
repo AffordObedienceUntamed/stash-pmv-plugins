@@ -14,6 +14,7 @@ import { tagPicker } from "./tagpicker.js";
 import { folderPicker } from "./folderpick.js";
 import { LAYOUTS, slotsFor, aspectOfGroup, Compositor } from "../pmvfx.js";
 import { Playlist, fileTrack, filesFromDrop, isSongFile } from "../music.js";
+import { liveConnect, liveStatus, songTitle, LiveAudio } from "../live.js";
 import { plexState, plexForget, plexSignIn, plexServers, plexConnect, PlexClient, plexTracks, PlexFollow } from "../plex.js";
 
 // config.js can override these (e.g. open saved scenes in Stash UI when that's where you came from).
@@ -27,7 +28,8 @@ const DEFAULTS = {
   plexWhat: "follow", // follow = visualize what plays in Plex, list = a Plex playlist, all = all music shuffled
   plexList: "", // chosen Plex playlist
   plexSync: 0, // following Plex: cuts shifted by this (seconds)
-  plexSyncs: {}, // … remembered per Plex player (phone over Bluetooth ≠ PC)
+  plexSyncs: {}, // … remembered per Plex player (phone over Bluetooth ≠ PC) and per listened app
+  liveApp: "Spotify", // live: the app the generator listens to
   source: "scene",
   folders: [], // [{ id, path }] – empty = all folders
   tags: [],
@@ -178,7 +180,7 @@ export function render(main) {
       <div class="kb-pmvg-main">
       <section class="kb-card kb-pmvg-song">
         <h2><span class="kb-pmvg-no">1</span>Music</h2>
-        <div class="kb-seg" data-seg="mode"><button type="button" data-v="song">Your song</button><button type="button" data-v="plex">Plex</button><button type="button" data-v="tpl">PMV as template</button></div>
+        <div class="kb-seg" data-seg="mode"><button type="button" data-v="song">Your song</button><button type="button" data-v="plex">Plex</button><button type="button" data-v="live">Spotify &amp; apps</button><button type="button" data-v="tpl">PMV as template</button></div>
         <div data-tplpane hidden>
           <p class="kb-hint">An existing PMV is analyzed: music, every cut, the layouts (split screens) and flashes are taken over – only the content comes from your library. Effects like glitch or text are burned into the picture; instead, your effects run at the same moments.</p>
           <div data-tplpick>
@@ -224,6 +226,11 @@ export function render(main) {
             </div>
             <p class="kb-hint" data-plexall hidden>Random songs from all your music libraries, one after another.</p>
           </div>
+        </div>
+        <div data-livepane hidden>
+          <p class="kb-hint">The generator listens to one app on this PC – Spotify, or any other – and finds the beats while the music plays. Only that app: games, Discord and everything else stay out. You play, pause and skip in the app as usual; here you get the pictures. Needs Windows 11 (or Windows 10 from 2022) and this browser on the Stash computer. Nothing is recorded.</p>
+          <label class="kb-pmvg-liveapp"><span class="kb-lab-t">App</span><input class="kb-field" data-liveapp spellcheck="false" placeholder="Spotify"><small class="kb-hint">the program's name, as in the Task Manager (e.g. Spotify, TIDAL, foobar2000)</small></label>
+          <div class="kb-pmvg-np" data-livenp></div>
         </div>
         <div data-songpane>
         <label class="kb-pmvg-drop" data-drop>
@@ -926,7 +933,8 @@ export function render(main) {
     if (canStart()) startRun();
   };
 
-  const canStart = () => (S.mode === "tpl" ? !!tpl : S.mode === "plex" ? !!plex && (S.plexWhat !== "list" || !!S.plexList) : !!song);
+  const canStart = () =>
+    S.mode === "tpl" ? !!tpl : S.mode === "plex" ? !!plex && (S.plexWhat !== "list" || !!S.plexList) : S.mode === "live" ? !!(liveConn && liveSt && liveSt.running) : !!song;
   function paintStart() {
     if (starting) return;
     const ok = canStart();
@@ -937,9 +945,80 @@ export function render(main) {
         ? ok ? "Rebuild with my clips" : "Pick a PMV first"
         : S.mode === "plex"
           ? !plex ? "Connect Plex first" : !ok ? "Pick a playlist first" : S.plexWhat === "follow" ? "Start – follow Plex" : "Start"
+          : S.mode === "live"
+            ? ok ? `Start – listen to ${liveApp()}` : liveErr ? "Listening isn't available" : liveSt ? `Start ${liveApp()} first` : "Connecting …"
           : ok ? "Start" : "Pick a song first";
     b.innerHTML = `${icon("bolt")}${label}`;
   }
+
+  // ---------- Live: listen to an app ----------
+
+  let liveConn = null; // { port, token, app } of the helper
+  let liveSt = null; // its last status
+  let liveErr = "";
+  let liveTimer = 0;
+  let liveRun = null; // LiveAudio of the running show
+  let liveBusy = false;
+  const liveApp = () => (S.liveApp || "Spotify").trim() || "Spotify";
+  async function connectLive() {
+    if (liveBusy || (liveConn && liveConn.app.toLowerCase() === liveApp().toLowerCase())) return pollLive();
+    liveBusy = true;
+    liveErr = "";
+    liveSt = null;
+    paintLivePane();
+    try {
+      liveConn = await liveConnect(liveApp(), BACKEND);
+    } catch (err) {
+      liveConn = null;
+      liveErr = err.message;
+    } finally {
+      liveBusy = false;
+    }
+    paintLivePane();
+    pollLive();
+  }
+  function pollLive() {
+    clearTimeout(liveTimer);
+    if (!alive || !liveConn || S.mode !== "live" || run) return;
+    liveStatus(liveConn)
+      .then(
+        (st) => ((liveSt = st), (liveErr = "")),
+        (err) => {
+          liveSt = null;
+          liveErr = err.message;
+          liveConn = null; // helper gone (it stops after a while unused) – start it again
+        }
+      )
+      .finally(() => {
+        if (!alive) return;
+        paintLivePane();
+        liveTimer = setTimeout(() => (liveConn ? pollLive() : S.mode === "live" && !run && connectLive()), 2000);
+      });
+  }
+  function paintLivePane() {
+    const el = $("[data-livenp]");
+    const app = esc(liveApp());
+    const t = songTitle(liveSt);
+    el.innerHTML = liveErr
+      ? `<span class="kb-hint">${esc(liveErr)}</span>`
+      : !liveSt
+        ? `<span class="kb-hint">Connecting …</span>`
+        : !liveSt.running
+          ? `<span class="kb-hint">${app} isn't running – start it.</span>`
+          : `${icon(liveSt.sound ? "play" : "pause")}<span><b>${t ? esc(t) : app}</b><small>${liveSt.sound ? `Playing in ${app}` : `${app} is open – play something`}</small></span>`;
+    paintStart();
+  }
+  const appInput = $("[data-liveapp]");
+  appInput.value = S.liveApp || "Spotify";
+  let appTimer;
+  appInput.addEventListener("input", () => {
+    clearTimeout(appTimer);
+    appTimer = setTimeout(() => {
+      S.liveApp = appInput.value.trim() || "Spotify";
+      save();
+      connectLive();
+    }, 600);
+  });
 
   // ---------- Plex ----------
 
@@ -1109,7 +1188,9 @@ export function render(main) {
     $("[data-tplpane]").hidden = !t;
     $("[data-songpane]").hidden = S.mode !== "song";
     $("[data-plexpane]").hidden = S.mode !== "plex";
+    $("[data-livepane]").hidden = S.mode !== "live";
     if (S.mode === "plex") paintPlex();
+    if (S.mode === "live") connectLive();
     $("[data-tplnote]").hidden = !t;
     main.querySelectorAll("[data-layouts], [data-seg=cut], [data-presets]").forEach((el) => el.classList.toggle("is-dim", t));
     if (t && !tpl && !scanAbort) listTemplates("");
@@ -1245,7 +1326,14 @@ export function render(main) {
     const b = $("[data-start]");
     const say = (t) => (b.textContent = t);
     try {
-      if (S.mode === "song") {
+      if (S.mode === "live") {
+        say("Connecting …");
+        const live = new LiveAudio(liveConn);
+        await live.start();
+        if (!alive) return live.stop();
+        liveRun = live;
+        run = new Generator(live.song, Object.assign(opts(), { record: false }), onRunClosed, null, { type: "live", live });
+      } else if (S.mode === "song") {
         // The playlist starts at the song it's at
         say("Loading …");
         run = new Generator(await playlist.song(playlist.pos), opts(), onRunClosed, null, { type: "list", list: playlist });
@@ -1272,7 +1360,7 @@ export function render(main) {
       }
     } catch (err) {
       if (err.code === 401) plexGone();
-      else if (!(waiting && waiting.cancelled)) errorToast(err, S.mode === "plex" ? "Plex" : "Songs");
+      else if (!(waiting && waiting.cancelled)) errorToast(err, S.mode === "plex" ? "Plex" : S.mode === "live" ? liveApp() : "Songs");
     } finally {
       waiting = null;
       starting = false;
@@ -1289,13 +1377,17 @@ export function render(main) {
     if (saved.fx) S.fx.voice = !!saved.fx.voice;
     if (saved.plexSync != null) S.plexSync = saved.plexSync;
     if (saved.plexSyncs) S.plexSyncs = saved.plexSyncs;
+    if (liveRun) liveRun.stop();
+    liveRun = null;
     paintSegs();
     pollNp();
+    pollLive();
   }
 
   return () => {
     alive = false;
     if (run) run.close();
+    if (liveRun) liveRun.stop();
   };
 }
 
@@ -1444,6 +1536,10 @@ class Generator {
     this.comp.credits = () => `${this.shown.size} Clips · ${Math.round(this.song.bpm)} BPM`;
     this.start().catch((e) => this.fail(e));
   }
+  // The sound plays elsewhere (Plex, or an app we listen to) – no pause/volume of our own, but sync
+  get outside() {
+    return !!this.music && (this.music.type === "follow" || this.music.type === "live");
+  }
   mount() {
     const el = document.createElement("div");
     el.className = "kb-overlay-host";
@@ -1454,9 +1550,10 @@ class Generator {
         <div class="kb-pmvg-hud">
           ${this.S.record ? '<span class="kb-pmvg-rec" title="Recording">REC</span>' : ""}
           ${this.music && this.music.type === "follow" ? '<span class="kb-pmvg-plex" title="Follows what plays on Plex">Plex</span>' : ""}
-          <b data-h="name">${esc(this.song.name)}</b>${this.music && this.music.type === "list" ? `<span data-h="track"></span>` : ""}<span data-h="bpm">${Math.round(this.song.bpm)} BPM</span><span data-h="time">0:00 / ${fmtDuration(this.song.duration)}</span><span data-h="cuts">0 cuts</span>
+          ${this.music && this.music.type === "live" ? `<span class="kb-pmvg-live" title="Listens to ${esc(this.music.live.app)} on this PC">${esc(this.music.live.app)}</span>` : ""}
+          <b data-h="name">${esc(this.song.name)}</b>${this.music && this.music.type === "list" ? `<span data-h="track"></span>` : ""}<span data-h="bpm">${Math.round(this.song.bpm)} BPM</span><span data-h="time">${this.song.live ? "live" : `0:00 / ${fmtDuration(this.song.duration)}`}</span><span data-h="cuts">0 cuts</span>
           <span class="kb-spacer"></span>
-          ${this.music && this.music.type === "follow" ? "" : `<span class="kb-pmvg-hudvol" title="Song volume">${icon("music")}<input type="range" min="0" max="100" step="5" data-vol="songVol" value="${this.S.songVol ?? 100}" aria-label="Song volume"></span>`}
+          ${this.outside ? "" : `<span class="kb-pmvg-hudvol" title="Song volume">${icon("music")}<input type="range" min="0" max="100" step="5" data-vol="songVol" value="${this.S.songVol ?? 100}" aria-label="Song volume"></span>`}
           <span class="kb-pmvg-hudvol" title="Clip volume">${icon("film")}<input type="range" min="0" max="100" step="5" data-vol="clipVol" value="${this.S.clipVol ?? 50}" aria-label="Clip volume"></span>
           <button class="kb-btn is-ghost kb-pmvg-hudmode" data-act="voicemode" title="Clip audio: off → only on drops → always"></button>
           ${this.rg ? `<button class="kb-btn is-ghost kb-pmvg-hudsave" data-act="rgsave" title="Save the RedGifs clips on screen to Stash (D)">${icon("download")}<span>Save clip</span></button>` : ""}
@@ -1466,7 +1563,7 @@ class Generator {
               : ""
           }
           ${
-            this.music && this.music.type === "follow"
+            this.outside
               ? `<span class="kb-pmvg-sync" title="If the cuts come too early or too late: shift them ([ / ])"><button class="kb-btn is-ghost" data-act="sync-">−</button><span data-h="sync"></span><button class="kb-btn is-ghost" data-act="sync+">+</button><button class="kb-btn is-ghost" data-act="tap" title="Tap along to the beat you hear (T) – the sync sets itself">Tap</button></span>`
               : `<button class="kb-btn is-icon is-ghost" data-act="pause" title="Pause (Space)">${icon("pause")}</button>`
           }
@@ -1509,11 +1606,11 @@ class Generator {
     });
     this.onKey = (e) => {
       if (e.key === "Escape") this.done ? this.close() : this.finish(true);
-      else if (e.key === " " && !this.done && !(this.music && this.music.type === "follow")) this.togglePause();
+      else if (e.key === " " && !this.done && !this.outside) this.togglePause();
       else if ((e.key === "n" || e.key === "N") && this.music && this.music.type === "list") this.skip(1);
       else if ((e.key === "p" || e.key === "P") && this.music && this.music.type === "list") this.skip(-1);
-      else if ((e.key === "t" || e.key === "T") && this.ext && !e.repeat) this.tap();
-      else if ((e.key === "[" || e.key === "]") && this.ext) this.nudge(e.key === "]" ? 0.05 : -0.05);
+      else if ((e.key === "t" || e.key === "T") && this.outside && !e.repeat) this.tap();
+      else if ((e.key === "[" || e.key === "]") && this.outside) this.nudge(e.key === "]" ? 0.05 : -0.05);
       else if (e.key === "f" || e.key === "F") this.fullscreen();
       else if ((e.key === "d" || e.key === "D") && this.rg) this.saveOnScreen();
       else return;
@@ -1965,6 +2062,13 @@ class Generator {
       this.paintSync();
       if (!this.extHeld) this.say("Cuts early or late? Tap T along to the beat – or use − / +");
       setTimeout(() => this.h("msg").textContent.startsWith("Cuts early") && this.say(""), 6000);
+    } else if (this.music && this.music.type === "live") {
+      // No sound of our own: the clock is the listened app's sound as it arrives
+      this.live = this.music.live;
+      this.usePlayer("live:" + this.live.app.toLowerCase());
+      this.rebase();
+      this.vOff = -this.pos();
+      this.paintSync();
     } else {
       this.playSource(0);
       this.rebase();
@@ -1997,6 +2101,7 @@ class Generator {
   // for a single song; with a playlist or Plex the song position jumps (next song, seeking) while
   // the show time keeps running smoothly.
   pos() {
+    if (this.live) return this.live.pos() + (this.S.plexSync || 0);
     if (this.ext) {
       const e = this.ext;
       return e.pos + (e.playing && !this.extHeld ? (performance.now() - e.perf) / 1000 : 0) + (this.S.plexSync || 0);
@@ -2155,11 +2260,14 @@ class Generator {
   usePlayer(id) {
     if (!id || id === this.syncPlayer) return;
     this.syncPlayer = id;
-    const own = (store.get("pmvgen", {}).plexSyncs || {})[id];
-    if (own == null) return;
+    let own = (store.get("pmvgen", {}).plexSyncs || {})[id];
+    if (own == null) {
+      if (!id.startsWith("live:")) return; // a new Plex player: the last offset is a fair guess
+      own = 0; // listening happens before the speakers – a new app starts at 0
+    }
     const t0 = this.now();
     this.S.plexSync = own;
-    if (this.ext) this.rebase(t0);
+    if (this.ext || this.live) this.rebase(t0);
     this.paintSync();
   }
   // Tap sync: tap along to the beat you hear; after 4 taps the offset is set (tap on to refine)
@@ -2218,13 +2326,35 @@ class Generator {
       this.st.cutCount = this.cuts;
       this.comp.draw(this.st);
     }
-    if (!this.hudT || performance.now() - this.hudT > 250) {
+    if (this.live && (!this.hudT || performance.now() - this.hudT > 250)) {
+      this.hudT = performance.now();
+      this.paintLive();
+    } else if (!this.hudT || performance.now() - this.hudT > 250) {
       this.hudT = performance.now();
       this.h("time").textContent = `${fmtDuration(Math.max(0, p))} / ${fmtDuration(this.song.duration)}`;
       this.h("cuts").textContent = `${this.cuts} cuts · ${LAYOUTS[this.layout] ? LAYOUTS[this.layout].name : ""}`;
       this.h("bar").style.width = `${Math.max(0, Math.min(100, (p / this.song.duration) * 100))}%`;
     }
     this.raf = requestAnimationFrame(this.loop);
+  }
+
+  // Live: name and tempo as they're found; the clips wait while the app is quiet
+  paintLive() {
+    const L = this.live;
+    const song = this.song;
+    if (this.h("name").textContent !== song.name) this.h("name").textContent = song.name;
+    this.h("bpm").textContent = song.bpm ? `${Math.round(song.bpm)} BPM` : "… BPM";
+    this.h("cuts").textContent = `${this.cuts} cuts · ${LAYOUTS[this.layout] ? LAYOUTS[this.layout].name : ""}`;
+    const quiet = L.silent || performance.now() / 1000 - L.lastArrive > 0.5;
+    if (quiet !== !!this.liveHeld) {
+      this.liveHeld = quiet;
+      this.videos().forEach((m) => (quiet ? m.el.pause() : m.el.play().catch(() => {})));
+    }
+    const beats = song.beats;
+    if (L.ended && !L.stopped) this.sayPlex(`Listening to ${L.app} stopped${L.error ? ": " + L.error : ""}`);
+    else if (quiet) this.sayPlex(L.running === false ? `${L.app} isn't running` : `Nothing is playing in ${L.app}`);
+    else if (!beats.length || beats[beats.length - 1] < this.pos() - 1.5) this.sayPlex("Listening … finding the beat");
+    else this.sayPlex("");
   }
 
   // Direction: decide what happens on each beat
@@ -2237,7 +2367,7 @@ class Generator {
     const drop = e - prev > 0.35 && e > 0.6 && k - this.lastDrop >= 16;
     if (drop) this.lastDrop = k;
     const bar = k % 4 === 0;
-    const len = (beats[k + 1] || beats[k] + 0.5) - beats[k];
+    const len = (beats[k + 1] || beats[k] + (this.song.beatLen || 0.5)) - beats[k];
     const comp = this.comp;
     this.st.energy = e;
     this.st.beatT = t;

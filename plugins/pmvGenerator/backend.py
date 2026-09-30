@@ -21,16 +21,26 @@ Called through Stash's `runPluginOperation` (interface: raw):
       args:   {"mode": "audio_chunk", "id": "<id>", "offset": 0}
       output: {"data": "<base64>", "size": <bytes>, "last": bool}   the last piece removes the file
 
+* mode "live_start": the generator listens to one app on this PC (e.g. Spotify) – only that app,
+  games and the rest stay out (Windows process loopback, Windows 10 build 20348+ / 11).
+      args:   {"mode": "live_start", "app": "Spotify"}
+      output: {"port": 51234, "token": "...", "app": "Spotify"}
+  Compiles applisten.cs once with the C# compiler that comes with Windows and starts it; it
+  answers only on 127.0.0.1 with the token and exits by itself when nobody asks for 90 s.
+
 * modes "rg_api" and "rg_download": RedGifs clips in the show – the API detour for pages not
   opened via localhost and saving clips into the library. The code lives in rgbackend.py
   (shared with Media Storm, copied by tools/build.py).
 """
 
 import base64
+import hashlib
 import json
 import os
 import re
+import secrets
 import shutil
+import socket
 import subprocess
 import sys
 import tempfile
@@ -233,6 +243,90 @@ def audio_chunk(args):
     return {"data": base64.b64encode(data).decode("ascii"), "size": size, "last": last}
 
 
+HERE = os.path.dirname(os.path.abspath(__file__))
+APP_NAME = re.compile(r"^[A-Za-z0-9 ._-]{1,40}$")
+
+
+def live_dir():
+    d = os.path.join(os.environ.get("LOCALAPPDATA") or tempfile.gettempdir(), "pmvGenerator")
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
+def live_helper():
+    """applisten.exe, built from applisten.cs (again whenever the source changes)."""
+    src = os.path.join(HERE, "applisten.cs")
+    with open(src, "rb") as f:
+        tag = hashlib.sha256(f.read()).hexdigest()[:12]
+    d = live_dir()
+    exe = os.path.join(d, f"applisten-{tag}.exe")
+    if os.path.isfile(exe):
+        return exe
+    windir = os.environ.get("WINDIR") or r"C:\Windows"
+    csc = next((c for c in (os.path.join(windir, "Microsoft.NET", fw, "v4.0.30319", "csc.exe") for fw in ("Framework64", "Framework")) if os.path.isfile(c)), None)
+    if not csc:
+        raise RuntimeError("The C# compiler of Windows (.NET Framework 4) wasn't found")
+    env = dict(os.environ, TMP=d, TEMP=d)
+    r = subprocess.run([csc, "-nologo", "-optimize", f"-out:{exe}", src], capture_output=True, text=True, env=env, cwd=d,
+                       creationflags=0x08000000 if os.name == "nt" else 0)
+    if r.returncode != 0 or not os.path.isfile(exe):
+        raise RuntimeError("Building the listening helper failed: " + (r.stdout or r.stderr).strip()[:400])
+    for old in os.listdir(d):  # older builds
+        if old.startswith("applisten-") and old.endswith(".exe") and os.path.join(d, old) != exe:
+            try:
+                os.remove(os.path.join(d, old))
+            except OSError:
+                pass  # still running – next time
+    return exe
+
+
+def live_ping(st):
+    try:
+        with urllib.request.urlopen(f"http://127.0.0.1:{int(st['port'])}/status?t={st['token']}", timeout=2) as r:
+            return json.load(r)
+    except Exception:
+        return None
+
+
+def live_start(args):
+    if os.name != "nt":
+        raise RuntimeError("Listening to an app only works when Stash runs on Windows")
+    if sys.getwindowsversion().build < 20348:
+        raise RuntimeError("Listening to a single app needs Windows 11 (or Windows 10 from 2022)")
+    app = re.sub(r"\.exe$", "", str(args.get("app") or "Spotify").strip(), flags=re.I)
+    if not APP_NAME.match(app):
+        raise ValueError("App name: letters, digits, spaces, . _ - only")
+    exe = live_helper()
+    state_path = os.path.join(live_dir(), "applisten.json")
+    try:
+        with open(state_path, encoding="utf-8") as f:
+            st = json.load(f)
+    except (OSError, ValueError):
+        st = None
+    if st and live_ping(st) is not None:
+        if st.get("app", "").lower() == app.lower() and st.get("exe") == exe:
+            return {"port": st["port"], "token": st["token"], "app": app}
+        try:  # our helper for another app (it answered with our token) – replace it
+            os.kill(int(st["pid"]), 9)
+        except (OSError, ValueError, KeyError):
+            pass
+    with socket.socket() as sock:
+        sock.bind(("127.0.0.1", 0))
+        port = sock.getsockname()[1]
+    token = secrets.token_hex(16)
+    proc = subprocess.Popen([exe, "--port", str(port), "--token", token, "--app", app, "--idle", "90"], cwd=live_dir(),
+                            creationflags=0x00000008 | 0x00000200 | 0x08000000,  # detached, own process group, no window
+                            stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, close_fds=True)
+    st = {"port": port, "token": token, "app": app, "pid": proc.pid, "exe": exe}
+    for _ in range(50):
+        if live_ping(st) is not None:
+            with open(state_path, "w", encoding="utf-8") as f:
+                json.dump(st, f)
+            return {"port": port, "token": token, "app": app}
+        time.sleep(0.1)
+    raise RuntimeError("The listening helper didn't start")
+
+
 def main():
     data = json.loads(sys.stdin.read() or "{}")
     args = data.get("args") or {}
@@ -244,6 +338,8 @@ def main():
             out = extract_audio(Stash(data.get("server_connection")), args)
         elif mode == "audio_chunk":
             out = audio_chunk(args)
+        elif mode == "live_start":
+            out = live_start(args)
         elif mode == "rg_api":
             import rgbackend
             out = rgbackend.api(args.get("path"))

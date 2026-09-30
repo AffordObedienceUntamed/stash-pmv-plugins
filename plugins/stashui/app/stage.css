@@ -554,6 +554,11 @@
 .kb-pmvg-listinfo { margin-top: 10px; }
 .kb-pmvg-listinfo .kb-hint { margin: 0 0 4px; }
 .kb-pmvg-plex { padding: 2px 6px; border-radius: 3px; color: #1f1f1f; font-weight: 700; background: #e5a00d; }
+.kb-pmvg-live { padding: 2px 6px; border-radius: 3px; color: #0b0b0b; font-weight: 700; background: #1ed760; }
+.kb-pmvg-liveapp { display: grid; grid-template-columns: auto minmax(0, 220px); align-items: center; gap: 4px 10px; margin: 10px 0; }
+.kb-pmvg-liveapp .kb-lab-t { margin: 0; }
+.kb-pmvg-liveapp small { grid-column: 1 / -1; margin: 0; }
+[data-livepane] .kb-pmvg-np { margin-top: 4px; }
 .kb-pmvg-sync { display: inline-flex; align-items: center; gap: 2px; font-variant-numeric: tabular-nums; }
 .kb-pmvg-sync .kb-btn { min-width: 30px; padding-inline: 8px; }
 .kb-pmvg-sync [data-h="sync"] { min-width: 54px; text-align: center; }

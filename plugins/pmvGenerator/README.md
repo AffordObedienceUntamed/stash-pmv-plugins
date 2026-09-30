@@ -14,7 +14,7 @@ Works with classic Stash and with the **Stash UI** plugin: with Stash UI install
 
 Open it with the **PMV** button in the Stash navbar, from **Watch → PMV Generator** in Stash UI, or directly at `/plugin/pmvGenerator/assets/index.html`. Three steps on the left; on the right the **Go** card with a summary of all settings and the start button (on narrow screens it sticks to the bottom). Every function is its own row with a switch and a short explanation.
 
-1. **Music**: drop or choose a song (MP3, M4A, WAV, OGG, FLAC). Tempo and beats are detected in the browser (under 1 s per minute of music). The waveform shows loudness and bars; if the tempo is off, **½ tempo** / **2× tempo** help, and **Earlier** / **Later** shift the cuts by 20 ms. **Music from a video**: drop a video instead of a song, or open **Music from a video in your library**, pick a scene and the part with the song (from/to) – ffmpeg cuts the sound out on the Stash computer (optionally also kept as a file in “PMV Generator/Songs”). Stash UI's player has the same as **Music → Open in PMV Generator**. **Only use … Cut** takes just a part of any song. **Several songs**: drop or choose several files (or a whole folder) – the show plays them one after another, optionally shuffled. Or take the music from **Plex**, or use **PMV as template** (both below).
+1. **Music**: drop or choose a song (MP3, M4A, WAV, OGG, FLAC). Tempo and beats are detected in the browser (under 1 s per minute of music). The waveform shows loudness and bars; if the tempo is off, **½ tempo** / **2× tempo** help, and **Earlier** / **Later** shift the cuts by 20 ms. **Music from a video**: drop a video instead of a song, or open **Music from a video in your library**, pick a scene and the part with the song (from/to) – ffmpeg cuts the sound out on the Stash computer (optionally also kept as a file in “PMV Generator/Songs”). Stash UI's player has the same as **Music → Open in PMV Generator**. **Only use … Cut** takes just a part of any song. **Several songs**: drop or choose several files (or a whole folder) – the show plays them one after another, optionally shuffled. Or take the music from **Plex**, listen live to **Spotify or another app**, or use **PMV as template** (all below).
 2. **Clips**
    - **What**: scenes, images or both · **Clip shape**: all, portrait only, landscape only · include/exclude **tags** (right-click) · **Favorites only**.
    - **Folders**: pick one or more folders (searchable, with video/image counts); subfolders are included. Without a choice: all folders.
@@ -63,6 +63,14 @@ Switch step 1 to **Plex** and **Sign in with Plex** – you confirm on plex.tv l
 - **Shuffle all**: random songs from all your music libraries.
 
 The browser talks to plex.tv and to your server directly. Stash on `http://localhost` can reach your server in the local network; on a `https` page (e.g. the web version) only a server reachable over https works (Plex's secure connections or Remote Access).
+
+## Spotify & other apps (live)
+
+Switch step 1 to **Spotify & apps**. The generator listens to one program on this PC – Spotify by default, any other by its name as in the Task Manager (TIDAL, foobar2000, a browser …) – and finds the beats while the music plays: after about three seconds it has the tempo, then it cuts on the beat and follows along (a new song, pause, skipping). Only that program is heard – a game, Discord or anything else running at the same time stays out. You play music in the app as usual; the song title comes from Spotify's window. Nothing is recorded in this mode.
+
+- The cuts are announced a beat ahead so they land on time; if your speakers are late (Bluetooth, TV), tap **T** along to the beat or use **− / +** / **[ / ]** – remembered per app.
+- How it works: the plugin's backend compiles a small helper (`applisten.cs`) once with the C# compiler that comes with Windows and starts it. It uses Windows' per-app audio capture and hands only that app's sound to this page, on `127.0.0.1` with a secret key; it stops by itself when nobody listens for 90 s.
+- Needs Stash on **Windows 11** (or Windows 10 from 2022) and the browser on the same computer.
 
 ## PMV as template
 
