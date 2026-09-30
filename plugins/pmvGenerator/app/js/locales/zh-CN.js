@@ -1038,4 +1038,5 @@ export default {
   "The newest scenes and images": "最新的场景和图片",
   "Your biggest folders": "你最大的文件夹",
   "Something random – shuffle for more": "随机内容——点“随机”看更多",
+  "Use the frame you're looking at as the scene's cover": "把正在看的画面设为场景封面",
 };

@@ -145,7 +145,7 @@ export async function render(host, params) {
       (caps.length ? `<div class="kb-pmenu-sec"><b>${t("Subtitles")}</b>${row("data-sub", -1, t("Off"), on < 0)}${[...v.textTracks].map((tt, k) => row("data-sub", k, tt.label, on === k)).join("")}</div>` : "") +
       (vr ? `<div class="kb-pmenu-sec"><b>VR</b><div class="kb-pmenu-speeds">${[["", t("Off"), ""], ["180", "180°", ""], ["180sbs", "180° SBS", t("180° side by side")], ["360", "360°", ""], ["360tb", "360° TB", t("360° top/bottom")], ["360sbs", "360° SBS", t("360° side by side")]].map(([m, l, title]) => `<button type="button" class="kb-chip${vr.mode === m ? " is-on" : ""}" data-vr="${m}"${title ? ` title="${esc(title)}"` : ""}>${l}</button>`).join("")}</div></div>` : "") +
       `<div class="kb-pmenu-sec"><b>${t("Speed")}</b><div class="kb-pmenu-speeds">${[0.5, 0.75, 1, 1.25, 1.5, 2].map((s) => `<button type="button" class="kb-chip${v.playbackRate === s ? " is-on" : ""}" data-rate="${s}">${s}×</button>`).join("")}</div></div>` +
-      `<div class="kb-pmenu-sec"><button type="button" class="kb-pmenu-opt" data-addmark>${icon("drop")}${t("Add a marker here (B)")}</button><button type="button" class="kb-pmenu-opt" data-cover>${icon("image")}${t("Use this frame as cover")}</button></div>` +
+      `<div class="kb-pmenu-sec"><button type="button" class="kb-pmenu-opt" data-addmark>${icon("drop")}${t("Add a marker here (B)")}</button></div>` +
       (canCast ? `<div class="kb-pmenu-sec"><button type="button" class="kb-pmenu-opt${casting() ? " is-on" : ""}" data-cast>${icon("cast")}${casting() ? t("Casting – choose another device") : t("Cast to TV")}</button></div>` : "");
   }
   // Cast: the browser's own device picker – Chromecast / TVs in Chrome and Edge, AirPlay in Safari
@@ -208,11 +208,7 @@ export async function render(host, params) {
     else if (b.dataset.addmark != null) {
       closeMenu();
       return addMarker();
-    } else if (b.dataset.cover != null) {
-      closeMenu();
-      return frameAsCover();
-    }
-    else if (b.dataset.rate) v.playbackRate = v.defaultPlaybackRate = Number(b.dataset.rate); // default: survives a quality switch
+    } else if (b.dataset.rate) v.playbackRate = v.defaultPlaybackRate = Number(b.dataset.rate); // default: survives a quality switch
     menu.innerHTML = menuHtml();
   });
   v.addEventListener("error", () => {
@@ -788,6 +784,7 @@ export async function render(host, params) {
     },
     goFolder: () => goToFolder(f.path),
     music: () => import("./music.js").then((m) => m.openMusic(x, v)),
+    cover: () => frameAsCover(),
   });
   async function goToFolder(path) {
     const { loadFolders } = await import("../api.js");

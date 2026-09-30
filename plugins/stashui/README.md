@@ -73,7 +73,7 @@ Stash UI works on its own. If you also install **Media Storm** or the **PMV Gene
 - **Random**, **Endless** (continue automatically) and **Loop** as switches; “Up next” in the info bar.
 - The info bar on the right (key **I**): rating, heart, O counter (right-click subtracts one), performers (× removes one, **+** adds one or creates a new performer), tags, edit, queue, folder.
 - **Own markers**: **B** (or the gear menu) sets a marker at the current spot – a yellow pin on the timeline, **J** jumps to it like to the highlights. The info bar lists them: jump, rename, delete. They're Stash's scene markers (tag “Highlight”), so classic Stash shows them too.
-- **Use this frame as cover** (gear menu): pause where you like and the picture becomes the scene's cover.
+- **Cover** in the info bar: pause where you like and the picture becomes the scene's cover.
 - **Highlights** (switch in the bar): a heat curve sits above the timeline, diamonds mark the best spots – click or press **J** to jump to the next one. The curve combines two things:
   - **Motion**: from Stash's preview sprites (timeline thumbnails) – how much the picture changes, plus the share of skin. Needs generated sprites (Tasks → Generate previews).
   - **Your watching**: which parts you actually watch and where you seek to. Stored only in this browser (the last 400 scenes).
