@@ -154,7 +154,8 @@ export async function render(host, params) {
       `<div class="kb-pmenu-sec"><b>${t("Subtitles")}</b>${caps.length ? row("data-sub", -1, t("Off"), on < 0) + [...v.textTracks].map((tt, k) => row("data-sub", k, tt.label, on === k)).join("") : `<span class="kb-pmenu-opt is-disabled"><i></i>${t("No subtitles for this video")}</span>`}</div>` +
       (vr ? `<div class="kb-pmenu-sec"><b>VR</b><div class="kb-pmenu-speeds">${[["", t("Off"), ""], ["180", "180°", ""], ["180sbs", "180° SBS", t("180° side by side")], ["360", "360°", ""], ["360tb", "360° TB", t("360° top/bottom")], ["360sbs", "360° SBS", t("360° side by side")]].map(([m, l, title]) => `<button type="button" class="kb-chip${vr.mode === m ? " is-on" : ""}" data-vr="${m}"${title ? ` title="${esc(title)}"` : ""}>${l}</button>`).join("")}</div></div>` : "") +
       `<div class="kb-pmenu-sec"><b>${t("Speed")}</b><div class="kb-pmenu-speeds">${[0.5, 0.75, 1, 1.25, 1.5, 2].map((s) => `<button type="button" class="kb-chip${v.playbackRate === s ? " is-on" : ""}" data-rate="${s}">${s}×</button>`).join("")}</div></div>` +
-      `<div class="kb-pmenu-sec"><button type="button" class="kb-pmenu-opt" data-addmark>${icon("drop")}${t("Add a marker here (B)")}</button></div>` +
+      `<div class="kb-pmenu-sec"><button type="button" class="kb-pmenu-opt${prefs.randomStart ? " is-on" : ""}" data-randstart title="${esc(t("Every scene starts somewhere in the middle – for browsing around. Your resume points in Stash stay as they are."))}">${prefs.randomStart ? icon("check") : "<i></i>"}${t("Start at a random spot")}</button>` +
+      `<button type="button" class="kb-pmenu-opt" data-addmark>${icon("drop")}${t("Add a marker here (B)")}</button></div>` +
       (canCast ? `<div class="kb-pmenu-sec"><button type="button" class="kb-pmenu-opt${casting() ? " is-on" : ""}" data-cast>${icon("cast")}${casting() ? t("Casting – choose another device") : t("Cast to TV")}</button></div>` : "");
   }
   // Cast: the browser's own device picker – Chromecast / TVs in Chrome and Edge, AirPlay in Safari
@@ -214,6 +215,11 @@ export async function render(host, params) {
       vr.setMode(b.dataset.vr);
       store.set("vrScenes", Object.assign(store.get("vrScenes", {}), { [x.id]: b.dataset.vr }));
     } else if (b.dataset.cast != null) return cast();
+    else if (b.dataset.randstart != null) {
+      prefs.randomStart = !prefs.randomStart;
+      savePrefs();
+      toast(prefs.randomStart ? t("From the next scene on: a random spot") : t("Scenes start normally again"), "ok");
+    }
     else if (b.dataset.addmark != null) {
       closeMenu();
       return addMarker();
@@ -232,8 +238,32 @@ export async function render(host, params) {
 
   // Resume
   const dur = f.duration || 0;
-  const resumeAt = handoff == null && x.resume_time && dur && x.resume_time > 5 && x.resume_time < dur * 0.95 ? x.resume_time : 0;
+  // Random start ("just looking around"): somewhere between 5 % and 85 % – and nothing of it goes to
+  // Stash: while it's on for this scene, the resume point isn't saved (the play still counts)
+  const randomAt = prefs.randomStart && handoff == null && dur > 20 ? dur * (0.05 + Math.random() * 0.8) : 0;
+  let keepResume = !!randomAt;
+  const resumeAt = !randomAt && handoff == null && x.resume_time && dur && x.resume_time > 5 && x.resume_time < dur * 0.95 ? x.resume_time : 0;
   if (handoff != null) v.currentTime = handoff;
+  if (randomAt) {
+    v.currentTime = randomAt;
+    const r = $("[data-resume]");
+    const res = x.resume_time > 5 && x.resume_time < dur * 0.95 ? x.resume_time : 0;
+    r.innerHTML = `${t("Random spot: {time}", { time: fmtDuration(randomAt) })} <button class="kb-btn" data-fromstart>${t("From the start")}</button>${res ? ` <button class="kb-btn" data-toresume>${t("Resume at {time}", { time: fmtDuration(res) })}</button>` : ""}`;
+    r.hidden = false;
+    setTimeout(() => (r.hidden = true), 6000);
+    // Chose the normal way after all → progress is saved again
+    r.querySelector("[data-fromstart]").onclick = () => {
+      v.currentTime = 0;
+      keepResume = false;
+      r.hidden = true;
+    };
+    if (res)
+      r.querySelector("[data-toresume]").onclick = () => {
+        v.currentTime = res;
+        keepResume = false;
+        r.hidden = true;
+      };
+  }
   if (resumeAt) {
     v.currentTime = resumeAt;
     const r = $("[data-resume]");
@@ -262,7 +292,7 @@ export async function render(host, params) {
     playedSec = 0;
     lastSave = Date.now();
     watch.flush();
-    saveActivity(x.id, v.currentTime >= dur * 0.98 ? 0 : v.currentTime, p).catch(() => {});
+    saveActivity(x.id, keepResume ? null : v.currentTime >= dur * 0.98 ? 0 : v.currentTime, p).catch(() => {});
   };
   v.addEventListener("timeupdate", () => {
     const now = performance.now();
@@ -875,7 +905,7 @@ export async function render(host, params) {
     // Update progress in the grid
     if (ctx.hang) {
       const p = ctx.hang.pieces.find((q) => q.kind === "scene" && q.id === x.id);
-      if (p && dur) ctx.hang.update(Object.assign({}, p, { resume: tEnd && tEnd < dur * 0.98 ? tEnd / dur : 0 }));
+      if (p && dur && !keepResume) ctx.hang.update(Object.assign({}, p, { resume: tEnd && tEnd < dur * 0.98 ? tEnd / dur : 0 }));
     }
   };
 }

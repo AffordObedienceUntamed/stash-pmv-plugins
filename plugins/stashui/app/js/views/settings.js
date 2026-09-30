@@ -46,7 +46,7 @@ SECTIONS.splice(SECTIONS.findIndex((x) => x.id === "classic-ui"), 0, Object.assi
 // Search: what the custom pages contain (their labels, as shown)
 const CUSTOM_ENTRIES = {
   look: ["Colors", "Liquid glass"],
-  "player-ui": ["At the end of a video", "Info panel in fullscreen", "Sound in previews"],
+  "player-ui": ["At the end of a video", "Start at a random spot", "Info panel in fullscreen", "Sound in previews"],
   "this-ui": ["Language", "Folder loading", "This interface as home page", "Install as app", "Studio on scenes", "Other plugins in the menu", "Thumbnail size", "Favorites", "Reset interface settings"],
   database: ["Back up database", "Optimize database", "Clean up generated files"],
   login: ["API key"],
@@ -344,11 +344,13 @@ function renderPlayerUi(body) {
   body.innerHTML = `<form class="kb-set-form" data-form>
       <label class="kb-set"><span class="kb-set-label"><b>${t("At the end of a video")}</b><small>${t("The same as the button in the player bar – a click there cycles through these.")}</small></span>
         <select class="kb-field" data-pmode>${[["order", "In order"], ["shuffle", "Random order"], ["one", "Repeat this video"], ["all", "Repeat all"], ["stop", "Stop at the end"]].map(([v, l]) => `<option value="${v}"${mode === v ? " selected" : ""}>${t(l)}</option>`).join("")}</select></label>
+      ${sw("data-randstart", !!player.randomStart, "Start at a random spot", "Every scene starts somewhere in the middle – for browsing around. Your resume points in Stash stay as they are.")}
       ${sw("data-fspanel", player.fsPanel !== false, "Info panel in fullscreen", "Move the mouse to the right edge in fullscreen to slide in the info panel.")}
       ${sw("data-psound", store.get("previewSound", true), "Sound in previews", "Hover previews play with sound (at the player's volume). Stash only puts sound into previews when “Preview audio” is on under Previews – regenerate them after switching it on.")}
     </form>`;
   body.querySelector("[data-pmode]").onchange = (e) => setPlayer({ mode: e.target.value });
   body.querySelector("[data-fspanel]").onchange = (e) => setPlayer({ fsPanel: e.target.checked });
+  body.querySelector("[data-randstart]").onchange = (e) => setPlayer({ randomStart: e.target.checked });
   body.querySelector("[data-psound]").onchange = (e) => store.set("previewSound", e.target.checked);
 }
 

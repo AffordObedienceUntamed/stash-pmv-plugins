@@ -290,6 +290,7 @@ export async function removeO(kind, id) {
   return d.imageDecrementO;
 }
 
+// resumeTime null: only the play time counts, Stash's resume point stays as it is
 export async function saveActivity(id, resumeTime, playDuration) {
   await gql(`mutation($id: ID!, $r: Float, $p: Float) { sceneSaveActivity(id: $id, resume_time: $r, playDuration: $p) }`, { id, r: resumeTime, p: playDuration });
 }

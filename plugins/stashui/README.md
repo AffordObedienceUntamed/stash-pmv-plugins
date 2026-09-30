@@ -27,6 +27,7 @@ Open it: just open Stash (e.g. `http://localhost:9999`) – the home page redire
 | Gallery | All images, slideshow, rating, heart, edit |
 | Queue | Play items one after another, reorder by dragging, shuffle |
 | History | Everything you've watched, most recent first |
+| Versus | Two scenes, images or performers side by side – click (or ←/→) the better one. Every pick moves an Elo standing: beating a stronger one counts more. Three ways to play: **fair matches** (similar strength, least played first), **winner stays** (how long a streak?) and **climb** (a newcomer climbs until it loses – that's its place); optional tag filter, **U** undoes, a level every 25 picks. **Ranking** shows the top 100 with points and wins–losses. The standings stay in this browser; only **Turn into star ratings** writes to Stash (top 10 % five stars … bottom 10 % one star, only those with 3+ matches – it asks first). |
 | Media Storm | Opens the Media Storm panel – shown when the Media Storm plugin is installed |
 | PMV Generator | Opens the PMV Generator – shown when the PMV Generator plugin is installed |
 | Tasks | Scan for new files, generate previews, auto tag, clean – with live progress and stop |
@@ -70,9 +71,10 @@ Stash UI works on its own. If you also install **Media Storm** or the **PMV Gene
 - Custom controls, timeline with thumbnails on hover, speed, volume, fullscreen.
 - Portrait videos (9:16) are fitted completely, nothing is cropped.
 - **Resume**: starts where you left off (button “From the start”), saves progress and counts plays like Stash.
+- **Start at a random spot** (sliders menu or Settings → Player and previews): every scene starts somewhere between 5 % and 85 % – for just looking around. Your resume points in Stash aren't touched (the play still counts); “From the start” in the hint switches back to normal for that scene.
 - One button for how it goes on at the end – a click cycles through **In order**, **Random order**, **Repeat this video**, **Repeat all** and **Stop at the end** (also under Settings → Player and previews); “Up next” in the info bar.
 - The info bar on the right (key **I**): rating, heart, O counter (right-click subtracts one), performers (× removes one, **+** adds one or creates a new performer), tags, edit, queue, folder.
-- **Own markers**: **B** (or the gear menu) sets a marker at the current spot – a yellow pin on the timeline, **J** jumps to it like to the highlights. The info bar lists them: jump, rename, delete. They're Stash's scene markers (tag “Highlight”), so classic Stash shows them too.
+- **Own markers**: **B** (or the sliders menu) sets a marker at the current spot – a yellow pin on the timeline, **J** jumps to it like to the highlights. The info bar lists them: jump, rename, delete. They're Stash's scene markers (tag “Highlight”), so classic Stash shows them too.
 - **Cover** in the info bar: pause where you like and the picture becomes the scene's cover.
 - **Highlights** (switch in the bar): a heat curve sits above the timeline, diamonds mark the best spots – click or press **J** to jump to the next one. The curve combines two things:
   - **Motion**: from Stash's preview sprites (timeline thumbnails) – how much the picture changes, plus the share of skin. Needs generated sprites (Tasks → Generate previews).
