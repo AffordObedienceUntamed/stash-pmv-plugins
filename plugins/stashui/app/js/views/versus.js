@@ -13,14 +13,14 @@ import { go } from "../main.js";
 const KINDS = {
   scene: {
     label: "Scenes",
-    query: `query($f: FindFilterType, $x: SceneFilterType, $ids: [ID!]) { r: findScenes(filter: $f, scene_filter: $x, ids: $ids) { count scenes { id title rating100 date files { basename duration width height } paths { screenshot preview } } } }`,
+    query: `query($f: FindFilterType, $x: SceneFilterType, $ids: [ID!]) { r: findScenes(filter: $f, scene_filter: $x, ids: $ids) { count scenes { id title rating100 date files { basename duration width height } paths { screenshot preview stream } } } }`,
     list: "scenes",
     bulk: "mutation($i: BulkSceneUpdateInput!) { bulkSceneUpdate(input: $i) { id } }",
     open: (id) => "scene/" + id,
   },
   image: {
     label: "Images",
-    query: `query($f: FindFilterType, $x: ImageFilterType, $ids: [ID!]) { r: findImages(filter: $f, image_filter: $x, ids: $ids) { count images { id title rating100 visual_files { __typename ... on ImageFile { width height basename } } paths { thumbnail image } } } }`,
+    query: `query($f: FindFilterType, $x: ImageFilterType, $ids: [ID!]) { r: findImages(filter: $f, image_filter: $x, ids: $ids) { count images { id title rating100 visual_files { __typename ... on ImageFile { width height basename } ... on VideoFile { width height basename } } paths { thumbnail image } } } }`,
     list: "images",
     bulk: "mutation($i: BulkImageUpdateInput!) { bulkImageUpdate(input: $i) { id } }",
     open: (id) => "image/" + id,
@@ -61,6 +61,7 @@ export function render(main, params = {}) {
   let undo = []; // [{ kind, before: { id: row }, streak, champ }]
   let alive = true;
   let busy = false;
+  let montage = 0; // the scene cards jump through their scene
   const ranking = params.tab === "ranking";
 
   main.innerHTML = `
@@ -211,6 +212,28 @@ export function render(main, params = {}) {
       pair = nextPair();
       if (!pair) return;
       arena.innerHTML = pair.map((x, i) => card(x, i)).join(`<div class="kb-vs-mid"><b>VS</b>${S.mode === "champ" && streak ? `<small>${t("Streak: {n}", { n: streak })}</small>` : ""}${S.mode === "climb" && champ ? `<small>${t("Climbing: {n} wins", { n: streak })}</small>` : ""}</div>`);
+      clearInterval(montage);
+      const vids = [...arena.querySelectorAll("video[data-dur]")];
+      vids.forEach((v) => {
+        v.onerror = () => {
+          if (!v.dataset.fallback || v.dataset.fell) return;
+          v.dataset.fell = "1";
+          v.removeAttribute("data-dur");
+          v.loop = true;
+          v.src = v.dataset.fallback;
+        };
+      });
+      let step = 0;
+      const SPOTS = [0.15, 0.35, 0.55, 0.75];
+      montage = setInterval(() => {
+        step = (step + 1) % SPOTS.length;
+        vids.forEach((v) => v.dataset.dur && v.readyState >= 1 && (v.currentTime = Number(v.dataset.dur) * SPOTS[step]));
+      }, 4000);
+      arena.querySelectorAll("img[data-full]").forEach((img) => {
+        const full = new Image();
+        full.src = img.dataset.full;
+        full.decode().then(() => img.isConnected && (img.src = full.src)).catch(() => {});
+      });
     } catch (e) {
       arena.innerHTML = `<p class="kb-hint">${esc(e.message)}</p>`;
     }
@@ -221,10 +244,20 @@ export function render(main, params = {}) {
     const [elo, w, l] = row(x);
     const played = w + l;
     const sub = k === "scene" ? [x.files[0] && fmtDuration(x.files[0].duration), x.date].filter(Boolean).join(" · ") : k === "performer" ? t("{n} scenes", { n: x.scene_count || 0 }) : "";
+    // Images: the thumbnail right away, then the full picture (thumbnails are ~640 px – blurry on a big
+    // screen); images that are really videos (GIF/MP4 in Stash) play as videos
+    const vf = k === "image" ? (x.visual_files || [])[0] || {} : {};
+    // Scenes: the video itself (Stash's preview clips are only 640 px wide), jumping through the scene
+    // like a preview; the preview clip only if the browser can't play the file
+    const dur = k === "scene" ? (x.files[0] || {}).duration || 0 : 0;
     const media =
-      k === "scene" && x.paths.preview
+      k === "scene" && x.paths.stream && dur > 8
+        ? `<video src="${esc(x.paths.stream)}#t=${Math.round(dur * 0.15)}" poster="${esc(x.paths.screenshot || "")}" data-dur="${dur}" data-fallback="${esc(x.paths.preview || "")}" muted autoplay playsinline preload="auto"></video>`
+        : k === "scene" && x.paths.preview
         ? `<video src="${esc(x.paths.preview)}" poster="${esc(x.paths.screenshot || "")}" muted loop autoplay playsinline></video>`
-        : `<img src="${esc(thumbOf(k, x) || "")}" alt="" loading="eager">`;
+        : k === "image" && vf.__typename === "VideoFile"
+          ? `<video src="${esc(x.paths.image)}" poster="${esc(x.paths.thumbnail || "")}" muted loop autoplay playsinline></video>`
+          : `<img src="${esc(thumbOf(k, x) || "")}" alt="" loading="eager"${k === "image" && x.paths.image ? ` data-full="${esc(x.paths.image)}"` : ""}>`;
     return `<button type="button" class="kb-vs-card" data-side="${i}">
         <span class="kb-vs-media">${media}</span>
         <span class="kb-vs-info"><b>${esc(titleOf(k, x))}</b><small>${esc(sub)}</small>
@@ -408,6 +441,7 @@ export function render(main, params = {}) {
   reset();
   return () => {
     alive = false;
+    clearInterval(montage);
     document.removeEventListener("keydown", onKey);
     document.removeEventListener("fullscreenchange", onFs);
     if (document.fullscreenElement === body) document.exitFullscreen().catch(() => {});
