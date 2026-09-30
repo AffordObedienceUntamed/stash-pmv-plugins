@@ -26,7 +26,10 @@ const KEEP = Math.round(FPS * 20); // onset history
 const TEMPO_WIN = KEEP; // tempo over up to 20 s
 const MIN_DATA = Math.round(FPS * 4); // tempo from then on
 const EVERY = Math.round(FPS / 2); // analysis every ½ s
-const SILENT_RMS = 0.004;
+// Silence = a pause (near digital silence, ~-70 dB) for 1.5 s – not a quiet part, and not a low app volume
+// (Spotify turned down sends a quiet signal, ~-45 dB, that is still music)
+const SILENT_RMS = 0.00015;
+const SILENT_FOR = Math.round(FPS * 1.5);
 const HIT_WIN = Math.round(FPS * 1.5);
 export const TUNE = { low: 0.8, k: 1.6, floor: 0.4, gap: 0.85, switch: 1.25, confirm: 2 }; // (exported for tests)
 
@@ -205,7 +208,8 @@ export class LiveAudio {
       this.first++;
     }
     // Silence (paused): no beats; the tracking starts over when the music is back
-    const quiet = this.rmsOver(Math.round(FPS * 0.6)) < SILENT_RMS;
+    this.quietFrames = this.rmsOver(Math.round(FPS * 0.3)) < SILENT_RMS ? (this.quietFrames || 0) + 1 : 0;
+    const quiet = this.quietFrames > SILENT_FOR;
     if (quiet !== this.silent) {
       this.silent = quiet;
       if (quiet) this.reset(true);

@@ -2690,7 +2690,7 @@ class Generator {
     if (this.h("name").textContent !== song.name) this.h("name").textContent = song.name;
     this.h("bpm").textContent = song.bpm ? `${Math.round(song.bpm)} BPM` : "… BPM";
     this.h("cuts").textContent = `${this.cuts} cuts · ${LAYOUTS[this.layout] ? LAYOUTS[this.layout].name : ""}`;
-    const quiet = L.silent || performance.now() / 1000 - L.lastArrive > 0.5;
+    const quiet = L.silent || performance.now() / 1000 - L.lastArrive > 1.5; // paused: nothing, or only silence, for 1.5 s
     if (quiet !== !!this.liveHeld) {
       this.liveHeld = quiet;
       this.videos().forEach((m) => (quiet ? m.el.pause() : m.el.play().catch(() => {})));
