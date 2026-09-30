@@ -56,7 +56,7 @@ export class LiveAudio {
   constructor(conn) {
     this.conn = conn;
     this.app = conn.app || "Spotify";
-    this.song = { name: this.app, bpm: 0, beats: [], energy: [], duration: Infinity, live: true, beatLen: 0.5, peaks: new Float32Array(0) };
+    this.song = { name: "", bpm: 0, beats: [], energy: [], duration: Infinity, live: true, beatLen: 0.5, peaks: new Float32Array(0) }; // the name: the song title, once the app shows it
     this.samples = 0; // audio received (samples)
     this.offset = null; // clock: performance time (s) − audio time, lower envelope
     this.lastArrive = 0;

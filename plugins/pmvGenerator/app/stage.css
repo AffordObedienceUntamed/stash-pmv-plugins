@@ -511,6 +511,23 @@
   .kb-pmvg-hud [data-h="cuts"], .kb-pmvg-hud [data-h="bpm"] { display: none; }
 }
 .kb-pmvg-stage:not(:hover) .kb-pmvg-hud { opacity: .15; }
+/* The bar goes away when the mouse rests (and for good with H); so does the cursor */
+.kb-pmvg-stage.is-idle { cursor: none; }
+.kb-pmvg-stage.is-idle .kb-pmvg-hud, .kb-pmvg-stage.is-nohud .kb-pmvg-hud { opacity: 0; pointer-events: none; }
+.kb-pmvg-stage.is-idle .kb-pmvg-bar, .kb-pmvg-stage.is-nohud .kb-pmvg-bar { opacity: 0; }
+.kb-pmvg-bar { transition: opacity .4s ease; }
+/* Clip info (I) */
+.kb-pmvg-info { position: absolute; left: 12px; bottom: 14px; display: grid; gap: 3px; max-width: min(640px, calc(100vw - 24px)); padding: 8px 10px; border: 1px solid var(--bg-3); border-radius: 4px; color: var(--text-2); font: 500 12.5px/1.4 var(--f-label); font-variant-numeric: tabular-nums; background: color-mix(in srgb, var(--bg) 85%, transparent); pointer-events: none; }
+.kb-pmvg-info > div { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.kb-pmvg-info b { display: inline-block; min-width: 14px; color: var(--pink); }
+.kb-pmvg-info small { color: var(--faint); }
+.kb-pmvg-info .is-bad { color: #ff8095; }
+.kb-pmvg-infohead { margin-top: 4px; color: var(--text); font-weight: 700; }
+/* Presets and the smaller filter rows */
+.kb-pmvg-presets { display: grid; gap: 8px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+.kb-pmvg-presets .kb-pmvg-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.kb-pmvg-presets select { flex: 1; min-width: 0; }
+.kb-pmvg-small button { padding-inline: 10px; font-size: 12.5px; }
 .kb-pmvg-rec { padding: 2px 6px; border-radius: 3px; color: var(--paper); font-weight: 700; background: #d8243f; animation: kb-pmv-pulse 1.4s ease-in-out infinite; }
 .kb-pmvg-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(251, 239, 244, .12); }
 .kb-pmvg-bar i { display: block; height: 100%; width: 0; background: var(--pink); }

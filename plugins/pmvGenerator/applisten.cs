@@ -141,17 +141,37 @@ static class AppListen
         return sb.Append('"').ToString();
     }
 
+    // The app's window title ("Artist - Song" in Spotify). All its windows, hidden ones too: closed to
+    // the tray, the main window is hidden and has no "main window title" – but the title is still set.
+    static string AppTitle()
+    {
+        var pids = new HashSet<int>();
+        try { foreach (Process p in Process.GetProcessesByName(app)) pids.Add(p.Id); }
+        catch (Exception) { }
+        if (pids.Count == 0) return "";
+        string best = "", any = "";
+        EnumWindows((h, l) =>
+        {
+            uint pid;
+            GetWindowThreadProcessId(h, out pid);
+            if (!pids.Contains((int)pid)) return true;
+            int n = GetWindowTextLengthW(h);
+            if (n <= 0 || n > 1000) return true;
+            var sb = new StringBuilder(n + 1);
+            GetWindowTextW(h, sb, sb.Capacity);
+            string t = sb.ToString().Trim();
+            if (t.Length == 0 || t == "GDI+ Window" || t.StartsWith("Default IME") || t == "MSCTFIME UI") return true;
+            if (t.Contains(" - ")) { if (best.Length == 0) best = t; }
+            else if (any.Length == 0) any = t;
+            return true;
+        }, IntPtr.Zero);
+        return best.Length > 0 ? best : any;
+    }
+
     static string Status()
     {
         string title = "";
-        try
-        {
-            foreach (Process p in Process.GetProcessesByName(app))
-            {
-                string t = p.MainWindowTitle;
-                if (!string.IsNullOrEmpty(t)) { title = t; break; }
-            }
-        }
+        try { title = AppTitle(); }
         catch (Exception) { }
         bool sound = (DateTime.UtcNow.Ticks - Interlocked.Read(ref lastSound)) < TimeSpan.TicksPerSecond;
         return "{\"app\":" + Json(app) + ",\"running\":" + (running ? "true" : "false") + ",\"title\":" + Json(title) +
@@ -364,6 +384,16 @@ static class AppListen
     [DllImport("Mmdevapi.dll", ExactSpelling = true, PreserveSig = false)]
     static extern void ActivateAudioInterfaceAsync([MarshalAs(UnmanagedType.LPWStr)] string path, [MarshalAs(UnmanagedType.LPStruct)] Guid riid,
         IntPtr activationParams, IActivateAudioInterfaceCompletionHandler handler, out IActivateAudioInterfaceAsyncOperation op);
+
+    delegate bool EnumWindowsProc(IntPtr hwnd, IntPtr lParam);
+    [DllImport("user32.dll")]
+    static extern bool EnumWindows(EnumWindowsProc cb, IntPtr lParam);
+    [DllImport("user32.dll")]
+    static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint pid);
+    [DllImport("user32.dll")]
+    static extern int GetWindowTextLengthW(IntPtr hwnd);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    static extern int GetWindowTextW(IntPtr hwnd, StringBuilder text, int max);
 
     [DllImport("kernel32.dll", SetLastError = true)]
     static extern IntPtr CreateToolhelp32Snapshot(uint flags, uint pid);
