@@ -22,6 +22,7 @@ export const F_SCENE = `id title details date rating100 o_counter play_count pla
   paths { screenshot preview webp stream sprite vtt }
   tags { id name }
   performers { id name image_path }
+  studio { id name image_path }
   galleries { id title }`;
 
 export const F_IMAGE = `id title details date rating100 o_counter organized created_at urls
@@ -35,6 +36,7 @@ export const F_GALLERY = `id title details date rating100 organized created_at i
   folder { id path }
   files { path }
   paths { cover preview }
+  performers { id name image_path }
   cover { id visual_files { ... on ImageFile { width height } ... on VideoFile { width height } } }
   tags { id name }`;
 
@@ -65,7 +67,7 @@ export async function countItems(kind, filter) {
 }
 
 export async function getScene(id) {
-  const d = await gql(`query($id: ID!) { findScene(id: $id) { ${F_SCENE} sceneStreams { url mime_type label } captions { language_code caption_type } paths { caption } } }`, { id });
+  const d = await gql(`query($id: ID!) { findScene(id: $id) { ${F_SCENE} scene_markers { id title seconds primary_tag { id name } } sceneStreams { url mime_type label } captions { language_code caption_type } paths { caption } } }`, { id });
   return d.findScene;
 }
 export async function getImage(id) {

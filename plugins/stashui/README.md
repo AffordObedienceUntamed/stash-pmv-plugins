@@ -18,7 +18,7 @@ Open it: just open Stash (e.g. `http://localhost:9999`) – the home page redire
 
 | Section | What it does |
 |---|---|
-| Start | Greeting, figures, continue watching, favorites, recently added, folders, random (“Shuffle”) |
+| Start | Greeting, figures, continue watching, favorites, recently added, folders, random (“Shuffle”). **Customize**: show/hide sections, drag them into your order, and add your own – scenes, images or both, sorted as you like, filtered by tags, performers or favorites, 8–40 items (kept in this browser) |
 | Search | Across everything: tags, folders, scenes, images, galleries |
 | Scenes / Images / Galleries | Justified rows with search, sorting, filters (include/exclude tags, performers, rating, favorites, watched, resolution, duration, format), infinite scrolling, preview video on hover |
 | Folders | Every folder with cover images, subfolders and its items; “Include subfolders” shows everything below. The folder tree sits in the navigation on the left. Folders without scenes and images are hidden |
@@ -71,7 +71,9 @@ Stash UI works on its own. If you also install **Media Storm** or the **PMV Gene
 - Portrait videos (9:16) are fitted completely, nothing is cropped.
 - **Resume**: starts where you left off (button “From the start”), saves progress and counts plays like Stash.
 - **Random**, **Endless** (continue automatically) and **Loop** as switches; “Up next” in the info bar.
-- The info bar on the right (key **I**): rating, heart, O counter (right-click subtracts one), performers, tags, edit, queue, folder.
+- The info bar on the right (key **I**): rating, heart, O counter (right-click subtracts one), performers (× removes one, **+** adds one or creates a new performer), tags, edit, queue, folder.
+- **Own markers**: **B** (or the gear menu) sets a marker at the current spot – a yellow pin on the timeline, **J** jumps to it like to the highlights. The info bar lists them: jump, rename, delete. They're Stash's scene markers (tag “Highlight”), so classic Stash shows them too.
+- **Use this frame as cover** (gear menu): pause where you like and the picture becomes the scene's cover.
 - **Highlights** (switch in the bar): a heat curve sits above the timeline, diamonds mark the best spots – click or press **J** to jump to the next one. The curve combines two things:
   - **Motion**: from Stash's preview sprites (timeline thumbnails) – how much the picture changes, plus the share of skin. Needs generated sprites (Tasks → Generate previews).
   - **Your watching**: which parts you actually watch and where you seek to. Stored only in this browser (the last 400 scenes).
@@ -103,7 +105,9 @@ Settings → General → **Install as app**: Stash UI gets its own window and a 
 ## Selecting and editing
 
 - The box in the top left of an item, Ctrl+click or Shift+click (range) selects. A bar appears at the bottom: select all, set/remove favorite, edit together (add/remove tags, rating, organized), add to queue, delete (optionally with files).
-- Edit a single item: title, rating, heart, tags (including creating new ones), date, description, links, organized, delete.
+- Edit a single item: title, rating, heart, tags (including creating new ones), performers (including creating new ones), date, description, links, organized, delete. Editing several together can also add or remove performers.
+- **Studio on scenes** (Settings → General): the studio's logo – or its name – in the corner of scene thumbnails.
+- The menu on the left: a click on a group heading folds the group away. Settings → General → **Other plugins in the menu** hides the Extensions group or single plugins in it.
 
 ## Technical notes
 

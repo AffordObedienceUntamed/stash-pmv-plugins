@@ -566,3 +566,19 @@
 .kb-pmvg-vrange .kb-field, .kb-pmvg-trim .kb-field { width: 86px; text-align: center; font-variant-numeric: tabular-nums; }
 .kb-pmvg-trim { margin-top: 10px; }
 html.kb-glass .kb-pmvg-fromvid { border-color: var(--glass-edge); background: var(--glass-shine), var(--glass); }
+
+/* Own markers: pins on the timeline (always shown), a list in the info bar */
+.kb-tl-mks { position: absolute; inset: 0; pointer-events: none; }
+.kb-tl-mk { position: absolute; bottom: 100%; width: 12px; height: 16px; margin-left: -6px; padding: 0; border: 0; background: none; pointer-events: auto; cursor: pointer; }
+.kb-tl-mk::before { content: ""; position: absolute; left: 5px; bottom: 0; width: 2px; height: 10px; background: #ffd23f; }
+.kb-tl-mk::after { content: ""; position: absolute; left: 1px; top: 0; width: 10px; height: 8px; border-radius: 50% 50% 50% 0; background: #ffd23f; box-shadow: 0 0 6px rgba(0, 0, 0, .6); transform: rotate(-45deg); }
+.kb-tl-mk:hover::after { background: #fff; }
+.kb-mkrow { display: flex; align-items: center; gap: 2px; }
+.kb-mkgo { flex: 1; display: flex; align-items: baseline; gap: 10px; min-width: 0; padding: 7px 8px; border: 0; border-radius: var(--r); color: var(--text); text-align: left; background: none; cursor: pointer; }
+.kb-mkgo:hover { background: var(--bg-3); }
+.kb-mkgo b { flex: none; color: #ffd23f; font: 700 13px/1 var(--f-label); font-variant-numeric: tabular-nums; }
+.kb-mkgo span { overflow: hidden; font: 500 13.5px/1.2 var(--f-label); white-space: nowrap; text-overflow: ellipsis; }
+.kb-mkrow .kb-btn.is-icon { width: 28px; height: 28px; }
+.kb-mkadd { margin-top: 4px; }
+.kb-stage.is-flash::after { content: ""; position: absolute; inset: 0; z-index: 20; background: #fff; pointer-events: none; animation: kb-cover-flash .4s ease-out forwards; }
+@keyframes kb-cover-flash { from { opacity: .8; } to { opacity: 0; } }

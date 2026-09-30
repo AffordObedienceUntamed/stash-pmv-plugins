@@ -47,7 +47,7 @@ SECTIONS.splice(SECTIONS.findIndex((x) => x.id === "classic-ui"), 0, Object.assi
 const CUSTOM_ENTRIES = {
   look: ["Colors", "Liquid glass"],
   "player-ui": ["Autoplay next in the player", "Info panel in fullscreen", "Sound in previews"],
-  "this-ui": ["Language", "Folder loading", "This interface as home page", "Thumbnail size", "Favorites", "Reset saved view"],
+  "this-ui": ["Language", "Folder loading", "This interface as home page", "Install as app", "Studio on scenes", "Other plugins in the menu", "Thumbnail size", "Favorites", "Reset saved view"],
   database: ["Back up database", "Optimize database", "Clean up generated files"],
   login: ["API key"],
 };
@@ -362,6 +362,11 @@ async function renderApp(body) {
       <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("This interface as home page")}</b><small>${t("Opening Stash goes straight to this interface. Off = classic Stash stays the home page.")}</small></span>
         <span class="kb-switch"><input type="checkbox" data-home${cfg.keepClassicHome ? "" : " checked"}><i></i></span></label>
       <div class="kb-set"><div class="kb-set-label"><b>${t("Install as app")}</b><small data-installhint></small></div><button type="button" class="kb-btn" data-install hidden>${icon("phone")}${t("Install")}</button></div>
+      <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("Studio on scenes")}</b><small>${t("Shows the studio's logo (or its name) in the corner of scene thumbnails.")}</small></span>
+        <span class="kb-switch"><input type="checkbox" data-studiologo${store.get("studioLogos", false) ? " checked" : ""}><i></i></span></label>
+      <div class="kb-set kb-set-ext"><div class="kb-set-label"><b>${t("Other plugins in the menu")}</b><small>${t("Plugins with their own page get an entry under “Extensions” on the left. Fold the group with a click on its heading, or hide it here – all of it or single plugins.")}</small></div>
+        <select class="kb-field" data-extmode><option value="show">${t("Show")}</option><option value="hide">${t("Hide")}</option></select>
+        <div class="kb-extpick" data-extpick></div></div>
       <label class="kb-set"><span class="kb-set-label"><b>${t("Thumbnail size")}</b><small>${t("How tall a row in the lists is.")}</small></span>
         <input type="range" min="130" max="480" step="10" data-rowh value="${store.get("rowHeight", 250)}"></label>
       <div class="kb-set"><div class="kb-set-label"><b>${t("Favorites")}</b><small>${t("The heart is the Stash tag “Favorite”. You'll find it in classic Stash too.")}</small></div></div>
@@ -397,6 +402,37 @@ async function renderApp(body) {
       toast(t("Installed"), "ok");
     }
     paintInstall();
+  };
+
+  // Extensions in the menu: all of them or none, and single ones off
+  const extMode = body.querySelector("[data-extmode]");
+  extMode.value = store.get("extMode", "show");
+  const paintExtPick = () => {
+    const found = store.get("extFound", []);
+    const off = new Set(store.get("extHidden", []));
+    const box = body.querySelector("[data-extpick]");
+    box.hidden = extMode.value === "hide" || !found.length;
+    box.innerHTML = found.map((f) => `<label class="kb-check"><input type="checkbox" data-extid="${esc(f.id)}"${off.has(f.id) ? "" : " checked"}>${esc(f.name)}</label>`).join("");
+  };
+  paintExtPick();
+  const extChanged = () => window.dispatchEvent(new Event("stash:plugins-changed"));
+  extMode.onchange = () => {
+    store.set("extMode", extMode.value);
+    paintExtPick();
+    extChanged();
+  };
+  body.querySelector("[data-extpick]").addEventListener("change", (e) => {
+    const c = e.target.closest("[data-extid]");
+    if (!c) return;
+    const off = new Set(store.get("extHidden", []));
+    c.checked ? off.delete(c.dataset.extid) : off.add(c.dataset.extid);
+    store.set("extHidden", [...off]);
+    extChanged();
+  });
+
+  body.querySelector("[data-studiologo]").onchange = (e) => {
+    store.set("studioLogos", e.target.checked);
+    toast(t("Saved"), "ok");
   };
 
   // Language: applies after reloading, so the menu and every page switch at once

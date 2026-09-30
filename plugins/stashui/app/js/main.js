@@ -214,25 +214,43 @@ const NAV = [
 
 const folderOpen = new Set(store.get("folderOpen", []));
 
+// Group headings fold their group away (remembered) – handy with many plugins under Extensions
+const railClosed = new Set(store.get("railClosed", []));
+const groupHead = (key, extra = "") =>
+  `<button type="button" class="kb-rail-group${railClosed.has(key) ? " is-closed" : ""}" data-railgrp="${key}" aria-expanded="${!railClosed.has(key)}">${t(key)}${extra}<i class="kb-rail-caret"></i></button>`;
+function paintRailGroups() {
+  document.querySelectorAll("#rail [data-railbody]").forEach((b) => (b.hidden = railClosed.has(b.dataset.railbody)));
+}
+
 function renderRail() {
   const rail = document.getElementById("rail");
   rail.innerHTML =
     `<a class="kb-mark" href="#/" aria-label="${t("Stash, home page")}"><span>Stash</span></a>` +
     NAV.map((g) =>
-      (g.group ? `<div class="kb-rail-group">${t(g.group)}</div>` : "") +
-      `<nav class="kb-nav">` +
+      (g.group ? groupHead(g.group) : "") +
+      `<nav class="kb-nav"${g.group ? ` data-railbody="${g.group}"` : ""}>` +
       g.items.map((it) =>
         it.action
           ? `<button type="button" data-action="${it.action}"${it.plugin ? ` data-plugin="${it.plugin}"` : ""}>${icon(it.icon)}<span>${t(it.label)}</span></button>`
           : `<a href="#/${it.href}" data-match="${it.match.source}">${icon(it.icon)}<span>${t(it.label)}</span>${it.count ? `<span class="kb-count" data-count="${it.count}"></span>` : ""}</a>`
       ).join("") +
       `</nav>` +
-      (g.group === "Watch" ? `<div data-extplugins hidden><div class="kb-rail-group">${t("Extensions")}</div><nav class="kb-nav" data-extlist></nav></div>` : "") +
-      (g.group === "Library" && folderMode() === "all" ? `<div class="kb-rail-group">${t("Folders")}</div><div class="kb-tree" id="tree"><div class="kb-rail-foot">${t("Loading …")}</div></div>` : "")
+      (g.group === "Watch" ? `<div data-extplugins hidden>${groupHead("Extensions", '<span class="kb-rail-n" data-extn></span>')}<nav class="kb-nav" data-extlist data-railbody="Extensions"></nav></div>` : "") +
+      (g.group === "Library" && folderMode() === "all" ? `${groupHead("Folders")}<div class="kb-tree" id="tree" data-railbody="Folders"><div class="kb-rail-foot">${t("Loading …")}</div></div>` : "")
     ).join("") +
     `<div class="kb-rail-foot" id="rail-foot"></div>`;
 
+  paintRailGroups();
   rail.addEventListener("click", (e) => {
+    const gh = e.target.closest("[data-railgrp]");
+    if (gh) {
+      const k = gh.dataset.railgrp;
+      railClosed.has(k) ? railClosed.delete(k) : railClosed.add(k);
+      store.set("railClosed", [...railClosed]);
+      gh.classList.toggle("is-closed", railClosed.has(k));
+      gh.setAttribute("aria-expanded", !railClosed.has(k));
+      return paintRailGroups();
+    }
     const c = e.target.closest("[data-fold]");
     if (c) {
       e.preventDefault();
@@ -360,10 +378,16 @@ async function paintExtensions(list) {
     : f.kind === "route" ? "#/extern/classic?path=" + encodeURIComponent(f.route)
     : f.kind === "card" ? "#/plugins?focus=" + encodeURIComponent(f.id)
     : "#/extern/classic";
-  box.querySelector("[data-extlist]").innerHTML = found
+  // Settings → This interface can hide the whole group or single plugins
+  store.set("extFound", found.map((f) => ({ id: f.id, name: f.name })));
+  const off = new Set(store.get("extHidden", []));
+  const shown = found.filter((f) => !off.has(f.id));
+  box.querySelector("[data-extlist]").innerHTML = shown
     .map((f) => `<a href="${esc(href(f))}" data-ext="${esc(f.id)}" title="${esc(f.name)}">${icon("plug")}<span>${esc(f.name)}</span></a>`)
     .join("");
-  box.hidden = !found.length;
+  const n = box.querySelector("[data-extn]");
+  if (n) n.textContent = shown.length;
+  box.hidden = !shown.length || store.get("extMode", "show") === "hide";
 }
 window.addEventListener("stash:plugins-changed", refreshPluginLinks);
 

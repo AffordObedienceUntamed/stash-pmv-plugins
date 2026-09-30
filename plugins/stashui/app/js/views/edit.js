@@ -4,6 +4,7 @@ import { esc, openDrawer, toast, errorToast, starsHtml, plural, confirmDialog } 
 import { t } from "../i18n.js";
 import { getScene, getImage, getGallery, updateItem, bulkUpdate, destroyItems, favoriteTagId, setFavorite } from "../api.js";
 import { tagPicker } from "./tagpicker.js";
+import { perfPicker, knowPerformers } from "./perfpicker.js";
 import { app } from "../main.js";
 
 const UNITS = { scene: ["scene", "scenes"], image: ["image", "images"], gallery: ["gallery", "galleries"] };
@@ -55,6 +56,7 @@ async function editOne(kind, id, { onSaved, onDeleted }) {
       <div class="kb-form-row"><span>${t("Rating")}</span><div data-stars></div></div>
       <label class="kb-switch"><input type="checkbox" data-e="fav"${isFav ? " checked" : ""}><i></i><span>${t("Favorite (heart)")}</span></label>
       <div class="kb-form-row"><span>${t("Tags")}</span><div class="kb-tagpick" data-tags></div></div>
+      <div class="kb-form-row"><span>${t("Performers")}</span><div class="kb-tagpick" data-perfs></div></div>
       <label class="kb-form-row"><span>${t("Date")}</span><input class="kb-field" type="date" data-e="date" value="${esc(x.date || "")}"></label>
       <label class="kb-form-row"><span>${t("Description")}</span><textarea class="kb-field" data-e="details" rows="4">${esc(x.details || "")}</textarea></label>
       <label class="kb-form-row"><span>${t("Links (one per line)")}</span><textarea class="kb-field" data-e="urls" rows="2">${esc((x.urls || []).join("\n"))}</textarea></label>
@@ -65,6 +67,8 @@ async function editOne(kind, id, { onSaved, onDeleted }) {
   const el = d.el;
   starInput(el.querySelector("[data-stars]"), state.rating100, (v) => (state.rating100 = v));
   const picker = tagPicker(el.querySelector("[data-tags]"), { include: tagIds, allowCreate: true, placeholder: t("Search or create a tag") });
+  knowPerformers(x.performers);
+  const perfs = perfPicker(el.querySelector("[data-perfs]"), { include: (x.performers || []).map((p) => p.id), modes: false, allowCreate: true, placeholder: t("Search or create a performer") });
   el.querySelector("[data-cancel]").onclick = d.close;
   el.querySelector("[data-save]").onclick = async () => {
     const v = (k) => el.querySelector(`[data-e="${k}"]`);
@@ -81,6 +85,7 @@ async function editOne(kind, id, { onSaved, onDeleted }) {
       rating100: state.rating100 || null,
       organized: v("organized").checked,
       tag_ids: tags,
+      performer_ids: perfs.include,
     };
     try {
       el.querySelector("[data-save]").disabled = true;
@@ -123,6 +128,8 @@ function editMany(kind, pieces, { onSaved }) {
       <p class="kb-hint">${t("Only what you change here is applied to all selected items. Everything else stays as it is.")}</p>
       <div class="kb-form-row"><span>${t("Add tags")}</span><div class="kb-tagpick" data-add></div></div>
       <div class="kb-form-row"><span>${t("Remove tags")}</span><div class="kb-tagpick" data-rm></div></div>
+      <div class="kb-form-row"><span>${t("Add performers")}</span><div class="kb-tagpick" data-padd></div></div>
+      <div class="kb-form-row"><span>${t("Remove performers")}</span><div class="kb-tagpick" data-prm></div></div>
       <div class="kb-form-row"><span>${t("Set rating")}</span><div data-stars></div></div>
       <label class="kb-form-row"><span>${t("Organized")}</span><select class="kb-field" data-org><option value="">${t("don't change")}</option><option value="1">${t("organized")}</option><option value="0">${t("not organized")}</option></select></label>`,
     foot: `<span class="kb-spacer"></span><button class="kb-btn" data-cancel>${t("Cancel")}</button><button class="kb-btn is-primary" data-save>${t("Apply to all")}</button>`,
@@ -130,6 +137,8 @@ function editMany(kind, pieces, { onSaved }) {
   const el = d.el;
   const addP = tagPicker(el.querySelector("[data-add]"), { allowCreate: true, placeholder: t("Search or create a tag") });
   const rmP = tagPicker(el.querySelector("[data-rm]"), { placeholder: t("Search tag") });
+  const addPerf = perfPicker(el.querySelector("[data-padd]"), { modes: false, allowCreate: true, placeholder: t("Search or create a performer") });
+  const rmPerf = perfPicker(el.querySelector("[data-prm]"), { modes: false, placeholder: t("Search performer") });
   starInput(el.querySelector("[data-stars]"), 0, (v) => (state.rating100 = v));
   el.querySelector("[data-cancel]").onclick = d.close;
   el.querySelector("[data-save]").onclick = async () => {
@@ -142,7 +151,9 @@ function editMany(kind, pieces, { onSaved }) {
       const jobs = [];
       if (addP.include.length) jobs.push(Object.assign({}, base, { tag_ids: { ids: addP.include, mode: "ADD" } }));
       if (rmP.include.length) jobs.push({ ids, tag_ids: { ids: rmP.include, mode: "REMOVE" } });
-      if (!jobs.length && Object.keys(base).length > 1) jobs.push(base);
+      if (addPerf.include.length) jobs.push({ ids, performer_ids: { ids: addPerf.include, mode: "ADD" } });
+      if (rmPerf.include.length) jobs.push({ ids, performer_ids: { ids: rmPerf.include, mode: "REMOVE" } });
+      if (!addP.include.length && Object.keys(base).length > 1) jobs.push(base); // rating/organized ride along with added tags, otherwise on their own
       for (const j of jobs) await bulkUpdate(kind, j);
       toast(jobs.length ? t("{what} updated", { what: plural(ids.length, "item", "items") }) : t("Nothing changed"), "ok");
       d.close();

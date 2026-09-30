@@ -5,6 +5,7 @@ import { t } from "../i18n.js";
 import { updateItem, setFavorite, favoriteTagId, addO, removeO } from "../api.js";
 import { app, setQueueCount } from "../main.js";
 import { openEditor } from "./edit.js";
+import { perfPicker } from "./perfpicker.js";
 
 function fileInfo(kind, x) {
   if (kind === "scene") {
@@ -41,7 +42,13 @@ export function placardHtml(kind, x) {
         <button class="kb-plc-btn" data-o title="${t("O counter (O), right-click subtracts one")}">${icon("drop")}<span data-ocount>${x.o_counter || 0}</span></button>
       </div>
       ${kind === "scene" ? `<p class="kb-plc-meta">${x.play_count ? t("Watched {what}, last {when}", { what: plural(x.play_count, "time", "times"), when: fmtAgo(x.last_played_at) }) : t("Never watched to the end")}</p>` : ""}
-      ${x.performers && x.performers.length ? `<div class="kb-plc-perfs">${x.performers.map((p) => `<a class="kb-plc-perf" href="#/performer/${p.id}"><img alt="" loading="lazy" src="${esc(p.image_path || "")}"><span>${esc(p.name)}</span></a>`).join("")}</div>` : ""}
+      ${
+        kind !== "gallery"
+          ? `<div class="kb-plc-perfs">${(x.performers || [])
+              .map((p) => `<span class="kb-plc-perfwrap"><a class="kb-plc-perf" href="#/performer/${p.id}"><img alt="" loading="lazy" src="${esc(p.image_path || "")}"><span>${esc(p.name)}</span></a><button type="button" class="kb-plc-perfx" data-perfrm="${p.id}" title="${t("Remove from this {what}", { what: t(kind) })}" aria-label="${t("Remove")}">×</button></span>`)
+              .join("")}<button type="button" class="kb-plc-perf kb-plc-perfadd" data-perfadd title="${t("Add a performer")}">${icon("plus")}${(x.performers || []).length ? "" : `<span>${t("Performer")}</span>`}</button><div class="kb-tagpick kb-plc-perfpick" data-perfpick hidden></div></div>`
+          : ""
+      }
       ${tags.length ? `<div class="kb-chips kb-plc-tags">${tags.map((tg) => `<a class="kb-chip" href="#/tag/${tg.id}">${esc(tg.name)}</a>`).join("")}</div>` : ""}
       ${x.details ? `<p class="kb-plc-text">${esc(x.details)}</p>` : ""}
       ${kind === "image" && x.galleries && x.galleries.length ? `<p class="kb-plc-meta">${t("From")} ${x.galleries.map((g) => `<a href="#/gallery/${g.id}">${esc(g.title || ((g.folder && g.folder.path) || ((g.files || [])[0] || {}).path || "").split(/[\\/]/).filter(Boolean).pop() || t("Gallery {id}", { id: g.id }))}</a>`).join(t(", "))}</p>` : ""}
@@ -75,6 +82,38 @@ export function bindPlacard(host, kind, getItem, { refresh, onDeleted, goFolder,
         return toast(t("Added to the queue"), "ok");
       }
       if (e.target.closest("[data-folder]")) return goFolder && goFolder();
+      // Performers right here: × takes one off, + adds one (or creates it)
+      const rm = e.target.closest("[data-perfrm]");
+      if (rm) {
+        e.preventDefault();
+        const keep = (x.performers || []).filter((p) => p.id !== rm.dataset.perfrm);
+        await updateItem(kind, { id: x.id, performer_ids: keep.map((p) => p.id) });
+        toast(t("Removed"), "ok");
+        return refresh && refresh();
+      }
+      if (e.target.closest("[data-perfadd]")) {
+        const box = host.querySelector("[data-perfpick]");
+        box.hidden = !box.hidden;
+        if (box.hidden) return;
+        const pk = perfPicker(box, {
+          modes: false,
+          allowCreate: true,
+          placeholder: t("Search or create a performer"),
+          onChange: async (ids) => {
+            const add = ids[ids.length - 1];
+            if (!add) return;
+            try {
+              await updateItem(kind, { id: x.id, performer_ids: [...new Set([...(x.performers || []).map((p) => p.id), add])] });
+              toast(t("Added"), "ok");
+              refresh && refresh();
+            } catch (err) {
+              errorToast(err, "Performer");
+            }
+          },
+        });
+        box.querySelector("[data-pchips]").hidden = true;
+        return pk.focus();
+      }
       if (e.target.closest("[data-music]")) return music && music();
     } catch (err) {
       errorToast(err, "Action failed");

@@ -20,6 +20,7 @@ export function toPiece(kind, x, favId) {
       meta: [t("Video"), fmtDuration(dur), res, x.date ? fmtDate(x.date) : ""].filter(Boolean).join(", "),
       resume: dur && x.resume_time ? Math.min(1, x.resume_time / dur) : 0,
       rating: x.rating100 || 0,
+      studio: x.studio || null,
     };
   }
   if (kind === "image") {
@@ -52,6 +53,13 @@ export function toPiece(kind, x, favId) {
   };
 }
 
+// The studio on a scene: its logo, otherwise its name (Settings → General → "Studio on scenes")
+function studioBadge(p) {
+  if (!p.studio || !store.get("studioLogos", false)) return "";
+  const logo = p.studio.image_path && !/default=true/.test(p.studio.image_path);
+  return `<span class="kb-studio${logo ? "" : " is-name"}" title="${esc(p.studio.name)}">${logo ? `<img alt="${esc(p.studio.name)}" loading="lazy" src="${esc(p.studio.image_path)}">` : esc(p.studio.name)}</span>`;
+}
+
 function pieceHtml(p) {
   const tag = p.kind === "image" ? "button" : "a";
   const href = p.kind === "scene" ? `#/scene/${p.id}` : p.kind === "gallery" ? `#/gallery/${p.id}` : "";
@@ -61,6 +69,7 @@ function pieceHtml(p) {
     (p.stamp ? `<span class="kb-stamp">${esc(p.stamp)}</span>` : "") +
     (p.resume ? `<span class="kb-resume"><i style="width:${(p.resume * 100).toFixed(1)}%"></i></span>` : "") +
     (p.fav ? `<span class="kb-dot" title="${t("Favorite")}"></span>` : "") +
+    studioBadge(p) +
     `<span class="kb-pick" role="checkbox" aria-checked="false" aria-label="${t("Select")}">${icon("check")}</span>` +
     `<span class="kb-placard"><b>${esc(p.title)}</b><small>${esc(p.meta)}</small></span>` +
     `</${tag}>`

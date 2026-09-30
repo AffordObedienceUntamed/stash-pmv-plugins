@@ -1,9 +1,9 @@
 // Scene player: custom controls, timeline with thumbnails, resume, history,
 // queue/random/endless, keyboard, placard with all details.
 
-import { esc, icon, fmtDuration, store, toast, errorToast } from "../ui.js";
+import { esc, icon, fmtDuration, store, toast, errorToast, promptDialog, confirmDialog } from "../ui.js";
 import { t } from "../i18n.js";
-import { getScene, findItems, saveActivity, addPlay } from "../api.js";
+import { getScene, findItems, saveActivity, addPlay, gql } from "../api.js";
 import { toPiece } from "../pieces.js";
 import { app, go, closeOverlay, setQueueCount } from "../main.js";
 import { startMini, stopMini } from "../mini.js";
@@ -70,6 +70,7 @@ export async function render(host, params) {
             <div class="kb-tl-resume" data-resmark hidden></div>
             <div class="kb-tl-knob" data-knob></div>
             <div class="kb-tl-hls" data-hls></div>
+            <div class="kb-tl-mks" data-mks></div>
             <div class="kb-tl-peek" data-peek hidden><div class="kb-tl-peek-img" data-peekimg></div><span data-peektime></span></div>
           </div>
           <div class="kb-ctrl-row">
@@ -90,7 +91,7 @@ export async function render(host, params) {
           </div>
         </div>
       </div>
-      <aside class="kb-side" data-side>${placardHtml("scene", x)}<div class="kb-upnext kb-queuebox" data-queuebox></div><div class="kb-upnext" data-upnext></div><div class="kb-upnext kb-similar" data-similar></div></aside>
+      <aside class="kb-side" data-side>${placardHtml("scene", x)}<div class="kb-upnext kb-markers" data-markers></div><div class="kb-upnext kb-queuebox" data-queuebox></div><div class="kb-upnext" data-upnext></div><div class="kb-upnext kb-similar" data-similar></div></aside>
     </div>`;
 
   const stage = host.querySelector(".kb-stage");
@@ -144,6 +145,7 @@ export async function render(host, params) {
       (caps.length ? `<div class="kb-pmenu-sec"><b>${t("Subtitles")}</b>${row("data-sub", -1, t("Off"), on < 0)}${[...v.textTracks].map((tt, k) => row("data-sub", k, tt.label, on === k)).join("")}</div>` : "") +
       (vr ? `<div class="kb-pmenu-sec"><b>VR</b><div class="kb-pmenu-speeds">${[["", t("Off"), ""], ["180", "180°", ""], ["180sbs", "180° SBS", t("180° side by side")], ["360", "360°", ""], ["360tb", "360° TB", t("360° top/bottom")], ["360sbs", "360° SBS", t("360° side by side")]].map(([m, l, title]) => `<button type="button" class="kb-chip${vr.mode === m ? " is-on" : ""}" data-vr="${m}"${title ? ` title="${esc(title)}"` : ""}>${l}</button>`).join("")}</div></div>` : "") +
       `<div class="kb-pmenu-sec"><b>${t("Speed")}</b><div class="kb-pmenu-speeds">${[0.5, 0.75, 1, 1.25, 1.5, 2].map((s) => `<button type="button" class="kb-chip${v.playbackRate === s ? " is-on" : ""}" data-rate="${s}">${s}×</button>`).join("")}</div></div>` +
+      `<div class="kb-pmenu-sec"><button type="button" class="kb-pmenu-opt" data-addmark>${icon("drop")}${t("Add a marker here (B)")}</button><button type="button" class="kb-pmenu-opt" data-cover>${icon("image")}${t("Use this frame as cover")}</button></div>` +
       (canCast ? `<div class="kb-pmenu-sec"><button type="button" class="kb-pmenu-opt${casting() ? " is-on" : ""}" data-cast>${icon("cast")}${casting() ? t("Casting – choose another device") : t("Cast to TV")}</button></div>` : "");
   }
   // Cast: the browser's own device picker – Chromecast / TVs in Chrome and Edge, AirPlay in Safari
@@ -203,6 +205,13 @@ export async function render(host, params) {
       vr.setMode(b.dataset.vr);
       store.set("vrScenes", Object.assign(store.get("vrScenes", {}), { [x.id]: b.dataset.vr }));
     } else if (b.dataset.cast != null) return cast();
+    else if (b.dataset.addmark != null) {
+      closeMenu();
+      return addMarker();
+    } else if (b.dataset.cover != null) {
+      closeMenu();
+      return frameAsCover();
+    }
     else if (b.dataset.rate) v.playbackRate = v.defaultPlaybackRate = Number(b.dataset.rate); // default: survives a quality switch
     menu.innerHTML = menuHtml();
   });
@@ -337,8 +346,9 @@ export async function render(host, params) {
     if (v.paused) v.play().catch(() => {});
   });
   function nextHighlight() {
-    if (!highlights.length) return toast(t("No highlights for this scene yet"));
-    const at = highlights.find((h) => h > v.currentTime + 2) ?? highlights[0];
+    const all = [...highlights, ...(x.scene_markers || []).map((m) => m.seconds)].sort((a, b) => a - b);
+    if (!all.length) return toast(t("No highlights for this scene yet"));
+    const at = all.find((h) => h > v.currentTime + 2) ?? all[0];
     v.currentTime = at;
     watch.seeked(at);
     toast(t("Highlight at {time}", { time: fmtDuration(at) }));
@@ -640,6 +650,121 @@ export async function render(host, params) {
   }
   paintSimilar();
 
+  // ---------- Own markers (Stash scene markers) ----------
+  // B or the gear menu sets one at the current spot – with the tag "Highlight" (Stash needs a tag);
+  // they sit as pins on the timeline, J jumps through them too, the info bar lists them.
+  let markTagId = null;
+  async function markerTag() {
+    if (markTagId) return markTagId;
+    const d = await gql(`query { findTags(tag_filter: { name: { value: "Highlight", modifier: EQUALS } }, filter: { per_page: 1 }) { tags { id } } }`);
+    if (d.findTags.tags[0]) return (markTagId = d.findTags.tags[0].id);
+    const c = await gql(`mutation { tagCreate(input: { name: "Highlight" }) { id } }`);
+    return (markTagId = c.tagCreate.id);
+  }
+  function paintMarks() {
+    const box = $("[data-mks]");
+    if (!box) return;
+    const total = v.duration || dur || 1;
+    box.innerHTML = (x.scene_markers || [])
+      .map((m) => `<button type="button" class="kb-tl-mk" data-mk="${m.seconds}" style="left:${(m.seconds / total) * 100}%" title="${esc((m.title || (m.primary_tag || {}).name || t("Marker")) + " · " + fmtDuration(m.seconds))}"></button>`)
+      .join("");
+  }
+  function paintMarkers() {
+    const box = $("[data-markers]");
+    if (!box) return;
+    const list = (x.scene_markers || []).slice().sort((a, b) => a.seconds - b.seconds);
+    box.innerHTML = secHtml(
+      "markers",
+      `${t("Markers")}<small class="kb-upsec-n">${list.length || ""}</small>`,
+      list
+        .map(
+          (m) => `<div class="kb-mkrow"><button type="button" class="kb-mkgo" data-mkgo="${m.seconds}"><b>${fmtDuration(m.seconds)}</b><span>${esc(m.title || (m.primary_tag || {}).name || t("Marker"))}</span></button><button type="button" class="kb-btn is-icon is-ghost" data-mkren="${m.id}" title="${t("Rename")}">${icon("edit")}</button><button type="button" class="kb-btn is-icon is-ghost kb-qdel" data-mkdel="${m.id}" title="${t("Delete marker")}">${icon("close")}</button></div>`
+        )
+        .join("") + `<button type="button" class="kb-btn is-ghost kb-mkadd" data-mkadd>${icon("plus")}${t("Add a marker here (B)")}</button>`
+    );
+    paintMarks();
+  }
+  async function addMarker() {
+    const at = Math.round(v.currentTime * 10) / 10;
+    try {
+      const tag = await markerTag();
+      const d = await gql(`mutation($i: SceneMarkerCreateInput!) { sceneMarkerCreate(input: $i) { id title seconds primary_tag { id name } } }`, { i: { scene_id: x.id, seconds: at, primary_tag_id: tag, title: "" } });
+      x.scene_markers = [...(x.scene_markers || []), d.sceneMarkerCreate];
+      paintMarkers();
+      toast(t("Marker at {time}", { time: fmtDuration(at) }), "ok");
+    } catch (e) {
+      errorToast(e, "Marker");
+    }
+  }
+  $("[data-side]").addEventListener("click", async (e) => {
+    const go = e.target.closest("[data-mkgo]");
+    if (go) {
+      v.currentTime = Number(go.dataset.mkgo);
+      watch.seeked(v.currentTime);
+      return v.paused && v.play().catch(() => {});
+    }
+    if (e.target.closest("[data-mkadd]")) return addMarker();
+    const ren = e.target.closest("[data-mkren]");
+    if (ren) {
+      const m = x.scene_markers.find((q) => q.id === ren.dataset.mkren);
+      const title = await promptDialog({ title: t("Name of the marker"), label: t("Name"), value: m.title || "", ok: t("Save") });
+      if (title == null) return;
+      try {
+        await gql(`mutation($i: SceneMarkerUpdateInput!) { sceneMarkerUpdate(input: $i) { id } }`, { i: { id: m.id, title: title.trim(), scene_id: x.id, seconds: m.seconds, primary_tag_id: (m.primary_tag || {}).id || (await markerTag()) } });
+        m.title = title.trim();
+        paintMarkers();
+      } catch (err) {
+        errorToast(err, "Marker");
+      }
+      return;
+    }
+    const del = e.target.closest("[data-mkdel]");
+    if (del) {
+      try {
+        await gql(`mutation($id: ID!) { sceneMarkerDestroy(id: $id) }`, { id: del.dataset.mkdel });
+        x.scene_markers = x.scene_markers.filter((q) => q.id !== del.dataset.mkdel);
+        paintMarkers();
+        toast(t("Marker deleted"), "ok");
+      } catch (err) {
+        errorToast(err, "Marker");
+      }
+    }
+  });
+
+  paintMarkers();
+  v.addEventListener("loadedmetadata", paintMarks);
+  $("[data-mks]").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-mk]");
+    if (!b) return;
+    e.stopPropagation();
+    v.currentTime = Number(b.dataset.mk);
+    watch.seeked(v.currentTime);
+  });
+
+  // ---------- The frame you're looking at as the scene's cover ----------
+  async function frameAsCover() {
+    if (!v.videoWidth) return toast(t("No picture yet"), "error");
+    try {
+      const c = document.createElement("canvas");
+      c.width = v.videoWidth;
+      c.height = v.videoHeight;
+      c.getContext("2d").drawImage(v, 0, 0);
+      const d = await gql(`mutation($i: SceneUpdateInput!) { sceneUpdate(input: $i) { id paths { screenshot } } }`, { i: { id: x.id, cover_image: c.toDataURL("image/jpeg", 0.92) } });
+      x.paths.screenshot = d.sceneUpdate.paths.screenshot;
+      v.poster = x.paths.screenshot;
+      stage.classList.remove("is-flash");
+      void stage.offsetWidth;
+      stage.classList.add("is-flash");
+      toast(t("Cover set to this frame"), "ok");
+      if (ctx.hang) {
+        const pc = ctx.hang.pieces.find((q) => q.kind === "scene" && q.id === x.id);
+        if (pc) ctx.hang.update(Object.assign({}, pc, { thumb: x.paths.screenshot }));
+      }
+    } catch (e) {
+      errorToast(e, "Cover");
+    }
+  }
+
   // ---------- Placard ----------
   const side = $("[data-side]");
   side.addEventListener("toggle", (e) => {
@@ -651,7 +776,8 @@ export async function render(host, params) {
   const plc = bindPlacard(side, "scene", () => x, {
     refresh: async () => {
       x = await getScene(x.id);
-      side.innerHTML = placardHtml("scene", x) + '<div class="kb-upnext kb-queuebox" data-queuebox></div><div class="kb-upnext" data-upnext></div><div class="kb-upnext kb-similar" data-similar></div>';
+      side.innerHTML = placardHtml("scene", x) + '<div class="kb-upnext kb-markers" data-markers></div><div class="kb-upnext kb-queuebox" data-queuebox></div><div class="kb-upnext" data-upnext></div><div class="kb-upnext kb-similar" data-similar></div>';
+      paintMarkers();
       paintQueue();
       paintUpnext();
       paintSimilar();
@@ -687,6 +813,7 @@ export async function render(host, params) {
     else if (k === "m") (v.muted = !v.muted), syncVol();
     else if (k === "f") fullscreen();
     else if (k === "x") toMini();
+    else if (k === "b") addMarker();
     else if (k === "n") next(1);
     else if (k === "p") next(-1);
     else if (k === "i") $("[data-panel]").click();
