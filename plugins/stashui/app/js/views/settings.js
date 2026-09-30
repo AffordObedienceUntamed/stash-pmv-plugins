@@ -46,8 +46,8 @@ SECTIONS.splice(SECTIONS.findIndex((x) => x.id === "classic-ui"), 0, Object.assi
 // Search: what the custom pages contain (their labels, as shown)
 const CUSTOM_ENTRIES = {
   look: ["Colors", "Liquid glass"],
-  "player-ui": ["Autoplay next in the player", "Info panel in fullscreen", "Sound in previews"],
-  "this-ui": ["Language", "Folder loading", "This interface as home page", "Install as app", "Studio on scenes", "Other plugins in the menu", "Thumbnail size", "Favorites", "Reset saved view"],
+  "player-ui": ["At the end of a video", "Info panel in fullscreen", "Sound in previews"],
+  "this-ui": ["Language", "Folder loading", "This interface as home page", "Install as app", "Studio on scenes", "Other plugins in the menu", "Thumbnail size", "Favorites", "Reset interface settings"],
   database: ["Back up database", "Optimize database", "Clean up generated files"],
   login: ["API key"],
 };
@@ -338,14 +338,16 @@ function renderLook(body) {
 const setPlayer = (patch) => store.set("player", Object.assign(store.get("player", {}), patch));
 function renderPlayerUi(body) {
   const player = store.get("player", {});
+  const mode = player.mode || (player.loop ? "one" : player.random ? "shuffle" : player.auto === false ? "stop" : "order");
   const sw = (attr, on, title, hint) => `<label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t(title)}</b><small>${t(hint)}</small></span>
         <span class="kb-switch"><input type="checkbox" ${attr}${on ? " checked" : ""}><i></i></span></label>`;
   body.innerHTML = `<form class="kb-set-form" data-form>
-      ${sw("data-auto", player.auto !== false, "Autoplay next in the player", "Start the next scene when one ends.")}
+      <label class="kb-set"><span class="kb-set-label"><b>${t("At the end of a video")}</b><small>${t("The same as the button in the player bar – a click there cycles through these.")}</small></span>
+        <select class="kb-field" data-pmode>${[["order", "In order"], ["shuffle", "Random order"], ["one", "Repeat this video"], ["all", "Repeat all"], ["stop", "Stop at the end"]].map(([v, l]) => `<option value="${v}"${mode === v ? " selected" : ""}>${t(l)}</option>`).join("")}</select></label>
       ${sw("data-fspanel", player.fsPanel !== false, "Info panel in fullscreen", "Move the mouse to the right edge in fullscreen to slide in the info panel.")}
       ${sw("data-psound", store.get("previewSound", true), "Sound in previews", "Hover previews play with sound (at the player's volume). Stash only puts sound into previews when “Preview audio” is on under Previews – regenerate them after switching it on.")}
     </form>`;
-  body.querySelector("[data-auto]").onchange = (e) => setPlayer({ auto: e.target.checked });
+  body.querySelector("[data-pmode]").onchange = (e) => setPlayer({ mode: e.target.value });
   body.querySelector("[data-fspanel]").onchange = (e) => setPlayer({ fsPanel: e.target.checked });
   body.querySelector("[data-psound]").onchange = (e) => store.set("previewSound", e.target.checked);
 }
@@ -370,7 +372,7 @@ async function renderApp(body) {
       <label class="kb-set"><span class="kb-set-label"><b>${t("Thumbnail size")}</b><small>${t("How tall a row in the lists is.")}</small></span>
         <input type="range" min="130" max="480" step="10" data-rowh value="${store.get("rowHeight", 250)}"></label>
       <div class="kb-set"><div class="kb-set-label"><b>${t("Favorites")}</b><small>${t("The heart is the Stash tag “Favorite”. You'll find it in classic Stash too.")}</small></div></div>
-      <div class="kb-set"><div class="kb-set-label"><b>${t("Reset saved view")}</b><small>${t("Expanded folders, player and viewer settings, thumbnail size.")}</small></div>
+      <div class="kb-set"><div class="kb-set-label"><b>${t("Reset interface settings")}</b><small>${t("Everything this interface remembers in this browser – player and viewer settings, thumbnail size, expanded folders, the home page and more. Not the queue, the colors or the glass look.")}</small></div>
         <button type="button" class="kb-btn" data-resetlocal>${t("Reset")}</button></div>
     </form>`;
   // Install as an app
@@ -457,7 +459,9 @@ async function renderApp(body) {
     location.reload(); // the navigation is built once – rebuild it with or without folders
   };
   body.querySelector("[data-rowh]").onchange = (e) => store.set("rowHeight", Number(e.target.value));
-  body.querySelector("[data-resetlocal]").onclick = () => {
+  body.querySelector("[data-resetlocal]").onclick = async () => {
+    const r = await confirmDialog({ title: t("Reset interface settings?"), text: t("Everything this interface remembers in this browser goes back to the defaults. Your library stays as it is."), ok: t("Reset"), danger: true });
+    if (!r.ok) return;
     Object.keys(localStorage).filter((k) => k.startsWith("stashui.") && k !== "stashui.queue" && k !== "stashui.theme" && k !== "stashui.glass").forEach((k) => localStorage.removeItem(k));
     toast(t("Reset"), "ok");
     go("settings/this-ui", true);

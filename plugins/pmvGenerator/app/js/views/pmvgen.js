@@ -1072,7 +1072,7 @@ export function render(main) {
   };
   $("[data-pdel]").onclick = async () => {
     const name = $("[data-preset]").value;
-    if (!name || !(await confirmDialog({ title: `Delete “${name}”?`, text: "Only the saved settings – nothing in your library.", ok: "Delete", danger: true }))) return;
+    if (!name || !(await confirmDialog({ title: `Delete “${name}”?`, text: "Only the saved settings – nothing in your library.", ok: "Delete", danger: true })).ok) return;
     const all = presets();
     delete all[name];
     store.set("pmvgenPresets", all);

@@ -70,7 +70,7 @@ Stash UI works on its own. If you also install **Media Storm** or the **PMV Gene
 - Custom controls, timeline with thumbnails on hover, speed, volume, fullscreen.
 - Portrait videos (9:16) are fitted completely, nothing is cropped.
 - **Resume**: starts where you left off (button “From the start”), saves progress and counts plays like Stash.
-- **Random**, **Endless** (continue automatically) and **Loop** as switches; “Up next” in the info bar.
+- One button for how it goes on at the end – a click cycles through **In order**, **Random order**, **Repeat this video**, **Repeat all** and **Stop at the end** (also under Settings → Player and previews); “Up next” in the info bar.
 - The info bar on the right (key **I**): rating, heart, O counter (right-click subtracts one), performers (× removes one, **+** adds one or creates a new performer), tags, edit, queue, folder.
 - **Own markers**: **B** (or the gear menu) sets a marker at the current spot – a yellow pin on the timeline, **J** jumps to it like to the highlights. The info bar lists them: jump, rename, delete. They're Stash's scene markers (tag “Highlight”), so classic Stash shows them too.
 - **Cover** in the info bar: pause where you like and the picture becomes the scene's cover.

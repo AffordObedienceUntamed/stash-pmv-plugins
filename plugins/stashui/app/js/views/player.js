@@ -31,6 +31,15 @@ async function loadSprites(vttUrl, spriteUrl) {
   }
 }
 
+// How the player goes on at the end: [mode, icon, label] – the button cycles through them
+const PLAY_MODES = [
+  ["order", "next", "In order"],
+  ["shuffle", "shuffle", "Random order"],
+  ["one", "repeat", "Repeat this video"],
+  ["all", "repeat", "Repeat all"],
+  ["stop", "stop", "Stop at the end"],
+];
+
 export async function render(host, params) {
   document.body.classList.add("kb-noscroll");
   // A mini player ends here; back from it = continue at its spot
@@ -48,6 +57,8 @@ export async function render(host, params) {
   const f = x.files[0] || {};
   const setShape = (w, h) => w && h && host.querySelector(".kb-stage") && host.querySelector(".kb-stage").style.setProperty("--ar", (w / h).toFixed(4));
   const prefs = Object.assign({ volume: 0.8, muted: false, auto: true, random: false, loop: false, panel: true, heat: true }, store.get("player", {}));
+  // How it goes on – one button that cycles (was: three switches Random / Endless / Loop)
+  if (!prefs.mode) prefs.mode = prefs.loop ? "one" : prefs.random ? "shuffle" : prefs.auto === false ? "stop" : "order";
   const ctx = app.context || {};
   const inQueue = !!ctx.queue;
 
@@ -80,12 +91,10 @@ export async function render(host, params) {
             <span class="kb-time"><span data-cur>0:00</span> / <span data-dur>${fmtDuration(f.duration)}</span></span>
             <span class="kb-spacer"></span>
             <button class="kb-btn is-ghost kb-toggle${prefs.heat ? " is-on" : ""}" data-heatbtn title="${t("Highlights: heat curve and jump marks on the timeline (J jumps to the next one)")}">${icon("bolt")}<span>${t("Highlights")}</span></button>
-            <button class="kb-btn is-ghost kb-toggle${prefs.random ? " is-on" : ""}" data-random title="${t("Play something random next")}">${icon("shuffle")}<span>${t("Random")}</span></button>
-            <button class="kb-btn is-ghost kb-toggle${prefs.auto ? " is-on" : ""}" data-auto title="${t("Continue automatically at the end")}">${icon("next")}<span>${t("Endless")}</span></button>
-            <button class="kb-btn is-ghost kb-toggle${prefs.loop ? " is-on" : ""}" data-loop title="${t("Repeat this scene")}">${icon("repeat")}<span>${t("Loop")}</span></button>
+            <button class="kb-btn is-ghost kb-pmode" data-pmode></button>
             <button class="kb-btn is-icon is-ghost" data-mute aria-label="${t("Sound on/off (M)")}" title="${t("Sound on/off (M)")}"></button>
             <input class="kb-vol" type="range" min="0" max="1" step="0.02" data-vol aria-label="${t("Volume")}">
-            <span class="kb-pmenu-wrap"><button class="kb-btn is-icon is-ghost" data-menubtn aria-label="${t("Quality, subtitles, speed")}" title="${t("Quality, subtitles, speed")}">${icon("gear")}</button><div class="kb-pmenu" data-menu hidden></div></span>
+            <span class="kb-pmenu-wrap"><button class="kb-btn is-icon is-ghost" data-menubtn aria-label="${t("Quality, subtitles, speed")}" title="${t("Quality, subtitles, speed")}">${icon("sliders")}</button><div class="kb-pmenu" data-menu hidden></div></span>
             <button class="kb-btn is-icon is-ghost" data-mini aria-label="${t("Mini player – keeps playing while you browse (X)")}" title="${t("Mini player – keeps playing while you browse (X)")}">${icon("pip")}</button>
             <button class="kb-btn is-icon is-ghost" data-fs aria-label="${t("Fullscreen (F)")}" title="${t("Fullscreen (F)")}">${icon("expand")}</button>
           </div>
@@ -101,7 +110,7 @@ export async function render(host, params) {
   v.addEventListener("loadedmetadata", () => setShape(v.videoWidth, v.videoHeight));
   v.volume = prefs.volume;
   v.muted = prefs.muted;
-  v.loop = prefs.loop;
+  v.loop = prefs.mode === "one";
   const savePrefs = () => store.set("player", prefs);
 
   // ---------- Source: direct stream, otherwise transcode ----------
@@ -142,7 +151,7 @@ export async function render(host, params) {
     const on = subsOn();
     const row = (attr, val, label, active) => `<button type="button" class="kb-pmenu-opt${active ? " is-on" : ""}" ${attr}="${val}">${active ? icon("check") : "<i></i>"}${esc(label)}</button>`;
     return `<div class="kb-pmenu-sec"><b>${t("Quality")}</b>${q.map(([i, l]) => row("data-q", i, l, i === srcIdx)).join("")}</div>` +
-      (caps.length ? `<div class="kb-pmenu-sec"><b>${t("Subtitles")}</b>${row("data-sub", -1, t("Off"), on < 0)}${[...v.textTracks].map((tt, k) => row("data-sub", k, tt.label, on === k)).join("")}</div>` : "") +
+      `<div class="kb-pmenu-sec"><b>${t("Subtitles")}</b>${caps.length ? row("data-sub", -1, t("Off"), on < 0) + [...v.textTracks].map((tt, k) => row("data-sub", k, tt.label, on === k)).join("") : `<span class="kb-pmenu-opt is-disabled"><i></i>${t("No subtitles for this video")}</span>`}</div>` +
       (vr ? `<div class="kb-pmenu-sec"><b>VR</b><div class="kb-pmenu-speeds">${[["", t("Off"), ""], ["180", "180°", ""], ["180sbs", "180° SBS", t("180° side by side")], ["360", "360°", ""], ["360tb", "360° TB", t("360° top/bottom")], ["360sbs", "360° SBS", t("360° side by side")]].map(([m, l, title]) => `<button type="button" class="kb-chip${vr.mode === m ? " is-on" : ""}" data-vr="${m}"${title ? ` title="${esc(title)}"` : ""}>${l}</button>`).join("")}</div></div>` : "") +
       `<div class="kb-pmenu-sec"><b>${t("Speed")}</b><div class="kb-pmenu-speeds">${[0.5, 0.75, 1, 1.25, 1.5, 2].map((s) => `<button type="button" class="kb-chip${v.playbackRate === s ? " is-on" : ""}" data-rate="${s}">${s}×</button>`).join("")}</div></div>` +
       `<div class="kb-pmenu-sec"><button type="button" class="kb-pmenu-opt" data-addmark>${icon("drop")}${t("Add a marker here (B)")}</button></div>` +
@@ -455,15 +464,13 @@ export async function render(host, params) {
     }
     const sim = el.closest("[data-simgo]");
     if (sim) return openScene(sim.dataset.simgo);
-    for (const k of ["random", "auto", "loop"]) {
-      const b = el.closest(`[data-${k}]`);
-      if (b) {
-        prefs[k] = !prefs[k];
-        savePrefs();
-        b.classList.toggle("is-on", prefs[k]);
-        if (k === "loop") v.loop = prefs.loop;
-        return;
-      }
+    if (el.closest("[data-pmode]")) {
+      prefs.mode = PLAY_MODES[(PLAY_MODES.findIndex((m) => m[0] === prefs.mode) + 1) % PLAY_MODES.length][0];
+      savePrefs();
+      v.loop = prefs.mode === "one";
+      paintMode();
+      paintUpnext();
+      return toast(modeOf()[2], "ok");
     }
     const up = el.closest("[data-upgo]");
     if (up) return jump(Number(up.dataset.upgo));
@@ -557,7 +564,7 @@ export async function render(host, params) {
   }
   async function next(dir) {
     flushActivity(true);
-    if (prefs.random && dir > 0) {
+    if (prefs.mode === "shuffle" && dir > 0) {
       try {
         const r = await findItems("scene", { per_page: 1, sort: "random_" + Math.floor(Math.random() * 1e8) });
         if (r.items[0]) return openScene(r.items[0].id);
@@ -566,7 +573,8 @@ export async function render(host, params) {
       }
     }
     const { list, pos } = upcoming();
-    const i = pos + dir;
+    let i = pos + dir;
+    if (prefs.mode === "all" && list.length) i = (i + list.length) % list.length; // repeat all: round and round
     if (i < 0 || i >= list.length) return toast(dir > 0 ? t("That was the last video") : t("This is the first video"));
     jump(i);
   }
@@ -584,7 +592,7 @@ export async function render(host, params) {
   }
   v.addEventListener("ended", () => {
     flushActivity(true);
-    if (!prefs.loop && prefs.auto && !mini) next(1); // the mini player just stops
+    if (prefs.mode !== "one" && prefs.mode !== "stop" && !mini) next(1); // the mini player just stops
   });
 
   // Sections in the info bar (queue, up next, similar): open by default, each one can be folded away
@@ -623,11 +631,23 @@ export async function render(host, params) {
     const rest = inQueue ? [] : list.slice(pos + 1, pos + 6);
     box.innerHTML = rest.length
       ? secHtml("upnext", t("Up next"), rest.map((it, k) => `<button class="kb-upnext-item" data-upgo="${pos + 1 + k}">${thumbImg(it.thumb)}<span>${esc(it.title || it.id)}</span></button>`).join(""))
-      : prefs.random
+      : prefs.mode === "shuffle"
       ? secHtml("upnext", t("Up next"), `<p class="kb-plc-meta">${t("Something random from the library.")}</p>`)
       : "";
   }
   paintUpnext();
+  function modeOf() {
+    return PLAY_MODES.find((m) => m[0] === prefs.mode) || PLAY_MODES[0];
+  }
+  function paintMode() {
+    const b = $("[data-pmode]");
+    if (!b) return;
+    const [mode, ic, label] = modeOf();
+    b.innerHTML = `${icon(ic)}${mode === "one" ? '<small class="kb-pmode-one">1</small>' : ""}<span>${esc(t(label))}</span>`;
+    b.title = `${t(label)} – ${t("click: how it goes on at the end")}`;
+    b.classList.toggle("is-on", mode !== "order");
+  }
+  paintMode();
 
   // "Similar" in the placard – loads in the background
   async function paintSimilar() {
