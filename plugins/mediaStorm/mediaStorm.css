@@ -1274,5 +1274,19 @@ html.ms-glass :is(.ms-toast, .ms-unmute) {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .24), 0 12px 30px rgba(0, 0, 0, .4);
 }
 html.ms-glass :is(.ms-toast, .ms-unmute)::before, html.ms-glass :is(.ms-toast, .ms-unmute)::after { display: none; }
+/* The bar at the top of the storm (counts, pause, next, shuffle, fullscreen, settings, stop) */
+html.ms-glass .ms-hud {
+  padding: 5px 6px 5px 16px;
+  border: 1px solid var(--ms-glass-edge);
+  border-radius: 999px;
+  background: var(--ms-glass-shine), color-mix(in srgb, var(--ms-ink) 46%, transparent);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+  backdrop-filter: blur(22px) saturate(170%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .24), inset 0 -1px 0 rgba(255, 255, 255, .05), 0 12px 34px rgba(0, 0, 0, .45);
+}
+html.ms-glass .ms-hud button { border-radius: 50%; }
+html.ms-glass .ms-hud button:hover { background: rgba(255, 255, 255, .16); }
+html.ms-glass .ms-hud button[data-act="stop"]:hover { color: var(--ms-ink); background: var(--ms-flush); }
+html.ms-glass .ms-hud-sep { background: var(--ms-glass-edge); }
 html.ms-glass .ms-tools button.ms-dl-done { color: var(--ms-ink); background: #5ee39a; }
 html.ms-glass .ms-tools button.ms-dl-error { color: var(--ms-paper); background: #e0433f; }

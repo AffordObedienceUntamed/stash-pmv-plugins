@@ -3146,7 +3146,7 @@
               `<button class="ms-tile" data-page="${p.id}">${p.badge || icon(p.icon)}<b>${p.title}</b><small data-sum="${p.id}"></small></button>`).join("")}
           </div>
           <button class="ms-link" data-page="keys">${icon("keyboard")}<span>Hotkeys &amp; mouse</span></button>
-          <div class="ms-foot">Media Storm 2.3.3</div>
+          <div class="ms-foot">Media Storm 2.3.4</div>
         </div>
         ${PAGES.map((p) => `
           <section class="ms-page" data-page-id="${p.id}" hidden>
