@@ -2,7 +2,7 @@
 
 import { esc, icon, debounce, errorToast, toast, plural, promptDialog, starsHtml, pop, burst } from "../ui.js";
 import { t, locale } from "../i18n.js";
-import { findPerformers, updatePerformer, createPerformer } from "../api.js";
+import { findPerformers, updatePerformer, createPerformer, gql } from "../api.js";
 import { go, setQuery } from "../main.js";
 
 const SORTS = [
@@ -84,6 +84,7 @@ export async function render(main, params, query) {
       <div class="kb-head-title">
         <h1 class="kb-h1">${t("Performers")}</h1>
         <p class="kb-sub" data-sub></p>
+        <div class="kb-chips kb-head-chips" data-tagf hidden></div>
       </div>
       <div class="kb-head-tools">
         <label class="kb-search">${icon("search")}<input class="kb-field" type="search" data-q placeholder="${t("Search performers")}" value="${esc(query.q || "")}"></label>
@@ -105,8 +106,28 @@ export async function render(main, params, query) {
   let loading = false;
   let run = 0;
 
+  // From a tag page: performers with that tag, or in scenes that have it
+  let tagF = query.tag ? { key: "tag", id: query.tag } : query.scenetag ? { key: "scenetag", id: query.scenetag } : null;
+  if (tagF)
+    gql(`query($id: ID!) { findTag(id: $id) { name } }`, { id: tagF.id })
+      .then((d) => {
+        if (!tagF || !d.findTag) return;
+        const box = $("[data-tagf]");
+        box.hidden = false;
+        box.innerHTML = `<span class="kb-chip is-on">${icon("tag")}${esc(tagF.key === "tag" ? t("Tagged “{name}”", { name: d.findTag.name }) : t("In scenes tagged “{name}”", { name: d.findTag.name }))}<button type="button" data-untag aria-label="${esc(t("Remove"))}">×</button></span>`;
+      })
+      .catch(() => {});
+  main.addEventListener("click", (e) => {
+    if (!e.target.closest("[data-untag]")) return;
+    setQuery({ tag: "", scenetag: "" });
+    tagF = null;
+    $("[data-tagf]").hidden = true;
+    load(true);
+  });
   function filter() {
     const f = {};
+    if (tagF && tagF.key === "tag") f.tags = { value: [tagF.id], modifier: "INCLUDES" };
+    if (tagF && tagF.key === "scenetag") f.scenes_filter = { tags: { value: [tagF.id], modifier: "INCLUDES" } };
     if (favOnly) f.filter_favorites = true;
     const g = $("[data-gender]").value;
     if (g) f.gender = { value: g, modifier: "EQUALS" };

@@ -6,6 +6,47 @@ import { getTag, gql } from "../api.js";
 import { mediaBrowser } from "./media.js";
 import { go } from "../main.js";
 import { tagsCache } from "./tagpicker.js";
+import { performerCard, toggleCardFav } from "./performers.js";
+
+// Performers for a tag: those tagged with it, and those in scenes that have it (older Stash versions
+// can't ask the second – then only the first). A row of cards; "All" opens the performers page filtered.
+async function tagPerformers(box, tag) {
+  const F = "count performers { id name disambiguation gender favorite rating100 scene_count image_count o_counter image_path birthdate country }";
+  const ask = (p) => gql(`query($p: PerformerFilterType, $f: FindFilterType) { findPerformers(performer_filter: $p, filter: $f) { ${F} } }`, { p, f: { per_page: 20, sort: "scenes_count", direction: "DESC" } }).then((d) => d.findPerformers).catch(() => null);
+  const [tagged, inScenes] = await Promise.all([ask({ tags: { value: [tag.id], modifier: "INCLUDES" } }), ask({ scenes_filter: { tags: { value: [tag.id], modifier: "INCLUDES" } } })]);
+  const sets = [
+    ["tag", t("With this tag"), tagged],
+    ["scenetag", t("In these scenes"), inScenes],
+  ].filter(([, , r]) => r && r.count);
+  if (!sets.length) return;
+  let cur = sets[0][0];
+  const get = () => sets.find(([k]) => k === cur)[2];
+  function paint() {
+    const r = get();
+    box.innerHTML = `
+      <div class="kb-tagperfs-head">
+        <h2 class="kb-h2">${t("Performers")}</h2>
+        ${sets.length > 1 ? `<div class="kb-seg">${sets.map(([k, l, x]) => `<button type="button" data-ps="${k}"${k === cur ? ' class="is-on"' : ""}>${esc(l)} <span>${x.count}</span></button>`).join("")}</div>` : `<span class="kb-hint">${esc(sets[0][1])}</span>`}
+        <span class="kb-spacer"></span>
+        ${r.count > r.performers.length ? `<a class="kb-btn is-ghost" href="#/performers?${cur}=${tag.id}">${t("All {n}", { n: r.count })}</a>` : ""}
+      </div>
+      <div class="kb-perfrow">${r.performers.map(performerCard).join("")}</div>`;
+  }
+  box.hidden = false;
+  paint();
+  box.addEventListener("click", (e) => {
+    const s = e.target.closest("[data-ps]");
+    if (s) {
+      cur = s.dataset.ps;
+      return paint();
+    }
+    const f = e.target.closest("[data-pfav]");
+    if (f) {
+      e.preventDefault();
+      toggleCardFav(f, get().performers);
+    }
+  });
+}
 
 export async function render(main, params, query) {
   const tag = await getTag(params.id);
@@ -31,7 +72,9 @@ export async function render(main, params, query) {
         <button class="kb-btn" data-edit>${icon("edit")}${t("Edit")}</button>
       </div>
     </header>
+    <section class="kb-tagperfs" data-tperfs hidden></section>
     <section data-browser></section>`;
+  tagPerformers(main.querySelector("[data-tperfs]"), tag);
   const b = mediaBrowser(main.querySelector("[data-browser]"), { kinds, query, base: () => ({ tagId: tag.id }) });
 
   main.querySelector("[data-edit]").onclick = () => {

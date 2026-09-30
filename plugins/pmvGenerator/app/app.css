@@ -1052,3 +1052,17 @@ html.kb-glass .kb-mini-in { border-color: var(--glass-edge); }
 .kb-music-t { display: flex; gap: 6px; }
 .kb-music-t .kb-field { flex: 1; min-width: 0; font-variant-numeric: tabular-nums; }
 .kb-form-row > span.kb-music-t { color: inherit; font: inherit; }
+
+/* Performer filter (next to the tags) */
+.kb-sugg .kb-psugg { align-items: center; justify-content: flex-start; }
+.kb-psugg img { flex: none; width: 26px; height: 26px; border-radius: 50%; object-fit: cover; object-position: top; background: var(--bg-3); }
+.kb-psugg span { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.kb-pmode { border-style: dashed; cursor: pointer; }
+
+/* Tag page: its performers */
+.kb-tagperfs { margin: 0 0 22px; }
+.kb-tagperfs-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-bottom: 12px; }
+.kb-tagperfs-head .kb-h2 { margin: 0; }
+.kb-tagperfs-head .kb-seg span { opacity: .7; font-variant-numeric: tabular-nums; }
+.kb-perfrow { display: grid; grid-auto-flow: column; grid-auto-columns: 140px; gap: 14px; overflow-x: auto; padding-bottom: 8px; }
+.kb-perfrow .kb-perf b { font-size: 15px; }

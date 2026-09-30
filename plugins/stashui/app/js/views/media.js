@@ -7,6 +7,7 @@ import { findItems, favoriteTagId, setFavorite, bulkUpdate, destroyItems } from 
 import { toPiece, Hang } from "../pieces.js";
 import { app, setQuery, go, setQueueCount } from "../main.js";
 import { tagPicker } from "./tagpicker.js";
+import { perfPicker, hasPerformers } from "./perfpicker.js";
 import { openEditor } from "./edit.js";
 
 export const KIND_NAME = { scene: ["Scene", "Scenes"], image: ["Image", "Images"], gallery: ["Gallery", "Galleries"] };
@@ -28,6 +29,8 @@ function readState(q, kind, defaults) {
     dir: q.dir || d.dir || (["title", "path"].includes(q.sort || d.sort) ? "ASC" : "DESC"),
     tags: (q.tags || "").split(",").filter(Boolean),
     xtags: (q.xtags || "").split(",").filter(Boolean),
+    perfs: (q.perfs || "").split(",").filter(Boolean),
+    pany: q.pany === "1",
     rating: Number(q.rating || 0),
     fav: q.fav === "1",
     played: q.played || "",
@@ -47,6 +50,13 @@ function buildFilter(kind, st, base) {
   if (inc.length || st.xtags.length) {
     f.tags = { value: [...new Set(inc)], modifier: "INCLUDES_ALL", depth: 0 };
     if (st.xtags.length) f.tags.excludes = st.xtags;
+  }
+  if (st.perfs.length) {
+    // On a performer's page the page's own performer stays in: then all of them together
+    const page = f.performers ? f.performers.value : [];
+    f.performers = page.length
+      ? { value: [...new Set([...page, ...st.perfs])], modifier: "INCLUDES_ALL" }
+      : { value: st.perfs, modifier: st.pany ? "INCLUDES" : "INCLUDES_ALL" };
   }
   if (st.rating) f.rating100 = { value: st.rating * 20 - 1, modifier: "GREATER_THAN" };
   if (kind === "scene") {
@@ -68,7 +78,7 @@ export function mediaBrowser(host, opts) {
   let kind = kinds.includes(opts.query.kind) ? opts.query.kind : opts.initialKind || kinds[0];
   let st = readState(opts.query, kind, opts.defaults && opts.defaults[kind]);
   let hang = null;
-  let filterOpen = !!(st.tags.length || st.xtags.length || st.rating || st.fav || st.played || st.ori || st.res || st.len);
+  let filterOpen = !!(st.tags.length || st.xtags.length || st.perfs.length || st.rating || st.fav || st.played || st.ori || st.res || st.len);
   const rowH = () => store.get("rowHeight", 250);
 
   host.innerHTML = `
@@ -113,6 +123,7 @@ export function mediaBrowser(host, opts) {
     if (!filterOpen) return;
     box.innerHTML = `
       <div class="kb-tagpick" data-tp></div>
+      <div class="kb-tagpick kb-perfpick" data-pp hidden></div>
       <label class="kb-lab">${t("Rating from")}
         <select class="kb-field" data-f="rating">${[0, 1, 2, 3, 4, 5].map((n) => `<option value="${n}">${n ? "★".repeat(n) : t("any")}</option>`).join("")}</select></label>
       ${kind === "scene" ? `<label class="kb-lab">${t("Watched")}
@@ -137,6 +148,21 @@ export function mediaBrowser(host, opts) {
         apply();
       },
     });
+    // Performers – only when the library has any
+    const pp = box.querySelector("[data-pp]");
+    hasPerformers().then((yes) => {
+      if (!yes && !st.perfs.length) return;
+      pp.hidden = false;
+      perfPicker(pp, {
+        include: st.perfs,
+        any: st.pany,
+        onChange: (ids, any) => {
+          st.perfs = ids;
+          st.pany = any;
+          apply();
+        },
+      });
+    });
   }
 
   function persistQuery() {
@@ -147,6 +173,8 @@ export function mediaBrowser(host, opts) {
       dir: st.dir,
       tags: st.tags.join(","),
       xtags: st.xtags.join(","),
+      perfs: st.perfs.join(","),
+      pany: st.pany && st.perfs.length > 1 ? "1" : "",
       rating: st.rating || "",
       fav: st.fav ? "1" : "",
       played: st.played,
@@ -314,7 +342,7 @@ export function mediaBrowser(host, opts) {
       return renderTools();
     }
     if (e.target.closest("[data-clear]") || e.target.closest("[data-clearall]")) {
-      Object.assign(st, { q: "", tags: [], xtags: [], rating: 0, fav: false, played: "", ori: "", res: "", len: "" });
+      Object.assign(st, { q: "", tags: [], xtags: [], perfs: [], pany: false, rating: 0, fav: false, played: "", ori: "", res: "", len: "" });
       const qi = $("[data-q]");
       if (qi) qi.value = "";
       renderTools();
