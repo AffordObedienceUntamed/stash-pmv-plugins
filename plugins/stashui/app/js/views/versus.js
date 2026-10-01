@@ -12,6 +12,7 @@ import { tagPicker } from "./tagpicker.js";
 import { go } from "../main.js";
 import { isGif } from "../pieces.js";
 import { loadStandings } from "../standings.js";
+import { tiersOf, tierBadge, TIERS, matchOpts, pushLedger, popLedger, mergeLedger, blankLedger, ledgerHtml, logEvent, openLog, openOptions, overviewHtml, openSnapshots } from "../versusx.js";
 
 const KINDS = {
   scene: {
@@ -68,7 +69,7 @@ const markerSpan = (x) => {
 const startElo = (x) => 1500 + (x.rating100 != null ? (x.rating100 - 50) * 6 : 0);
 const today = () => new Date().toISOString().slice(0, 10);
 const KIND_KEYS = ["scene", "image", "performer", "marker"];
-const blank = () => ({ scene: {}, image: {}, performer: {}, marker: {}, votes: 0, day: "", dayVotes: 0, bestStreak: 0, resets: {} });
+const blank = () => ({ scene: {}, image: {}, performer: {}, marker: {}, votes: 0, day: "", dayVotes: 0, bestStreak: 0, resets: {}, ledger: blankLedger() });
 // Two states (this browser, Stash – or two devices) → one: per item the one with more matches;
 // after "Start over" the newer start counts for that kind
 function mergeVs(a, b) {
@@ -77,13 +78,15 @@ function mergeVs(a, b) {
     const ra = (a.resets || {})[k] || 0;
     const rb = (b.resets || {})[k] || 0;
     if (ra || rb) out.resets[k] = Math.max(ra, rb);
-    if (ra !== rb) return (out[k] = Object.assign({}, (ra > rb ? a : b)[k]));
+    if (ra !== rb) return (out[k] = Object.assign({}, (ra > rb ? a : b)[k])), (out.ledger[k] = Object.assign({}, ((ra > rb ? a : b).ledger || {})[k]));
     out[k] = Object.assign({}, b[k]);
     Object.entries(a[k] || {}).forEach(([id, r]) => {
       const o = out[k][id];
       if (!o || r[1] + r[2] > o[1] + o[2]) out[k][id] = r;
     });
   });
+  const led = mergeLedger(a.ledger, b.ledger); // (kinds that were started over keep the newer side's ledger, set above)
+  KIND_KEYS.forEach((k) => (((a.resets || {})[k] || 0) === ((b.resets || {})[k] || 0) ? (out.ledger[k] = led[k]) : 0));
   out.votes = Math.max(a.votes || 0, b.votes || 0);
   out.bestStreak = Math.max(a.bestStreak || 0, b.bestStreak || 0);
   const [n] = [a, b].sort((x, y) => (y.day || "").localeCompare(x.day || ""));
@@ -157,6 +160,9 @@ export function render(main, params = {}) {
     </div>
     <div class="kb-head-tools">
       <div class="kb-seg" data-kind>${Object.entries(KINDS).map(([k, v]) => `<button type="button" data-v="${k}">${t(v.label)}</button>`).join("")}</div>
+      <button type="button" class="kb-btn is-ghost" data-vx="snaps" title="${t("Snapshots of the standings")}">${icon("copies")}${t("Snapshots")}</button>
+      <button type="button" class="kb-btn is-ghost" data-vx="log">${icon("logs")}${t("Log")}</button>
+      <button type="button" class="kb-btn is-ghost" data-vx="opts">${icon("sliders")}${t("Options")}</button>
       <a class="kb-btn${ranking ? " is-primary" : ""}" href="#/${ranking ? "versus" : "versus/ranking"}">${icon(ranking ? "bolt" : "trophy")}${ranking ? t("Play") : t("Ranking")}</a>
     </div></header>
     <div class="kb-vs" data-body></div>`;
@@ -173,6 +179,25 @@ export function render(main, params = {}) {
     reset();
   });
 
+  main.querySelector(".kb-head-tools").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-vx]");
+    if (!b) return;
+    if (b.dataset.vx === "log") return openLog();
+    if (b.dataset.vx === "opts") return openOptions();
+    openSnapshots({
+      getData: () => data,
+      apply: (d) => {
+        // replace the standings (in every browser: "started over" now beats what other devices still have)
+        const now = Date.now();
+        KIND_KEYS.forEach((k) => ((data[k] = Object.assign({}, d[k] || {})), (data.resets = Object.assign({}, data.resets, { [k]: now }))));
+        data.ledger = blankLedger();
+        data.votes = d.votes || 0;
+        data.bestStreak = d.bestStreak || 0;
+        saveData();
+        reset();
+      },
+    });
+  });
   const rows = () => data[S.kind];
   const row = (x) => rows()[x.id] || [startElo(x), 0, 0];
   const games = (x) => {
@@ -406,18 +431,21 @@ export function render(main, params = {}) {
     const win = pair[side];
     const lose = pair[1 - side];
     const r = rows();
-    undo.push({ kind: S.kind, before: { [win.id]: r[win.id] && r[win.id].slice(), [lose.id]: r[lose.id] && r[lose.id].slice() }, streak, champ, votes: data.votes, dayVotes: data.dayVotes, best: data.bestStreak });
+    undo.push({ kind: S.kind, led: [win.id, lose.id], before: { [win.id]: r[win.id] && r[win.id].slice(), [lose.id]: r[lose.id] && r[lose.id].slice() }, streak, champ, votes: data.votes, dayVotes: data.dayVotes, best: data.bestStreak });
     if (undo.length > 30) undo.shift();
     // Elo: the surprise counts – beating a stronger one moves more; new ones move faster
     const [ew, ww, wl] = row(win);
     const [el, lw, ll] = row(lose);
     const expect = 1 / (1 + Math.pow(10, (el - ew) / 400));
-    const kw = ww + wl < 10 ? 40 : 24;
-    const kl = lw + ll < 10 ? 40 : 24;
+    const mo = matchOpts();
+    const kw = ww + wl < mo.newUntil ? mo.kNew : mo.kOld;
+    const kl = lw + ll < mo.newUntil ? mo.kNew : mo.kOld;
     const dw = kw * (1 - expect);
     const dl = kl * (1 - expect);
     r[win.id] = [ew + dw, ww + 1, wl];
     r[lose.id] = [el - dl, lw, ll + 1];
+    pushLedger(data, S.kind, win.id, lose.id, dw, dl);
+    logEvent(t("{win} beat {lose} (+{dw} / −{dl})", { win: titleOf(S.kind, win), lose: titleOf(S.kind, lose), dw: Math.round(dw), dl: Math.round(dl) }));
     if (data.day !== today()) (data.day = today()), (data.dayVotes = 0);
     data.votes++;
     data.dayVotes++;
@@ -452,6 +480,8 @@ export function render(main, params = {}) {
     const u = undo.pop();
     if (!u) return toast(t("Nothing to undo"));
     Object.entries(u.before).forEach(([id, r]) => (r ? (data[u.kind][id] = r) : delete data[u.kind][id]));
+    if (u.led) popLedger(data, u.kind, u.led[0], u.led[1]);
+    logEvent(t("Last pick undone"));
     data.votes = u.votes;
     data.dayVotes = u.dayVotes;
     data.bestStreak = u.best;
@@ -476,11 +506,14 @@ export function render(main, params = {}) {
 
   // ---------- Ranking ----------
   let rankSeq = 0; // a newer paint wins (the standings from Stash can come in while one is loading)
+  let rankTier = ""; // "": everyone, else only this tier
   async function paintRanking() {
     const seq = ++rankSeq;
     const all = Object.entries(rows()).filter(([, r]) => r[1] + r[2] > 0);
     all.sort((a, b) => b[1][0] - a[1][0]);
-    const top = all.slice(0, 100);
+    const tiers = tiersOf(rows());
+    if (rankTier && !tiers.counts[rankTier]) rankTier = "";
+    const top = (rankTier ? all.filter(([id]) => tiers.map.get(id) === rankTier) : all).slice(0, 100);
     const judged = all.filter(([, r]) => r[1] + r[2] >= 3).length;
     body.innerHTML = `
       <div class="kb-vs-top">
@@ -489,14 +522,26 @@ export function render(main, params = {}) {
         ${S.kind === "marker" ? "" : `<button type="button" class="kb-btn" data-stars ${judged ? "" : "disabled"} title="${esc(t("Only those with at least 3 matches"))}">${icon("heart")}${t("Turn into star ratings …")}</button>`}
         <button type="button" class="kb-btn is-ghost" data-restart ${all.length ? "" : "disabled"}>${t("Start over")}</button>
       </div>
+      ${overviewHtml(rows())}
+      ${tiers.map.size ? `<div class="kb-seg kb-tierchips" data-tiers><button type="button" data-tier="" class="${rankTier ? "" : "is-on"}">${t("All")}</button>${TIERS.filter((x) => tiers.counts[x.k]).map((x) => `<button type="button" data-tier="${x.k}" class="${rankTier === x.k ? "is-on" : ""}" style="--tc:${x.color}">${x.k} <small>${tiers.counts[x.k]}</small></button>`).join("")}</div>` : ""}
       ${S.kind === "marker" ? `<p class="kb-hint kb-vs-best">${icon("bolt")}${t("The upper quarter (with 3 matches or more) are your best moments: the player marks them gold and J jumps there first, a random start lands on one of them, and the PMV Generator prefers them.")}</p>` : ""}
       <ol class="kb-vs-rank" data-rank>${top.length ? `<li class="kb-loading">${t("Loading …")}</li>` : ""}</ol>`;
     const starsBtn = body.querySelector("[data-stars]");
     if (starsBtn) starsBtn.onclick = () => toStars(all);
+    const tierBox = body.querySelector("[data-tiers]");
+    if (tierBox)
+      tierBox.onclick = (e) => {
+        const b = e.target.closest("[data-tier]");
+        if (!b) return;
+        rankTier = b.dataset.tier;
+        paintRanking();
+      };
     body.querySelector("[data-restart]").onclick = async () => {
       const r = await confirmDialog({ title: t("Start over?"), text: t("The standings of all {kind} are cleared (in every browser). Star ratings stay.", { kind: t(KINDS[S.kind].label) }), ok: t("Start over"), danger: true });
       if (!r.ok) return;
       data[S.kind] = {};
+      data.ledger[S.kind] = {};
+      logEvent(t("Started over: {kind}", { kind: t(KINDS[S.kind].label) }));
       data.resets = Object.assign({}, data.resets, { [S.kind]: Date.now() });
       saveData();
       paintRanking();
@@ -507,15 +552,36 @@ export function render(main, params = {}) {
       const d = await gql(k.query, { f: { per_page: top.length }, ids: top.map(([id]) => id) });
       if (!alive || seq !== rankSeq) return;
       const byId = new Map(d.r[k.list].map((x) => [x.id, x]));
-      body.querySelector("[data-rank]").innerHTML = top
+      const rankBox = body.querySelector("[data-rank]");
+      rankBox.innerHTML = top
         .map(([id, [elo, w, l]], i) => {
           const x = byId.get(id);
           if (!x) return "";
-          return `<li><a href="#/${esc(k.open(id, x))}"><span class="kb-vs-pos${i < 3 ? " is-podium" : ""}">${i + 1}</span>
-            <img src="${esc(thumbOf(S.kind, x) || "")}" alt="" loading="lazy"><b>${esc(titleOf(S.kind, x))}</b>
-            <span class="kb-vs-pts">${Math.round(elo)}</span><small>${w}–${l}</small></a></li>`;
+          return `<li data-lid="${esc(id)}"><a href="#/${esc(k.open(id, x))}"><span class="kb-vs-pos${i < 3 ? " is-podium" : ""}">${i + 1}</span>
+            <img src="${esc(thumbOf(S.kind, x) || "")}" alt="" loading="lazy"><b>${esc(titleOf(S.kind, x))}</b>${tierBadge(tiers.map.get(id)) || "<span></span>"}
+            <span class="kb-vs-pts">${Math.round(elo)}</span><small>${w}–${l}</small></a>
+            <button type="button" class="kb-vs-hist" data-hist title="${t("Last matches")}" aria-label="${t("Last matches")}">${icon("history")}</button><div class="kb-vs-ledger" hidden></div></li>`;
         })
         .join("");
+      // The ledger: the last 10 matches of one – opened on demand, the opponents' names fetched then
+      rankBox.onclick = async (e) => {
+        const b = e.target.closest("[data-hist]");
+        if (!b) return;
+        const li = b.closest("[data-lid]");
+        const box = li.querySelector(".kb-vs-ledger");
+        box.hidden = !box.hidden;
+        b.classList.toggle("is-on", !box.hidden);
+        if (box.hidden || box.dataset.done) return;
+        const entries = ((data.ledger || {})[S.kind] || {})[li.dataset.lid] || [];
+        box.innerHTML = `<div class="kb-loading">${t("Loading …")}</div>`;
+        const titles = new Map();
+        try {
+          const ids = [...new Set(entries.map((x) => x[0]))];
+          if (ids.length) (await gql(k.query, { f: { per_page: ids.length }, ids })).r[k.list].forEach((o) => titles.set(o.id, titleOf(S.kind, o)));
+        } catch (er) { /* the ids are shown instead */ }
+        box.innerHTML = ledgerHtml(entries, titles);
+        box.dataset.done = "1";
+      };
     } catch (e) {
       errorToast(e, t("Ranking"));
     }
@@ -540,6 +606,7 @@ export function render(main, params = {}) {
     });
     try {
       for (const [rating, ids] of Object.entries(groups)) if (ids.length) await gql(KINDS[S.kind].bulk, { i: { ids, rating100: Number(rating) } });
+      logEvent(t("Star ratings set for {n}", { n }));
       toast(t("Star ratings set for {n}", { n }), "ok");
     } catch (e) {
       errorToast(e, t("Star ratings"));

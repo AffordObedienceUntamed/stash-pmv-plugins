@@ -4,6 +4,16 @@
 
 export const CHANGES = [
   {
+    v: "3.43.0",
+    date: "2026-10-02",
+    items: [
+      ["ui", "Versus: tiers S – A – B – C – D – F by percentile (top 5 % S, then 15 %, 25 %, 30 %, 15 %, last 10 % F) among everything with 3+ matches – shown as a badge in the ranking, as a bar and as a filter; plus a small overview (compared, picks, average and highest points).", "对决：按百分位划分的 S – A – B – C – D – F 等级（前 5 % 为 S，然后 15 %、25 %、30 %、15 %，最后 10 % 为 F），统计对象为对决 3 场以上的条目——在排名中显示为徽章、分布条和筛选项；另有小型概览（已比较、选择次数、平均和最高积分）。"],
+      ["ui", "Versus ledger: the little clock next to a ranking entry shows its last 10 matches (won / lost, points, against whom, when).", "对决记录：排名条目旁的小时钟显示其最近 10 场对决（胜/负、积分、对手、时间）。"],
+      ["ui", "Versus snapshots: take a copy of all standings (kept in Stash, the last 5), restore one (a snapshot of the current state is made first), export the standings to a file and import them again.", "对决快照：为所有排名创建副本（保存在 Stash 中，最近 5 个），可恢复其中之一（之前会先为当前状态创建快照），也可将排名导出为文件并再次导入。"],
+      ["ui", "Versus event log (picks, undo, restore, start over …) and match options (points per pick for new and settled ones, how many matches count as new).", "对决事件日志（选择、撤销、恢复、重新开始 …）以及对决选项（新加入和已稳定条目每次选择的积分、多少场以内算新）。"],
+    ],
+  },
+  {
     v: "3.42.1",
     date: "2026-10-02",
     items: [["ui", "Detailed rating: the stars are now exactly those of the info bar – they light up when you hover and the new ones pop in after a click.", "详细评分：星星现在与信息栏中的完全一致——悬停时点亮，点击后新点亮的星星依次弹出。"]],
