@@ -9,6 +9,7 @@ export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
 const ICONS = {
+  undo: '<path d="M9 7 4.5 11.5 9 16M5 11.5h9.5a5 5 0 0 1 0 10H11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
   home: '<path d="M4 11.5 12 5l8 6.5V20h-5.5v-5h-5v5H4z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>',
   folder: '<path d="M3.5 7a1.5 1.5 0 0 1 1.5-1.5h4.3l2 2.2H19a1.5 1.5 0 0 1 1.5 1.5v8.3a1.5 1.5 0 0 1-1.5 1.5H5a1.5 1.5 0 0 1-1.5-1.5z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>',
   film: '<g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="14" rx="1.5"/><path d="M8 5v14M16 5v14M3.5 9.5H8M3.5 14.5H8M16 9.5h4.5M16 14.5h4.5"/></g>',
@@ -140,16 +141,28 @@ export const store = {
 
 // ---------- Messages ----------
 
-export function toast(msg, type) {
+// act = { label, run }: a button in the toast (e.g. Undo) – the toast then stays a little longer
+export function toast(msg, type, act) {
   const box = document.getElementById("toasts");
   const el = document.createElement("div");
   el.className = "kb-toast" + (type ? " is-" + type : "");
   el.textContent = msg;
+  if (act) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "kb-toast-act";
+    b.textContent = act.label;
+    b.onclick = () => {
+      el.remove();
+      act.run();
+    };
+    el.appendChild(b);
+  }
   box.appendChild(el);
   setTimeout(() => {
     el.classList.add("is-gone");
     setTimeout(() => el.remove(), 400);
-  }, type === "error" ? 6000 : 3200);
+  }, act ? 9000 : type === "error" ? 6000 : 3200);
 }
 
 export function errorToast(e, what) {

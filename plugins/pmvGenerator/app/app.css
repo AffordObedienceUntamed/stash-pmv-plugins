@@ -691,6 +691,8 @@ a.kb-chip:hover, button.kb-chip:hover { background: rgba(180, 140, 255, .28); }
 .kb-toast.is-error { color: var(--paper); background: #b3243e; }
 .kb-toast.is-error::after { border-top-color: #b3243e; }
 .kb-toast.is-ok { box-shadow: inset 5px 0 0 var(--ok), 0 12px 30px rgba(0, 0, 0, .45); }
+.kb-toast-act { margin-left: 12px; padding: 3px 12px; border: 2px solid var(--ink); border-radius: 999px; color: var(--paper); font: 700 13px/1.2 var(--f-label); background: var(--ink); cursor: pointer; }
+.kb-toast-act:hover { color: var(--ink); background: var(--pink-2); }
 .kb-toast.is-gone { opacity: 0; transform: translateY(6px); transition: opacity .35s ease, transform .35s ease; }
 @keyframes kb-toast-in { from { opacity: 0; transform: translateY(8px) scale(.96); } }
 

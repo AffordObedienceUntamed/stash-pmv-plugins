@@ -1100,4 +1100,7 @@ export default {
   "← left wins · → right wins · ↓ skip · U undo · F fullscreen": "← 左边胜 · → 右边胜 · ↓ 跳过 · U 撤销 · F 全屏",
   "Tags (optional)": "标签（可选）",
   "Rating: {r}": "评分：{r}",
+  "Old cover": "旧封面",
+  "Put the cover back that the scene had before": "恢复该场景之前的封面",
+  "The old cover is back": "已恢复旧封面",
 };

@@ -788,6 +788,43 @@ export async function render(host, params) {
   });
 
   // ---------- The frame you're looking at as the scene's cover ----------
+  // The covers before are kept (in memory, while the scene is open): Undo in the toast or
+  // "Old cover" next to the Cover button puts them back, one step at a time.
+  const oldCovers = [];
+  const asDataUrl = async (url) => {
+    const r = await fetch(url, { credentials: "same-origin", cache: "no-store" });
+    if (!r.ok) throw new Error(r.status);
+    const b = await r.blob();
+    if (!/^image\//.test(b.type)) throw new Error(b.type);
+    return new Promise((ok, no) => {
+      const fr = new FileReader();
+      fr.onload = () => ok(fr.result);
+      fr.onerror = no;
+      fr.readAsDataURL(b);
+    });
+  };
+  async function putCover(dataUrl) {
+    const d = await gql(`mutation($i: SceneUpdateInput!) { sceneUpdate(input: $i) { id paths { screenshot } } }`, { i: { id: x.id, cover_image: dataUrl } });
+    x.paths.screenshot = d.sceneUpdate.paths.screenshot;
+    v.poster = x.paths.screenshot;
+    if (ctx.hang) {
+      const pc = ctx.hang.pieces.find((q) => q.kind === "scene" && q.id === x.id);
+      if (pc) ctx.hang.update(Object.assign({}, pc, { thumb: x.paths.screenshot }));
+    }
+  }
+  function paintCoverUndo() {
+    const btn = side.querySelector("[data-cover]");
+    let u = side.querySelector("[data-coverundo]");
+    if (!btn || !oldCovers.length) return u && u.remove();
+    if (!u) {
+      u = document.createElement("button");
+      u.className = "kb-plc-btn";
+      u.dataset.coverundo = "";
+      u.title = t("Put the cover back that the scene had before");
+      u.innerHTML = `${icon("undo")}${esc(t("Old cover"))}`;
+      btn.after(u);
+    }
+  }
   async function frameAsCover() {
     if (!v.videoWidth) return toast(t("No picture yet"), "error");
     try {
@@ -795,20 +832,33 @@ export async function render(host, params) {
       c.width = v.videoWidth;
       c.height = v.videoHeight;
       c.getContext("2d").drawImage(v, 0, 0);
-      const d = await gql(`mutation($i: SceneUpdateInput!) { sceneUpdate(input: $i) { id paths { screenshot } } }`, { i: { id: x.id, cover_image: c.toDataURL("image/jpeg", 0.92) } });
-      x.paths.screenshot = d.sceneUpdate.paths.screenshot;
-      v.poster = x.paths.screenshot;
+      // the cover so far – without it there's nothing to go back to, so don't change anything
+      let before = null;
+      try {
+        before = x.paths.screenshot ? await asDataUrl(x.paths.screenshot) : null;
+      } catch (e) { /* no cover yet (none generated) */ }
+      await putCover(c.toDataURL("image/jpeg", 0.92));
+      if (before) oldCovers.push(before);
       stage.classList.remove("is-flash");
       void stage.offsetWidth;
       stage.classList.add("is-flash");
-      toast(t("Cover set to this frame"), "ok");
-      if (ctx.hang) {
-        const pc = ctx.hang.pieces.find((q) => q.kind === "scene" && q.id === x.id);
-        if (pc) ctx.hang.update(Object.assign({}, pc, { thumb: x.paths.screenshot }));
-      }
+      paintCoverUndo();
+      toast(t("Cover set to this frame"), "ok", before ? { label: t("Undo"), run: () => undoCover() } : null);
     } catch (e) {
       errorToast(e, "Cover");
     }
+  }
+  async function undoCover() {
+    const prev = oldCovers.pop();
+    if (!prev) return;
+    try {
+      await putCover(prev);
+      toast(t("The old cover is back"), "ok");
+    } catch (e) {
+      oldCovers.push(prev);
+      errorToast(e, "Cover");
+    }
+    paintCoverUndo();
   }
 
   // ---------- Placard ----------
@@ -827,6 +877,7 @@ export async function render(host, params) {
       paintQueue();
       paintUpnext();
       paintSimilar();
+      paintCoverUndo();
     },
     onDeleted: () => {
       closeOverlay();
@@ -835,6 +886,9 @@ export async function render(host, params) {
     goFolder: () => goToFolder(f.path),
     music: () => import("./music.js").then((m) => m.openMusic(x, v)),
     cover: () => frameAsCover(),
+  });
+  side.addEventListener("click", (e) => {
+    if (e.target.closest("[data-coverundo]")) undoCover();
   });
   async function goToFolder(path) {
     const { loadFolders } = await import("../api.js");
