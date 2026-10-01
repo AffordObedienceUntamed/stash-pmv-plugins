@@ -437,7 +437,7 @@ export function render(main) {
         <div class="kb-pmvg-presets">
           <span class="kb-lab-t">My settings</span>
           <div class="kb-pmvg-row">
-            <select class="kb-field" data-preset aria-label="Saved settings"></select>
+            <select class="kb-field" data-mypreset aria-label="Saved settings"></select>
             <button class="kb-btn" type="button" data-psave title="Save everything about clips, cutting, effects, look and sound under a name">Save …</button>
           </div>
           <div class="kb-pmvg-row">
@@ -1016,7 +1016,43 @@ export function render(main) {
   // ---------- My settings (presets) ----------
   // Everything about clips, cutting, effects, look and sound – not the music source or the title
   const NOT_IN_PRESET = ["collapsed", "glass", "v", "mode", "title", "shuffle", "plexWhat", "plexList", "plexSync", "plexSyncs", "liveApp"];
-  const presets = () => store.get("pmvgenPresets", {});
+  // Kept in Stash (this plugin's settings), not in the browser: browser storage for localhost:9999 is
+  // shared by Stash and every plugin and can be full – saving then failed without a word. This way
+  // they're also there in every browser. Stored as one JSON text so Stash leaves the names alone.
+  let presetList = {};
+  const presets = () => presetList;
+  const pluginCfg = async () => ((await gql(`query { configuration { plugins(include: ["pmvGenerator"]) } }`)).configuration.plugins || {}).pmvGenerator || {};
+  async function writePresets(all) {
+    // Stash replaces a plugin's whole settings – keep whatever else is in there
+    const cfg = Object.assign({}, await pluginCfg(), { presets: JSON.stringify(all) });
+    await gql(`mutation($c: Map!) { configurePlugin(plugin_id: "pmvGenerator", input: $c) }`, { c: cfg });
+    presetList = all;
+  }
+  async function loadPresets() {
+    let all = {};
+    try {
+      const cfg = await pluginCfg();
+      all = cfg.presets ? JSON.parse(cfg.presets) : {};
+    } catch (e) {
+      console.warn("[PMV] saved settings:", e);
+    }
+    // Once: the ones saved in this browser before – into Stash, then out of the browser
+    let local = {};
+    try {
+      local = JSON.parse(localStorage.getItem("stashui.pmvgenPresets") || "{}") || {};
+    } catch (e) { /* blocked */ }
+    const missing = Object.keys(local).filter((k) => !(k in all));
+    presetList = Object.assign({}, local, all);
+    if (Object.keys(local).length) {
+      try {
+        if (missing.length) await writePresets(presetList);
+        localStorage.removeItem("stashui.pmvgenPresets");
+      } catch (e) {
+        console.warn("[PMV] moving saved settings to Stash:", e);
+      }
+    }
+    paintPresets($("[data-mypreset]").value);
+  }
   const snapshot = () => {
     const o = JSON.parse(JSON.stringify(S));
     NOT_IN_PRESET.forEach((k) => delete o[k]);
@@ -1025,7 +1061,7 @@ export function render(main) {
   function paintPresets(sel) {
     const all = presets();
     const names = Object.keys(all).sort((a, b) => a.localeCompare(b));
-    const box = $("[data-preset]");
+    const box = $("[data-mypreset]");
     box.innerHTML = `<option value="">${names.length ? "Load saved settings …" : "Nothing saved yet"}</option>` + names.map((n) => `<option value="${esc(n)}"${n === sel ? " selected" : ""}>${esc(n)}</option>`).join("");
     $("[data-pdel]").disabled = !sel;
   }
@@ -1036,6 +1072,10 @@ export function render(main) {
     Object.assign(S, base, o, keep);
     S.fx = Object.assign({}, DEFAULTS.fx, o.fx);
     S.layouts = Object.assign({}, DEFAULTS.layouts, o.layouts);
+    // values this version doesn't know (older or edited files) → the default
+    if (!CUTS.some(([v]) => v === S.cut)) S.cut = DEFAULTS.cut;
+    if (!LOOKS.some(([v]) => v === S.look)) S.look = DEFAULTS.look;
+    if (!Object.values(S.layouts).some(Boolean)) S.layouts = Object.assign({}, DEFAULTS.layouts);
     ["tags", "xtags", "folders", "rgPicks", "perfs"].forEach((k) => Array.isArray(S[k]) || (S[k] = []));
     save();
     // Everything on the page from S again
@@ -1053,7 +1093,8 @@ export function render(main) {
     paintMode();
   }
   paintPresets("");
-  $("[data-preset]").addEventListener("change", (e) => {
+  loadPresets();
+  $("[data-mypreset]").addEventListener("change", (e) => {
     const name = e.target.value;
     $("[data-pdel]").disabled = !name;
     if (!name) return;
@@ -1061,25 +1102,31 @@ export function render(main) {
     toast(`Loaded: ${name}`, "ok");
   });
   $("[data-psave]").onclick = async () => {
-    const cur = $("[data-preset]").value;
+    const cur = $("[data-mypreset]").value;
     const name = (await promptDialog({ title: "Save settings", label: "Clips, cutting, effects, look and sound – under this name (the same name replaces it)", value: cur, ok: "Save" })) || "";
     if (!name.trim()) return;
-    const all = presets();
-    all[name.trim()] = snapshot();
-    store.set("pmvgenPresets", all);
-    paintPresets(name.trim());
-    toast(`Saved: ${name.trim()}`, "ok");
+    try {
+      await writePresets(Object.assign({}, presets(), { [name.trim()]: snapshot() }));
+      paintPresets(name.trim());
+      toast(`Saved: ${name.trim()}`, "ok");
+    } catch (err) {
+      errorToast(err, "Save");
+    }
   };
   $("[data-pdel]").onclick = async () => {
-    const name = $("[data-preset]").value;
+    const name = $("[data-mypreset]").value;
     if (!name || !(await confirmDialog({ title: `Delete “${name}”?`, text: "Only the saved settings – nothing in your library.", ok: "Delete", danger: true })).ok) return;
-    const all = presets();
+    const all = Object.assign({}, presets());
     delete all[name];
-    store.set("pmvgenPresets", all);
-    paintPresets("");
+    try {
+      await writePresets(all);
+      paintPresets("");
+    } catch (err) {
+      errorToast(err, "Delete");
+    }
   };
   $("[data-pexport]").onclick = () => {
-    const name = $("[data-preset]").value || "PMV settings";
+    const name = $("[data-mypreset]").value || "PMV settings";
     const blob = new Blob([JSON.stringify({ pmvGenerator: 1, name, settings: snapshot() }, null, 2)], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -1099,12 +1146,14 @@ export function render(main) {
       const o = d && d.settings && typeof d.settings === "object" ? d.settings : null;
       if (!o) throw new Error("That's not a PMV Generator settings file");
       const name = String(d.name || f.name.replace(/(\.pmvgen)?\.json$/i, "")).slice(0, 60) || "Imported";
-      const all = presets();
-      all[name] = o;
-      store.set("pmvgenPresets", all);
-      paintPresets(name);
       applyPreset(o);
-      toast(`Imported and loaded: ${name}`, "ok");
+      try {
+        await writePresets(Object.assign({}, presets(), { [name]: o }));
+        paintPresets(name);
+        toast(`Imported and loaded: ${name}`, "ok");
+      } catch (err) {
+        toast(`Loaded: ${name} (couldn't keep it in the list: ${err.message || err})`, "error");
+      }
     } catch (err) {
       errorToast(err, "Import");
     }

@@ -914,6 +914,7 @@ export async function render(host, params) {
         c.cur = c.saved = { url: x.paths.screenshot, blob };
       }
       const blob = await framed;
+      if (!blob) throw new Error(t("No picture yet"));
       c.stack.push(c.cur);
       c.cur = { url: URL.createObjectURL(blob), blob };
       if (!covers.has(x.id)) covers.set(x.id, c); // the scene was left while loading – keep it
