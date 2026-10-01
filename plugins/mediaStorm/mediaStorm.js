@@ -62,12 +62,17 @@
     artOn: false, // artwork images in the panel cover, start screen and empty states
     artName: "", // tag and/or folder with this name
     // Source & filters
-    source: "library", // library | context
+    source: "library", // library | context | playlist (a smart playlist from Stash UI)
+    playlist: "", // its id
     includeTags: [],
     excludeTags: [],
     tagMatchAll: false,
+    perfs: [], // [{ id, name }]
+    perfMatchAll: false,
     minRating: 0,
     favPerformers: false,
+    maxRes: "any", // any | 720 | 1080 | 1440 – lower runs smoother
+    minLen: 0, // videos at least … seconds
     folders: [], // [{ id, path }] – including subfolders
     // RedGifs
     rgPct: 0, // share of items coming from RedGifs (0 = off)
@@ -109,6 +114,7 @@
     const s = Object.assign(clone(DEFAULTS), raw || {});
     if (!Array.isArray(s.includeTags)) s.includeTags = [];
     if (!Array.isArray(s.excludeTags)) s.excludeTags = [];
+    if (!Array.isArray(s.perfs)) s.perfs = [];
     if (!Array.isArray(s.folders)) s.folders = [];
     // Carry old text fields (search terms/creator) over into the new picker
     if (raw && !Array.isArray(raw.rgPicks) && (raw.rgSearch || raw.rgUser)) {
@@ -343,7 +349,60 @@
   // kind: "image" | "scene". Returns null if the filter isn't possible for this type.
   // Note: Stash doesn't reliably evaluate the same field in nested AND/OR filters,
   // so the tag page and the tag filter are merged into a single tags criterion.
+  // Smart playlists from Stash UI (its plugin settings) – the same filter logic as its lists
+  let msPlaylists = null;
+  let msFavId;
+  async function loadMsPlaylists() {
+    try {
+      const d = await gql(`query { configuration { plugins(include: ["stashui"]) } }`);
+      const cfg = (d.configuration.plugins || {}).stashui || {};
+      const list = JSON.parse(cfg.playlists || "[]");
+      msPlaylists = Array.isArray(list) ? list.filter((p) => p && p.id && p.query) : [];
+    } catch (e) {
+      msPlaylists = [];
+    }
+    if (msFavId === undefined) {
+      try {
+        const d = await gql(`query { findTags(tag_filter: { name: { value: "Favorite", modifier: EQUALS } }, filter: { per_page: 1 }) { tags { id } } }`);
+        msFavId = (d.findTags.tags[0] || {}).id || null;
+      } catch (e) {
+        msFavId = null;
+      }
+    }
+    return msPlaylists;
+  }
+  function playlistFilter(kind) {
+    const pl = (msPlaylists || []).find((p) => p.id === S.playlist);
+    if (!pl || (pl.kind === "image" ? "image" : "scene") !== kind) return null; // a playlist is one kind
+    const q = pl.query;
+    const list = (v) => String(v || "").split(",").filter(Boolean);
+    const f = {};
+    const inc = list(q.tags);
+    const exc = list(q.xtags);
+    if (q.fav === "1" && msFavId) inc.push(msFavId);
+    if (inc.length || exc.length) {
+      f.tags = { value: inc, modifier: "INCLUDES_ALL", depth: 0 };
+      if (exc.length) f.tags.excludes = exc;
+    }
+    if (list(q.perfs).length) f.performers = { value: list(q.perfs), modifier: q.pany === "1" ? "INCLUDES" : "INCLUDES_ALL" };
+    if (Number(q.rating)) f.rating100 = { value: Number(q.rating) * 20 - 1, modifier: "GREATER_THAN" };
+    if (kind === "scene") {
+      if (q.played === "yes") f.play_count = { value: 0, modifier: "GREATER_THAN" };
+      if (q.played === "no") f.play_count = { value: 0, modifier: "EQUALS" };
+      if (q.played === "resume") f.resume_time = { value: 5, modifier: "GREATER_THAN" };
+      if (q.res) f.resolution = { value: q.res, modifier: "GREATER_THAN" };
+      if (q.len === "short") f.duration = { value: 60, modifier: "LESS_THAN" };
+      if (q.len === "mid") f.duration = { value: 60, value2: 600, modifier: "BETWEEN" };
+      if (q.len === "long") f.duration = { value: 600, modifier: "GREATER_THAN" };
+    }
+    if (q.ori) f.orientation = { value: [q.ori] };
+    if (q.q) f.title = { value: q.q, modifier: "INCLUDES" };
+    return f;
+  }
+  const MAX_RES = { 720: "FULL_HD", 1080: "QUAD_HD", 1440: "VR_HD" }; // "up to …" = below the next size
+
   function buildFilter(kind) {
+    if (S.source === "playlist") return playlistFilter(kind);
     const f = {};
     const ctx = run.ctx;
     if (ctx) {
@@ -363,6 +422,15 @@
     }
     if (S.minRating > 0) f.rating100 = { value: S.minRating * 20 - 1, modifier: "GREATER_THAN" };
     if (S.favPerformers) f.performer_favorite = true;
+    if (S.perfs.length) {
+      // On a performer's page that performer stays in: then all of them together
+      const page = f.performers ? f.performers.value : [];
+      f.performers = page.length
+        ? { value: [...new Set([...page, ...S.perfs.map((p) => p.id)])], modifier: "INCLUDES_ALL" }
+        : { value: S.perfs.map((p) => p.id), modifier: S.perfMatchAll ? "INCLUDES_ALL" : "INCLUDES" };
+    }
+    if (MAX_RES[S.maxRes]) f.resolution = { value: MAX_RES[S.maxRes], modifier: "LESS_THAN" };
+    if (kind === "scene" && S.minLen > 0) f.duration = { value: S.minLen, modifier: "GREATER_THAN" };
     if (S.folders.length) {
       f.files_filter = { parent_folder: { value: S.folders.map((x) => x.id), modifier: "INCLUDES", depth: -1 } };
     }
@@ -434,6 +502,7 @@
   // Fetches n random media (new random seed per call) and reserves them against duplicates.
   async function fetchMedia(kind, n) {
     if (n <= 0 || run.empty[kind]) return [];
+    if (S.source === "playlist" && !msPlaylists) await loadMsPlaylists();
     const filter = buildFilter(kind);
     if (filter === null) {
       run.empty[kind] = true;
@@ -2649,7 +2718,7 @@
   }
 
   function clearFilters() {
-    Object.assign(S, { source: "library", includeTags: [], excludeTags: [], tagMatchAll: false, minRating: 0, favPerformers: false, folders: [] });
+    Object.assign(S, { source: "library", includeTags: [], excludeTags: [], tagMatchAll: false, perfs: [], perfMatchAll: false, minRating: 0, favPerformers: false, maxRes: "any", minLen: 0, folders: [] });
     save();
     filtersChanged();
     syncPanel();
@@ -2744,6 +2813,12 @@
         }
         break;
       case "source":
+        // a playlist as source: take the first one if none is chosen yet
+        if (S.source === "playlist" && msPlaylists && msPlaylists.length && !msPlaylists.some((p) => p.id === S.playlist)) {
+          S.playlist = msPlaylists[0].id;
+          save();
+        }
+        syncPanel();
         if (run.active) {
           run.ctx = S.source === "context" ? pageContext() : null;
           if (run.ctx) describeContext(run.ctx).then((label) => toast("Source – " + label));
@@ -2753,8 +2828,13 @@
       case "includeTags":
       case "excludeTags":
       case "tagMatchAll":
+      case "perfs":
+      case "perfMatchAll":
       case "minRating":
       case "favPerformers":
+      case "maxRes":
+      case "minLen":
+      case "playlist":
       case "folders":
         filtersChanged();
         break;
@@ -2829,9 +2909,9 @@
   const txt = (key, label, placeholder) =>
     `<label class="ms-row ms-text"><span>${label}</span>` +
     `<input class="ms-input" type="text" data-key="${key}" placeholder="${placeholder}" autocomplete="off" spellcheck="false" data-fb-done="1"></label>`;
-  const tagBox = (key, label) =>
-    `<div class="ms-tags" data-tags="${key}"><span>${label}</span><div class="ms-chips"></div>` +
-    `<input class="ms-input" type="text" placeholder="Search tag…" autocomplete="off" data-fb-done="1"><div class="ms-sugg" hidden></div></div>`; // data-fb-done: see "Robust against themes" in the CSS
+  const tagBox = (key, label, what) =>
+    `<div class="ms-tags" data-tags="${key}"${what === "performer" ? ' data-what="performer"' : ""}><span>${label}</span><div class="ms-chips"></div>` +
+    `<input class="ms-input" type="text" placeholder="${what === "performer" ? "Search performer…" : "Search tag…"}" autocomplete="off" data-fb-done="1"><div class="ms-sugg" hidden></div></div>`; // data-fb-done: see "Robust against themes" in the CSS
   // Only visible if the current layout is in the list
   const cond = (when, body) => `<div class="ms-cond" data-when="${when}">${body}</div>`;
   const hint = (t) => `<p class="ms-hint">${t}</p>`;
@@ -2996,13 +3076,21 @@
     {
       id: "source", icon: "filter", title: "Source & filters",
       body: () =>
-        sel("source", "Source", [["library", "Whole library"], ["context", "Current page (performer/tag/…)"]]) +
+        sel("source", "Source", [["library", "Whole library"], ["context", "Current page (performer/tag/…)"], ["playlist", "A playlist (from Stash UI)"]]) +
+        '<div class="ms-cond-src" data-src="playlist">' + sel("playlist", "Playlist", [["", "–"]]) +
+        hint("Stash UI's smart playlists: set filters in Scenes or Images there and press “Save as playlist”. The playlist decides – the filters below don't apply.") + "</div>" +
+        '<div class="ms-cond-src" data-src="filters">' +
         hint("“Current page” uses the performer, tag, studio, gallery or group page you start from. On tag pages, your own tags always all have to match.") +
         tagBox("includeTags", "Only with tags") +
         chk("tagMatchAll", "All tags must match") +
         tagBox("excludeTags", "Exclude tags") +
+        tagBox("perfs", "Only with performers", "performer") +
+        chk("perfMatchAll", "All performers must be in it") +
         sel("minRating", "Minimum rating", [[0, "any"], [1, "★"], [2, "★★"], [3, "★★★"], [4, "★★★★"], [5, "★★★★★"]], true) +
-        chk("favPerformers", "Only with favorite performers"),
+        chk("favPerformers", "Only with favorite performers") +
+        sel("maxRes", "Resolution up to", [["any", "any"], ["720", "720p"], ["1080", "1080p"], ["1440", "1440p"]]) +
+        sel("minLen", "Videos at least", [[0, "any length"], [60, "1 min"], [300, "5 min"], [1200, "20 min"]], true) +
+        hint("A lower resolution runs smoother – 4K videos take the most.") + "</div>",
     },
     {
       id: "folders", icon: "folder", title: "Folders",
@@ -3091,11 +3179,18 @@
     },
     bg: () => `Darkened ${S.dim} %${S.blur ? ", soft" : ""}${S.autoBgEvery ? ", rerolls itself" : ""}`,
     source: () => {
+      if (S.source === "playlist") {
+        const pl = (msPlaylists || []).find((x) => x.id === S.playlist);
+        return pl ? `Playlist “${pl.name}”` : "A playlist";
+      }
       const p = [S.source === "context" ? "Current page" : "Whole library"];
       if (S.includeTags.length) p.push(S.includeTags.length + (S.includeTags.length === 1 ? " tag" : " tags"));
       if (S.excludeTags.length) p.push("without " + S.excludeTags.length);
+      if (S.perfs.length) p.push(S.perfs.length === 1 ? S.perfs[0].name : S.perfs.length + " performers");
       if (S.minRating) p.push("from " + "★".repeat(S.minRating));
       if (S.favPerformers) p.push("favorites");
+      if (S.maxRes !== "any") p.push("up to " + S.maxRes + "p");
+      if (S.minLen) p.push("≥ " + S.minLen / 60 + " min");
       return p.join(", ");
     },
     folders: () => (S.folders.length ? S.folders.map((f) => baseName(f.path)).join(", ") : "All folders"),
@@ -3109,7 +3204,7 @@
   // Tile marked when something there narrows the selection or is additionally active
   const MODS = {
     fx: () => SUMS.fx() !== "Just zoom and fade",
-    source: () => S.source === "context" || S.includeTags.length > 0 || S.excludeTags.length > 0 || S.minRating > 0 || S.favPerformers,
+    source: () => S.source !== "library" || S.includeTags.length > 0 || S.excludeTags.length > 0 || S.perfs.length > 0 || S.minRating > 0 || S.favPerformers || S.maxRes !== "any" || S.minLen > 0,
     folders: () => S.folders.length > 0,
     rg: () => S.rgPct > 0,
     beat: () => S.beatSync,
@@ -3263,6 +3358,14 @@
 
     el.querySelectorAll(".ms-tags").forEach(initTagBox);
     el.querySelectorAll(".ms-folders").forEach(initFolderBox);
+    loadMsPlaylists().then((list) => {
+      const box = el.querySelector('[data-key="playlist"]');
+      if (!box) return;
+      box.innerHTML = list.length ? list.map((p) => `<option value="${esc(p.id)}">${esc(p.name)} (${p.kind === "image" ? "images" : "scenes"})</option>`).join("") : '<option value="">No playlists yet</option>';
+      if (S.source === "playlist" && list.length && !list.some((p) => p.id === S.playlist)) setSetting("playlist", list[0].id);
+      box.value = S.playlist;
+      syncPanel();
+    });
     el.querySelectorAll(".ms-rgpick").forEach(initRgPickBox);
     renderPresets();
     syncPanel();
@@ -3321,6 +3424,8 @@
     sn.classList.toggle("ms-none", !S.songName);
     const rb = panel.el.querySelector("[data-rb]");
     rb.textContent = document.getElementById("stash-background-style") || remoteActive() ? "" : "plugin not active";
+    // Source: a playlist decides on its own – then the filters are hidden
+    panel.el.querySelectorAll(".ms-cond-src").forEach((c) => (c.hidden = (c.dataset.src === "playlist") !== (S.source === "playlist")));
     updateOutputs();
   }
 
@@ -3365,14 +3470,14 @@
       }
       timer = setTimeout(async () => {
         try {
-          const d = await gql(
-            `query($f: FindFilterType) { findTags(filter: $f) { tags { id name image_count scene_count } } }`,
-            { f: { q, per_page: 8 } }
-          );
-          results = d.findTags.tags;
+          const perf = box.dataset.what === "performer";
+          const d = perf
+            ? await gql(`query($f: FindFilterType) { findPerformers(filter: $f) { performers { id name image_count scene_count } } }`, { f: { q, per_page: 8 } })
+            : await gql(`query($f: FindFilterType) { findTags(filter: $f) { tags { id name image_count scene_count } } }`, { f: { q, per_page: 8 } });
+          results = perf ? d.findPerformers.performers : d.findTags.tags;
           sugg.innerHTML = results.length
             ? results.map((t, i) => `<div class="ms-sug" data-i="${i}">${esc(t.name)}<small>${t.image_count} I · ${t.scene_count} V</small></div>`).join("")
-            : '<div class="ms-sug ms-none">No tags found</div>';
+            : `<div class="ms-sug ms-none">${perf ? "No performers found" : "No tags found"}</div>`;
           sugg.hidden = false;
         } catch (e) {
           console.error("[MediaStorm]", e);

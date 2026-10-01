@@ -138,7 +138,7 @@ Technical notes:
 
 1. **Endless mode**: when the maximum is reached, the oldest items are replaced instead of stopping.
 2. **Layouts**: eight layouts, see above. Switch live with animation.
-3. **Source & filters**: whole library or current page (performer/tag/studio/gallery/group), include/exclude tags with autocomplete, minimum rating, favorite performers only.
+3. **Source & filters**: whole library, current page (performer/tag/studio/gallery/group) or **a playlist** (one of Stash UI's smart playlists – it decides on its own); include/exclude tags with autocomplete (all of them or any of them), **performers** (all or any), minimum rating, favorite performers only, **resolution up to** 720p/1080p/1440p (lower runs smoother) and **videos at least** 1/5/20 min.
 4. **Sound modes**: all videos, only under the mouse, only the newest video, muted.
 5. **Focus & mouse**: click shows an item big, drag moves, mouse wheel scales, right-click removes, Ctrl- or middle-click opens in Stash.
 6. **Ken Burns effect** on images, **random start point** in videos.
