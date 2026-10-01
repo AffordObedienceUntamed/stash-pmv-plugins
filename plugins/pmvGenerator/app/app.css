@@ -1318,3 +1318,28 @@ a.kb-fsl-row:hover { background: var(--bg-3); }
 .kb-fsv-full { display: inline-flex; align-items: center; gap: 6px; color: var(--text-2); font: 400 12.5px/1.2 var(--f-label); cursor: pointer; }
 .kb-fsp-tagbox { display: inline-flex; align-items: center; gap: 8px; }
 .kb-fsp-tagbox .kb-field { width: 190px; }
+
+/* Advanced rating */
+.kb-adv .kb-drawer-body { display: flex; flex-direction: column; gap: 10px; }
+.kb-adv-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; font: 500 14px/1.3 var(--f-label); }
+.kb-adv-badge { padding: 3px 9px; border-radius: 999px; color: #1b1400; font: 700 11.5px/1.2 var(--f-label); background: #e3b341; }
+.kb-adv-group { display: flex; flex-direction: column; gap: 6px; }
+.kb-adv-row { display: grid; grid-template-columns: minmax(0, 1fr) auto 28px 24px; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; background: var(--bg-2); }
+.kb-adv-row.is-unrated { box-shadow: inset 3px 0 0 #e3b341; }
+.kb-adv-row b { overflow: hidden; font: 600 14px/1.25 var(--f-text); white-space: nowrap; text-overflow: ellipsis; }
+.kb-adv-stars { display: inline-flex; gap: 2px; }
+.kb-adv-star { padding: 0 2px; border: 0; color: var(--faint); font-size: 22px; line-height: 1; background: none; cursor: pointer; transition: transform .12s; }
+.kb-adv-star:hover { transform: scale(1.2); }
+.kb-adv-star.is-on { color: #f0b84b; }
+.kb-adv-zero, .kb-adv-clear { height: 24px; border: 1px solid var(--bg-3); border-radius: 6px; color: var(--text-2); font: 600 12px/1 var(--f-label); background: none; cursor: pointer; }
+.kb-adv-zero.is-on { color: var(--text); border-color: var(--faint); background: var(--bg-3); }
+.kb-adv-clear[hidden] { display: none; }
+.kb-adv-detail { padding: 8px 10px; border-radius: 8px; background: var(--bg-2); font: 400 13px/1.45 var(--f-label); }
+.kb-adv-detail summary { cursor: pointer; font-weight: 600; }
+.kb-adv-detail p { margin: 6px 0 0; }
+.kb-adv-detail small { color: var(--faint); }
+.kb-adv-ghead { display: grid; grid-template-columns: minmax(0, 1fr) 70px auto auto auto; gap: 6px; align-items: center; }
+.kb-adv-crit { display: grid; grid-template-columns: 20px minmax(0, 1.1fr) 70px minmax(0, 1.4fr) auto auto auto; gap: 6px; align-items: center; }
+.kb-adv-mini { width: 26px; height: 26px; border: 1px solid var(--bg-3); border-radius: 6px; color: var(--text-2); background: none; cursor: pointer; }
+.kb-adv-set .kb-fsp-h { margin: 12px 0 2px; }
+.kb-adv-set .kb-adv-group { padding: 8px; border: 1px solid var(--bg-3); border-radius: 10px; }

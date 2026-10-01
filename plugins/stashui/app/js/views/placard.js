@@ -39,6 +39,7 @@ export function placardHtml(kind, x) {
       <div class="kb-plc-acts">
         <div data-rate>${starsHtml(x.rating100, true)}</div>
         <button class="kb-plc-btn${fav ? " is-on" : ""}" data-fav title="${t("Favorite (H)")}"><span class="kb-dotmini"></span>${fav ? t("Favorite") : t("Add to favorites")}</button>
+        ${kind === "scene" ? `<button class="kb-plc-btn" data-advrate title="${t("Rate by several criteria – Stash's rating follows")}">★+ ${t("Detailed")}</button>` : ""}
         <button class="kb-plc-btn" data-o title="${t("O counter (O), right-click subtracts one")}">${icon("drop")}<span data-ocount>${x.o_counter || 0}</span></button>
       </div>
       ${kind === "scene" ? `<p class="kb-plc-meta">${x.play_count ? t("Watched {what}, last {when}", { what: plural(x.play_count, "time", "times"), when: fmtAgo(x.last_played_at) }) : t("Never watched to the end")}</p>` : ""}
@@ -72,6 +73,15 @@ export function bindPlacard(host, kind, getItem, { refresh, onDeleted, goFolder,
     try {
       const r = ratingClick(e, x.rating100);
       if (r !== undefined) return rate(r);
+      if (e.target.closest("[data-advrate]")) {
+        const { openAdvRating } = await import("../advrating.js");
+        return openAdvRating(kind, x, {
+          onChange: (it) => {
+            host.querySelector("[data-rate]").innerHTML = starsHtml(it.rating100, true);
+            refresh && refresh();
+          },
+        });
+      }
       if (e.target.closest("[data-fav]")) return fav();
       if (e.target.closest("[data-o]")) return o(1);
       if (e.target.closest("[data-edit]")) return openEditor(kind, [{ id: x.id }], { onSaved: refresh, onDeleted });

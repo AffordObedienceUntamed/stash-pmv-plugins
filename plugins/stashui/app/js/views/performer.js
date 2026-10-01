@@ -55,6 +55,7 @@ export async function render(main, params, query) {
         <div class="kb-plc-acts">
           <div data-rate>${starsHtml(p.rating100, true)}</div>
           <button class="kb-plc-btn${p.favorite ? " is-on" : ""}" data-fav><span class="kb-dotmini"></span>${p.favorite ? t("Favorite") : t("Add to favorites")}</button>
+          <button class="kb-plc-btn" data-advrate title="${t("Rate by several criteria – Stash's rating follows")}">★+ ${t("Detailed")}</button>
           ${p.o_counter ? `<span class="kb-plc-btn is-static" title="${t("O counter")}">${icon("drop")}${p.o_counter}</span>` : ""}
           <button class="kb-plc-btn" data-edit>${icon("edit")}${t("Edit")}</button>
         </div>
@@ -161,6 +162,10 @@ export async function render(main, params, query) {
       errorToast(err, "Rating");
     }
   };
+  main.querySelector("[data-advrate]").addEventListener("click", async () => {
+    const { openAdvRating } = await import("../advrating.js");
+    openAdvRating("performer", p, { onChange: (it) => (main.querySelector("[data-rate]").innerHTML = starsHtml(it.rating100, true)) });
+  });
   main.querySelector("[data-rate]").addEventListener("click", (e) => {
     const v = ratingClick(e, p.rating100);
     if (v !== undefined) ratePerf(v);

@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.42.0",
+    date: "2026-10-02",
+    items: [
+      ["ui", "Advanced rating: “★+ Detailed” next to the stars of a scene or performer opens a list of criteria (scenes: Production Quality, Chemistry, Performance …; performers: Face, Body, Technique … in groups) – rate each from 0 to 5 and Stash's own rating follows as the weighted result, snapped to your rating precision. The scores are tags (“Chemistry ★: 4” under “Advanced Rating System” / “Advanced Performer Rating”), so they work everywhere in Stash. “Customize …” edits groups, criteria, weights and tooltips, makes the tags, and can recalculate every rating. Idea: the Advanced Rating plugin on discourse.stashapp.cc (same tag names).", "高级评分：场景或演员星级旁的“★+ 详细”打开评分项列表（场景：制作质量、默契、表现 …；演员：脸、身材、技巧 … 按分组）——每项评 0 到 5 分，Stash 自己的评分随之按加权结果更新，并取整到你设置的评分精度。分数以标签保存（“Chemistry ★: 4”，位于“Advanced Rating System”/“Advanced Performer Rating”之下），因此在 Stash 中随处可用。“自定义 …”可编辑分组、评分项、权重和提示，创建标签，并可重新计算所有评分。灵感来自 discourse.stashapp.cc 上的 Advanced Rating 插件（标签名称相同）。"],
+    ],
+  },
+  {
     v: "3.41.0",
     date: "2026-10-02",
     items: [
