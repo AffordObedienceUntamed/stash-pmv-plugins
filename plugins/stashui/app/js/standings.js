@@ -37,12 +37,15 @@ export async function bestMarkers(force) {
 }
 export const bestMarkersNow = () => (cache ? best || (best = topOf(cache.data.marker)) : null);
 
-// Scenes by standing, best first (only judged ones) → [{ id, elo, games }]
+// The scenes that did well (3+ matches, at least as many wins as losses), best first → [{ id, elo, games }]
+// (too few of them: the best judged ones anyway, at least 4)
 export async function rankedScenes(limit = 60) {
   const data = await loadStandings();
-  return Object.entries(data.scene || {})
+  const judged = Object.entries(data.scene || {})
     .filter(([, r]) => r[1] + r[2] >= MIN_GAMES)
-    .sort((a, b) => b[1][0] - a[1][0])
+    .sort((a, b) => b[1][0] - a[1][0]);
+  const good = judged.filter(([, r]) => r[1] >= r[2]);
+  return (good.length >= 4 ? good : judged.slice(0, 4))
     .slice(0, limit)
     .map(([id, r]) => ({ id, elo: r[0], games: r[1] + r[2] }));
 }

@@ -17,7 +17,7 @@ import { LAYOUTS, slotsFor, aspectOfGroup, Compositor } from "../pmvfx.js";
 import { Playlist, fileTrack, filesFromDrop, isSongFile } from "../music.js";
 import { liveConnect, liveStatus, songTitle, LiveAudio } from "../live.js";
 import { stateOf, filterOf, loadPlaylists } from "../playlists.js";
-import { bestMarkers } from "../standings.js";
+import { bestMarkers, rankedScenes } from "../standings.js";
 import { plexState, plexForget, plexSignIn, plexServers, plexConnect, PlexClient, plexTracks, PlexFollow } from "../plex.js";
 
 // config.js can override these (e.g. open saved scenes in Stash UI when that's where you came from).
@@ -33,7 +33,7 @@ const DEFAULTS = {
   plexSync: 0, // following Plex: cuts shifted by this (seconds)
   plexSyncs: {}, // … remembered per Plex player (phone over Bluetooth ≠ PC) and per listened app
   liveApp: "Spotify", // live: the app the generator listens to
-  clipFrom: "filter", // filter = the filters below | playlist = a smart playlist from Stash UI
+  clipFrom: "filter", // filter = the filters below | playlist = a smart playlist from Stash UI | versus = your Versus top | watched = most watched lately
   clipList: "", // its id
   source: "scene",
   folders: [], // [{ id, path }] – empty = all folders
@@ -295,7 +295,7 @@ export function render(main) {
         <h2><span class="kb-pmvg-no">2</span>Clips</h2>
         <div class="kb-pmvg-from">
           <span class="kb-lab-t">Clips from</span>
-          <div class="kb-seg" data-seg="clipFrom"><button type="button" data-v="filter">These filters</button><button type="button" data-v="playlist">A playlist</button></div>
+          <div class="kb-seg" data-seg="clipFrom"><button type="button" data-v="filter">These filters</button><button type="button" data-v="playlist">A playlist</button><button type="button" data-v="versus" title="Your best-placed scenes in Versus (3 matches or more)">Versus top</button><button type="button" data-v="watched" title="The scenes you watched most in the last 30 days">Most watched</button></div>
           <select class="kb-field" data-cliplist aria-label="Playlist" hidden></select>
           <p class="kb-hint" data-clipnote hidden></p>
         </div>
@@ -521,8 +521,9 @@ export function render(main) {
     const src = { scene: "Scenes", image: "Images", both: "Scenes + images" }[S.source];
     const where = S.folders.length ? `from ${S.folders.length === 1 ? "1 folder" : S.folders.length + " folders"}` : "from all folders";
     const plName = S.clipFrom === "playlist" ? ((typeof pls !== "undefined" && pls.find((p) => p.id === S.clipList)) || {}).name : null;
+    const fromName = { versus: "Your Versus top scenes", watched: "Your most watched scenes" }[S.clipFrom];
     $("[data-sum]").innerHTML = [
-      `<li><b>Clips</b>${S.rgPct >= 100 ? "RedGifs only" : plName ? `Playlist “${esc(plName)}”` : `${esc(src)} ${esc(where)}${S.tags.length ? ` · ${S.tags.length} Tags${S.tags.length > 1 && S.tagMode === "any" ? " (any)" : ""}` : ""}${S.perfs.length ? ` · ${S.perfs.length} ${S.perfs.length === 1 ? "performer" : "performers"}` : ""}${S.fav ? " · favorites only" : ""}${+S.minRating ? ` · ★${S.minRating / 20}+` : ""}${+S.minLen ? ` · ≥ ${S.minLen / 60} min` : ""}${S.maxRes !== "any" ? ` · ≤ ${S.maxRes}p` : ""}`}${S.rgPct > 0 && S.rgPct < 100 ? ` · RedGifs ${S.rgPct} %` : ""}${S.rgPct > 0 ? ` (${esc(S.rgPicks.length ? S.rgPicks.map(rg.pickLabel).join(", ") : "trending")})` : ""}</li>`,
+      `<li><b>Clips</b>${S.rgPct >= 100 ? "RedGifs only" : fromName ? fromName : plName ? `Playlist “${esc(plName)}”` : `${esc(src)} ${esc(where)}${S.tags.length ? ` · ${S.tags.length} Tags${S.tags.length > 1 && S.tagMode === "any" ? " (any)" : ""}` : ""}${S.perfs.length ? ` · ${S.perfs.length} ${S.perfs.length === 1 ? "performer" : "performers"}` : ""}${S.fav ? " · favorites only" : ""}${+S.minRating ? ` · ★${S.minRating / 20}+` : ""}${+S.minLen ? ` · ≥ ${S.minLen / 60} min` : ""}${S.maxRes !== "any" ? ` · ≤ ${S.maxRes}p` : ""}`}${S.rgPct > 0 && S.rgPct < 100 ? ` · RedGifs ${S.rgPct} %` : ""}${S.rgPct > 0 ? ` (${esc(S.rgPicks.length ? S.rgPicks.map(rg.pickLabel).join(", ") : "trending")})` : ""}</li>`,
       `<li><b>Selection</b>${clipOpts.length ? esc(clipOpts.join(", ")) : "random"}</li>`,
       `<li><b>Cutting</b>${esc(tabSum.cut)}</li>`,
       `<li><b>Effects</b>${fxOn} on${S.look !== "none" ? " · look " + esc(look) : ""}</li>`,
@@ -761,7 +762,7 @@ export function render(main) {
     try {
       const spec = await clipSpec(S);
       const kinds = spec.kinds;
-      const n = await Promise.all(kinds.map((k) => countItems(k, spec.filter(k))));
+      const n = spec.ids ? [spec.ids.length] : await Promise.all(kinds.map((k) => countItems(k, spec.filter(k))));
       if (seq !== countSeq || !alive) return;
       const total = n.reduce((a, b) => a + b, 0);
       el.textContent = kinds.map((k, i) => `${n[i]} ${k === "scene" ? "scenes" : "images"}`).join(" + ") + " match" + (total < 8 ? " – rather few, clips will repeat" : "");
@@ -778,10 +779,13 @@ export function render(main) {
     const fromList = S.clipFrom === "playlist";
     const sel = $("[data-cliplist]");
     sel.hidden = !fromList;
-    $("[data-filtercols]").classList.toggle("is-dim", fromList);
+    $("[data-filtercols]").classList.toggle("is-dim", S.clipFrom !== "filter");
     const note = $("[data-clipnote]");
-    note.hidden = !fromList || pls.length > 0;
-    note.innerHTML = "No playlists yet – in Stash UI, set filters in Scenes or Images and press “Save as playlist”.";
+    note.hidden = !(fromList && !pls.length) && S.clipFrom !== "versus" && S.clipFrom !== "watched";
+    note.innerHTML =
+      S.clipFrom === "versus" ? "A remix of your favorites: the scenes that won their place in Versus (3 matches or more), the best first – and their best moments."
+      : S.clipFrom === "watched" ? "A remix of what you watched most in the last 30 days (or of all time, if that's too little)."
+      : "No playlists yet – in Stash UI, set filters in Scenes or Images and press “Save as playlist”.";
     sel.innerHTML = pls.length ? pls.map((p) => `<option value="${esc(p.id)}">${esc(p.name)} (${p.kind === "image" ? "images" : "scenes"})</option>`).join("") : `<option value="">–</option>`;
     if (fromList && pls.length && !pls.some((p) => p.id === S.clipList)) {
       S.clipList = pls[0].id;
@@ -1722,6 +1726,22 @@ async function spriteSpots(s, dur) {
 
 // Which clips: the filters on the page, or a smart playlist → { kinds, filter(kind) }
 async function clipSpec(S) {
+  if (S.clipFrom === "versus") {
+    // the scenes that won their place in Versus – the best first (shown as a random mix)
+    const top = await rankedScenes(80);
+    if (top.length < 4) throw new Error("Not enough Versus results yet – play some rounds with scenes there first (3 matches each)");
+    return { kinds: ["scene"], filter: () => ({ duration: { value: 4, modifier: "GREATER_THAN" } }), ids: top.map((x) => x.id) };
+  }
+  if (S.clipFrom === "watched") {
+    // most played in the last 30 days; too few → of all time
+    const q = `query($f: FindFilterType, $x: SceneFilterType) { findScenes(filter: $f, scene_filter: $x) { scenes { id } } }`;
+    const f = { per_page: 60, sort: "play_count", direction: "DESC" };
+    let d = await gql(q, { f, x: { play_count: { value: 0, modifier: "GREATER_THAN" }, last_played_at: { value: new Date(Date.now() - 30 * 864e5).toISOString(), modifier: "GREATER_THAN" } } });
+    if (d.findScenes.scenes.length < 8) d = await gql(q, { f, x: { play_count: { value: 0, modifier: "GREATER_THAN" } } });
+    const ids = d.findScenes.scenes.map((x) => x.id);
+    if (!ids.length) throw new Error("Nothing watched yet");
+    return { kinds: ["scene"], filter: () => ({ duration: { value: 4, modifier: "GREATER_THAN" } }), ids };
+  }
   if (S.clipFrom === "playlist") {
     const pl = (await loadPlaylists()).find((p) => p.id === S.clipList);
     if (!pl) throw new Error("Pick a playlist – or save one in Stash UI first");
@@ -2147,9 +2167,9 @@ class Generator {
     const lists = await Promise.all(
       kinds.map(async (k) => {
         const q = k === "scene"
-          ? `query($f: FindFilterType, $x: SceneFilterType) { r: findScenes(filter: $f, scene_filter: $x) { count scenes { id title paths { stream sprite vtt } files { duration width height basename } scene_markers { id seconds } performers { id } } } }`
+          ? `query($f: FindFilterType, $x: SceneFilterType, $ids: [ID!]) { r: findScenes(filter: $f, scene_filter: $x, ids: $ids) { count scenes { id title paths { stream sprite vtt } files { duration width height basename } scene_markers { id seconds } performers { id } } } }`
           : `query($f: FindFilterType, $x: ImageFilterType) { r: findImages(filter: $f, image_filter: $x) { count images { id title paths { image } visual_files { __typename ... on ImageFile { width height basename } } performers { id } } } }`;
-        const d = await gql(q, { f: { per_page: 60, page: this.page[k], sort: "random_" + this.seed }, x: spec.filter(k) });
+        const d = await gql(q, Object.assign({ f: { per_page: 60, page: this.page[k], sort: "random_" + this.seed }, x: spec.filter(k) }, spec.ids && k === "scene" ? { ids: spec.ids } : {}));
         const items = k === "scene" ? d.r.scenes : d.r.images;
         // Reached the end → start over with a new random order
         this.page[k] = this.page[k] * 60 >= d.r.count ? 1 : this.page[k] + 1;
