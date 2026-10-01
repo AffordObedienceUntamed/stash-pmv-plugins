@@ -3,6 +3,9 @@
 import { esc, icon, fmtDuration, fmtRes, fmtDate, fmtBytes, invNo, plural, store } from "./ui.js";
 import { t } from "./i18n.js";
 
+// Stash files animated GIFs as video files (codec "gif") but serves the GIF itself: those are images
+export const isGif = (vf) => !!vf && vf.__typename === "VideoFile" && (/gif/i.test(vf.format || "") || /gif/i.test(vf.video_codec || "") || /\.gif$/i.test(vf.basename || vf.path || ""));
+
 export function toPiece(kind, x, favId) {
   const tags = x.tags || [];
   const fav = !!favId && tags.some((t) => t.id === favId);
@@ -25,16 +28,18 @@ export function toPiece(kind, x, favId) {
   }
   if (kind === "image") {
     const vf = (x.visual_files || [])[0] || {};
-    const isVid = vf.__typename === "VideoFile";
+    const gif = isGif(vf);
+    const isVid = vf.__typename === "VideoFile" && !gif;
     return {
       kind, id: x.id, raw: x, fav,
       title: x.title || vf.basename || t("Image {id}", { id: x.id }),
       w: vf.width || 3, h: vf.height || 4,
       thumb: x.paths && x.paths.thumbnail,
-      preview: isVid ? x.paths.preview || x.paths.image : null,
+      preview: isVid ? x.paths.preview || x.paths.image : gif ? x.paths.image : null,
+      previewImg: gif, // the GIF itself moves on hover (the thumbnail is a still)
       isVid,
-      stamp: isVid ? (vf.duration ? fmtDuration(vf.duration) : t("Clip")) : "",
-      meta: [isVid ? t("Clip") : t("Image"), vf.width ? `${vf.width} × ${vf.height}` : "", fmtBytes(vf.size)].filter(Boolean).join(", "),
+      stamp: isVid ? (vf.duration ? fmtDuration(vf.duration) : t("Clip")) : gif ? "GIF" : "",
+      meta: [isVid ? t("Clip") : gif ? "GIF" : t("Image"), vf.width ? `${vf.width} × ${vf.height}` : "", fmtBytes(vf.size)].filter(Boolean).join(", "),
       rating: x.rating100 || 0,
     };
   }
@@ -299,6 +304,17 @@ export class Hang {
   }
 
   startPreview(n, p) {
+    if (p.previewImg) {
+      const img = document.createElement("img");
+      img.className = "kb-piece-anim";
+      img.alt = "";
+      img.onload = () => n.classList.add("is-previewing");
+      img.src = p.preview;
+      n.appendChild(img);
+      this.previewEl = img;
+      this.previewNode = n;
+      return;
+    }
     const v = document.createElement("video");
     const vol = store.get("player", {}).volume;
     v.muted = !store.get("previewSound", true) || store.get("player", {}).muted === true;
@@ -320,9 +336,11 @@ export class Hang {
   stopPreview() {
     clearTimeout(this.previewTimer);
     if (this.previewEl) {
-      this.previewEl.pause();
-      this.previewEl.removeAttribute("src");
-      this.previewEl.load();
+      if (this.previewEl.pause) {
+        this.previewEl.pause();
+        this.previewEl.removeAttribute("src");
+        this.previewEl.load();
+      }
       this.previewEl.remove();
       this.previewNode && this.previewNode.classList.remove("is-previewing");
       this.previewEl = this.previewNode = null;

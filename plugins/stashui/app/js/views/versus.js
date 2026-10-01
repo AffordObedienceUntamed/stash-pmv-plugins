@@ -9,6 +9,7 @@ import { t } from "../i18n.js";
 import { gql } from "../api.js";
 import { tagPicker } from "./tagpicker.js";
 import { go } from "../main.js";
+import { isGif } from "../pieces.js";
 
 const KINDS = {
   scene: {
@@ -20,7 +21,7 @@ const KINDS = {
   },
   image: {
     label: "Images",
-    query: `query($f: FindFilterType, $x: ImageFilterType, $ids: [ID!]) { r: findImages(filter: $f, image_filter: $x, ids: $ids) { count images { id title rating100 visual_files { __typename ... on ImageFile { width height basename } ... on VideoFile { width height basename } } paths { thumbnail image } } } }`,
+    query: `query($f: FindFilterType, $x: ImageFilterType, $ids: [ID!]) { r: findImages(filter: $f, image_filter: $x, ids: $ids) { count images { id title rating100 visual_files { __typename ... on ImageFile { width height basename } ... on VideoFile { width height basename format video_codec } } paths { thumbnail image } } } }`,
     list: "images",
     bulk: "mutation($i: BulkImageUpdateInput!) { bulkImageUpdate(input: $i) { id } }",
     open: (id) => "image/" + id,
@@ -255,7 +256,7 @@ export function render(main, params = {}) {
         ? `<video src="${esc(x.paths.stream)}#t=${Math.round(dur * 0.15)}" poster="${esc(x.paths.screenshot || "")}" data-dur="${dur}" data-fallback="${esc(x.paths.preview || "")}" muted autoplay playsinline preload="auto"></video>`
         : k === "scene" && x.paths.preview
         ? `<video src="${esc(x.paths.preview)}" poster="${esc(x.paths.screenshot || "")}" muted loop autoplay playsinline></video>`
-        : k === "image" && vf.__typename === "VideoFile"
+        : k === "image" && vf.__typename === "VideoFile" && !isGif(vf)
           ? `<video src="${esc(x.paths.image)}" poster="${esc(x.paths.thumbnail || "")}" muted loop autoplay playsinline></video>`
           : `<img src="${esc(thumbOf(k, x) || "")}" alt="" loading="eager"${k === "image" && x.paths.image ? ` data-full="${esc(x.paths.image)}"` : ""}>`;
     return `<button type="button" class="kb-vs-card" data-side="${i}">

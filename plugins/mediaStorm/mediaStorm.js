@@ -375,7 +375,7 @@
       images {
         id title
         paths { image thumbnail }
-        visual_files { __typename ... on ImageFile { width height } ... on VideoFile { width height } }
+        visual_files { __typename ... on ImageFile { width height } ... on VideoFile { width height format video_codec } }
       }
     }
   }`;
@@ -393,7 +393,10 @@
 
   function normImage(x) {
     const vf = (x.visual_files || [])[0] || {};
-    const isVid = vf.__typename === "VideoFile"; // animated images (webm/mp4 as an image)
+    // animated images (webm/mp4 as an image) play as video – but a GIF (Stash files it as a video file
+    // with codec "gif", yet serves the GIF) is an image that moves by itself
+    const gif = vf.__typename === "VideoFile" && (/gif/i.test(vf.format || "") || /gif/i.test(vf.video_codec || ""));
+    const isVid = vf.__typename === "VideoFile" && !gif;
     const p = x.paths || {};
     return {
       kind: "image",
@@ -403,7 +406,7 @@
       w: vf.width || 3,
       h: vf.height || 4,
       isVid,
-      src: isVid || S.imageQuality === "full" ? p.image : p.thumbnail,
+      src: isVid || gif || S.imageQuality === "full" ? p.image : p.thumbnail,
       alt: p.thumbnail,
       href: "/images/" + x.id,
     };

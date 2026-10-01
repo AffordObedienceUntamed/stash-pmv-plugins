@@ -26,7 +26,7 @@ export const F_SCENE = `id title details date rating100 o_counter play_count pla
   galleries { id title }`;
 
 export const F_IMAGE = `id title details date rating100 o_counter organized created_at urls
-  visual_files { __typename ... on ImageFile { id width height size path basename } ... on VideoFile { id width height size path basename duration } }
+  visual_files { __typename ... on ImageFile { id width height size path basename } ... on VideoFile { id width height size path basename duration format video_codec } }
   paths { thumbnail image preview }
   tags { id name }
   performers { id name image_path }

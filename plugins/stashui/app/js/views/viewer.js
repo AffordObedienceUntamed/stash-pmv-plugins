@@ -1,6 +1,7 @@
 // Image viewer: next/previous through the list, zoom & pan, slideshow, placard with details.
 
 import { esc, icon, store, toast, errorToast } from "../ui.js";
+import { isGif } from "../pieces.js";
 import { t } from "../i18n.js";
 import { getImage } from "../api.js";
 import { app, go, closeOverlay } from "../main.js";
@@ -23,7 +24,7 @@ export async function render(host, params) {
   };
   const posNow = () => (inQueue ? store.get("queuePos", 0) : list().findIndex((p) => p.id === x.id));
   const vf = x.visual_files[0] || {};
-  const isVid = vf.__typename === "VideoFile";
+  const isVid = vf.__typename === "VideoFile" && !isGif(vf); // a GIF is an image (it moves by itself)
 
   host.innerHTML = `
     <div class="kb-stage kb-viewer${prefs.panel ? " has-panel" : ""}" tabindex="-1">

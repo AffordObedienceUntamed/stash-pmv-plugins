@@ -388,6 +388,8 @@ a.kb-chip:hover, button.kb-chip:hover { background: rgba(180, 140, 255, .28); }
 .kb-piece > img.is-loaded { opacity: 1; }
 .kb-piece > video { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
 .kb-piece.is-previewing > video { opacity: 1; }
+.kb-piece > .kb-piece-anim { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
+.kb-piece.is-previewing > .kb-piece-anim { opacity: 1; }
 .kb-piece:hover { box-shadow: 0 0 0 2px var(--pink); }
 .kb-piece:hover > img { transform: scale(1.03); }
 .kb-piece:focus-visible { outline: 2px solid var(--shine); outline-offset: 3px; }
