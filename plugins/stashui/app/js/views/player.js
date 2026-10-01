@@ -1078,9 +1078,12 @@ export async function render(host, params, query = {}) {
       return hit / Math.max(w.length, mine.size) + (fl.name.toLowerCase().replace(/\.funscript$/, "") === file.toLowerCase().replace(/\.[^.]+$/, "") ? 1 : 0);
     };
     const short = (dir) => dir.split(/[\\/]/).filter(Boolean).slice(-2).join(" / ");
-    const row = (fl) => `<button type="button" class="kb-fsp-row${current && fl.path === current ? " is-on" : ""}" data-fspath="${esc(fl.path)}">
+    // "in use": the file you picked (kept in Stash) – not the copy next to the video, which is hidden
+    let inUse = null;
+    const same = (a, b) => !!a && !!b && a.replace(/\\/g, "/").toLowerCase() === b.replace(/\\/g, "/").toLowerCase();
+    const row = (fl) => `<button type="button" class="kb-fsp-row${same(fl.path, inUse) ? " is-on" : ""}" data-fspath="${esc(fl.path)}">
         ${icon("plug")}<span><b>${esc(fl.name.replace(/\.funscript$/i, ""))}</b><small>${esc(short(fl.dir))}${fl.paired ? ` · ${t("belongs to a video")}` : ""} · ${Math.max(1, Math.round(fl.size / 1024))} KB</small></span>
-        ${current && fl.path === current ? `<em>${t("in use")}</em>` : ""}</button>`;
+        ${same(fl.path, inUse) ? `<em>${t("in use")}</em>` : ""}</button>`;
     function paint() {
       const q = el.querySelector("[data-fsq]").value.trim().toLowerCase();
       const list = el.querySelector("[data-fslist]");
@@ -1103,7 +1106,14 @@ export async function render(host, params, query = {}) {
     try {
       const r = await runBackend({ mode: "funscript_list", scene_id: x.id });
       current = r.current;
-      files = (r.files || []).map((fl) => Object.assign(fl, { s: score(fl) })).sort((p, q) => q.s - p.s || p.name.localeCompare(q.name));
+      // picked from the library before → that file is "in use", and the copy next to the video isn't listed;
+      // otherwise (put there by hand, or “From this computer”) the copy itself is what's in use
+      const src = saved && saved.path && current && (r.files || []).some((fl) => same(fl.path, saved.path)) ? saved.path : null;
+      inUse = src || current;
+      files = (r.files || [])
+        .filter((fl) => !(src && same(fl.path, current)))
+        .map((fl) => Object.assign(fl, { s: score(fl) }))
+        .sort((p, q) => same(q.path, inUse) - same(p.path, inUse) || q.s - p.s || p.name.localeCompare(q.name));
       if (r.truncated) toast(t("Very many funscripts – only the first 20 000 are listed"));
       paintCurrent();
       paint();
@@ -1117,7 +1127,7 @@ export async function render(host, params, query = {}) {
       try {
         if (r) {
           const path = r.dataset.fspath;
-          if (current && path === current) return dr.close();
+          if (same(path, inUse)) return dr.close();
           if (current && !(await confirmDialog({ title: t("Use this funscript instead?"), text: t("The one in use now is kept next to the video as .funscript.bak."), ok: t("Use it") })).ok) return;
           r.classList.add("is-busy");
           await runBackend({ mode: "funscript_save", scene_id: x.id, source: path });

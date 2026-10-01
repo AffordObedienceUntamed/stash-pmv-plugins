@@ -4,6 +4,11 @@
 
 export const CHANGES = [
   {
+    v: "3.35.2",
+    date: "2026-10-01",
+    items: [["ui", "Funscript list: the script you picked last is the one marked “in use” – the copy next to the video isn't listed as an extra entry any more.", "Funscript 列表：标记为“使用中”的是你最后选择的脚本——视频旁边的副本不再作为单独条目列出。"]],
+  },
+  {
     v: "3.35.1",
     date: "2026-10-01",
     items: [
