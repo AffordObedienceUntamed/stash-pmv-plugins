@@ -20,6 +20,8 @@ PATTERNS = [
     r"\bt\(\s*" + STR,  # t("…")
     r"\bplural\([^,]+,\s*" + STR + r",\s*" + STR,  # plural(n, "one", "many")
     r"\berrorToast\([^,]+,\s*" + STR,  # errorToast(e, "What")
+    r"\blogEvent\(\s*\"[^\"]*\",\s*\"[^\"]*\",\s*" + STR,  # logEvent(area, level, "text with {placeholders}")
+    r"\blogEvent\([^?\n]*\?\s*" + STR + r"\s*:\s*" + STR,  # logEvent(area, level, cond ? "a" : "b")
     r"\b(?:label|group|title|text|intro):\s*" + STR,  # tables: NAV, TASKS, SECTIONS, TOOLS
 ]
 TABLE_PAIRS = r"\[\s*\"[^\"]*\",\s*" + STR + r"\s*\]"  # ["key", "Text"] in SORTS / WORKSHOP

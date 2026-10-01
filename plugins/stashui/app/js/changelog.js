@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.44.0",
+    date: "2026-10-02",
+    items: [
+      ["ui", "Event log as a floating panel (menu: Manage → Log; also the Log button in Versus): drag it by the header, resize it at the corner, fold it away – it stays open while you play or browse. It lists what Stash UI does – Versus picks (names link to the item, tiers colour-coded, wins green), funscript changes, ratings, tags and generate tasks – with filters per area, a clear button and an export as a text file in which names are left out (unless you untick “Hide names in the export”). Replaces the small Versus-only log.", "事件日志变为浮动面板（菜单：管理 → 日志；对决页面也有“日志”按钮）：拖动标题栏移动、拖拽角落调整大小、可折叠——在播放或浏览时保持打开。它列出 Stash UI 所做的事——对决选择（名称链接到条目，等级用颜色标注，胜利为绿色）、funscript 更改、评分、标签和生成任务——可按区域筛选，可清空，也可导出为文本文件（默认不含名称，可取消“导出时隐藏名称”）。取代原先仅限对决的小日志。"],
+    ],
+  },
+  {
     v: "3.43.0",
     date: "2026-10-02",
     items: [

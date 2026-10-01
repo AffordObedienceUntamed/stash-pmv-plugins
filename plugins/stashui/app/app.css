@@ -1395,3 +1395,38 @@ html.kb-glass .kb-adv-row.is-unrated { box-shadow: inset 3px 0 0 #e3b341, inset 
 html.kb-glass :is(.kb-tier, .kb-tierbar span) { backdrop-filter: none; }
 html.kb-glass :is(.kb-fsv-bar, .kb-adv-zero, .kb-adv-clear, .kb-adv-mini, .kb-vs-hist) { border-color: var(--glass-edge); }
 html.kb-glass .kb-vs-hist:hover, html.kb-glass .kb-vs-hist.is-on { background: color-mix(in srgb, var(--bg-3) 45%, transparent); }
+
+/* Event log: a floating panel (drag the header, resize at the corner) */
+.kb-evlog { position: fixed; z-index: 60; display: flex; flex-direction: column; min-width: 300px; min-height: 120px; max-width: calc(100vw - 16px); resize: both; overflow: hidden; border: 1px solid var(--bg-3); border-radius: 12px; color: var(--text); background: var(--bg-2); box-shadow: 0 18px 48px rgba(0, 0, 0, .5); }
+.kb-evlog.is-min { resize: none; min-height: 0; }
+.kb-evlog.is-min .kb-log-list, .kb-evlog.is-min .kb-log-foot { display: none; }
+.kb-log-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 8px 10px; border-bottom: 1px solid var(--bg-3); cursor: move; touch-action: none; user-select: none; }
+.kb-evlog.is-min .kb-log-head { border-bottom: 0; }
+.kb-log-head > b { display: inline-flex; align-items: center; gap: 6px; font: 700 13.5px/1 var(--f-label); }
+.kb-log-head .kb-ic { width: 16px; height: 16px; }
+.kb-log-filter { display: inline-flex; flex-wrap: wrap; gap: 3px; }
+.kb-log-filter button { padding: 3px 8px; border: 0; border-radius: 999px; color: var(--text-2); font: 600 11.5px/1.2 var(--f-label); background: none; cursor: pointer; }
+.kb-log-filter button:hover { background: var(--bg-3); }
+.kb-log-filter button.is-on { color: var(--ink); background: var(--pink); }
+.kb-log-btn { display: grid; place-items: center; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 6px; color: var(--text-2); font: 700 16px/1 var(--f-label); background: none; cursor: pointer; }
+.kb-log-btn:hover { color: var(--text); background: var(--bg-3); }
+.kb-log-btn .kb-ic { width: 15px; height: 15px; }
+.kb-log-list { display: flex; flex: 1; flex-direction: column; gap: 2px; min-height: 0; margin: 0; padding: 6px 8px; overflow: auto; list-style: none; }
+.kb-log-list li { display: grid; grid-template-columns: 62px 68px minmax(0, 1fr); gap: 8px; align-items: baseline; padding: 3px 4px; border-radius: 6px; font: 400 12.5px/1.4 var(--f-label); }
+.kb-log-list li:hover { background: var(--bg-3); }
+.kb-log-list small { color: var(--faint); font: 400 11.5px/1.4 var(--f-label); font-variant-numeric: tabular-nums; }
+.kb-log-list em { overflow: hidden; color: var(--text-2); font-style: normal; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.kb-log-list .is-win span { color: var(--ok); }
+.kb-log-list .is-loss span, .kb-log-list .is-error span { color: #d0566e; }
+.kb-log-list .is-warn span { color: #e3b341; }
+.kb-log-ref { color: #5fd0e0; text-decoration: none; }
+a.kb-log-ref:hover { text-decoration: underline; }
+.kb-log-num { color: var(--pink); font-weight: 700; font-variant-numeric: tabular-nums; }
+.kb-log-list .kb-tier { height: 17px; min-width: 20px; font-size: 11px; vertical-align: middle; }
+.kb-log-empty { grid-template-columns: 1fr !important; color: var(--faint); }
+.kb-log-foot { padding: 6px 12px; border-top: 1px solid var(--bg-3); color: var(--text-2); font: 400 12px/1.3 var(--f-label); }
+.kb-log-foot label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+@media (max-width: 700px) { .kb-evlog { left: 8px !important; right: 8px; width: auto !important; } .kb-log-list li { grid-template-columns: 54px minmax(0, 1fr); } .kb-log-list em { display: none; } }
+html.kb-glass .kb-evlog { border-color: var(--glass-edge); border-radius: 18px; background: var(--glass-shine), var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); box-shadow: var(--glass-shadow); }
+html.kb-glass .kb-log-head, html.kb-glass .kb-log-foot { border-color: var(--glass-edge); }
+html.kb-glass .kb-log-list li:hover, html.kb-glass .kb-log-btn:hover, html.kb-glass .kb-log-filter button:hover { background: color-mix(in srgb, var(--bg-3) 45%, transparent); }

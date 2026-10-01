@@ -12,6 +12,7 @@ import { similarScenes } from "../similar.js";
 import { bestMarkers, bestMarkersNow } from "../standings.js";
 import { attachHandy, interactiveConfig, saveInteractiveConfig, handyPrefs, runBackend, fsSources, rememberFs, variantChoices, rememberVariant, readVariant } from "../interactive.js";
 import { stackHtml, activeOf, heatBg, duplicatesOf } from "../fsvariants.js";
+import { logEvent } from "../eventlog.js";
 import { createVR, guessVR } from "../vr.js";
 import { videoGlow } from "../theme.js";
 import { BINS, watchRecorder, watchBins, motionBins, combine, peaks } from "../heat.js";
@@ -1243,6 +1244,7 @@ export async function render(host, params, query = {}) {
       onSaved: async (res) => {
         await loadVariants(true);
         paintVariants(variantBoxes());
+        logEvent("funscript", "info", "Edited script saved as “{name}” for {r0}", { name: res.name }, [{ k: "scene", id: x.id, name: x.title || x.id }]);
         toast(t("Saved as “{name}”", { name: res.name }), "ok", { label: t("Use it"), run: () => chooseVariant(res.path).catch((er) => errorToast(er, "Funscript")) });
       },
     });
@@ -1258,6 +1260,7 @@ export async function render(host, params, query = {}) {
     if (handy) await handy.setVariant(s.main ? null : fs);
     paintVariants(variantBoxes());
     paintTimelineHeat();
+    logEvent("funscript", "info", "Script “{name}” chosen for {r0}", { name: s.label || t("Standard") }, [{ k: "scene", id: x.id, name: x.title || x.id }]);
     toast(t("Script “{name}” – the Handy follows it from here", { name: s.label || t("Standard") }), "ok");
   }
   // duplicates among this video's scripts → set aside (never the one with the video's name)
@@ -1276,6 +1279,7 @@ export async function render(host, params, query = {}) {
     await loadVariants(true);
     paintVariants(variantBoxes());
     paintTimelineHeat();
+    logEvent("funscript", "warn", "{n} duplicate scripts set aside for {r0}", { n: list.length }, [{ k: "scene", id: x.id, name: x.title || x.id }]);
     toast(t("{n} set aside", { n: list.length }), "ok");
   }
   let handy = null;

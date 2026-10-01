@@ -5,6 +5,7 @@
 import { esc, icon, toast, errorToast, confirmDialog, fmtDuration, plural } from "../ui.js";
 import { t } from "../i18n.js";
 import { runBackend } from "../interactive.js";
+import { logEvent } from "../eventlog.js";
 
 const short = (dir) => dir.split(/[\\/]/).filter(Boolean).slice(-3).join(" / ");
 const kb = (n) => Math.max(1, Math.round(n / 1024)) + " KB";
@@ -67,11 +68,13 @@ export function paintDupes(body, main, alive) {
     const text = t("{n} funscripts are renamed to .funscriptdupe next to where they are – nothing is deleted.", { n: list.length }) + (lost ? " " + t("Scripts that belong to a video: {n} – those scenes lose their funscript until you bring them back.", { n: lost }) : "");
     if (!(await confirmDialog({ title: t("Set these duplicates aside?"), text, ok: t("Set aside") })).ok) return;
     const r = await runBackend({ mode: "funscript_dupe_aside", paths: list.map((f) => f.path) });
+    logEvent("funscript", "warn", "{n} duplicate funscripts set aside", { n: r.done.length });
     toast(t("{n} set aside", { n: r.done.length }) + (r.skipped.length ? " · " + t("{n} skipped", { n: r.skipped.length }) : ""), "ok");
     await find();
   }
   async function restore(paths) {
     const r = await runBackend({ mode: "funscript_dupe_restore", paths });
+    logEvent("funscript", "info", "{n} funscripts brought back", { n: r.done.length });
     toast(t("{n} brought back", { n: r.done.length }) + (r.skipped.length ? " · " + t("{n} skipped", { n: r.skipped.length }) : ""), "ok");
     await find();
   }

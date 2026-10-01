@@ -6,6 +6,7 @@
 import { esc, icon, toast, errorToast, store, openDrawer, confirmDialog, fmtAgo } from "./ui.js";
 import { t } from "./i18n.js";
 import { pluginConfig, setPluginConfig } from "./api.js";
+import { logEvent } from "./eventlog.js";
 
 export const MIN_GAMES = 3; // a standing counts for tiers and stars from this many matches on
 
@@ -75,30 +76,6 @@ export function ledgerHtml(entries, titles) {
     .reverse()
     .map(([opp, won, d, min]) => `<li class="${won ? "is-win" : "is-loss"}"><b>${won ? t("Won") : t("Lost")}</b><span>${d > 0 ? "+" : d < 0 ? "−" : "±"}${Math.abs(d)}</span><em>${t("against {name}", { name: esc(titles.get(opp) || "#" + opp) })}</em><small>${fmtAgo(new Date(min * 60000).toISOString())}</small></li>`)
     .join("")}</ol>`;
-}
-
-// ---------- Event log (this browser, the last 200) ----------
-export function logEvent(text) {
-  const l = store.get("versusLog", []);
-  l.push([Date.now(), text]);
-  store.set("versusLog", l.slice(-200));
-}
-export function openLog() {
-  const l = [...store.get("versusLog", [])].reverse();
-  const dr = openDrawer({
-    title: t("Event log"),
-    body: `<p class="kb-hint">${t("What happened in Versus on this browser – the last 200 events.")}</p>${
-      l.length ? `<ul class="kb-vlog">${l.map(([at, text]) => `<li><small>${esc(new Date(at).toLocaleString())}</small><span>${esc(text)}</span></li>`).join("")}</ul>` : `<p class="kb-hint">${t("Nothing yet.")}</p>`
-    }`,
-    foot: `<button type="button" class="kb-btn is-ghost" data-clear ${l.length ? "" : "disabled"}>${t("Clear the log")}</button><span class="kb-spacer"></span><button type="button" class="kb-btn" data-done>${t("Done")}</button>`,
-  });
-  dr.el.classList.add("kb-vx");
-  dr.el.addEventListener("click", (e) => {
-    if (e.target.closest("[data-clear]")) {
-      store.set("versusLog", []);
-      dr.close();
-    } else if (e.target.closest("[data-done]")) dr.close();
-  });
 }
 
 // ---------- Options ----------
@@ -189,14 +166,14 @@ export function openSnapshots({ getData, apply }) {
     snaps.push(snapOf(getData(), name));
     snaps = snaps.slice(-MAX_SNAPS);
     await saveSnaps(snaps);
-    logEvent(t("Snapshot taken: {name}", { name }));
+    logEvent("versus", "info", "Snapshot taken: {name}", { name });
   };
   const restore = async (d, label) => {
     const ok = await confirmDialog({ title: t("Restore this state?"), text: t("The current standings are replaced by “{name}” (in every browser). A snapshot of the current state is taken first.", { name: label }), ok: t("Restore") });
     if (!ok.ok) return false;
     await take(t("Before restoring"));
     apply(d);
-    logEvent(t("Standings restored: {name}", { name: label }));
+    logEvent("versus", "warn", "Standings restored: {name}", { name: label });
     toast(t("Standings restored"), "ok");
     return true;
   };
@@ -221,7 +198,7 @@ export function openSnapshots({ getData, apply }) {
         a.download = `stash-ui-versus-${new Date().toISOString().slice(0, 10)}.json`;
         a.click();
         setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-        logEvent(t("Standings exported to a file"));
+        logEvent("versus", "info", "Standings exported to a file");
       } else if (e.target.closest("[data-import]")) {
         const inp = document.createElement("input");
         inp.type = "file";

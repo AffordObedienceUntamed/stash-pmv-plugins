@@ -12,7 +12,8 @@ import { tagPicker } from "./tagpicker.js";
 import { go } from "../main.js";
 import { isGif } from "../pieces.js";
 import { loadStandings } from "../standings.js";
-import { tiersOf, tierBadge, TIERS, matchOpts, pushLedger, popLedger, mergeLedger, blankLedger, ledgerHtml, logEvent, openLog, openOptions, overviewHtml, openSnapshots } from "../versusx.js";
+import { tiersOf, tierBadge, TIERS, matchOpts, pushLedger, popLedger, mergeLedger, blankLedger, ledgerHtml, openOptions, overviewHtml, openSnapshots } from "../versusx.js";
+import { logEvent, toggleLog } from "../eventlog.js";
 
 const KINDS = {
   scene: {
@@ -182,7 +183,7 @@ export function render(main, params = {}) {
   main.querySelector(".kb-head-tools").addEventListener("click", (e) => {
     const b = e.target.closest("[data-vx]");
     if (!b) return;
-    if (b.dataset.vx === "log") return openLog();
+    if (b.dataset.vx === "log") return toggleLog("versus");
     if (b.dataset.vx === "opts") return openOptions();
     openSnapshots({
       getData: () => data,
@@ -438,6 +439,7 @@ export function render(main, params = {}) {
     const [el, lw, ll] = row(lose);
     const expect = 1 / (1 + Math.pow(10, (el - ew) / 400));
     const mo = matchOpts();
+    const tierNow = tiersOf(r).map; // the tiers they had before this pick
     const kw = ww + wl < mo.newUntil ? mo.kNew : mo.kOld;
     const kl = lw + ll < mo.newUntil ? mo.kNew : mo.kOld;
     const dw = kw * (1 - expect);
@@ -445,7 +447,10 @@ export function render(main, params = {}) {
     r[win.id] = [ew + dw, ww + 1, wl];
     r[lose.id] = [el - dl, lw, ll + 1];
     pushLedger(data, S.kind, win.id, lose.id, dw, dl);
-    logEvent(t("{win} beat {lose} (+{dw} / −{dl})", { win: titleOf(S.kind, win), lose: titleOf(S.kind, lose), dw: Math.round(dw), dl: Math.round(dl) }));
+    logEvent("versus", "win", "{r0} beat {r1} (+{dw} / −{dl})", { dw: Math.round(dw), dl: Math.round(dl) }, [
+      { k: S.kind, id: win.id, name: titleOf(S.kind, win), tier: tierNow.get(win.id) },
+      { k: S.kind, id: lose.id, name: titleOf(S.kind, lose), tier: tierNow.get(lose.id) },
+    ]);
     if (data.day !== today()) (data.day = today()), (data.dayVotes = 0);
     data.votes++;
     data.dayVotes++;
@@ -481,7 +486,7 @@ export function render(main, params = {}) {
     if (!u) return toast(t("Nothing to undo"));
     Object.entries(u.before).forEach(([id, r]) => (r ? (data[u.kind][id] = r) : delete data[u.kind][id]));
     if (u.led) popLedger(data, u.kind, u.led[0], u.led[1]);
-    logEvent(t("Last pick undone"));
+    logEvent("versus", "info", "Last pick undone");
     data.votes = u.votes;
     data.dayVotes = u.dayVotes;
     data.bestStreak = u.best;
@@ -541,7 +546,7 @@ export function render(main, params = {}) {
       if (!r.ok) return;
       data[S.kind] = {};
       data.ledger[S.kind] = {};
-      logEvent(t("Started over: {kind}", { kind: t(KINDS[S.kind].label) }));
+      logEvent("versus", "warn", "Started over: {kind}", { kind: t(KINDS[S.kind].label) });
       data.resets = Object.assign({}, data.resets, { [S.kind]: Date.now() });
       saveData();
       paintRanking();
@@ -606,7 +611,7 @@ export function render(main, params = {}) {
     });
     try {
       for (const [rating, ids] of Object.entries(groups)) if (ids.length) await gql(KINDS[S.kind].bulk, { i: { ids, rating100: Number(rating) } });
-      logEvent(t("Star ratings set for {n}", { n }));
+      logEvent("versus", "info", "Star ratings set for {n}", { n });
       toast(t("Star ratings set for {n}", { n }), "ok");
     } catch (e) {
       errorToast(e, t("Star ratings"));

@@ -12,6 +12,7 @@
 import { gql, pluginConfig, setPluginConfig, updateItem, updatePerformer } from "./api.js";
 import { esc, icon, toast, errorToast, openDrawer, confirmDialog, ratingSystem, ratingText } from "./ui.js";
 import { t } from "./i18n.js";
+import { logEvent } from "./eventlog.js";
 
 export const PARENT = { scene: "Advanced Rating System", performer: "Advanced Performer Rating" };
 const crit = (name) => `${name} ★`;
@@ -120,6 +121,7 @@ export async function setScore(kind, item, cfg, name, n) {
   await update(kind, input);
   item.tags = tags;
   if (res.rating != null) item.rating100 = res.rating;
+  logEvent("rating", "info", n == null ? "{crit} cleared for {r0}" : "{crit}: {n} for {r0} – rating {rating}", { crit: name, n: n == null ? 0 : n, rating: res.rating == null ? "–" : res.rating }, [{ k: kind, id: item.id, name: item.title || item.name || item.id }]);
   return res;
 }
 
@@ -320,5 +322,6 @@ export async function recalcAll(kind, cfg) {
       n++;
     }
   }
+  logEvent("rating", "info", "{n} ratings recalculated", { n });
   return n;
 }

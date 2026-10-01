@@ -221,6 +221,7 @@ const NAV = [
   { group: "Manage", items: [
     { href: "tasks", label: "Tasks", icon: "tasks", match: /^tasks/, count: "jobs" },
     { href: "stats", label: "Statistics", icon: "chart", match: /^stats/ },
+    { action: "log", label: "Log", icon: "logs" },
     { href: "duplicates", label: "Duplicates", icon: "copies", match: /^duplicates/ },
     { href: "settings", label: "Settings", icon: "gear", match: /^settings/ },
     { href: "plugins", label: "Plugins", icon: "plug", match: /^plugins/ },
@@ -282,6 +283,7 @@ function renderRail() {
     if (a) document.getElementById("app").classList.remove("is-rail-open");
     if (a && a.dataset.action === "storm") openStorm();
     if (a && a.dataset.action === "pmv") location.href = PMV_PAGE;
+    if (a && a.dataset.action === "log") import("./eventlog.js").then((m) => m.toggleLog());
   });
   renderTree();
   refreshCounts();

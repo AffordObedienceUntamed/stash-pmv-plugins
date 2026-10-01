@@ -11,6 +11,7 @@ import { mediaBrowser } from "./media.js";
 import { runBackend, fsSources, rememberFs, samePath, nameWords } from "../interactive.js";
 import { issueText } from "../fsvariants.js";
 import { pokeJobs } from "../jobs.js";
+import { logEvent } from "../eventlog.js";
 
 // Names of the tags (changeable on the Problems tab, kept in Stash UI's settings as fsTags)
 const TAG_DEFAULTS = { problems: "Funscript problem", multi: "Several funscripts" };
@@ -33,6 +34,7 @@ async function syncTag(name, ids) {
   const bulk = (list, mode) => list.length && gql(`mutation FsvTagScenes($i: BulkSceneUpdateInput!) { bulkSceneUpdate(input: $i) { id } }`, { i: { ids: list, tag_ids: { ids: [tag.id], mode } } });
   await bulk(add, "ADD");
   await bulk(rem, "REMOVE");
+  logEvent("tags", "info", "Tag “{tag}”: {add} added, {rem} removed", { tag: name, add: add.length, rem: rem.length });
   return { added: add.length, removed: rem.length };
 }
 
@@ -92,6 +94,7 @@ export function render(main, params, query) {
     try {
       await gql(`mutation FsvGenerate($i: GenerateMetadataInput!) { metadataGenerate(input: $i) }`, { i: { interactiveHeatmapsSpeeds: true, overwrite: true, sceneIDs: noSpeed } });
       pokeJobs();
+      logEvent("tasks", "info", "Heatmaps and speeds started for {n} scenes", { n: noSpeed.length });
       toast(t("Started – Stash is measuring {n} scenes", { n: noSpeed.length }), "ok", { label: t("Tasks"), run: () => go("tasks") });
     } catch (er) {
       errorToast(er, "Generate");
