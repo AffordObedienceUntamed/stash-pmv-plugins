@@ -10,7 +10,7 @@ import { startMini, stopMini } from "../mini.js";
 import { placardHtml, bindPlacard } from "./placard.js";
 import { similarScenes } from "../similar.js";
 import { bestMarkers, bestMarkersNow } from "../standings.js";
-import { attachHandy } from "../interactive.js";
+import { attachHandy, interactiveConfig, saveInteractiveConfig, handyPrefs } from "../interactive.js";
 import { createVR, guessVR } from "../vr.js";
 import { videoGlow } from "../theme.js";
 import { BINS, watchRecorder, watchBins, motionBins, combine, peaks } from "../heat.js";
@@ -143,6 +143,7 @@ export async function render(host, params, query = {}) {
           <button class="kb-btn is-icon is-ghost" data-panel aria-label="${t("Details on/off (I)")}" title="${t("Details on/off (I)")}">${icon("info")}</button>
         </div>
         <div class="kb-controls">
+          ${x.interactive && x.paths.funscript ? '<div class="kb-handy-panel" data-hpanel hidden></div>' : ""}
           <div class="kb-timeline${prefs.heat ? " has-heat" : ""}" data-timeline>
             <canvas class="kb-tl-heat" data-heat width="800" height="40" hidden></canvas>
             ${x.interactive && x.paths.interactive_heatmap ? `<img class="kb-tl-fs" src="${esc(x.paths.interactive_heatmap)}" alt="" title="${t("Funscript – how intense it gets")}" onerror="this.remove()">` : ""}
@@ -556,10 +557,8 @@ export async function render(host, params, query = {}) {
     if (el.closest("[data-next]")) return next(1);
     if (el.closest("[data-prev]")) return next(-1);
     if (el.closest("[data-restart]")) return seekTo(0, "↺ 0:00");
-    if (el.closest("[data-handy]") && handy) {
-      toast(t("Connecting the Handy again …"));
-      return handy.retry();
-    }
+    if (el.closest("[data-handy]") && handy) return toggleHandyPanel();
+    if (el.closest("[data-hpanel]")) return; // (clicks inside the menu don't pause the video)
     const sk = el.closest("[data-skip]");
     if (sk) return skipBy(Number(sk.dataset.skip));
     if (el.closest("[data-fs]")) return fullscreen();
@@ -1003,6 +1002,7 @@ export async function render(host, params, query = {}) {
     goFolder: () => goToFolder(f.path),
     music: () => import("./music.js").then((m) => m.openMusic(x, v)),
     cover: () => frameAsCover(),
+    funscript: () => addFunscript(),
   });
   side.addEventListener("click", (e) => {
     if (e.target.closest("[data-coverundo]")) undoCover();
@@ -1017,6 +1017,48 @@ export async function render(host, params, query = {}) {
   }
 
   // ---------- Keyboard ----------
+  // ---------- A funscript for this scene ----------
+  // Stash finds funscripts by name (video.mp4 → video.funscript next to it): Stash UI's backend puts
+  // the chosen file there and has Stash scan the video; then the scene opens again – with the Handy.
+  function addFunscript() {
+    const inp = document.createElement("input");
+    inp.type = "file";
+    inp.accept = ".funscript,.json,application/json";
+    inp.onchange = async () => {
+      const file = inp.files[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        let fs;
+        try {
+          fs = JSON.parse(text);
+        } catch (e) {
+          throw new Error(t("That's not a funscript"));
+        }
+        if (!fs || !Array.isArray(fs.actions) || !fs.actions.length) throw new Error(t("That's not a funscript"));
+        if (x.interactive && !(await confirmDialog({ title: t("Replace the funscript?"), text: t("The one there now is kept next to the video as .funscript.bak."), ok: t("Replace") })).ok) return;
+        toast(t("Saving the funscript …"));
+        const d = await gql(`mutation($a: Map) { runPluginOperation(plugin_id: "stashui", args: $a) }`, { a: { mode: "funscript_save", scene_id: x.id, content: text } });
+        const out = d.runPluginOperation || {};
+        if (out.error) throw new Error(out.error);
+        toast(t("Funscript saved – Stash is scanning the video …"), "ok");
+        // wait until Stash has noticed it (the scan runs in the background)
+        for (let i = 0; i < 20 && host.isConnected; i++) {
+          await new Promise((r) => setTimeout(r, 1500));
+          const s = await getScene(x.id).catch(() => null);
+          if (s && s.interactive && s.paths.funscript) {
+            toast(t("Funscript ready – plays on the Handy"), "ok");
+            return go(`scene/${x.id}?t=${Math.floor(v.currentTime)}`); // the scene again, at the same spot
+          }
+        }
+        if (host.isConnected) toast(t("The funscript is next to the video – Stash hasn't scanned it yet. Open the scene again in a moment."));
+      } catch (e) {
+        errorToast(e, "Funscript");
+      }
+    };
+    inp.click();
+  }
+
   // ---------- Interactive: The Handy plays the scene's funscript (settings: Settings → Player) ----------
   const HANDY_TXT = { idle: "Handy", connecting: "Handy: connecting …", syncing: "Handy: matching the clock …", uploading: "Handy: loading the script …", ready: "Handy", error: "Handy: error" };
   function paintHandy(h) {
@@ -1030,7 +1072,141 @@ export async function render(host, params, query = {}) {
     b.classList.toggle("is-busy", ["connecting", "syncing", "uploading"].includes(h.state));
     b.title = h.state === "error" ? `${h.error} – ${t("click to try again")}` : h.state === "ready" ? t("The Handy follows this scene – click to connect again") : t("Connecting the Handy …");
   }
-  const handy = x.interactive && x.paths.funscript ? attachHandy(v, x, { onState: paintHandy, loop: () => prefs.mode === "one" }) : null;
+  let handy = null;
+  const startHandy = () => {
+    if (handy) handy.stop();
+    handy = x.interactive && x.paths.funscript ? attachHandy(v, x, { onState: (h) => (paintHandy(h), paintHandyPanel()), loop: () => prefs.mode === "one" }) : null;
+  };
+  startHandy();
+  const handyAway = (e) => {
+    const p = host.querySelector("[data-hpanel]");
+    if (p && !p.hidden && !e.target.closest("[data-hpanel], [data-handy]")) p.hidden = true;
+  };
+  document.addEventListener("pointerdown", handyAway, true);
+
+  // The Handy menu (button in the bar): sync, stroke, invert – and the device, the key, connect/disconnect
+  const hp = $("[data-hpanel]");
+  function toggleHandyPanel(force) {
+    if (!hp) return;
+    hp.hidden = force != null ? !force : !hp.hidden;
+    if (hp.hidden) return;
+    buildHandyPanel();
+  }
+  async function buildHandyPanel() {
+    const c = await interactiveConfig();
+    const p = handyPrefs();
+    hp.innerHTML = `
+      <div class="kb-hp-col">
+        <div class="kb-hp-row"><b>${t("Sync")}</b><span class="kb-hp-val" data-hpoffv></span><span class="kb-spacer"></span><button type="button" class="kb-btn is-ghost kb-hp-mini" data-hpreset>${t("Reset")}</button></div>
+        <input type="range" class="kb-hp-range" min="-250" max="250" step="5" data-hpoff value="${c.funscriptOffset || 0}">
+        <div class="kb-hp-scale"><span>-250</span><span>-125</span><span>0</span><span>125</span><span>250</span></div>
+        <p class="kb-hp-hint">${t("If the movement comes too early or too late, move this (milliseconds).")}</p>
+        <div class="kb-hp-row"><b>${t("Stroke")}</b><span class="kb-hp-val" data-hpstrokev>0–100</span></div>
+        <div class="kb-hp-dual" data-hpdual><i data-hpfill></i><input type="range" min="0" max="100" step="1" value="0" data-hpmin aria-label="${t("Stroke from")}"><input type="range" min="0" max="100" step="1" value="100" data-hpmax aria-label="${t("Stroke to")}"></div>
+        <div class="kb-hp-scale"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div>
+        <p class="kb-hp-hint">${t("How much of the slide is used – less is gentler.")}</p>
+        <label class="kb-hp-row kb-hp-switch"><b>${t("Invert")}</b><span class="kb-spacer"></span><span class="kb-switch"><input type="checkbox" data-hpinv${p.invert ? " checked" : ""}><i></i></span></label>
+        <p class="kb-hp-hint">${t("Up becomes down for every script – it's sent to the Handy again.")}</p>
+      </div>
+      <div class="kb-hp-col kb-hp-dev">
+        <div class="kb-hp-name">${icon("plug")}<b>The Handy</b></div>
+        <small class="kb-hp-hw" data-hphw></small>
+        <span class="kb-hp-badge" data-hpbadge hidden></span>
+        <p class="kb-hp-state" data-hpstate></p>
+        <label class="kb-hp-key"><span>${t("Connection key")}</span><input class="kb-field" type="text" data-hpkey value="${esc(c.handyKey)}" autocomplete="off" spellcheck="false"></label>
+        <div class="kb-hp-acts"><button type="button" class="kb-btn" data-hpconnect>${t("Connect again")}</button><button type="button" class="kb-btn is-ghost" data-hpoff2>${t("Disconnect")}</button></div>
+      </div>`;
+    paintOffset();
+    paintHandyPanel();
+    // the stroke as the device has it
+    const h = handy && handy.device;
+    if (h && h.state === "ready")
+      h.getStroke()
+        .then(({ min, max }) => {
+          hp.querySelector("[data-hpmin]").value = min;
+          hp.querySelector("[data-hpmax]").value = max;
+          paintStroke();
+        })
+        .catch(() => {});
+  }
+  const paintOffset = () => {
+    const o = Number(hp.querySelector("[data-hpoff]").value);
+    hp.querySelector("[data-hpoffv]").textContent = `${o > 0 ? "+" : ""}${o} ms`;
+  };
+  const paintStroke = () => {
+    const a = Number(hp.querySelector("[data-hpmin]").value);
+    const b = Number(hp.querySelector("[data-hpmax]").value);
+    const [lo, hi] = [Math.min(a, b), Math.max(a, b)];
+    hp.querySelector("[data-hpstrokev]").textContent = `${lo}–${hi}`;
+    const f = hp.querySelector("[data-hpfill]");
+    f.style.left = lo + "%";
+    f.style.right = 100 - hi + "%";
+    return [lo, hi];
+  };
+  function paintHandyPanel() {
+    if (!hp || hp.hidden || !hp.querySelector("[data-hpstate]")) return;
+    const h = handy && handy.device;
+    const st = hp.querySelector("[data-hpstate]");
+    const info = h && h.info;
+    hp.querySelector("[data-hphw]").textContent = info ? [info.model, info.hwVersion && `HW ${info.hwVersion}`, info.fwVersion && `FW ${info.fwVersion}`].filter(Boolean).join(" · ") : "";
+    const badge = hp.querySelector("[data-hpbadge]");
+    badge.hidden = !info;
+    if (info) {
+      badge.textContent = info.fwStatus === 1 ? t("Update required") : info.fwStatus === 2 ? t("Update available") : t("Supported");
+      badge.className = "kb-hp-badge" + (info.fwStatus === 1 ? " is-err" : info.fwStatus === 2 ? " is-warn" : "");
+    }
+    const msg = !h ? [t("Enter the connection key to connect the Handy."), ""]
+      : h.off ? [t("Disconnected – “Connect again” brings it back."), ""]
+      : h.state === "ready" ? [t("Connected and ready for script playback."), "is-ok"]
+      : h.state === "error" ? [h.error, "is-err"]
+      : [t(HANDY_TXT[h.state] || "…"), ""];
+    st.textContent = msg[0];
+    st.className = "kb-hp-state " + msg[1];
+    hp.querySelector("[data-hpoff2]").disabled = !h || h.off;
+  }
+  if (hp) {
+    hp.addEventListener("input", (e) => {
+      if (e.target.matches("[data-hpoff]")) paintOffset();
+      if (e.target.matches("[data-hpmin], [data-hpmax]")) paintStroke();
+    });
+    hp.addEventListener("change", async (e) => {
+      const el = e.target;
+      try {
+        if (el.matches("[data-hpoff]")) handy && handy.setOffset(Number(el.value));
+        if (el.matches("[data-hpmin], [data-hpmax]")) {
+          const [lo, hi] = paintStroke();
+          const h = handy && handy.device;
+          if (h && h.state === "ready") await h.setStroke(lo, hi);
+        }
+        if (el.matches("[data-hpinv]")) {
+          store.set("handyPrefs", Object.assign(handyPrefs(), { invert: el.checked }));
+          if (handy) await handy.reload();
+        }
+        if (el.matches("[data-hpkey]")) {
+          await saveInteractiveConfig({ handyKey: el.value.trim() });
+          startHandy();
+          toast(t("Saved"), "ok");
+        }
+      } catch (err) {
+        errorToast(err, "The Handy");
+      }
+    });
+    hp.addEventListener("click", async (e) => {
+      if (e.target.closest("[data-hpreset]")) {
+        hp.querySelector("[data-hpoff]").value = 0;
+        paintOffset();
+        if (handy) handy.setOffset(0);
+      } else if (e.target.closest("[data-hpconnect]")) {
+        toast(t("Connecting the Handy again …"));
+        if (handy) await handy.retry();
+        else startHandy();
+        buildHandyPanel();
+      } else if (e.target.closest("[data-hpoff2]")) {
+        if (handy) await handy.disconnect();
+        paintHandyPanel();
+      }
+    });
+  }
 
   // Jumping: from the beginning, 10 s back / forward – with a short note on the picture
   let flashT = 0;
@@ -1093,6 +1269,7 @@ export async function render(host, params, query = {}) {
 
   return () => {
     if (handy) handy.stop(); // the Handy stops with the player
+    if (handyAway) document.removeEventListener("pointerdown", handyAway, true);
     // a changed cover goes to Stash now (and keeps trying in the background if needed)
     const cv = covers.get(x.id);
     if (cv) {

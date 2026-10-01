@@ -365,7 +365,7 @@ function renderPlayerUi(body) {
   box.innerHTML = `<h3 class="kb-set-sub">${icon("plug")}${t("The Handy")}</h3>
     <p class="kb-hint">${t("Scenes with a funscript play on The Handy: it follows play, pause and jumps. Saved in Stash – classic Stash uses the same settings.")}</p>
     <label class="kb-set"><span class="kb-set-label"><b>${t("Connection key")}</b><small>${t("From the Handy app or handyfeeling.com. Empty = off.")}</small></span>
-      <input class="kb-field" type="password" data-hkey autocomplete="off" spellcheck="false" placeholder="${t("e.g. abc123XYZ")}"></label>
+      <input class="kb-field" type="text" data-hkey autocomplete="off" spellcheck="false" placeholder="${t("e.g. abc123XYZ")}"></label>
     <label class="kb-set"><span class="kb-set-label"><b>${t("Script offset")}</b><small>${t("Milliseconds – if the movement comes too early (negative) or too late (positive).")}</small></span>
       <input class="kb-field" type="number" step="10" data-hoff style="max-width:120px"></label>
     <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("The Handy fetches the script from Stash")}</b><small>${t("Only when Stash can be reached from the internet. Otherwise the script goes to the Handy's own server for playback.")}</small></span>

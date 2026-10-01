@@ -24,20 +24,24 @@ export async function interactiveConfig(force) {
 }
 export async function saveInteractiveConfig(patch) {
   await gql(`mutation($i: ConfigInterfaceInput!) { configureInterface(input: $i) { handyKey } }`, { i: patch });
+  const keyChanged = "handyKey" in patch && patch.handyKey !== (cfg || {}).handyKey;
   cfg = Object.assign({}, cfg || {}, patch);
-  handy = null; // a new key → a new connection
+  if (keyChanged) handy = null; // a new key → a new connection
   return cfg;
 }
 
 // A funscript → the CSV the Handy wants ("ms,position" per line; inverted and range turned into 0–100)
+// (invert: the menu's switch – up becomes down, on top of what the script says)
+export const handyPrefs = () => Object.assign({ invert: false }, store.get("handyPrefs", {}));
 function toCsv(fs) {
   const acts = (fs && fs.actions) || [];
   if (!acts.length) throw new Error("The funscript has no movements");
   const range = (v, a, b, c, d) => ((v - a) * (d - c)) / (b - a) + c;
+  const flip = (fs.inverted === true) !== handyPrefs().invert;
   return acts.reduce((out, a) => {
     let pos = a.pos;
-    if (fs.inverted === true) pos = range(pos, 0, 100, 100, 0);
     if (fs.range) pos = range(pos, 0, fs.range, 0, 100);
+    if (flip) pos = 100 - pos;
     return `${out}${Math.round(a.at)},${Math.round(pos)}\r\n`;
   }, `#Created by Stash UI ${new Date().toUTCString()}\n`);
 }
@@ -95,7 +99,9 @@ class Handy {
     const c = await this.req("GET", "connected");
     if (!c.connected) throw new Error("The Handy isn't online – is it switched on and connected to Wi-Fi?");
     const info = await this.req("GET", "info");
+    this.info = info; // { model, hwVersion, fwVersion, fwStatus, branch }
     if (info.fwStatus === 1) throw new Error("The Handy needs a firmware update first");
+    this.off = false;
     if (force || !this.syncedAt || Date.now() - this.syncedAt > RESYNC) await this.syncClock();
   }
   // Hand the scene's script to the device
@@ -125,8 +131,9 @@ class Handy {
     this.playing = false;
     this.set("ready");
   }
-  async play(sec) {
+  async play(sec, force) {
     if (this.state !== "ready") return;
+    if (force) this.from = null;
     // already playing from there (the start and the "playing" event come together) → nothing to do
     const now = performance.now();
     if (this.playing && this.from && Math.abs(this.from.sec + (now - this.from.at) / 1000 - sec) < 0.3) return;
@@ -139,6 +146,21 @@ class Handy {
     this.playing = false;
     this.from = null;
     await this.req("PUT", "hssp/stop", {});
+  }
+  // Stroke: the part of the slide that's used (0–100)
+  async getStroke() {
+    const s = await this.req("GET", "slide");
+    return { min: s.min ?? 0, max: s.max ?? 100 };
+  }
+  async setStroke(min, max) {
+    await this.req("PUT", "slide", { min: Math.round(Math.min(min, max)), max: Math.round(Math.max(min, max)) });
+  }
+  // Disconnect: stop and leave the device alone until "Connect" (the key stays)
+  async disconnect() {
+    await this.stop().catch(() => {});
+    this.off = true;
+    this.script = "";
+    this.set("idle");
   }
   async loop(on) {
     if (this.state === "ready") await this.req("PUT", "hssp/loop", { activated: !!on }).catch(() => {});
@@ -175,6 +197,7 @@ export function attachHandy(video, scene, { apiKey, onState, loop } = {}) {
     h = await getHandy();
     if (!h || !alive) return tell(null);
     h.listeners.add(tell);
+    if (h.off) return tell(h); // disconnected in the menu – stays so until "Connect"
     try {
       if (h.state !== "ready") await h.connect();
       await h.load(scene.paths.funscript, apiKey);
@@ -207,6 +230,28 @@ export function attachHandy(video, scene, { apiKey, onState, loop } = {}) {
       }
     },
     setLoop: (on) => queue(() => h.loop(on)),
+    get device() {
+      return h;
+    },
+    // the sync offset changed (menu): saved in Stash a moment later, applied right away
+    setOffset(ms) {
+      cfg.funscriptOffset = Math.round(ms);
+      clearTimeout(this.saveT);
+      this.saveT = setTimeout(() => saveInteractiveConfig({ funscriptOffset: cfg.funscriptOffset }).catch(() => {}), 800);
+      if (h && !video.paused) queue(() => h.play(video.currentTime, true));
+    },
+    // invert switched: the script goes to the device again (turned around)
+    async reload() {
+      if (!h) return;
+      h.script = "";
+      await queue(async () => {
+        await h.load(scene.paths.funscript, apiKey);
+        if (!video.paused) await h.play(video.currentTime, true);
+      });
+    },
+    async disconnect() {
+      if (h) await h.disconnect();
+    },
     stop() {
       alive = false;
       video.removeEventListener("playing", onPlay);

@@ -4,6 +4,15 @@
 
 export const CHANGES = [
   {
+    v: "3.34.0",
+    date: "2026-10-01",
+    items: [
+      ["ui", "The Handy menu in the player (click the Handy button): sync offset, stroke range, invert, the device with its firmware, the connection key, connect again or disconnect.", "播放器中的 Handy 菜单（点击 Handy 按钮）：同步偏移、行程范围、反转、设备及固件信息、连接密钥、重新连接或断开。"],
+      ["ui", "Give a scene a funscript right from the player (“Funscript” in the info bar): it's put next to the video with the right name, Stash scans it, and the scene plays on the Handy.", "可直接在播放器中为场景添加 funscript（信息栏中的“Funscript”）：文件会以正确的名称放在视频旁边，Stash 扫描后即可在 Handy 上播放。"],
+      ["ui", "The Handy connection key is shown in full.", "Handy 连接密钥完整显示。"],
+    ],
+  },
+  {
     v: "3.33.0",
     date: "2026-10-01",
     items: [
