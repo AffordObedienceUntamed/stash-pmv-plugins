@@ -1185,4 +1185,8 @@ export default {
   "because you watched": "因为你看过",
   "Unwatched scenes with the tags you watched most this week": "带有你本周最常看标签的未看场景",
   "Favorites and top-rated scenes you haven't watched for a month": "一个月没看过的收藏和高分场景",
+  "Best moment": "最佳时刻",
+  "Best moment at {time}": "{time} 的最佳时刻",
+  "Moments": "时刻",
+  "The upper quarter (with 3 matches or more) are your best moments: the player marks them gold and J jumps there first, a random start lands on one of them, and the PMV Generator prefers them.": "排名前四分之一（至少比过 3 场）的就是你的最佳时刻：播放器会把它们标成金色，按 J 会先跳到那里，随机开始会落在其中之一，PMV 生成器也会优先使用它们。",
 };

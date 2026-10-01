@@ -17,6 +17,7 @@ import { LAYOUTS, slotsFor, aspectOfGroup, Compositor } from "../pmvfx.js";
 import { Playlist, fileTrack, filesFromDrop, isSongFile } from "../music.js";
 import { liveConnect, liveStatus, songTitle, LiveAudio } from "../live.js";
 import { stateOf, filterOf, loadPlaylists } from "../playlists.js";
+import { bestMarkers } from "../standings.js";
 import { plexState, plexForget, plexSignIn, plexServers, plexConnect, PlexClient, plexTracks, PlexFollow } from "../plex.js";
 
 // config.js can override these (e.g. open saved scenes in Stash UI when that's where you came from).
@@ -2146,7 +2147,7 @@ class Generator {
     const lists = await Promise.all(
       kinds.map(async (k) => {
         const q = k === "scene"
-          ? `query($f: FindFilterType, $x: SceneFilterType) { r: findScenes(filter: $f, scene_filter: $x) { count scenes { id title paths { stream sprite vtt } files { duration width height basename } scene_markers { seconds } performers { id } } } }`
+          ? `query($f: FindFilterType, $x: SceneFilterType) { r: findScenes(filter: $f, scene_filter: $x) { count scenes { id title paths { stream sprite vtt } files { duration width height basename } scene_markers { id seconds } performers { id } } } }`
           : `query($f: FindFilterType, $x: ImageFilterType) { r: findImages(filter: $f, image_filter: $x) { count images { id title paths { image } visual_files { __typename ... on ImageFile { width height basename } } performers { id } } } }`;
         const d = await gql(q, { f: { per_page: 60, page: this.page[k], sort: "random_" + this.seed }, x: spec.filter(k) });
         const items = k === "scene" ? d.r.scenes : d.r.images;
@@ -2155,7 +2156,7 @@ class Generator {
         return items
           .map((x) =>
             k === "scene"
-              ? x.paths.stream && { kind: "video", id: x.id, url: x.paths.stream, dur: (x.files[0] || {}).duration || 0, marks: (x.scene_markers || []).map((mk) => mk.seconds),
+              ? x.paths.stream && { kind: "video", id: x.id, url: x.paths.stream, dur: (x.files[0] || {}).duration || 0, marks: (x.scene_markers || []).map((mk) => mk.seconds), markers: x.scene_markers || [],
                   sprite: x.paths.sprite, vtt: x.paths.vtt, name: x.title || (x.files[0] || {}).basename || "Scene " + x.id, file: (x.files[0] || {}).basename || "" }
               : x.paths.image && (x.visual_files[0] || {}).__typename === "ImageFile" && { kind: "image", id: x.id, url: x.paths.image,
                   name: x.title || x.visual_files[0].basename || "Image " + x.id, file: x.visual_files[0].basename || "" }
@@ -2304,7 +2305,12 @@ class Generator {
       };
       let start = rand();
       let info = null;
-      if (this.S.bestSpots && dur > 10) {
+      // Your best moments (Versus): most of the time straight there – no need to look around
+      const best = this.S.bestSpots && s.markers && s.markers.length ? await bestMarkers().catch(() => null) : null;
+      const bestHere = best ? s.markers.filter((mk) => best.has(mk.id) && mk.seconds < dur - 2) : [];
+      if (bestHere.length && Math.random() < 0.8) {
+        start = bestHere[Math.floor(Math.random() * bestHere.length)].seconds;
+      } else if (this.S.bestSpots && dur > 10) {
         // Candidates: from Stash's sprite sheet (its ~80 small pictures along the scene, no seeking needed)
         // the best-looking spots – else your markers (with a bonus) and random spots. Then two frames
         // each for motion; big videos (above 1440p) and a low supply skip that – every seek costs.

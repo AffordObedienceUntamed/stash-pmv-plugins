@@ -1202,3 +1202,5 @@ html.kb-glass .kb-home-row { border-color: var(--glass-edge); background: var(--
 .kb-pl-sort .kb-ic { width: 13px; height: 13px; }
 .kb-pl-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 html.kb-glass .kb-pl { border-color: var(--glass-edge); }
+.kb-vs-best { display: flex; gap: 8px; align-items: flex-start; margin: 0 0 12px; }
+.kb-vs-best .kb-ic { flex: none; width: 16px; height: 16px; color: #ffd166; }

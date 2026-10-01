@@ -595,6 +595,11 @@
 .kb-pmvg-legend .kb-chip { box-shadow: none; background: var(--base); }
 .kb-pmvg-sw { width: 10px; height: 10px; border-radius: 2px; }
 .kb-pmvg .is-dim { opacity: .4; pointer-events: none; }
+/* Best moments (Versus) on the timeline and in the marker list */
+.kb-tl-mk.is-best { z-index: 2; transform: scale(1.45); transform-origin: 50% 100%; }
+.kb-tl-mk.is-best::after { background: #fff3b0; box-shadow: 0 0 10px #ffd23f, 0 0 3px rgba(0, 0, 0, .6); }
+.kb-mkrow.is-best .kb-mkgo b { color: #ffd166; }
+.kb-mkrow.is-best .kb-mkgo b::before { content: "★ "; }
 /* Clips from: the filters or a smart playlist */
 .kb-pmvg-from { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 14px; }
 .kb-pmvg-from .kb-lab-t { margin: 0; }

@@ -11,6 +11,7 @@ import { gql, pluginConfig, setPluginConfig } from "../api.js";
 import { tagPicker } from "./tagpicker.js";
 import { go } from "../main.js";
 import { isGif } from "../pieces.js";
+import { loadStandings } from "../standings.js";
 
 const KINDS = {
   scene: {
@@ -34,6 +35,13 @@ const KINDS = {
     bulk: "mutation($i: BulkPerformerUpdateInput!) { bulkPerformerUpdate(input: $i) { id } }",
     open: (id) => "performer/" + id,
   },
+  marker: {
+    label: "Moments",
+    query: `query($f: FindFilterType, $x: SceneMarkerFilterType, $ids: [ID!]) { r: findSceneMarkers(filter: $f, scene_marker_filter: $x, ids: $ids) { count scene_markers { id title seconds end_seconds screenshot primary_tag { id name } scene { id title files { basename duration } paths { stream screenshot } } } } }`,
+    list: "scene_markers",
+    // the scene, starting at the moment
+    open: (id, x) => (x ? `scene/${x.scene.id}?t=${Math.floor(x.seconds || 0)}` : "versus/ranking"),
+  },
 };
 const MODES = [
   ["fair", "Fair matches", "Similar strength, the least played first"],
@@ -42,14 +50,25 @@ const MODES = [
 ];
 const POOL = 200; // items loaded at a time (random, matching the filter)
 
+const sceneName = (sc) => (sc && (sc.title || ((sc.files || [])[0] || {}).basename)) || "";
 const titleOf = (kind, x) =>
-  kind === "performer" ? x.name : x.title || (kind === "scene" ? (x.files[0] || {}).basename : ((x.visual_files || [])[0] || {}).basename) || "#" + x.id;
-const thumbOf = (kind, x) => (kind === "scene" ? x.paths.screenshot : kind === "image" ? x.paths.thumbnail || x.paths.image : x.image_path);
+  kind === "performer" ? x.name
+  : kind === "marker" ? x.title || (x.primary_tag || {}).name || sceneName(x.scene)
+  : x.title || (kind === "scene" ? (x.files[0] || {}).basename : ((x.visual_files || [])[0] || {}).basename) || "#" + x.id;
+const thumbOf = (kind, x) => (kind === "scene" ? x.paths.screenshot : kind === "image" ? x.paths.thumbnail || x.paths.image : kind === "marker" ? x.screenshot || (x.scene && x.scene.paths.screenshot) : x.image_path);
+// A moment (marker) plays from its start to its end – or 12 s when it has no end
+const markerSpan = (x) => {
+  const dur = ((x.scene && x.scene.files[0]) || {}).duration || 0;
+  const a = Math.max(0, x.seconds || 0);
+  let b = x.end_seconds > a + 1 ? x.end_seconds : a + 12;
+  if (dur) b = Math.min(b, dur);
+  return [a, b];
+};
 // Where an item starts: its star rating, if it has one (so the first matches aren't wasted)
 const startElo = (x) => 1500 + (x.rating100 != null ? (x.rating100 - 50) * 6 : 0);
 const today = () => new Date().toISOString().slice(0, 10);
-const KIND_KEYS = ["scene", "image", "performer"];
-const blank = () => ({ scene: {}, image: {}, performer: {}, votes: 0, day: "", dayVotes: 0, bestStreak: 0, resets: {} });
+const KIND_KEYS = ["scene", "image", "performer", "marker"];
+const blank = () => ({ scene: {}, image: {}, performer: {}, marker: {}, votes: 0, day: "", dayVotes: 0, bestStreak: 0, resets: {} });
 // Two states (this browser, Stash – or two devices) → one: per item the one with more matches;
 // after "Start over" the newer start counts for that kind
 function mergeVs(a, b) {
@@ -99,6 +118,7 @@ export function render(main, params = {}) {
       const merged = mergeVs(data, parseVs((await pluginConfig("stashui")).versus));
       await setPluginConfig("stashui", { versus: JSON.stringify(merged) });
       adopt(merged);
+      loadStandings(true).catch(() => {}); // the player and the PMV Generator see the new best moments
     } catch (e) {
       console.warn("[Stash UI] Versus → Stash:", e); // the copy in this browser stays; next pick tries again
     }
@@ -174,6 +194,7 @@ export function render(main, params = {}) {
   function filter() {
     return S.tags.length ? { tags: { value: S.tags, modifier: "INCLUDES", depth: 0 } } : {};
   }
+  // (moments have tags too – the same filter works)
   async function loadPool() {
     const k = KINDS[S.kind];
     const d = await gql(k.query, { f: { per_page: POOL, sort: "random_" + Math.floor(Math.random() * 1e8) }, x: filter() });
@@ -260,7 +281,7 @@ export function render(main, params = {}) {
       const open = e.target.closest("[data-open]");
       if (open) {
         if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); // the player opens outside of it
-        return go(KINDS[S.kind].open(open.dataset.open));
+        return go(KINDS[S.kind].open(open.dataset.open, (pair || []).find((x) => x.id === open.dataset.open)));
       }
       const c = e.target.closest("[data-side]");
       if (c) vote(Number(c.dataset.side));
@@ -299,6 +320,16 @@ export function render(main, params = {}) {
         step = (step + 1) % SPOTS.length;
         vids.forEach((v) => v.dataset.dur && v.readyState >= 1 && (v.currentTime = Number(v.dataset.dur) * SPOTS[step]));
       }, 4000);
+      // Moments: their stretch over and over
+      arena.querySelectorAll("video[data-from]").forEach((v) => {
+        const a = Number(v.dataset.from);
+        const b = Number(v.dataset.to);
+        v.addEventListener("timeupdate", () => (v.currentTime >= b || v.currentTime < a - 1) && (v.currentTime = a));
+        v.addEventListener("ended", () => {
+          v.currentTime = a;
+          v.play().catch(() => {});
+        });
+      });
       const over = [...arena.querySelectorAll("[data-side]")].find((c) => c.matches(":hover"));
       sound(over || null);
       arena.querySelectorAll("img[data-full]").forEach((img) => {
@@ -315,7 +346,12 @@ export function render(main, params = {}) {
     const k = S.kind;
     const [elo, w, l] = row(x);
     const played = w + l;
-    const sub = k === "scene" ? [x.files[0] && fmtDuration(x.files[0].duration), x.date].filter(Boolean).join(" · ") : k === "performer" ? t("{n} scenes", { n: x.scene_count || 0 }) : "";
+    const sub =
+      k === "scene" ? [x.files[0] && fmtDuration(x.files[0].duration), x.date].filter(Boolean).join(" · ")
+      : k === "performer" ? t("{n} scenes", { n: x.scene_count || 0 })
+      : k === "marker" ? `${sceneName(x.scene)} · ${fmtDuration(x.seconds || 0)}`
+      : "";
+    const span = k === "marker" ? markerSpan(x) : null;
     // Images: the thumbnail right away, then the full picture (thumbnails are ~640 px – blurry on a big
     // screen); images that are really videos (GIF/MP4 in Stash) play as videos
     const vf = k === "image" ? (x.visual_files || [])[0] || {} : {};
@@ -323,7 +359,9 @@ export function render(main, params = {}) {
     // like a preview; the preview clip only if the browser can't play the file
     const dur = k === "scene" ? (x.files[0] || {}).duration || 0 : 0;
     const media =
-      k === "scene" && x.paths.stream && dur > 8
+      k === "marker" && x.scene && x.scene.paths.stream
+        ? `<video src="${esc(x.scene.paths.stream)}#t=${span[0]}" poster="${esc(thumbOf(k, x) || "")}" data-from="${span[0]}" data-to="${span[1]}" muted autoplay playsinline preload="auto"></video>`
+        : k === "scene" && x.paths.stream && dur > 8
         ? `<video src="${esc(x.paths.stream)}#t=${Math.round(dur * 0.15)}" poster="${esc(x.paths.screenshot || "")}" data-dur="${dur}" data-fallback="${esc(x.paths.preview || "")}" muted autoplay playsinline preload="auto"></video>`
         : k === "scene" && x.paths.preview
         ? `<video src="${esc(x.paths.preview)}" poster="${esc(x.paths.screenshot || "")}" muted loop autoplay playsinline></video>`
@@ -414,7 +452,9 @@ export function render(main, params = {}) {
   }
 
   // ---------- Ranking ----------
+  let rankSeq = 0; // a newer paint wins (the standings from Stash can come in while one is loading)
   async function paintRanking() {
+    const seq = ++rankSeq;
     const all = Object.entries(rows()).filter(([, r]) => r[1] + r[2] > 0);
     all.sort((a, b) => b[1][0] - a[1][0]);
     const top = all.slice(0, 100);
@@ -423,11 +463,13 @@ export function render(main, params = {}) {
       <div class="kb-vs-top">
         <p class="kb-hint">${all.length ? t("{n} compared so far – the top 100 by points (Elo). Wins–losses next to it.", { n: all.length }) : t("Nothing compared yet – play a few rounds first.")}</p>
         <span class="kb-spacer"></span>
-        <button type="button" class="kb-btn" data-stars ${judged ? "" : "disabled"} title="${esc(t("Only those with at least 3 matches"))}">${icon("heart")}${t("Turn into star ratings …")}</button>
+        ${S.kind === "marker" ? "" : `<button type="button" class="kb-btn" data-stars ${judged ? "" : "disabled"} title="${esc(t("Only those with at least 3 matches"))}">${icon("heart")}${t("Turn into star ratings …")}</button>`}
         <button type="button" class="kb-btn is-ghost" data-restart ${all.length ? "" : "disabled"}>${t("Start over")}</button>
       </div>
+      ${S.kind === "marker" ? `<p class="kb-hint kb-vs-best">${icon("bolt")}${t("The upper quarter (with 3 matches or more) are your best moments: the player marks them gold and J jumps there first, a random start lands on one of them, and the PMV Generator prefers them.")}</p>` : ""}
       <ol class="kb-vs-rank" data-rank>${top.length ? `<li class="kb-loading">${t("Loading …")}</li>` : ""}</ol>`;
-    body.querySelector("[data-stars]").onclick = () => toStars(all);
+    const starsBtn = body.querySelector("[data-stars]");
+    if (starsBtn) starsBtn.onclick = () => toStars(all);
     body.querySelector("[data-restart]").onclick = async () => {
       const r = await confirmDialog({ title: t("Start over?"), text: t("The standings of all {kind} are cleared (in every browser). Star ratings stay.", { kind: t(KINDS[S.kind].label) }), ok: t("Start over"), danger: true });
       if (!r.ok) return;
@@ -440,13 +482,13 @@ export function render(main, params = {}) {
     try {
       const k = KINDS[S.kind];
       const d = await gql(k.query, { f: { per_page: top.length }, ids: top.map(([id]) => id) });
-      if (!alive) return;
+      if (!alive || seq !== rankSeq) return;
       const byId = new Map(d.r[k.list].map((x) => [x.id, x]));
       body.querySelector("[data-rank]").innerHTML = top
         .map(([id, [elo, w, l]], i) => {
           const x = byId.get(id);
           if (!x) return "";
-          return `<li><a href="#/${k.open(id)}"><span class="kb-vs-pos${i < 3 ? " is-podium" : ""}">${i + 1}</span>
+          return `<li><a href="#/${esc(k.open(id, x))}"><span class="kb-vs-pos${i < 3 ? " is-podium" : ""}">${i + 1}</span>
             <img src="${esc(thumbOf(S.kind, x) || "")}" alt="" loading="lazy"><b>${esc(titleOf(S.kind, x))}</b>
             <span class="kb-vs-pts">${Math.round(elo)}</span><small>${w}–${l}</small></a></li>`;
         })

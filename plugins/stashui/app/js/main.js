@@ -512,6 +512,7 @@ async function init() {
     const c = (await gql(`query { configuration { interface { language } ui } }`)).configuration;
     stashLang = c.interface.language || "";
     setRatingSystem((c.ui || {}).ratingSystemOptions);
+    import("./standings.js").then((m) => m.bestMarkers()).catch(() => {}); // best moments, for the player
   } catch (e) { /* older Stash or no answer – the browser language decides */ }
   await initLang(stashLang);
   document.getElementById("rail").setAttribute("aria-label", t("Navigation"));

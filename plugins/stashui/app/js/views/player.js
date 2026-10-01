@@ -9,6 +9,7 @@ import { app, go, closeOverlay, setQueueCount } from "../main.js";
 import { startMini, stopMini } from "../mini.js";
 import { placardHtml, bindPlacard } from "./placard.js";
 import { similarScenes } from "../similar.js";
+import { bestMarkers, bestMarkersNow } from "../standings.js";
 import { createVR, guessVR } from "../vr.js";
 import { videoGlow } from "../theme.js";
 import { BINS, watchRecorder, watchBins, motionBins, combine, peaks } from "../heat.js";
@@ -105,11 +106,12 @@ window.addEventListener("beforeunload", (e) => {
   if (pending) e.preventDefault();
 });
 
-export async function render(host, params) {
+export async function render(host, params, query = {}) {
   document.body.classList.add("kb-noscroll");
   // A mini player ends here; back from it = continue at its spot
   const stopped = stopMini();
-  const handoff = app.miniResume && app.miniResume.id === params.id ? app.miniResume.at : stopped && stopped.id === params.id ? stopped.at : null;
+  // where it starts: a link with a time (?t=, e.g. a moment from Versus), back from the mini player, or where it stopped
+  const handoff = Number(query.t) > 0 ? Number(query.t) : app.miniResume && app.miniResume.id === params.id ? app.miniResume.at : stopped && stopped.id === params.id ? stopped.at : null;
   app.miniResume = null;
   let mini = false; // true = the video goes on in the mini player when this closes
   host.innerHTML = `<div class="kb-stage kb-player"><div class="kb-loading">${t("Loading …")}</div></div>`;
@@ -305,7 +307,16 @@ export async function render(host, params) {
   const dur = f.duration || 0;
   // Random start ("just looking around"): somewhere between 5 % and 85 % – and nothing of it goes to
   // Stash: while it's on for this scene, the resume point isn't saved (the play still counts)
-  const randomAt = prefs.randomStart && handoff == null && dur > 20 ? dur * (0.05 + Math.random() * 0.8) : 0;
+  // (a best moment from Versus, if this scene has one)
+  const bestHere = () => {
+    const b = bestMarkersNow();
+    return b ? (x.scene_markers || []).filter((m) => b.has(m.id)) : [];
+  };
+  const randomBest = bestHere();
+  const randomAt =
+    prefs.randomStart && handoff == null && (randomBest.length || dur > 20)
+      ? randomBest.length ? Math.max(0.01, randomBest[Math.floor(Math.random() * randomBest.length)].seconds) : dur * (0.05 + Math.random() * 0.8)
+      : 0;
   let keepResume = !!randomAt;
   const resumeAt = !randomAt && handoff == null && x.resume_time && dur && x.resume_time > 5 && x.resume_time < dur * 0.95 ? x.resume_time : 0;
   if (handoff != null) v.currentTime = handoff;
@@ -446,6 +457,14 @@ export async function render(host, params) {
     if (v.paused) v.play().catch(() => {});
   });
   function nextHighlight() {
+    // the best moments (Versus) first, one after another
+    const best = bestHere().map((m) => m.seconds).sort((a, b) => a - b);
+    if (best.length) {
+      const at = best.find((h) => h > v.currentTime + 2) ?? best[0];
+      v.currentTime = at;
+      watch.seeked(at);
+      return toast(t("Best moment at {time}", { time: fmtDuration(at) }));
+    }
     const all = [...highlights, ...(x.scene_markers || []).map((m) => m.seconds)].sort((a, b) => a - b);
     if (!all.length) return toast(t("No highlights for this scene yet"));
     const at = all.find((h) => h > v.currentTime + 2) ?? all[0];
@@ -776,10 +795,13 @@ export async function render(host, params) {
     const box = $("[data-mks]");
     if (!box) return;
     const total = v.duration || dur || 1;
+    const best = bestMarkersNow() || new Map();
     box.innerHTML = (x.scene_markers || [])
-      .map((m) => `<button type="button" class="kb-tl-mk" data-mk="${m.seconds}" style="left:${(m.seconds / total) * 100}%" title="${esc((m.title || (m.primary_tag || {}).name || t("Marker")) + " · " + fmtDuration(m.seconds))}"></button>`)
+      .map((m) => `<button type="button" class="kb-tl-mk${best.has(m.id) ? " is-best" : ""}" data-mk="${m.seconds}" style="left:${(m.seconds / total) * 100}%" title="${esc((best.has(m.id) ? "★ " + t("Best moment") + " · " : "") + (m.title || (m.primary_tag || {}).name || t("Marker")) + " · " + fmtDuration(m.seconds))}"></button>`)
       .join("");
   }
+  // the best moments arrive a moment later (standings from Stash) – then the marks again
+  if ((x.scene_markers || []).length && !bestMarkersNow()) bestMarkers().then(() => host.isConnected && paintMarkers()).catch(() => {});
   function paintMarkers() {
     const box = $("[data-markers]");
     if (!box) return;
@@ -789,7 +811,7 @@ export async function render(host, params) {
       `${t("Markers")}<small class="kb-upsec-n">${list.length || ""}</small>`,
       list
         .map(
-          (m) => `<div class="kb-mkrow"><button type="button" class="kb-mkgo" data-mkgo="${m.seconds}"><b>${fmtDuration(m.seconds)}</b><span>${esc(m.title || (m.primary_tag || {}).name || t("Marker"))}</span></button><button type="button" class="kb-btn is-icon is-ghost" data-mkren="${m.id}" title="${t("Rename")}">${icon("edit")}</button><button type="button" class="kb-btn is-icon is-ghost kb-qdel" data-mkdel="${m.id}" title="${t("Delete marker")}">${icon("close")}</button></div>`
+          (m) => `<div class="kb-mkrow${(bestMarkersNow() || new Map()).has(m.id) ? " is-best" : ""}"><button type="button" class="kb-mkgo" data-mkgo="${m.seconds}"><b>${fmtDuration(m.seconds)}</b><span>${esc(m.title || (m.primary_tag || {}).name || t("Marker"))}</span></button><button type="button" class="kb-btn is-icon is-ghost" data-mkren="${m.id}" title="${t("Rename")}">${icon("edit")}</button><button type="button" class="kb-btn is-icon is-ghost kb-qdel" data-mkdel="${m.id}" title="${t("Delete marker")}">${icon("close")}</button></div>`
         )
         .join("") + `<button type="button" class="kb-btn is-ghost kb-mkadd" data-mkadd>${icon("plus")}${t("Add a marker here (B)")}</button>`
     );
