@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.38.0",
+    date: "2026-10-02",
+    items: [
+      ["ui", "Interactive → Duplicates: finds funscripts with exactly the same movements (names and metadata don't matter) and shows them in groups. Choose which one stays; the others are set aside as .funscriptdupe – nothing is deleted – and can be brought back from the same page.", "互动 → 重复：查找动作完全相同的 funscript（名称和元数据无关），并按组显示。选择保留哪一个；其余的会被搁置为 .funscriptdupe——不会删除任何文件——并可在同一页面恢复。"],
+    ],
+  },
+  {
     v: "3.37.0",
     date: "2026-10-02",
     items: [

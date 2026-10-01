@@ -37,6 +37,17 @@ Called through Stash's `runPluginOperation` (interface: raw):
 * mode "funscript_scan": all interactive scenes, checked: {"scanned", "unreachable",
   "problems": [{"id", "title", "screenshot", "variants": [{"name", "label", "issues", "length"}]}],
   "multi": [{"id", "title", "screenshot", "count"}]}
+
+* mode "funscript_dupes": every .funscript in the library read, scripts with exactly the same movements
+  (hash over at/pos – names and metadata don't matter) grouped.
+      output: {"scanned", "truncated", "groups": [{"hash", "files": [{"path", "name", "dir", "size", "mtime",
+               "length", "actions", "video"}]}], "aside": [{"path", "name", "dir", "restore"}]}
+  "video": the video of the same name next to the script (it belongs to a scene), else null.
+
+* mode "funscript_dupe_aside" {"paths": [...]}: duplicates go aside, x.funscript → x.funscriptdupe (nothing is
+  deleted; Stash ignores the extension). Scripts that belong to a video: Stash scans that video again.
+  mode "funscript_dupe_restore" {"paths": [... .funscriptdupe]}: the other way round (not over an existing file).
+      output: {"done": [paths], "skipped": [{"path", "reason"}]}
 """
 
 import hashlib
@@ -351,12 +362,104 @@ def funscript_scan(stash, args):
     return {"scanned": n, "unreachable": unreachable, "problems": problems, "multi": multi}
 
 
+# ---------- Duplicates: the same movements in more than one file ----------
+ASIDE = ".funscriptdupe"  # a set-aside duplicate: "x.funscript" ↔ "x.funscriptdupe" (Stash doesn't look at it)
+
+
+def paired_video(path, exts):
+    """The video with the same name next to a funscript (or None)."""
+    stem = os.path.splitext(path)[0]
+    for e in sorted(exts):
+        for cand in (stem + e, stem + e.upper()):
+            if os.path.isfile(cand):
+                return cand
+    return None
+
+
+def funscript_dupes(stash, args):
+    """Funscripts in the library whose movements are exactly the same (name, metadata, formatting don't matter),
+    grouped – plus the ones already set aside (.funscriptdupe)."""
+    roots, exts = libraries(stash)
+    groups, aside, n, truncated = {}, [], 0, False
+    for root in roots:
+        for d, dirs, files in os.walk(root):
+            dirs[:] = [x for x in dirs if x.lower() not in SKIP_DIRS and not x.startswith(".")]
+            for f in files:
+                low = f.lower()
+                p = os.path.join(d, f)
+                if low.endswith(ASIDE):
+                    aside.append({"path": p, "name": f, "dir": d, "restore": p[: -len("dupe")]})
+                elif low.endswith(".funscript"):
+                    n += 1
+                    if n > MAX_LIST:
+                        truncated = True
+                        continue
+                    a = analyze(p, 0, buckets=False)
+                    if a["hash"] and "broken" not in a["issues"]:
+                        v = paired_video(p, exts)
+                        groups.setdefault(a["hash"], []).append({"path": p, "name": f, "dir": d, "size": a["size"], "mtime": a["mtime"],
+                                                                 "length": a["length"], "actions": a["actions"], "video": os.path.basename(v) if v else None})
+    out = [{"hash": h, "files": sorted(fl, key=lambda x: (x["video"] is None, x["mtime"]))} for h, fl in groups.items() if len(fl) > 1]
+    out.sort(key=lambda g: (-len(g["files"]), g["files"][0]["name"].lower()))
+    return {"scanned": min(n, MAX_LIST), "groups": out, "aside": sorted(aside, key=lambda x: x["path"].lower()), "truncated": truncated}
+
+
+def funscript_dupe_aside(stash, args):
+    """Put duplicates aside: x.funscript → x.funscriptdupe (nothing is deleted). A script that belongs to a video
+    (same name next to it) makes that scene lose its funscript – Stash scans the video again then."""
+    roots, exts = libraries(stash)
+    done, skipped, scan = [], [], []
+    for p in args.get("paths") or []:
+        p = str(p)
+        if not p.lower().endswith(".funscript") or not os.path.isfile(p) or not inside(p, roots):
+            skipped.append({"path": p, "reason": "not a funscript in a library folder"})
+        elif os.path.exists(p + "dupe"):
+            skipped.append({"path": p, "reason": "already a set-aside file with that name"})
+        else:
+            v = paired_video(p, exts)
+            os.rename(p, p + "dupe")
+            done.append(p)
+            if v:
+                scan.append(v)
+    if scan:
+        stash.gql("mutation($i: ScanMetadataInput!) { metadataScan(input: $i) }", {"i": {"paths": scan, "rescan": True}})
+    return {"done": done, "skipped": skipped}
+
+
+def funscript_dupe_restore(stash, args):
+    """Bring set-aside files back: x.funscriptdupe → x.funscript (not over an existing file)."""
+    roots, exts = libraries(stash)
+    done, skipped, scan = [], [], []
+    for p in args.get("paths") or []:
+        p = str(p)
+        t = p[: -len("dupe")]
+        if not p.lower().endswith(ASIDE) or not os.path.isfile(p) or not inside(p, roots):
+            skipped.append({"path": p, "reason": "not a set-aside file in a library folder"})
+        elif os.path.exists(t):
+            skipped.append({"path": p, "reason": "a funscript with that name exists already"})
+        else:
+            os.rename(p, t)
+            done.append(t)
+            v = paired_video(t, exts)
+            if v:
+                scan.append(v)
+    if scan:
+        stash.gql("mutation($i: ScanMetadataInput!) { metadataScan(input: $i) }", {"i": {"paths": scan, "rescan": True}})
+    return {"done": done, "skipped": skipped}
+
+
 def main():
     data = json.loads(sys.stdin.read() or "{}")
     args = data.get("args") or {}
     mode = str(args.get("mode") or "")
     try:
-        if mode == "funscript_variants":
+        if mode == "funscript_dupes":
+            out = funscript_dupes(Stash(data.get("server_connection")), args)
+        elif mode == "funscript_dupe_aside":
+            out = funscript_dupe_aside(Stash(data.get("server_connection")), args)
+        elif mode == "funscript_dupe_restore":
+            out = funscript_dupe_restore(Stash(data.get("server_connection")), args)
+        elif mode == "funscript_variants":
             out = funscript_variants(Stash(data.get("server_connection")), args)
         elif mode == "funscript_read":
             out = funscript_read(Stash(data.get("server_connection")), args)

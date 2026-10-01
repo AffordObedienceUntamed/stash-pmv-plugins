@@ -40,6 +40,7 @@ const ROUTES = [
   { re: /^interactive$/, view: "funscripts" },
   { re: /^interactive\/files$/, view: "funscripts", params: { tab: "files" } },
   { re: /^interactive\/problems$/, view: "funscripts", params: { tab: "problems" } },
+  { re: /^interactive\/dupes$/, view: "funscripts", params: { tab: "dupes" } },
   { re: /^whatsnew$/, view: "whatsnew" },
   { re: /^versus$/, view: "versus" },
   { re: /^versus\/ranking$/, view: "versus", params: { tab: "ranking" } },
