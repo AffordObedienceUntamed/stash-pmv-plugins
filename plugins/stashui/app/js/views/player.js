@@ -1050,7 +1050,7 @@ export async function render(host, params, query = {}) {
       await new Promise((r) => setTimeout(r, 1500));
       const s = await getScene(x.id).catch(() => null);
       if (s && !!s.interactive === want) {
-        return go(`scene/${x.id}?t=${Math.floor(v.currentTime)}`); // the scene again, at the same spot
+        return go(`scene/${x.id}?t=${Math.floor(v.currentTime)}`, true); // the scene again, at the same spot (no new history entry – "back" leaves at once)
       }
     }
     if (host.isConnected) toast(t("Stash hasn't scanned the video yet – open the scene again in a moment."));

@@ -4,6 +4,14 @@
 
 export const CHANGES = [
   {
+    v: "3.35.1",
+    date: "2026-10-01",
+    items: [
+      ["ui", "The Handy gets the newly chosen funscript right away (it kept playing the old one).", "选择新的 funscript 后，Handy 会立即使用它（之前会继续播放旧的）。"],
+      ["ui", "Back in the player leaves with one click after choosing a funscript (it needed several).", "选择 funscript 后，播放器中的返回按钮点一次即可退出（之前需要点好几次）。"],
+    ],
+  },
+  {
     v: "3.35.0",
     date: "2026-10-01",
     items: [

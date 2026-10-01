@@ -106,7 +106,8 @@ class Handy {
   }
   // Hand the scene's script to the device
   async load(funscriptPath, apiKey) {
-    if (this.script === funscriptPath && this.state === "ready") return;
+    // (no "already loaded" shortcut: a scene's funscript keeps its address – /scene/ID/funscript –
+    // also when another file was chosen for it, so the script is always sent fresh)
     this.set("uploading");
     let url;
     if (cfg.useStashHostedFunscript) {
@@ -114,9 +115,10 @@ class Handy {
       const u = new URL(funscriptPath.replace("/funscript", "/interactive_csv"), location.href);
       if (apiKey === undefined) apiKey = await gql(`query { configuration { general { apiKey } } }`).then((d) => d.configuration.general.apiKey).catch(() => "");
       if (apiKey) u.searchParams.set("apikey", apiKey);
+      u.searchParams.set("v", Date.now()); // a new address each time – the device doesn't reuse an old copy
       url = u.toString();
     } else {
-      const fs = await (await fetch(funscriptPath, { credentials: "same-origin" })).json();
+      const fs = await (await fetch(funscriptPath, { credentials: "same-origin", cache: "no-store" })).json();
       const fd = new FormData();
       fd.append("syncFile", new File([toCsv(fs)], `${Math.round(Math.random() * 1e8)}.csv`), "script.csv");
       const up = await (await fetch(UPLOAD, { method: "POST", body: fd })).json();
