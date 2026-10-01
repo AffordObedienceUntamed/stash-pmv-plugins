@@ -5,15 +5,23 @@
 
 import { esc, icon, toast, errorToast, openDrawer, confirmDialog, fmtDuration, plural, debounce } from "../ui.js";
 import { t } from "../i18n.js";
-import { findItems, gql } from "../api.js";
+import { findItems, gql, pluginConfig, setPluginConfig } from "../api.js";
 import { go } from "../main.js";
 import { mediaBrowser } from "./media.js";
 import { runBackend, fsSources, rememberFs, samePath, nameWords } from "../interactive.js";
 import { issueText } from "../fsvariants.js";
 import { pokeJobs } from "../jobs.js";
 
-const TAG_PROBLEMS = "Funscript problem";
-const TAG_MULTI = "Several funscripts";
+// Names of the tags (changeable on the Problems tab, kept in Stash UI's settings as fsTags)
+const TAG_DEFAULTS = { problems: "Funscript problem", multi: "Several funscripts" };
+async function tagNames() {
+  try {
+    const saved = JSON.parse((await pluginConfig("stashui")).fsTags || "{}") || {};
+    return { problems: String(saved.problems || "").trim() || TAG_DEFAULTS.problems, multi: String(saved.multi || "").trim() || TAG_DEFAULTS.multi };
+  } catch (e) {
+    return Object.assign({}, TAG_DEFAULTS);
+  }
+}
 
 // Put a tag on exactly these scenes: added where missing, taken off scenes that have it but aren't in the list
 async function syncTag(name, ids) {
@@ -68,21 +76,21 @@ export function render(main, params, query) {
     const box = body.querySelector("[data-speed]");
     if (!box) return;
     try {
-      const d = await gql(`query FsvNoSpeed { findScenes(scene_filter: { interactive: true, interactive_speed: { value: 0, modifier: IS_NULL } }, filter: { per_page: -1 }) { count scenes { id } } }`);
+      const d = await gql(`query FsvNoSpeed { findScenes(scene_filter: { interactive: true, interactive_speed: { value: 0, modifier: IS_NULL }, OR: { interactive: true, interactive_speed: { value: 1, modifier: LESS_THAN } } }, filter: { per_page: -1 }) { count scenes { id } } }`);
       noSpeed = d.findScenes.scenes.map((s) => s.id);
     } catch (e) {
       return (box.innerHTML = `<h3 class="kb-fsp-h">${t("Speed and heatmap")}</h3><p class="kb-hint">${esc(e.message)}</p>`);
     }
     box.innerHTML = `<div class="kb-fsp-sechead"><h3 class="kb-fsp-h">${t("Speed and heatmap")} <span class="kb-hint">${noSpeed.length}</span></h3>
         <button type="button" class="kb-btn is-ghost" data-gen ${noSpeed.length ? "" : "disabled"}>${t("Generate for these scenes")}</button></div>
-      <p class="kb-hint">${noSpeed.length ? t("{n} interactive scenes have no speed yet – Stash needs it for the heatmap and the speed filter. Stash's own task “Heatmaps for interactive videos” measures them.", { n: noSpeed.length }) : t("Every interactive scene has its speed and heatmap.")}</p>`;
+      <p class="kb-hint">${noSpeed.length ? t("{n} interactive scenes have no speed (or 0) – Stash needs it for the heatmap and the speed filter. Stash's own task “Heatmaps for interactive videos” measures them again.", { n: noSpeed.length }) : t("Every interactive scene has its speed and heatmap.")}</p>`;
   }
   async function generateSpeeds(b) {
     if (!noSpeed.length) return;
-    if (!(await confirmDialog({ title: t("Generate heatmaps and speeds?"), text: t("Stash's task “Heatmaps for interactive videos” runs for these {n} scenes only (nothing that exists is overwritten). You can follow it on the Tasks page.", { n: noSpeed.length }), ok: t("Generate") })).ok) return;
+    if (!(await confirmDialog({ title: t("Generate heatmaps and speeds?"), text: t("Stash's task “Heatmaps for interactive videos” runs again for these {n} scenes only (their heatmap and speed – nothing else is generated). A script without any movement stays at 0. You can follow it on the Tasks page.", { n: noSpeed.length }), ok: t("Generate") })).ok) return;
     b.classList.add("is-busy");
     try {
-      await gql(`mutation FsvGenerate($i: GenerateMetadataInput!) { metadataGenerate(input: $i) }`, { i: { interactiveHeatmapsSpeeds: true, overwrite: false, sceneIDs: noSpeed } });
+      await gql(`mutation FsvGenerate($i: GenerateMetadataInput!) { metadataGenerate(input: $i) }`, { i: { interactiveHeatmapsSpeeds: true, overwrite: true, sceneIDs: noSpeed } });
       pokeJobs();
       toast(t("Started – Stash is measuring {n} scenes", { n: noSpeed.length }), "ok", { label: t("Tasks"), run: () => go("tasks") });
     } catch (er) {
@@ -103,6 +111,7 @@ export function render(main, params, query) {
       return;
     }
     if (!alive) return;
+    const names = await tagNames();
     main.querySelector('[data-n="problems"]').textContent = r.problems.length;
     const row = (s, info) => `<a class="kb-fsl-row kb-fsl-scene" href="#/scene/${esc(s.id)}">
         ${s.screenshot ? `<img alt="" loading="lazy" src="${esc(s.screenshot)}">` : icon("film")}
@@ -114,23 +123,31 @@ export function render(main, params, query) {
     const section = (key, title, hint, list, line, tagName) => `
       <section class="kb-fsp-sec" data-sec="${key}">
         <div class="kb-fsp-sechead"><h3 class="kb-fsp-h">${title} <span class="kb-hint">${list.length}</span></h3>
-          <button type="button" class="kb-btn is-ghost" data-tag="${key}" ${list.length ? "" : "disabled"}>${icon("tag")}${t("Tag these scenes “{tag}”", { tag: esc(tagName) })}</button></div>
+          <span class="kb-fsp-tagbox"><input class="kb-field" type="text" data-tagname="${key}" value="${esc(tagName)}" maxlength="60" aria-label="${t("Tag name")}" title="${t("Tag name")}" autocomplete="off">
+          <button type="button" class="kb-btn is-ghost" data-tag="${key}" ${list.length ? "" : "disabled"}>${icon("tag")}${t("Tag these scenes")}</button></span></div>
         <p class="kb-hint">${hint}</p>
         <div class="kb-fsl">${list.length ? list.map((s) => row(s, line(s))).join("") : `<p class="kb-hint">${t("Nothing found")}</p>`}</div>
       </section>`;
     body.innerHTML =
       `<p class="kb-hint">${t("{n} scenes checked.", { n: r.scanned })}${r.unreachable ? " " + t("{n} scenes skipped – their video can't be reached from here.", { n: r.unreachable }) : ""}</p>` +
-      section("problems", t("Problems"), t("A script that can't be read or has no movements, or one that is much longer or shorter than its video."), r.problems, why, TAG_PROBLEMS) +
-      section("multi", t("Several scripts"), t("Scenes with more than one funscript next to the video – choose between them in the player."), r.multi, (s) => t("{n} scripts", { n: s.count }), TAG_MULTI) +
+      section("problems", t("Problems"), t("A script that can't be read or has no movements, or one that is much longer or shorter than its video."), r.problems, why, names.problems) +
+      section("multi", t("Several scripts"), t("Scenes with more than one funscript next to the video – choose between them in the player."), r.multi, (s) => t("{n} scripts", { n: s.count }), names.multi) +
       `<section class="kb-fsp-sec" data-speed><div class="kb-loading">${t("Checking speeds …")}</div></section>`;
     paintSpeed();
+    body.onchange = async (e) => {
+      const i = e.target.closest("[data-tagname]");
+      if (!i) return;
+      names[i.dataset.tagname] = i.value.trim() || TAG_DEFAULTS[i.dataset.tagname];
+      i.value = names[i.dataset.tagname];
+      await setPluginConfig("stashui", { fsTags: JSON.stringify(names) }).catch(() => {});
+    };
     body.onclick = async (e) => {
       const g = e.target.closest("[data-gen]");
       if (g) return generateSpeeds(g);
       const b = e.target.closest("[data-tag]");
       if (!b) return;
       const key = b.dataset.tag;
-      const [name, list] = key === "problems" ? [TAG_PROBLEMS, r.problems] : [TAG_MULTI, r.multi];
+      const [name, list] = key === "problems" ? [names.problems, r.problems] : [names.multi, r.multi];
       if (!(await confirmDialog({ title: t("Tag these scenes?"), text: t("The tag “{tag}” is put on these {n} scenes and taken off scenes that no longer qualify.", { tag: name, n: list.length }), ok: t("Tag") })).ok) return;
       b.classList.add("is-busy");
       try {

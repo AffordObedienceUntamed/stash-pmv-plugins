@@ -1309,3 +1309,12 @@ a.kb-fsl-row:hover { background: var(--bg-3); }
 .kb-fse-name { display: flex; flex-direction: column; gap: 6px; }
 .kb-fse-name b { font: 600 13px/1.2 var(--f-text); }
 .kb-fsv-edit { margin-top: 6px; }
+
+/* Timeline picture of a chosen variant, duplicates in the stack, stack options, tag name fields */
+.kb-tl-fsv { background-repeat: no-repeat; }
+.kb-fsv-row.is-dupe .kb-fsv-bar { box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .85); }
+.kb-fsv-dup { grid-column: 2 / -1; color: var(--text-2); font: 500 12px/1.3 var(--f-label); }
+.kb-fsv-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 6px; }
+.kb-fsv-full { display: inline-flex; align-items: center; gap: 6px; color: var(--text-2); font: 400 12.5px/1.2 var(--f-label); cursor: pointer; }
+.kb-fsp-tagbox { display: inline-flex; align-items: center; gap: 8px; }
+.kb-fsp-tagbox .kb-field { width: 190px; }

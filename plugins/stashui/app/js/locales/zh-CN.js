@@ -1392,4 +1392,11 @@ export default {
   "Generate heatmaps and speeds?": "生成热力图和速度？",
   "Stash's task “Heatmaps for interactive videos” runs for these {n} scenes only (nothing that exists is overwritten). You can follow it on the Tasks page.": "Stash 的任务“互动视频热力图”只对这 {n} 个场景运行（不会覆盖已有内容）。你可以在“任务”页面查看进度。",
   "Started – Stash is measuring {n} scenes": "已开始——Stash 正在测量 {n} 个场景",
+  "Same movements as “{name}”": "动作与“{name}”相同",
+  "Set aside the duplicates ({n})": "搁置重复项（{n}）",
+  "Stretch each script to the full width": "将每个脚本拉伸至整个宽度",
+  "Tag these scenes": "给这些场景打标签",
+  "Tag name": "标签名称",
+  "{n} interactive scenes have no speed (or 0) – Stash needs it for the heatmap and the speed filter. Stash's own task “Heatmaps for interactive videos” measures them again.": "{n} 个互动场景没有速度（或为 0）——Stash 的热力图和速度筛选需要它。Stash 自带的任务“互动视频热力图”会重新测量它们。",
+  "Stash's task “Heatmaps for interactive videos” runs again for these {n} scenes only (their heatmap and speed – nothing else is generated). A script without any movement stays at 0. You can follow it on the Tasks page.": "Stash 的任务“互动视频热力图”只会对这 {n} 个场景重新运行（仅其热力图和速度——不会生成其他内容）。没有任何动作的脚本仍为 0。你可以在“任务”页面查看进度。",
 };

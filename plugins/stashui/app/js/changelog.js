@@ -4,6 +4,15 @@
 
 export const CHANGES = [
   {
+    v: "3.41.0",
+    date: "2026-10-02",
+    items: [
+      ["ui", "The picture under the player's timeline follows the script in use: choose a variant and its intensity shows there (Stash's own heatmap stays for the video's own script).", "播放器时间轴下方的图像跟随当前使用的脚本：选择一个变体后，这里显示它的强度（视频自带脚本仍使用 Stash 自己的热力图）。"],
+      ["ui", "Stacked heatmap: scripts with exactly the same movements are marked (white outline, “Same movements as …”) and can be set aside with one button – the one with the video's name always stays. New switch “Stretch each script to the full width” (default: aligned to the video's length).", "叠放热力图：动作完全相同的脚本会被标记（白色轮廓，“动作与……相同”），可一键搁置——与视频同名的脚本始终保留。新开关“将每个脚本拉伸至整个宽度”（默认按视频长度对齐）。"],
+      ["ui", "Interactive → Problems: the tag names are editable (kept in the settings), and the speed check also finds scenes whose speed is 0 or below, not only missing ones; the task then measures them again (heatmap and speed of those scenes only).", "互动 → 问题：标签名称可编辑（保存在设置中）；速度检查现在也会找出速度为 0 或更低的场景，而不只是缺失的；任务会重新测量它们（仅这些场景的热力图和速度）。"],
+    ],
+  },
+  {
     v: "3.40.0",
     date: "2026-10-02",
     items: [

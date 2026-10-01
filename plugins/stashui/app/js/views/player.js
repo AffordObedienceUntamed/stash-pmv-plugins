@@ -11,7 +11,7 @@ import { placardHtml, bindPlacard } from "./placard.js";
 import { similarScenes } from "../similar.js";
 import { bestMarkers, bestMarkersNow } from "../standings.js";
 import { attachHandy, interactiveConfig, saveInteractiveConfig, handyPrefs, runBackend, fsSources, rememberFs, variantChoices, rememberVariant, readVariant } from "../interactive.js";
-import { stackHtml, activeOf } from "../fsvariants.js";
+import { stackHtml, activeOf, heatBg, duplicatesOf } from "../fsvariants.js";
 import { createVR, guessVR } from "../vr.js";
 import { videoGlow } from "../theme.js";
 import { BINS, watchRecorder, watchBins, motionBins, combine, peaks } from "../heat.js";
@@ -1103,13 +1103,16 @@ export async function render(host, params, query = {}) {
       el.querySelector("[data-fslist]").innerHTML = `<p class="kb-hint">${esc(e.message)}</p><p class="kb-hint">${t("Stash UI's backend needs Python (like the PMV Generator).")}</p>`;
     }
     el.querySelector("[data-fsq]").addEventListener("input", paint);
+    pickerEl = el;
     paintVariants([el.querySelector("[data-fsvbox]")]);
+    el.addEventListener("change", onFull);
     // a new main funscript (or none): the remembered variant doesn't fit any more
     const remember = (name, path) => (vpick = null, vdata = null, rememberVariant(x.id, null), rememberFs(x.id, name, path));
     el.addEventListener("click", async (e) => {
       const r = e.target.closest("[data-fspath]");
       const vr = e.target.closest("[data-fsvpath]");
       if (e.target.closest("[data-fsvedit]")) return editVariant().catch((er) => errorToast(er, "Funscript"));
+      if (e.target.closest("[data-fsvdupes]")) return setAsideDuplicates().catch((er) => errorToast(er, "Funscript"));
       if (vr) return chooseVariant(vr.dataset.fsvpath).catch((er) => errorToast(er, "Funscript"));
       try {
         if (r) {
@@ -1190,15 +1193,43 @@ export async function render(host, params, query = {}) {
         const d = await loadVariants();
         box.hidden = !d.variants.length;
         if (box.hidden) continue;
-        box.querySelector("[data-fsvbody]").innerHTML = stackHtml(d, activeOf(d, vpick)) + `<button type="button" class="kb-btn is-ghost kb-fsv-edit" data-fsvedit>${icon("edit")}${t("Edit this script …")}</button>`;
+        const dups = duplicatesOf(d).size;
+        const full = store.get("fsvFull", false);
+        box.querySelector("[data-fsvbody]").innerHTML = stackHtml(d, activeOf(d, vpick), { full }) +
+          `<div class="kb-fsv-acts"><button type="button" class="kb-btn is-ghost" data-fsvedit>${icon("edit")}${t("Edit this script …")}</button>` +
+          (dups ? `<button type="button" class="kb-btn is-ghost" data-fsvdupes>${t("Set aside the duplicates ({n})", { n: dups })}</button>` : "") +
+          `<label class="kb-fsv-full"><input type="checkbox" data-fsvfull${full ? " checked" : ""}> ${t("Stretch each script to the full width")}</label></div>`;
         const hint = box.querySelector("[data-fsvhint]");
         if (hint) hint.hidden = d.variants.length < 2;
+        paintTimelineHeat();
       } catch (e) {
         box.hidden = true; // no backend (needs Python) → just no variants
       }
     }
   }
-  const variantBoxes = () => [...document.querySelectorAll("[data-fsvbox]")]; // the Handy menu and the funscript picker
+  // The picture under the timeline follows the script in use (Stash's own heatmap is the one of the video's own script)
+  function paintTimelineHeat() {
+    const tl = host.querySelector("[data-timeline]");
+    if (!tl || !x.interactive) return;
+    const a = vdata && activeOf(vdata, vpick);
+    let el = tl.querySelector(".kb-tl-fsv");
+    const own = tl.querySelector("img.kb-tl-fs");
+    if (!a || a.main || !a.speed || !a.speed.length) {
+      if (el) el.remove();
+      if (own) own.hidden = false;
+      return;
+    }
+    if (!el) {
+      el = document.createElement("div");
+      el.className = "kb-tl-fs kb-tl-fsv";
+      el.title = t("Funscript – how intense it gets");
+      tl.insertBefore(el, tl.querySelector("[data-buf]"));
+    }
+    if (own) own.hidden = true;
+    el.style.background = heatBg(a, vdata.duration || dur);
+  }
+  let pickerEl = null; // the funscript picker while it's open
+  const variantBoxes = () => [...host.querySelectorAll("[data-fsvbox]"), pickerEl && pickerEl.isConnected ? pickerEl.querySelector("[data-fsvbox]") : null].filter(Boolean); // the Handy menu and the picker (of this player)
   // the editor: the script in use is changed and saved as a new variant (the original stays)
   async function editVariant() {
     const d = await loadVariants();
@@ -1226,7 +1257,26 @@ export async function render(host, params, query = {}) {
     await rememberVariant(x.id, vpick);
     if (handy) await handy.setVariant(s.main ? null : fs);
     paintVariants(variantBoxes());
+    paintTimelineHeat();
     toast(t("Script “{name}” – the Handy follows it from here", { name: s.label || t("Standard") }), "ok");
+  }
+  // duplicates among this video's scripts → set aside (never the one with the video's name)
+  async function setAsideDuplicates() {
+    const d = await loadVariants();
+    const list = [...duplicatesOf(d).keys()];
+    if (!list.length) return;
+    if (!(await confirmDialog({ title: t("Set these duplicates aside?"), text: t("{n} funscripts are renamed to .funscriptdupe next to where they are – nothing is deleted.", { n: list.length }), ok: t("Set aside") })).ok) return;
+    const cur = activeOf(d, vpick);
+    await runBackend({ mode: "funscript_dupe_aside", paths: list });
+    if (cur && list.includes(cur.path)) {
+      vpick = null;
+      await rememberVariant(x.id, null);
+      if (handy) await handy.setVariant(null);
+    }
+    await loadVariants(true);
+    paintVariants(variantBoxes());
+    paintTimelineHeat();
+    toast(t("{n} set aside", { n: list.length }), "ok");
   }
   let handy = null;
   const startHandy = () => {
@@ -1241,6 +1291,13 @@ export async function render(host, params, query = {}) {
     }) : null;
   };
   startHandy();
+  if (x.interactive && x.paths.funscript) loadVariants().then(paintTimelineHeat).catch(() => {}); // a remembered variant's picture under the timeline
+  // "stretch to full width" (the stripes in the Handy menu and the picker)
+  const onFull = (e) => {
+    if (!e.target.matches("[data-fsvfull]")) return;
+    store.set("fsvFull", e.target.checked);
+    paintVariants(variantBoxes());
+  };
   const handyAway = (e) => {
     const p = host.querySelector("[data-hpanel]");
     if (p && !p.hidden && !e.target.closest("[data-hpanel], [data-handy]")) p.hidden = true;
@@ -1336,6 +1393,7 @@ export async function render(host, params, query = {}) {
   if (hp) {
     hp.addEventListener("click", (e) => {
       if (e.target.closest("[data-fsvedit]")) return editVariant().catch((err) => errorToast(err, "Funscript"));
+      if (e.target.closest("[data-fsvdupes]")) return setAsideDuplicates().catch((err) => errorToast(err, "Funscript"));
       const r = e.target.closest("[data-fsvpath]");
       if (r) chooseVariant(r.dataset.fsvpath).catch((err) => errorToast(err, "Funscript"));
     });
@@ -1343,6 +1401,7 @@ export async function render(host, params, query = {}) {
       if (e.target.matches("[data-hpoff]")) paintOffset();
       if (e.target.matches("[data-hpmin], [data-hpmax]")) paintStroke();
     });
+    hp.addEventListener("change", onFull);
     hp.addEventListener("change", async (e) => {
       const el = e.target;
       try {
