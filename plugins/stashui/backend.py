@@ -48,6 +48,11 @@ Called through Stash's `runPluginOperation` (interface: raw):
   deleted; Stash ignores the extension). Scripts that belong to a video: Stash scans that video again.
   mode "funscript_dupe_restore" {"paths": [... .funscriptdupe]}: the other way round (not over an existing file).
       output: {"done": [paths], "skipped": [{"path", "reason"}]}
+
+* mode "funscript_save_variant": an edited script becomes a new variant next to the video:
+  "<video> (<label>).funscript" (a taken name gets " 2", " 3" …) – the original isn't touched.
+      args:   {"mode": "funscript_save_variant", "scene_id": "12", "label": "Soft", "content": "<funscript text>"}
+      output: {"path", "name"}
 """
 
 import hashlib
@@ -448,12 +453,44 @@ def funscript_dupe_restore(stash, args):
     return {"done": done, "skipped": skipped}
 
 
+def funscript_save_variant(stash, args):
+    """Save an edited script as a new variant next to the video: "<video> (<label>).funscript". Never overwrites –
+    a taken name gets " 2", " 3" … – and the original stays as it is."""
+    sid = str(args.get("scene_id") or "")
+    video, _ = scene_file(stash, sid)
+    if not os.path.isfile(video):
+        raise ValueError(f"the video file can't be reached from here: {video}")
+    content = str(args.get("content") or "")
+    if len(content.encode()) > MAX_SIZE:
+        raise ValueError("the funscript is too big")
+    try:
+        fs = json.loads(content)
+    except Exception:
+        raise ValueError("that's not a funscript (not JSON)")
+    acts = fs.get("actions") if isinstance(fs, dict) else None
+    if not isinstance(acts, list) or not acts or not all(isinstance(a, dict) and "at" in a and "pos" in a for a in acts[:50]):
+        raise ValueError("that's not a funscript (no actions with at/pos)")
+    label = "".join(c for c in str(args.get("label") or "") if c not in '\\/:*?"<>|' and c.isprintable()).strip(" .")[:40] or "Edited"
+    base = os.path.splitext(video)[0] + f" ({label})"
+    target, n = base + ".funscript", 1
+    while os.path.exists(target):
+        n += 1
+        target = f"{base} {n}.funscript"
+    tmp = target + ".part"
+    with open(tmp, "w", encoding="utf-8", newline="\n") as f:
+        f.write(content)
+    os.replace(tmp, target)
+    return {"path": target, "name": os.path.basename(target)}
+
+
 def main():
     data = json.loads(sys.stdin.read() or "{}")
     args = data.get("args") or {}
     mode = str(args.get("mode") or "")
     try:
-        if mode == "funscript_dupes":
+        if mode == "funscript_save_variant":
+            out = funscript_save_variant(Stash(data.get("server_connection")), args)
+        elif mode == "funscript_dupes":
             out = funscript_dupes(Stash(data.get("server_connection")), args)
         elif mode == "funscript_dupe_aside":
             out = funscript_dupe_aside(Stash(data.get("server_connection")), args)

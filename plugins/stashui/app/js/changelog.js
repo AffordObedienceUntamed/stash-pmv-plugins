@@ -4,6 +4,14 @@
 
 export const CHANGES = [
   {
+    v: "3.39.0",
+    date: "2026-10-02",
+    items: [
+      ["ui", "Simple funscript editor (“Edit this script …” in the Handy menu and the Funscript list): stroke range, speed limit, smoothing, reverse and shift in time, with a before / after heatmap preview. It's saved as a new variant next to the video – the original is never touched. Your own presets are kept.", "简易 funscript 编辑器（Handy 菜单和 Funscript 列表中的“编辑此脚本 …”）：行程范围、速度上限、平滑、反转和时间偏移，附修改前/后热力图预览。结果另存为视频旁的新变体——原脚本不会被改动。可保存自己的预设。"],
+      ["ui", "The scripts box in the Handy menu and the Funscript list now also shows for a video with a single script (its heatmap and the editor).", "Handy 菜单和 Funscript 列表中的脚本区现在也会显示只有一个脚本的视频（其热力图和编辑器）。"],
+    ],
+  },
+  {
     v: "3.38.0",
     date: "2026-10-02",
     items: [

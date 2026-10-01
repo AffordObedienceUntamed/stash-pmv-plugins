@@ -1109,6 +1109,7 @@ export async function render(host, params, query = {}) {
     el.addEventListener("click", async (e) => {
       const r = e.target.closest("[data-fspath]");
       const vr = e.target.closest("[data-fsvpath]");
+      if (e.target.closest("[data-fsvedit]")) return editVariant().catch((er) => errorToast(er, "Funscript"));
       if (vr) return chooseVariant(vr.dataset.fsvpath).catch((er) => errorToast(er, "Funscript"));
       try {
         if (r) {
@@ -1183,20 +1184,38 @@ export async function render(host, params, query = {}) {
     vpick = ch[x.id] || null;
     return (vdata = d);
   }
-  // is there something to choose or to warn about? (a single script without problems shows nothing)
-  const variantsMatter = (d) => d.variants.length > 1 || d.variants.some((s) => s.issues.some((i) => i !== "unsorted"));
   async function paintVariants(into) {
     for (const box of into) {
       try {
         const d = await loadVariants();
-        box.hidden = !variantsMatter(d);
-        if (!box.hidden) box.querySelector("[data-fsvbody]").innerHTML = stackHtml(d, activeOf(d, vpick));
+        box.hidden = !d.variants.length;
+        if (box.hidden) continue;
+        box.querySelector("[data-fsvbody]").innerHTML = stackHtml(d, activeOf(d, vpick)) + `<button type="button" class="kb-btn is-ghost kb-fsv-edit" data-fsvedit>${icon("edit")}${t("Edit this script …")}</button>`;
+        const hint = box.querySelector("[data-fsvhint]");
+        if (hint) hint.hidden = d.variants.length < 2;
       } catch (e) {
         box.hidden = true; // no backend (needs Python) → just no variants
       }
     }
   }
   const variantBoxes = () => [...document.querySelectorAll("[data-fsvbox]")]; // the Handy menu and the funscript picker
+  // the editor: the script in use is changed and saved as a new variant (the original stays)
+  async function editVariant() {
+    const d = await loadVariants();
+    const src = activeOf(d, vpick);
+    if (!src) return;
+    const { openEditor } = await import("../fsedit.js");
+    openEditor({
+      sceneId: x.id,
+      src,
+      meta: d,
+      onSaved: async (res) => {
+        await loadVariants(true);
+        paintVariants(variantBoxes());
+        toast(t("Saved as “{name}”", { name: res.name }), "ok", { label: t("Use it"), run: () => chooseVariant(res.path).catch((er) => errorToast(er, "Funscript")) });
+      },
+    });
+  }
   async function chooseVariant(path) {
     const d = await loadVariants();
     const cur = activeOf(d, vpick);
@@ -1243,7 +1262,7 @@ export async function render(host, params, query = {}) {
       <div class="kb-hp-var" data-fsvbox hidden>
         <div class="kb-hp-row"><b>${t("Scripts for this video")}</b></div>
         <div data-fsvbody></div>
-        <p class="kb-hp-hint">${t("Click one to switch – the Handy loads it and carries on from where the video is. Your choice is remembered for this scene.")}</p>
+        <p class="kb-hp-hint" data-fsvhint>${t("Click one to switch – the Handy loads it and carries on from where the video is. Your choice is remembered for this scene.")}</p>
       </div>
       <div class="kb-hp-col">
         <div class="kb-hp-row"><b>${t("Sync")}</b><span class="kb-hp-val" data-hpoffv></span><span class="kb-spacer"></span><button type="button" class="kb-btn is-ghost kb-hp-mini" data-hpreset>${t("Reset")}</button></div>
@@ -1316,6 +1335,7 @@ export async function render(host, params, query = {}) {
   }
   if (hp) {
     hp.addEventListener("click", (e) => {
+      if (e.target.closest("[data-fsvedit]")) return editVariant().catch((err) => errorToast(err, "Funscript"));
       const r = e.target.closest("[data-fsvpath]");
       if (r) chooseVariant(r.dataset.fsvpath).catch((err) => errorToast(err, "Funscript"));
     });

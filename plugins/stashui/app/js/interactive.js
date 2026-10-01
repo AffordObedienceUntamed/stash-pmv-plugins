@@ -70,7 +70,18 @@ export async function rememberVariant(sceneId, path) {
 export async function readVariant(path) {
   return JSON.parse((await runBackend({ mode: "funscript_read", path })).content);
 }
-export const samePath =(a, b) => !!a && !!b && a.replace(/\\/g, "/").toLowerCase() === b.replace(/\\/g, "/").toLowerCase();
+// Own presets of the script editor: { name: { lo, hi, maxSpeed, smooth, invert, offset } }
+export async function editorPresets() {
+  try {
+    return JSON.parse((await pluginConfig("stashui")).fsPresets || "{}") || {};
+  } catch (e) {
+    return {};
+  }
+}
+export async function saveEditorPresets(all) {
+  await setPluginConfig("stashui", { fsPresets: JSON.stringify(all) });
+}
+export const samePath = (a, b) => !!a && !!b && a.replace(/\\/g, "/").toLowerCase() === b.replace(/\\/g, "/").toLowerCase();
 // "Some Clip (hard) v2.funscript" → ["some", "clip", "hard", "v2"]
 export const nameWords = (str) => String(str || "").toLowerCase().replace(/\.[a-z0-9]{2,9}$/, "").split(/[^\p{L}\p{N}]+/u).filter((w) => w.length > 1);
 

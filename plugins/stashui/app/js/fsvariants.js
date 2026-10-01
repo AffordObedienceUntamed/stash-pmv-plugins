@@ -20,7 +20,7 @@ export function issueText(v, duration) {
 
 // The stripe: the script's speed over time, drawn on a track as long as the longer one of script and video.
 // A script that ends early leaves a hatched rest, one that runs on is tinted red after the video's end.
-function bar(v, duration) {
+export function stripe(v, duration) {
   const len = v.length || 0;
   const scale = Math.max(len, duration, 1);
   const f = (len / scale) * 100;
@@ -49,7 +49,7 @@ export function stackHtml(data, active) {
       const on = active && active.path === v.path;
       return `<button type="button" class="kb-fsv-row${on ? " is-on" : ""}${warn ? " has-issue" : ""}" data-fsvpath="${esc(v.path)}" title="${esc(v.name)}">
         <span class="kb-fsv-lab"><b>${esc(v.label || t("Standard"))}</b><small>${v.length ? fmtDuration(v.length) : "–"}${v.actions ? ` · ${t("{n} movements", { n: v.actions })}` : ""}</small></span>
-        ${bar(v, data.duration)}
+        ${stripe(v, data.duration)}
         <span class="kb-fsv-tag">${on ? t("in use") : ""}</span>
         ${warn ? `<span class="kb-fsv-warn">⚠ ${esc(warn)}</span>` : ""}</button>`;
     })

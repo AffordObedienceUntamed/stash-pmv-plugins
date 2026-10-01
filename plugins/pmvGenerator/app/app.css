@@ -1295,3 +1295,17 @@ a.kb-fsl-row:hover { background: var(--bg-3); }
 .kb-fsd-row small { overflow: hidden; color: var(--faint); font: 400 12px/1.25 var(--f-label); white-space: nowrap; text-overflow: ellipsis; }
 .kb-fsd-row em { flex: none; color: var(--faint); font: 700 11.5px/1 var(--f-label); font-style: normal; }
 .kb-fsd-row.is-keep em { color: var(--ok); }
+
+/* Script editor */
+.kb-fse .kb-drawer-body { display: flex; flex-direction: column; gap: 10px; }
+.kb-fse-prev { display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: 8px; background: var(--bg-2); }
+.kb-fse-line { display: grid; grid-template-columns: 52px minmax(0, 1fr); align-items: center; gap: 10px; }
+.kb-fse-line small { color: var(--faint); font: 600 12px/1 var(--f-label); }
+.kb-fse-presets { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.kb-fse-presets .kb-field { flex: 1; min-width: 130px; }
+.kb-fse-row { display: grid; grid-template-columns: 112px minmax(0, 1fr) 64px; align-items: center; gap: 10px; }
+.kb-fse-row b { font: 600 13px/1.2 var(--f-text); }
+.kb-fse-row output { color: var(--text-2); font: 500 12.5px/1 var(--f-label); text-align: right; }
+.kb-fse-name { display: flex; flex-direction: column; gap: 6px; }
+.kb-fse-name b { font: 600 13px/1.2 var(--f-text); }
+.kb-fsv-edit { margin-top: 6px; }
