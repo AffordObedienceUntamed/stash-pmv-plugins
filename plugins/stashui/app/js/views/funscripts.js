@@ -10,6 +10,7 @@ import { go } from "../main.js";
 import { mediaBrowser } from "./media.js";
 import { runBackend, fsSources, rememberFs, samePath, nameWords } from "../interactive.js";
 import { issueText } from "../fsvariants.js";
+import { pokeJobs } from "../jobs.js";
 
 const TAG_PROBLEMS = "Funscript problem";
 const TAG_MULTI = "Several funscripts";
@@ -60,6 +61,37 @@ export function render(main, params, query) {
   else if (tab === "dupes") import("./fsdupes.js").then((m) => m.paintDupes(body, main, () => alive));
   else paintFiles();
 
+  // ---------- Speed and heatmap: interactive scenes Stash hasn't measured yet ----------
+  // Stash's own task "Heatmaps for interactive videos" fills them in – here it's started for just those scenes.
+  let noSpeed = [];
+  async function paintSpeed() {
+    const box = body.querySelector("[data-speed]");
+    if (!box) return;
+    try {
+      const d = await gql(`query FsvNoSpeed { findScenes(scene_filter: { interactive: true, interactive_speed: { value: 0, modifier: IS_NULL } }, filter: { per_page: -1 }) { count scenes { id } } }`);
+      noSpeed = d.findScenes.scenes.map((s) => s.id);
+    } catch (e) {
+      return (box.innerHTML = `<h3 class="kb-fsp-h">${t("Speed and heatmap")}</h3><p class="kb-hint">${esc(e.message)}</p>`);
+    }
+    box.innerHTML = `<div class="kb-fsp-sechead"><h3 class="kb-fsp-h">${t("Speed and heatmap")} <span class="kb-hint">${noSpeed.length}</span></h3>
+        <button type="button" class="kb-btn is-ghost" data-gen ${noSpeed.length ? "" : "disabled"}>${t("Generate for these scenes")}</button></div>
+      <p class="kb-hint">${noSpeed.length ? t("{n} interactive scenes have no speed yet – Stash needs it for the heatmap and the speed filter. Stash's own task “Heatmaps for interactive videos” measures them.", { n: noSpeed.length }) : t("Every interactive scene has its speed and heatmap.")}</p>`;
+  }
+  async function generateSpeeds(b) {
+    if (!noSpeed.length) return;
+    if (!(await confirmDialog({ title: t("Generate heatmaps and speeds?"), text: t("Stash's task “Heatmaps for interactive videos” runs for these {n} scenes only (nothing that exists is overwritten). You can follow it on the Tasks page.", { n: noSpeed.length }), ok: t("Generate") })).ok) return;
+    b.classList.add("is-busy");
+    try {
+      await gql(`mutation FsvGenerate($i: GenerateMetadataInput!) { metadataGenerate(input: $i) }`, { i: { interactiveHeatmapsSpeeds: true, overwrite: false, sceneIDs: noSpeed } });
+      pokeJobs();
+      toast(t("Started – Stash is measuring {n} scenes", { n: noSpeed.length }), "ok", { label: t("Tasks"), run: () => go("tasks") });
+    } catch (er) {
+      errorToast(er, "Generate");
+    } finally {
+      b.classList.remove("is-busy");
+    }
+  }
+
   // ---------- Problems: broken scripts, scripts that don't fit the video, scenes with several scripts ----------
   async function paintProblems() {
     body.innerHTML = `<div class="kb-loading">${t("Checking every funscript …")}</div>`;
@@ -89,8 +121,12 @@ export function render(main, params, query) {
     body.innerHTML =
       `<p class="kb-hint">${t("{n} scenes checked.", { n: r.scanned })}${r.unreachable ? " " + t("{n} scenes skipped – their video can't be reached from here.", { n: r.unreachable }) : ""}</p>` +
       section("problems", t("Problems"), t("A script that can't be read or has no movements, or one that is much longer or shorter than its video."), r.problems, why, TAG_PROBLEMS) +
-      section("multi", t("Several scripts"), t("Scenes with more than one funscript next to the video – choose between them in the player."), r.multi, (s) => t("{n} scripts", { n: s.count }), TAG_MULTI);
+      section("multi", t("Several scripts"), t("Scenes with more than one funscript next to the video – choose between them in the player."), r.multi, (s) => t("{n} scripts", { n: s.count }), TAG_MULTI) +
+      `<section class="kb-fsp-sec" data-speed><div class="kb-loading">${t("Checking speeds …")}</div></section>`;
+    paintSpeed();
     body.onclick = async (e) => {
+      const g = e.target.closest("[data-gen]");
+      if (g) return generateSpeeds(g);
       const b = e.target.closest("[data-tag]");
       if (!b) return;
       const key = b.dataset.tag;

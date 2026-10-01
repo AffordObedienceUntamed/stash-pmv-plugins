@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.40.0",
+    date: "2026-10-02",
+    items: [
+      ["ui", "Interactive → Problems: shows how many interactive scenes Stash hasn't measured yet (no speed, so no heatmap or speed filter) and starts Stash's own task “Heatmaps for interactive videos” for exactly those scenes, with a confirmation. Nothing is written to the database directly.", "互动 → 问题：显示 Stash 尚未测量的互动场景数量（没有速度，因而没有热力图和速度筛选），并在确认后仅为这些场景启动 Stash 自带的任务“互动视频热力图”。不会直接写入数据库。"],
+    ],
+  },
+  {
     v: "3.39.0",
     date: "2026-10-02",
     items: [

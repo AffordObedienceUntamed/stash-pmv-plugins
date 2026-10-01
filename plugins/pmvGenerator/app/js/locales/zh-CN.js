@@ -1384,4 +1384,12 @@ export default {
   "Type a name for the preset first.": "请先输入预设名称。",
   "Preset saved": "预设已保存",
   "Save as new variant": "另存为新变体",
+  "Checking speeds …": "正在检查速度 …",
+  "Speed and heatmap": "速度与热力图",
+  "Generate for these scenes": "为这些场景生成",
+  "{n} interactive scenes have no speed yet – Stash needs it for the heatmap and the speed filter. Stash's own task “Heatmaps for interactive videos” measures them.": "{n} 个互动场景还没有速度——Stash 的热力图和速度筛选需要它。Stash 自带的任务“互动视频热力图”会测量它们。",
+  "Every interactive scene has its speed and heatmap.": "每个互动场景都有速度和热力图。",
+  "Generate heatmaps and speeds?": "生成热力图和速度？",
+  "Stash's task “Heatmaps for interactive videos” runs for these {n} scenes only (nothing that exists is overwritten). You can follow it on the Tasks page.": "Stash 的任务“互动视频热力图”只对这 {n} 个场景运行（不会覆盖已有内容）。你可以在“任务”页面查看进度。",
+  "Started – Stash is measuring {n} scenes": "已开始——Stash 正在测量 {n} 个场景",
 };
