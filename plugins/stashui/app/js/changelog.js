@@ -4,6 +4,11 @@
 
 export const CHANGES = [
   {
+    v: "3.42.1",
+    date: "2026-10-02",
+    items: [["ui", "Detailed rating: the stars are now exactly those of the info bar – they light up when you hover and the new ones pop in after a click.", "详细评分：星星现在与信息栏中的完全一致——悬停时点亮，点击后新点亮的星星依次弹出。"]],
+  },
+  {
     v: "3.42.0",
     date: "2026-10-02",
     items: [

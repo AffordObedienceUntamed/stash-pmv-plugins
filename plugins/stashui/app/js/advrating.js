@@ -124,8 +124,11 @@ export async function setScore(kind, item, cfg, name, n) {
 }
 
 // ---------- Rating drawer ----------
+// the same stars as in the info bar (.kb-stars: hover lights up to the star, the new ones pop in after a click)
 const stars = (score, name) =>
-  [1, 2, 3, 4, 5].map((i) => `<button type="button" class="kb-adv-star${score != null && score >= i ? " is-on" : ""}" data-score="${i}" data-crit="${esc(name)}" aria-label="${t("{n} stars", { n: i })}">★</button>`).join("");
+  `<span class="kb-stars" role="group" aria-label="${esc(name)}">` +
+  [1, 2, 3, 4, 5].map((i) => `<button type="button" data-star="${i}" data-crit="${esc(name)}" class="${score != null && score >= i ? "is-on" : ""}" aria-label="${t("{n} stars", { n: i })}">★</button>`).join("") +
+  "</span>";
 
 export async function openAdvRating(kind, item, { onChange } = {}) {
   let cfg = await loadConfig(kind);
@@ -144,8 +147,8 @@ export async function openAdvRating(kind, item, { onChange } = {}) {
           .map((x) => {
             const s = scores[x.name];
             return `<div class="kb-adv-row${s == null ? " is-unrated" : ""}" ${x.desc ? `title="${esc(x.desc)}"` : ""}><b>${esc(x.name)}</b>
-              <span class="kb-adv-stars">${stars(s, x.name)}</span>
-              <button type="button" class="kb-adv-zero${s === 0 ? " is-on" : ""}" data-score="0" data-crit="${esc(x.name)}" title="${t("Rate 0")}">0</button>
+              ${stars(s, x.name)}
+              <button type="button" class="kb-adv-zero${s === 0 ? " is-on" : ""}" data-zero data-crit="${esc(x.name)}" title="${t("Rate 0")}">0</button>
               <button type="button" class="kb-adv-clear" data-clear="${esc(x.name)}" title="${t("Not rated")}" ${s == null ? "hidden" : ""}>×</button></div>`;
           })
           .join("")}</section>`;
@@ -162,14 +165,18 @@ export async function openAdvRating(kind, item, { onChange } = {}) {
       ${rows}${detail}`;
   };
   el.addEventListener("click", async (e) => {
-    const b = e.target.closest("[data-score], [data-clear]");
+    const b = e.target.closest("[data-star], [data-zero], [data-clear]");
     try {
       if (b) {
         const name = b.dataset.crit || b.dataset.clear;
         const cur = scoresOf(item)[name];
-        const n = b.dataset.clear != null ? null : Number(b.dataset.score);
+        const n = b.dataset.clear != null ? null : b.dataset.zero != null ? 0 : Number(b.dataset.star);
         await setScore(kind, item, cfg, name, n === cur ? null : n); // the same score again takes it away
         paint();
+        // the new stars light up one after the other (like in the info bar)
+        body.querySelectorAll(`[data-star].is-on[data-crit="${CSS.escape(name)}"]`).forEach((s, i) =>
+          s.animate([{ transform: "scale(1)" }, { transform: "scale(1.45)", filter: "brightness(1.6)" }, { transform: "scale(1)" }], { duration: 380, delay: i * 55, easing: "cubic-bezier(.3,1.6,.5,1)" })
+        );
         onChange && onChange(item);
       } else if (e.target.closest("[data-custom]")) {
         openAdvSettings(kind, async () => {
