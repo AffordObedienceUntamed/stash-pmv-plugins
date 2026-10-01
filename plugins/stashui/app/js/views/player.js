@@ -40,6 +40,9 @@ const PLAY_MODES = [
   ["stop", "stop", "Stop at the end"],
 ];
 
+// Scenes whose cover change is still waiting for Stash (see putCover)
+const coverWaits = new Set();
+
 export async function render(host, params) {
   document.body.classList.add("kb-noscroll");
   // A mini player ends here; back from it = continue at its spot
@@ -804,18 +807,26 @@ export async function render(host, params) {
     });
   };
   async function putCover(dataUrl) {
-    // Windows: Stash renames the old cover file before deleting it – while it's still open (just
-    // shown in the browser, or the virus scanner checks the new file) that fails and Stash changes
-    // nothing. The lock is gone after a moment, so try again a few times.
+    // Windows: Stash leaves a cover file it has just written open (until its next memory clean-up,
+    // at the latest after ~2 minutes) – replacing that cover fails meanwhile ("being used by another
+    // process") and Stash changes nothing. So keep trying until it's free.
+    if (coverWaits.has(x.id)) throw new Error(t("Still waiting for Stash to release the previous cover"));
+    coverWaits.add(x.id);
     let d;
-    for (const wait of [0, 800, 1600, 3000, 5000]) {
-      if (wait) await new Promise((r) => setTimeout(r, wait));
-      try {
-        d = await gql(`mutation($i: SceneUpdateInput!) { sceneUpdate(input: $i) { id paths { screenshot } } }`, { i: { id: x.id, cover_image: dataUrl } });
-        break;
-      } catch (e) {
-        if (wait === 5000 || !/used by another process|being used|sharing violation/i.test(e.message || "")) throw e;
+    try {
+      const start = Date.now();
+      for (let i = 0; ; i++) {
+        try {
+          d = await gql(`mutation($i: SceneUpdateInput!) { sceneUpdate(input: $i) { id paths { screenshot } } }`, { i: { id: x.id, cover_image: dataUrl } });
+          break;
+        } catch (e) {
+          if (!/used by another process|being used|sharing violation/i.test(e.message || "") || Date.now() - start > 150000) throw e;
+          if (i === 1) toast(t("Stash still has the previous cover file open – it'll be changed by itself as soon as Stash lets go of it (up to 2 minutes)."));
+          await new Promise((r) => setTimeout(r, i < 3 ? 1000 : 4000));
+        }
       }
+    } finally {
+      coverWaits.delete(x.id);
     }
     x.paths.screenshot = d.sceneUpdate.paths.screenshot;
     v.poster = x.paths.screenshot;
@@ -839,6 +850,7 @@ export async function render(host, params) {
   }
   async function frameAsCover() {
     if (!v.videoWidth) return toast(t("No picture yet"), "error");
+    if (coverWaits.has(x.id)) return toast(t("Still waiting for Stash to release the previous cover"));
     try {
       const c = document.createElement("canvas");
       c.width = v.videoWidth;
@@ -860,12 +872,10 @@ export async function render(host, params) {
       errorToast(e, "Cover");
     }
   }
-  let undoing = false;
   async function undoCover() {
-    if (undoing) return; // still trying (the file can be locked for a moment)
+    if (coverWaits.has(x.id)) return toast(t("Still waiting for Stash to release the previous cover"));
     const prev = oldCovers.pop();
     if (!prev) return;
-    undoing = true;
     try {
       await putCover(prev);
       toast(t("The old cover is back"), "ok");
@@ -873,7 +883,6 @@ export async function render(host, params) {
       oldCovers.push(prev);
       errorToast(e, "Cover");
     }
-    undoing = false;
     paintCoverUndo();
   }
 

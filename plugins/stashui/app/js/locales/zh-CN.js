@@ -1111,4 +1111,6 @@ export default {
   "Stars (tenth)": "星级（十分之一星）",
   "Decimal (0.0–10.0)": "小数（0.0–10.0）",
   "Rating system saved": "评分方式已保存",
+  "Still waiting for Stash to release the previous cover": "仍在等待 Stash 释放之前的封面文件",
+  "Stash still has the previous cover file open – it'll be changed by itself as soon as Stash lets go of it (up to 2 minutes).": "Stash 仍占用着之前的封面文件——一旦 Stash 释放它，封面会自动更改（最多 2 分钟）。",
 };
