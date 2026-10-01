@@ -282,6 +282,14 @@
 @media (max-width: 380px) {
   .kb-player .kb-ctrl-row .kb-btn.is-icon, .kb-player .kb-ctrl-row .kb-toggle { width: 30px; }
 }
+/* Interactive: the Handy's status and the funscript heatmap under the timeline */
+.kb-handy { gap: 6px; color: var(--text-2); }
+.kb-handy .kb-ic { width: 17px; height: 17px; }
+.kb-stage .kb-btn.kb-handy.is-err { color: #ff7a8e; }
+.kb-handy.is-busy .kb-ic { animation: kb-handy-pulse 1s ease-in-out infinite; }
+@keyframes kb-handy-pulse { 50% { opacity: .35; } }
+.kb-tl-fs { position: absolute; left: 0; right: 0; top: calc(100% + 2px); width: 100%; height: 5px; border-radius: 2px; object-fit: fill; opacity: .85; pointer-events: none; }
+@media (max-width: 560px) { .kb-handy span { display: none; } }
 /* From the beginning / 10 s back / forward – and the short note on the picture */
 .kb-skip .kb-ic { width: 22px; height: 22px; }
 .kb-seekflash { position: absolute; left: 50%; top: 50%; z-index: 4; padding: 8px 16px; border-radius: 999px; color: #fff; font: 700 18px/1 var(--f-label); background: rgba(0, 0, 0, .55); opacity: 0; transform: translate(-50%, -50%) scale(.9); pointer-events: none; transition: opacity .25s, transform .25s var(--ease); }

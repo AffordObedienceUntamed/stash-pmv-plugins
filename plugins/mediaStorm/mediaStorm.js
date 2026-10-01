@@ -394,6 +394,7 @@
       if (q.len === "short") f.duration = { value: 60, modifier: "LESS_THAN" };
       if (q.len === "mid") f.duration = { value: 60, value2: 600, modifier: "BETWEEN" };
       if (q.len === "long") f.duration = { value: 600, modifier: "GREATER_THAN" };
+      if (q.ia) f.interactive = q.ia === "yes";
     }
     if (q.ori) f.orientation = { value: [q.ori] };
     if (q.q) f.title = { value: q.q, modifier: "INCLUDES" };

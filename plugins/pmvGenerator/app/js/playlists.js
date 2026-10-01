@@ -7,7 +7,7 @@ import { ratingFilterMin } from "./ui.js";
 import { gql, pluginConfig, setPluginConfig } from "./api.js";
 
 // The list's URL parameters that make up a playlist
-export const QUERY_KEYS = ["q", "sort", "dir", "tags", "xtags", "perfs", "pany", "rating", "fav", "played", "ori", "res", "len"];
+export const QUERY_KEYS = ["q", "sort", "dir", "tags", "xtags", "perfs", "pany", "rating", "fav", "played", "ori", "res", "len", "ia"];
 
 // URL parameters → filter state (as the lists keep it)
 export function stateOf(q = {}) {
@@ -26,6 +26,7 @@ export function stateOf(q = {}) {
     ori: q.ori || "",
     res: q.res || "",
     len: q.len || "",
+    ia: q.ia || "", // funscript: yes | no
     seed: q.seed || "",
   };
 }
@@ -56,6 +57,7 @@ export function filterOf(kind, st, favId, base) {
     if (st.len === "short") f.duration = { value: 60, modifier: "LESS_THAN" };
     if (st.len === "mid") f.duration = { value: 60, value2: 600, modifier: "BETWEEN" };
     if (st.len === "long") f.duration = { value: 600, modifier: "GREATER_THAN" };
+    if (st.ia) f.interactive = st.ia === "yes";
   }
   if (st.ori && kind !== "gallery") f.orientation = { value: [st.ori] };
   return f;

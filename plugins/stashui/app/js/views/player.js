@@ -10,6 +10,7 @@ import { startMini, stopMini } from "../mini.js";
 import { placardHtml, bindPlacard } from "./placard.js";
 import { similarScenes } from "../similar.js";
 import { bestMarkers, bestMarkersNow } from "../standings.js";
+import { attachHandy } from "../interactive.js";
 import { createVR, guessVR } from "../vr.js";
 import { videoGlow } from "../theme.js";
 import { BINS, watchRecorder, watchBins, motionBins, combine, peaks } from "../heat.js";
@@ -144,6 +145,7 @@ export async function render(host, params, query = {}) {
         <div class="kb-controls">
           <div class="kb-timeline${prefs.heat ? " has-heat" : ""}" data-timeline>
             <canvas class="kb-tl-heat" data-heat width="800" height="40" hidden></canvas>
+            ${x.interactive && x.paths.interactive_heatmap ? `<img class="kb-tl-fs" src="${esc(x.paths.interactive_heatmap)}" alt="" title="${t("Funscript – how intense it gets")}" onerror="this.remove()">` : ""}
             <div class="kb-tl-buf" data-buf></div>
             <div class="kb-tl-played" data-played></div>
             <div class="kb-tl-resume" data-resmark hidden></div>
@@ -160,6 +162,7 @@ export async function render(host, params, query = {}) {
             <button class="kb-btn is-icon is-ghost kb-skip" data-skip="-10" aria-label="${t("10 seconds back")}" title="${t("10 seconds back")}">${icon("back10")}</button>
             <button class="kb-btn is-icon is-ghost kb-skip" data-skip="10" aria-label="${t("10 seconds forward")}" title="${t("10 seconds forward")}">${icon("fwd10")}</button>
             <span class="kb-time"><span data-cur>0:00</span> / <span data-dur>${fmtDuration(f.duration)}</span></span>
+            ${x.interactive && x.paths.funscript ? `<button class="kb-btn is-ghost kb-toggle kb-handy" data-handy hidden>${icon("plug")}<span data-handytxt>Handy</span></button>` : ""}
             <span class="kb-spacer"></span>
             <button class="kb-btn is-ghost kb-toggle${prefs.heat ? " is-on" : ""}" data-heatbtn title="${t("Highlights: heat curve and jump marks on the timeline (J jumps to the next one)")}">${icon("bolt")}<span>${t("Highlights")}</span></button>
             <button class="kb-btn is-ghost kb-toggle kb-playmode" data-pmode></button>
@@ -553,6 +556,10 @@ export async function render(host, params, query = {}) {
     if (el.closest("[data-next]")) return next(1);
     if (el.closest("[data-prev]")) return next(-1);
     if (el.closest("[data-restart]")) return seekTo(0, "↺ 0:00");
+    if (el.closest("[data-handy]") && handy) {
+      toast(t("Connecting the Handy again …"));
+      return handy.retry();
+    }
     const sk = el.closest("[data-skip]");
     if (sk) return skipBy(Number(sk.dataset.skip));
     if (el.closest("[data-fs]")) return fullscreen();
@@ -589,6 +596,7 @@ export async function render(host, params, query = {}) {
       prefs.mode = PLAY_MODES[(PLAY_MODES.findIndex((m) => m[0] === prefs.mode) + 1) % PLAY_MODES.length][0];
       savePrefs();
       v.loop = prefs.mode === "one";
+      if (handy) handy.setLoop(prefs.mode === "one");
       paintMode();
       paintUpnext();
       return toast(modeOf()[2], "ok");
@@ -1009,6 +1017,21 @@ export async function render(host, params, query = {}) {
   }
 
   // ---------- Keyboard ----------
+  // ---------- Interactive: The Handy plays the scene's funscript (settings: Settings → Player) ----------
+  const HANDY_TXT = { idle: "Handy", connecting: "Handy: connecting …", syncing: "Handy: matching the clock …", uploading: "Handy: loading the script …", ready: "Handy", error: "Handy: error" };
+  function paintHandy(h) {
+    const b = $("[data-handy]");
+    if (!b) return;
+    b.hidden = !h; // no connection key → nothing to show
+    if (!h) return;
+    b.querySelector("[data-handytxt]").textContent = t(HANDY_TXT[h.state] || "Handy");
+    b.classList.toggle("is-on", h.state === "ready");
+    b.classList.toggle("is-err", h.state === "error");
+    b.classList.toggle("is-busy", ["connecting", "syncing", "uploading"].includes(h.state));
+    b.title = h.state === "error" ? `${h.error} – ${t("click to try again")}` : h.state === "ready" ? t("The Handy follows this scene – click to connect again") : t("Connecting the Handy …");
+  }
+  const handy = x.interactive && x.paths.funscript ? attachHandy(v, x, { onState: paintHandy, loop: () => prefs.mode === "one" }) : null;
+
   // Jumping: from the beginning, 10 s back / forward – with a short note on the picture
   let flashT = 0;
   function seekTo(at, note) {
@@ -1069,6 +1092,7 @@ export async function render(host, params, query = {}) {
   }
 
   return () => {
+    if (handy) handy.stop(); // the Handy stops with the player
     // a changed cover goes to Stash now (and keeps trying in the background if needed)
     const cv = covers.get(x.id);
     if (cv) {

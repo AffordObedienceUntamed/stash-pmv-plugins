@@ -9,6 +9,7 @@ import { typeInfo, selection, fieldHtml, readFields, unwrap, labelOf, LABELS } f
 import { go } from "../main.js";
 import { pokeJobs } from "../jobs.js";
 import { themeHtml, bindTheme } from "../theme.js";
+import { interactiveConfig, saveInteractiveConfig, testHandy } from "../interactive.js";
 
 const AREAS = {
   general: { result: "ConfigGeneralResult", input: "ConfigGeneralInput", mutation: "configureGeneral" },
@@ -46,7 +47,7 @@ SECTIONS.splice(SECTIONS.findIndex((x) => x.id === "classic-ui"), 0, Object.assi
 // Search: what the custom pages contain (their labels, as shown)
 const CUSTOM_ENTRIES = {
   look: ["Colors", "Liquid glass"],
-  "player-ui": ["At the end of a video", "Start at a random spot", "Info panel in fullscreen", "Sound in previews"],
+  "player-ui": ["At the end of a video", "Start at a random spot", "Info panel in fullscreen", "Sound in previews", "The Handy", "Connection key", "Script offset"],
   "this-ui": ["Language", "Folder loading", "This interface as home page", "Install as app", "Studio on scenes", "Other plugins in the menu", "Rating system", "Thumbnail size", "Favorites", "Reset interface settings"],
   database: ["Back up database", "Optimize database", "Clean up generated files"],
   login: ["API key"],
@@ -357,6 +358,51 @@ function renderPlayerUi(body) {
   body.querySelector("[data-fspanel]").onchange = (e) => setPlayer({ fsPanel: e.target.checked });
   body.querySelector("[data-randstart]").onchange = (e) => setPlayer({ randomStart: e.target.checked });
   body.querySelector("[data-psound]").onchange = (e) => store.set("previewSound", e.target.checked);
+
+  // Interactive: The Handy (Stash's own settings – classic Stash uses the same)
+  const box = document.createElement("form");
+  box.className = "kb-set-form kb-set-handy";
+  box.innerHTML = `<h3 class="kb-set-sub">${icon("plug")}${t("The Handy")}</h3>
+    <p class="kb-hint">${t("Scenes with a funscript play on The Handy: it follows play, pause and jumps. Saved in Stash – classic Stash uses the same settings.")}</p>
+    <label class="kb-set"><span class="kb-set-label"><b>${t("Connection key")}</b><small>${t("From the Handy app or handyfeeling.com. Empty = off.")}</small></span>
+      <input class="kb-field" type="password" data-hkey autocomplete="off" spellcheck="false" placeholder="${t("e.g. abc123XYZ")}"></label>
+    <label class="kb-set"><span class="kb-set-label"><b>${t("Script offset")}</b><small>${t("Milliseconds – if the movement comes too early (negative) or too late (positive).")}</small></span>
+      <input class="kb-field" type="number" step="10" data-hoff style="max-width:120px"></label>
+    <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("The Handy fetches the script from Stash")}</b><small>${t("Only when Stash can be reached from the internet. Otherwise the script goes to the Handy's own server for playback.")}</small></span>
+      <span class="kb-switch"><input type="checkbox" data-hhost><i></i></span></label>
+    <div class="kb-set"><span class="kb-set-label"><b>${t("Test the connection")}</b><small data-hres>${t("Is the Handy online, and how far off is its clock?")}</small></span>
+      <button type="button" class="kb-btn" data-htest>${t("Test")}</button></div>`;
+  body.appendChild(box);
+  interactiveConfig(true).then((c) => {
+    box.querySelector("[data-hkey]").value = c.handyKey;
+    box.querySelector("[data-hoff]").value = c.funscriptOffset;
+    box.querySelector("[data-hhost]").checked = c.useStashHostedFunscript;
+  });
+  const saveH = async (patch) => {
+    try {
+      await saveInteractiveConfig(patch);
+      toast(t("Saved"), "ok");
+    } catch (err) {
+      errorToast(err, "The Handy");
+    }
+  };
+  box.querySelector("[data-hkey]").onchange = (e) => saveH({ handyKey: e.target.value.trim() });
+  box.querySelector("[data-hoff]").onchange = (e) => saveH({ funscriptOffset: Math.round(Number(e.target.value) || 0) });
+  box.querySelector("[data-hhost]").onchange = (e) => saveH({ useStashHostedFunscript: e.target.checked });
+  box.querySelector("[data-htest]").onclick = async (e) => {
+    const res = box.querySelector("[data-hres]");
+    e.target.disabled = true;
+    res.textContent = t("Testing …");
+    try {
+      const off = await testHandy();
+      res.textContent = t("Online and ready – clock difference {n} ms", { n: off });
+      res.className = "is-ok";
+    } catch (err) {
+      res.textContent = err.message;
+      res.className = "is-err";
+    }
+    e.target.disabled = false;
+  };
 }
 
 async function renderApp(body) {

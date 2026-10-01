@@ -4,6 +4,14 @@
 
 export const CHANGES = [
   {
+    v: "3.33.0",
+    date: "2026-10-01",
+    items: [
+      ["ui", "Interactive: scenes with a funscript play on The Handy – it follows play, pause, jumps and repeat. Settings → Player and previews (the same settings as classic Stash), with a connection test. The funscript intensity shows under the timeline.", "互动：带 funscript 的场景可在 The Handy 上播放——跟随播放、暂停、跳转和循环。设置 → 播放器与预览（与经典 Stash 相同的设置），可测试连接。时间轴下方显示 funscript 强度。"],
+      ["ui", "Lists: filter by funscript; scenes with one get a small mark.", "列表：可按 funscript 筛选；带 funscript 的场景有小标记。"],
+    ],
+  },
+  {
     v: "3.32.0",
     date: "2026-10-01",
     items: [["ui", "Player: buttons to start from the beginning (also the Home key) and to jump 10 seconds back or forward, with a short note on the picture.", "播放器：新增“从头开始”（也可按 Home 键）以及后退/前进 10 秒按钮，画面上会短暂显示提示。"]],

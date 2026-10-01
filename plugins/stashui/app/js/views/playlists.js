@@ -26,6 +26,7 @@ function describe(pl) {
   if (st.played) out.push({ yes: t("watched"), no: t("never watched"), resume: t("started") }[st.played]);
   if (st.res) out.push({ WEB_HD: t("720p and up"), STANDARD_HD: t("1080p and up"), QUAD_HD: "4K" }[st.res] || st.res);
   if (st.len) out.push({ short: t("under 1 min"), mid: t("1–10 min"), long: t("over 10 min") }[st.len]);
+  if (st.ia) out.push(st.ia === "yes" ? t("with funscript") : t("without funscript"));
   if (st.ori) out.push({ PORTRAIT: t("Portrait"), LANDSCAPE: t("Landscape"), SQUARE: t("Square") }[st.ori]);
   return { chips: out, sort: t(SORT_NAMES[st.sort] || st.sort) };
 }

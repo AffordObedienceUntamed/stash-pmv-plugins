@@ -1225,3 +1225,12 @@ html.kb-glass .kb-pl { border-color: var(--glass-edge); }
 .kb-news-app.is-pmv { color: #ffd166; }
 .kb-news-app.is-storm { color: var(--shine); }
 @media (max-width: 600px) { .kb-news-v li { flex-direction: column; gap: 4px; } }
+
+/* Scenes with a funscript (The Handy) */
+.kb-stamp .kb-ia { display: inline-flex; margin-right: 4px; vertical-align: -2px; color: var(--ok); font-style: normal; }
+.kb-stamp .kb-ia .kb-ic { width: 12px; height: 12px; }
+.kb-set-handy { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+.kb-set-sub { display: flex; align-items: center; gap: 8px; margin: 0 0 4px; font: 700 18px/1.2 var(--f-display); }
+.kb-set-sub .kb-ic { width: 18px; height: 18px; color: var(--pink); }
+.kb-set-handy small.is-ok { color: var(--ok); }
+.kb-set-handy small.is-err { color: #ff7a8e; }

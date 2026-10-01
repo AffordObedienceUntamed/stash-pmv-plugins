@@ -1,0 +1,224 @@
+// Interactive: scenes with a funscript play on The Handy – like classic Stash does it, with the same
+// settings (Stash's interface settings: handyKey, funscriptOffset, useStashHostedFunscript).
+// The Handy API v2 (handyfeeling.com): the script is handed to the device as a CSV (uploaded to the
+// Handy's own script hosting, or fetched by the device from Stash), the clock is matched with the
+// Handy server, then playback follows the video: play at a position, stop, again on seeking.
+
+import { gql } from "./api.js";
+import { store } from "./ui.js";
+
+const API = "https://www.handyfeeling.com/api/handy/v2/";
+const UPLOAD = "https://www.handyfeeling.com/api/sync/upload?local=true";
+const RESYNC = 60 * 60 * 1000; // match the clock again after an hour
+
+let cfg = null; // { handyKey, funscriptOffset, useStashHostedFunscript }
+export async function interactiveConfig(force) {
+  if (cfg && !force) return cfg;
+  try {
+    const i = (await gql(`query { configuration { interface { handyKey funscriptOffset useStashHostedFunscript } } }`)).configuration.interface;
+    cfg = { handyKey: i.handyKey || "", funscriptOffset: i.funscriptOffset || 0, useStashHostedFunscript: !!i.useStashHostedFunscript };
+  } catch (e) {
+    cfg = { handyKey: "", funscriptOffset: 0, useStashHostedFunscript: false };
+  }
+  return cfg;
+}
+export async function saveInteractiveConfig(patch) {
+  await gql(`mutation($i: ConfigInterfaceInput!) { configureInterface(input: $i) { handyKey } }`, { i: patch });
+  cfg = Object.assign({}, cfg || {}, patch);
+  handy = null; // a new key → a new connection
+  return cfg;
+}
+
+// A funscript → the CSV the Handy wants ("ms,position" per line; inverted and range turned into 0–100)
+function toCsv(fs) {
+  const acts = (fs && fs.actions) || [];
+  if (!acts.length) throw new Error("The funscript has no movements");
+  const range = (v, a, b, c, d) => ((v - a) * (d - c)) / (b - a) + c;
+  return acts.reduce((out, a) => {
+    let pos = a.pos;
+    if (fs.inverted === true) pos = range(pos, 0, 100, 100, 0);
+    if (fs.range) pos = range(pos, 0, fs.range, 0, 100);
+    return `${out}${Math.round(a.at)},${Math.round(pos)}\r\n`;
+  }, `#Created by Stash UI ${new Date().toUTCString()}\n`);
+}
+
+class Handy {
+  constructor(key) {
+    this.key = key;
+    this.state = "idle"; // idle | connecting | syncing | uploading | ready | error
+    this.error = "";
+    this.script = ""; // the funscript path that's on the device
+    this.playing = false;
+    this.listeners = new Set();
+    const saved = store.get("handyClock", null);
+    this.offset = saved && saved.key === key ? saved.offset : 0;
+    this.syncedAt = saved && saved.key === key ? saved.at : 0;
+  }
+  set(state, error) {
+    this.state = state;
+    this.error = error || "";
+    this.listeners.forEach((f) => f(this));
+  }
+  async req(method, path, body) {
+    const r = await fetch(API + path, {
+      method,
+      headers: Object.assign({ "X-Connection-Key": this.key }, body ? { "Content-Type": "application/json" } : {}),
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    let j = {};
+    try {
+      j = await r.json();
+    } catch (e) { /* empty answer */ }
+    if (!r.ok || j.error) throw new Error((j.error && (j.error.message || j.error.name)) || `Handy server: ${r.status}`);
+    return j;
+  }
+  // The difference between this computer's clock and the Handy server's (30 trips, outliers left out)
+  async syncClock() {
+    this.set("syncing");
+    await this.req("GET", "servertime");
+    const offs = [];
+    for (let i = 0; i < 20; i++) {
+      const a = Date.now();
+      const { serverTime } = await this.req("GET", "servertime");
+      const b = Date.now();
+      offs.push(serverTime + (b - a) / 2 - b);
+    }
+    const mean = offs.reduce((x, y) => x + y, 0) / offs.length;
+    const sd = Math.sqrt(offs.reduce((x, y) => x + (y - mean) ** 2, 0) / offs.length);
+    const good = offs.filter((o) => Math.abs(o - mean) <= sd);
+    this.offset = (good.length ? good : offs).reduce((x, y) => x + y, 0) / (good.length || offs.length);
+    this.syncedAt = Date.now();
+    store.set("handyClock", { key: this.key, offset: this.offset, at: this.syncedAt });
+  }
+  async connect(force) {
+    this.set("connecting");
+    const c = await this.req("GET", "connected");
+    if (!c.connected) throw new Error("The Handy isn't online – is it switched on and connected to Wi-Fi?");
+    const info = await this.req("GET", "info");
+    if (info.fwStatus === 1) throw new Error("The Handy needs a firmware update first");
+    if (force || !this.syncedAt || Date.now() - this.syncedAt > RESYNC) await this.syncClock();
+  }
+  // Hand the scene's script to the device
+  async load(funscriptPath, apiKey) {
+    if (this.script === funscriptPath && this.state === "ready") return;
+    this.set("uploading");
+    let url;
+    if (cfg.useStashHostedFunscript) {
+      // the device fetches it from Stash itself (only works when Stash can be reached from the internet)
+      const u = new URL(funscriptPath.replace("/funscript", "/interactive_csv"), location.href);
+      if (apiKey === undefined) apiKey = await gql(`query { configuration { general { apiKey } } }`).then((d) => d.configuration.general.apiKey).catch(() => "");
+      if (apiKey) u.searchParams.set("apikey", apiKey);
+      url = u.toString();
+    } else {
+      const fs = await (await fetch(funscriptPath, { credentials: "same-origin" })).json();
+      const fd = new FormData();
+      fd.append("syncFile", new File([toCsv(fs)], `${Math.round(Math.random() * 1e8)}.csv`), "script.csv");
+      const up = await (await fetch(UPLOAD, { method: "POST", body: fd })).json();
+      if (!up.url) throw new Error("The script couldn't be uploaded to the Handy server");
+      url = up.url;
+    }
+    await this.req("PUT", "mode", { mode: 1 }); // HSSP: synced script playback
+    const setup = await this.req("PUT", "hssp/setup", { url: encodeURI(url) });
+    if (setup.result !== 0 && setup.result !== 1) throw new Error("The Handy couldn't load the script");
+    await this.req("GET", "status").catch(() => {});
+    this.script = funscriptPath;
+    this.playing = false;
+    this.set("ready");
+  }
+  async play(sec) {
+    if (this.state !== "ready") return;
+    // already playing from there (the start and the "playing" event come together) → nothing to do
+    const now = performance.now();
+    if (this.playing && this.from && Math.abs(this.from.sec + (now - this.from.at) / 1000 - sec) < 0.3) return;
+    this.from = { sec, at: now };
+    await this.req("PUT", "hssp/play", { estimatedServerTime: Math.round(Date.now() + this.offset), startTime: Math.max(0, Math.round(sec * 1000 + (cfg.funscriptOffset || 0))) });
+    this.playing = true;
+  }
+  async stop() {
+    if (this.state !== "ready" || !this.playing) return;
+    this.playing = false;
+    this.from = null;
+    await this.req("PUT", "hssp/stop", {});
+  }
+  async loop(on) {
+    if (this.state === "ready") await this.req("PUT", "hssp/loop", { activated: !!on }).catch(() => {});
+  }
+}
+
+let handy = null;
+// The device for the configured key (one for the whole app), or null without a key
+export async function getHandy() {
+  const c = await interactiveConfig();
+  if (!c.handyKey) return null;
+  if (!handy || handy.key !== c.handyKey) handy = new Handy(c.handyKey);
+  return handy;
+}
+
+// A test from the settings: online? firmware? clock → a message
+export async function testHandy() {
+  const h = await getHandy();
+  if (!h) throw new Error("Enter the connection key first");
+  await h.connect(true);
+  h.set(h.script ? "ready" : "idle");
+  return Math.round(h.offset);
+}
+
+// The player: follows the video while a scene with a script is open. Returns a stop function.
+// onState(h) is told every change (for the status in the player bar).
+export function attachHandy(video, scene, { apiKey, onState, loop } = {}) {
+  let h = null;
+  let alive = true;
+  let busy = Promise.resolve();
+  const queue = (fn) => (busy = busy.then(() => alive && h && fn()).catch((e) => h && h.set("error", e.message)));
+  const tell = (x) => alive && onState && onState(x);
+  (async () => {
+    h = await getHandy();
+    if (!h || !alive) return tell(null);
+    h.listeners.add(tell);
+    try {
+      if (h.state !== "ready") await h.connect();
+      await h.load(scene.paths.funscript, apiKey);
+      if (loop && loop()) await h.loop(true);
+      if (!video.paused) await h.play(video.currentTime);
+    } catch (e) {
+      h.set("error", e.message);
+    }
+  })();
+  const onPlay = () => queue(() => h.play(video.currentTime));
+  const onStop = () => queue(() => h.stop());
+  const onSeeked = () => queue(() => (video.paused ? h.stop() : h.play(video.currentTime)));
+  video.addEventListener("playing", onPlay);
+  video.addEventListener("pause", onStop);
+  video.addEventListener("waiting", onStop);
+  video.addEventListener("seeking", onStop);
+  video.addEventListener("seeked", onSeeked);
+  video.addEventListener("ratechange", onSeeked); // (the Handy plays at 1×; it simply follows again)
+  return {
+    // clicking the status: connect again, match the clock, load the script again
+    async retry() {
+      if (!h) return;
+      h.script = "";
+      try {
+        await h.connect(true);
+        await h.load(scene.paths.funscript, apiKey);
+        if (!video.paused) await h.play(video.currentTime);
+      } catch (e) {
+        h.set("error", e.message);
+      }
+    },
+    setLoop: (on) => queue(() => h.loop(on)),
+    stop() {
+      alive = false;
+      video.removeEventListener("playing", onPlay);
+      video.removeEventListener("pause", onStop);
+      video.removeEventListener("waiting", onStop);
+      video.removeEventListener("seeking", onStop);
+      video.removeEventListener("seeked", onSeeked);
+      video.removeEventListener("ratechange", onSeeked);
+      if (h) {
+        h.listeners.delete(tell);
+        h.stop().catch(() => {});
+      }
+    },
+  };
+}

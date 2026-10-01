@@ -17,9 +17,9 @@ export async function gql(query, variables) {
 
 // ---------- Fragments ----------
 
-export const F_SCENE = `id title details date rating100 o_counter play_count play_duration resume_time last_played_at organized created_at urls
+export const F_SCENE = `id title details date rating100 o_counter play_count play_duration resume_time last_played_at organized created_at urls interactive interactive_speed
   files { id width height duration size path basename video_codec frame_rate bit_rate }
-  paths { screenshot preview webp stream sprite vtt }
+  paths { screenshot preview webp stream sprite vtt funscript interactive_heatmap }
   tags { id name }
   performers { id name image_path }
   studio { id name image_path }

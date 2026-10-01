@@ -38,6 +38,7 @@ function readState(q, kind, defaults) {
     ori: q.ori || "",
     res: q.res || "",
     len: q.len || "",
+    ia: q.ia || "",
     seed: q.seed || "",
   };
 }
@@ -51,7 +52,7 @@ export function mediaBrowser(host, opts) {
   let kind = kinds.includes(opts.query.kind) ? opts.query.kind : opts.initialKind || kinds[0];
   let st = readState(opts.query, kind, opts.defaults && opts.defaults[kind]);
   let hang = null;
-  let filterOpen = !!(st.tags.length || st.xtags.length || st.perfs.length || st.rating || st.fav || st.played || st.ori || st.res || st.len);
+  let filterOpen = !!(st.tags.length || st.xtags.length || st.perfs.length || st.rating || st.fav || st.played || st.ori || st.res || st.len || st.ia);
   const rowH = () => store.get("rowHeight", 250);
 
   host.innerHTML = `
@@ -105,6 +106,8 @@ export function mediaBrowser(host, opts) {
         <select class="kb-field" data-f="played"><option value="">${t("any")}</option><option value="yes">${t("watched")}</option><option value="no">${t("never")}</option><option value="resume">${t("started")}</option></select></label>
       <label class="kb-lab">${t("Resolution")}
         <select class="kb-field" data-f="res"><option value="">${t("any")}</option><option value="WEB_HD">${t("720p and up")}</option><option value="STANDARD_HD">${t("1080p and up")}</option><option value="QUAD_HD">4K</option></select></label>
+      <label class="kb-lab">${t("Funscript")}
+        <select class="kb-field" data-f="ia"><option value="">${t("any")}</option><option value="yes">${t("with (The Handy)")}</option><option value="no">${t("without")}</option></select></label>
       <label class="kb-lab">${t("Duration")}
         <select class="kb-field" data-f="len"><option value="">${t("any")}</option><option value="short">${t("under 1 min")}</option><option value="mid">${t("1–10 min")}</option><option value="long">${t("over 10 min")}</option></select></label>` : ""}
       ${kind !== "gallery" ? `<label class="kb-lab">${t("Format")}
@@ -155,6 +158,7 @@ export function mediaBrowser(host, opts) {
     ori: st.ori,
     res: st.res,
     len: st.len,
+    ia: st.ia,
   });
   let plId = opts.query.pl || ""; // opened from a playlist: "Save playlist" changes that one
   function persistQuery() {
@@ -344,7 +348,7 @@ export function mediaBrowser(host, opts) {
       return renderTools();
     }
     if (e.target.closest("[data-clear]") || e.target.closest("[data-clearall]")) {
-      Object.assign(st, { q: "", tags: [], xtags: [], perfs: [], pany: false, rating: 0, fav: false, played: "", ori: "", res: "", len: "" });
+      Object.assign(st, { q: "", tags: [], xtags: [], perfs: [], pany: false, rating: 0, fav: false, played: "", ori: "", res: "", len: "", ia: "" });
       const qi = $("[data-q]");
       if (qi) qi.value = "";
       renderTools();

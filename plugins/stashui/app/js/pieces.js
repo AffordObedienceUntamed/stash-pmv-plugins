@@ -24,6 +24,7 @@ export function toPiece(kind, x, favId) {
       resume: dur && x.resume_time ? Math.min(1, x.resume_time / dur) : 0,
       rating: x.rating100 || 0,
       studio: x.studio || null,
+      interactive: !!x.interactive,
     };
   }
   if (kind === "image") {
@@ -71,7 +72,7 @@ function pieceHtml(p) {
   return (
     `<${tag} class="kb-piece" data-key="${p.kind}:${p.id}"${href ? ` href="${href}"` : ' type="button"'} aria-label="${esc(p.title)}">` +
     (p.thumb ? `<img alt="" loading="lazy" decoding="async" src="${esc(p.thumb)}">` : "") +
-    (p.stamp ? `<span class="kb-stamp">${esc(p.stamp)}</span>` : "") +
+    (p.stamp ? `<span class="kb-stamp">${p.interactive ? `<i class="kb-ia" title="${esc(t("Funscript – plays on The Handy"))}">${icon("plug")}</i>` : ""}${esc(p.stamp)}</span>` : "") +
     (p.resume ? `<span class="kb-resume"><i style="width:${(p.resume * 100).toFixed(1)}%"></i></span>` : "") +
     (p.fav ? `<span class="kb-dot" title="${t("Favorite")}"></span>` : "") +
     studioBadge(p) +
