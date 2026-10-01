@@ -187,6 +187,10 @@ export function render(main, params = {}) {
     body.querySelector("[data-skip]").onclick = () => showNext();
     body.querySelector("[data-undo]").onclick = () => undoLast();
     body.querySelector("[data-fs]").onclick = () => fullscreen();
+    // Sound: the card under the mouse is heard (at the player's volume), the other one stays silent
+    const arenaEl = body.querySelector("[data-arena]");
+    arenaEl.addEventListener("pointerover", (e) => sound(e.target.closest("[data-side]")));
+    arenaEl.addEventListener("pointerleave", () => sound(null));
     body.querySelector("[data-arena]").addEventListener("click", (e) => {
       const open = e.target.closest("[data-open]");
       if (open) {
@@ -230,6 +234,8 @@ export function render(main, params = {}) {
         step = (step + 1) % SPOTS.length;
         vids.forEach((v) => v.dataset.dur && v.readyState >= 1 && (v.currentTime = Number(v.dataset.dur) * SPOTS[step]));
       }, 4000);
+      const over = [...arena.querySelectorAll("[data-side]")].find((c) => c.matches(":hover"));
+      sound(over || null);
       arena.querySelectorAll("img[data-full]").forEach((img) => {
         const full = new Image();
         full.src = img.dataset.full;
@@ -407,6 +413,24 @@ export function render(main, params = {}) {
     } catch (e) {
       errorToast(e, t("Star ratings"));
     }
+  }
+
+  // Which card is heard (null = none); browsers only allow sound after the first click on the page
+  function sound(card) {
+    const arena = body.querySelector("[data-arena]");
+    if (!arena) return;
+    const p = store.get("player", {});
+    arena.querySelectorAll("[data-side] video").forEach((v) => {
+      const on = !!card && card.contains(v) && !p.muted;
+      v.volume = p.volume == null ? 0.8 : p.volume;
+      if (v.muted === !on) return;
+      v.muted = !on;
+      if (on)
+        v.play().catch(() => {
+          v.muted = true; // not allowed yet – silent until the first click
+          v.play().catch(() => {});
+        });
+    });
   }
 
   // ---------- Fullscreen ----------
