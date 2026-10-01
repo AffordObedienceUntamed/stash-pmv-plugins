@@ -1,6 +1,6 @@
 // The big placard next to the player and image viewer: details, rating, red dot, O counter, tags, actions.
 
-import { esc, icon, fmtDuration, fmtRes, fmtBytes, fmtDate, fmtAgo, invNo, starsHtml, toast, errorToast, store, plural, burst, pop } from "../ui.js";
+import { esc, icon, fmtDuration, fmtRes, fmtBytes, fmtDate, fmtAgo, invNo, starsHtml, ratingClick, ratingFromInput, ratingToast, toast, errorToast, store, plural, burst, pop } from "../ui.js";
 import { t } from "../i18n.js";
 import { updateItem, setFavorite, favoriteTagId, addO, removeO } from "../api.js";
 import { app, setQueueCount } from "../main.js";
@@ -69,8 +69,8 @@ export function bindPlacard(host, kind, getItem, { refresh, onDeleted, goFolder,
     const x = getItem();
     if (!x) return;
     try {
-      const star = e.target.closest("[data-star]");
-      if (star) return rate(Number(star.dataset.star));
+      const r = ratingClick(e, x.rating100);
+      if (r !== undefined) return rate(r);
       if (e.target.closest("[data-fav]")) return fav();
       if (e.target.closest("[data-o]")) return o(1);
       if (e.target.closest("[data-edit]")) return openEditor(kind, [{ id: x.id }], { onSaved: refresh, onDeleted });
@@ -127,10 +127,13 @@ export function bindPlacard(host, kind, getItem, { refresh, onDeleted, goFolder,
     o(-1).catch((err) => errorToast(err, "O counter"));
   });
 
-  async function rate(n) {
+  // the decimal field (rating system 0–10)
+  host.addEventListener("change", (e) => {
+    const v = e.target.matches("[data-ratedec]") && getItem() ? ratingFromInput(e.target) : undefined;
+    if (v !== undefined) rate(v).catch((err) => errorToast(err, "Rating"));
+  });
+  async function rate(v) {
     const x = getItem();
-    const cur = Math.round((x.rating100 || 0) / 20);
-    const v = cur === n ? null : n * 20;
     await updateItem(kind, { id: x.id, rating100: v });
     x.rating100 = v;
     host.querySelector("[data-rate]").innerHTML = starsHtml(v, true);
@@ -138,7 +141,7 @@ export function bindPlacard(host, kind, getItem, { refresh, onDeleted, goFolder,
     host.querySelectorAll("[data-rate] [data-star].is-on").forEach((s, i) =>
       s.animate([{ transform: "scale(1)" }, { transform: "scale(1.45)", filter: "brightness(1.6)" }, { transform: "scale(1)" }], { duration: 380, delay: i * 55, easing: "cubic-bezier(.3,1.6,.5,1)" })
     );
-    toast(v ? plural(n, "star", "stars") : t("Rating removed"));
+    toast(ratingToast(v));
   }
   async function fav() {
     const x = getItem();
@@ -173,5 +176,7 @@ export function bindPlacard(host, kind, getItem, { refresh, onDeleted, goFolder,
     x.o_counter = n;
     host.querySelector("[data-ocount]").textContent = n;
   }
-  return { rate, fav, o };
+  // keys 1–5: whole stars (= 2, 4 … 10 in the 0–10 system); the same key again removes it
+  const rateKey = (n) => rate((getItem().rating100 || 0) === n * 20 ? null : n * 20);
+  return { rate: rateKey, fav, o };
 }

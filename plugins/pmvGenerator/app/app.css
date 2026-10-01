@@ -637,6 +637,13 @@ a.kb-chip:hover, button.kb-chip:hover { background: rgba(180, 140, 255, .28); }
 .kb-stars button.is-on { color: var(--pink); }
 .kb-stars > span { color: var(--bg-3); line-height: 1; }
 .kb-stars > span.is-on { color: var(--pink); }
+/* a partly filled star (half, quarter, tenth – as chosen in Stash) */
+.kb-stars .is-part { color: transparent; background: linear-gradient(90deg, var(--pink) var(--fill, 50%), var(--bg-3) var(--fill, 50%)); -webkit-background-clip: text; background-clip: text; }
+/* the 0–10 system */
+.kb-rate-dec { align-items: baseline; gap: 6px; }
+.kb-rate-dec b { color: var(--pink); font: 700 18px/1 var(--f-label); font-variant-numeric: tabular-nums; }
+.kb-rate-dec small { color: var(--faint); font: 500 12px/1 var(--f-label); }
+.kb-rate-dec input { width: 74px; padding: 4px 8px; font-variant-numeric: tabular-nums; }
 /* Hover: the star under the mouse and all before it light up, one after the other */
 .kb-stars button { transition: color .18s, transform .22s cubic-bezier(.3, 1.6, .5, 1), text-shadow .22s, opacity .18s; }
 .kb-stars button:nth-child(2) { transition-delay: 25ms; }

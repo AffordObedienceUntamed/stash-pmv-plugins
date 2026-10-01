@@ -1099,4 +1099,5 @@ export default {
   "Leave fullscreen": "退出全屏",
   "← left wins · → right wins · ↓ skip · U undo · F fullscreen": "← 左边胜 · → 右边胜 · ↓ 跳过 · U 撤销 · F 全屏",
   "Tags (optional)": "标签（可选）",
+  "Rating: {r}": "评分：{r}",
 };

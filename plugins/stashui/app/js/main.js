@@ -1,6 +1,6 @@
 // Stash UI – app frame: router, navigation rail, overlays.
 
-import { esc, icon, store, errorToast, fmtNum, $, folderMode } from "./ui.js";
+import { esc, icon, store, errorToast, fmtNum, $, folderMode, setRatingSystem } from "./ui.js";
 import { t, initLang } from "./i18n.js";
 import { gql, loadFolders, favoriteTagId, stats } from "./api.js";
 import { applyTheme, initAmbient } from "./theme.js";
@@ -505,7 +505,10 @@ async function init() {
   // Language first: "auto" follows the interface language set in Stash
   let stashLang = "";
   try {
-    stashLang = (await gql(`query { configuration { interface { language } } }`)).configuration.interface.language || "";
+    // with it: the rating system chosen in Stash (stars, half stars … or 0–10)
+    const c = (await gql(`query { configuration { interface { language } ui } }`)).configuration;
+    stashLang = c.interface.language || "";
+    setRatingSystem((c.ui || {}).ratingSystemOptions);
   } catch (e) { /* older Stash or no answer – the browser language decides */ }
   await initLang(stashLang);
   document.getElementById("rail").setAttribute("aria-label", t("Navigation"));

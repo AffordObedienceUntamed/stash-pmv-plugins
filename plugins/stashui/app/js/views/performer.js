@@ -1,6 +1,6 @@
 // A performer: photo, facts, heart, rating, tags, links – and all their scenes, images and galleries.
 
-import { esc, icon, errorToast, toast, plural, starsHtml, fmtDate, pop, burst, store } from "../ui.js";
+import { esc, icon, errorToast, toast, plural, starsHtml, ratingClick, ratingFromInput, ratingToast, fmtDate, pop, burst, store } from "../ui.js";
 import { t } from "../i18n.js";
 import { getPerformer, updatePerformer, gql } from "../api.js";
 import { openPerformerEditor } from "./perfedit.js";
@@ -151,19 +151,23 @@ export async function render(main, params, query) {
   offerLinks();
 
   // Rating: click a star, the same star again removes it
-  main.querySelector("[data-rate]").addEventListener("click", async (e) => {
-    const s = e.target.closest("[data-star]");
-    if (!s) return;
-    const n = Number(s.dataset.star);
-    const v = Math.round((p.rating100 || 0) / 20) === n ? null : n * 20;
+  const ratePerf = async (v) => {
     try {
       await updatePerformer({ id: p.id, rating100: v });
       p.rating100 = v;
       main.querySelector("[data-rate]").innerHTML = starsHtml(v, true);
-      toast(v ? plural(n, "star", "stars") : t("Rating removed"));
+      toast(ratingToast(v));
     } catch (err) {
       errorToast(err, "Rating");
     }
+  };
+  main.querySelector("[data-rate]").addEventListener("click", (e) => {
+    const v = ratingClick(e, p.rating100);
+    if (v !== undefined) ratePerf(v);
+  });
+  main.querySelector("[data-rate]").addEventListener("change", (e) => {
+    const v = e.target.matches("[data-ratedec]") ? ratingFromInput(e.target) : undefined;
+    if (v !== undefined) ratePerf(v);
   });
 
   main.querySelector("[data-fav]").onclick = async (e) => {

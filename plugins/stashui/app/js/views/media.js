@@ -1,7 +1,7 @@
 // Shared browsing building block: toolbar, filters, tabs (scenes/images/galleries),
 // salon hanging, multi-select with actions. State lives in the URL.
 
-import { esc, icon, store, debounce, seed, errorToast, toast, plural, fmtNum, confirmDialog, starsHtml } from "../ui.js";
+import { esc, icon, store, debounce, seed, errorToast, toast, plural, fmtNum, confirmDialog, starsHtml, ratingFilterSteps, ratingFilterMin } from "../ui.js";
 import { t } from "../i18n.js";
 import { findItems, favoriteTagId, setFavorite, bulkUpdate, destroyItems } from "../api.js";
 import { toPiece, Hang } from "../pieces.js";
@@ -58,7 +58,7 @@ function buildFilter(kind, st, base) {
       ? { value: [...new Set([...page, ...st.perfs])], modifier: "INCLUDES_ALL" }
       : { value: st.perfs, modifier: st.pany ? "INCLUDES" : "INCLUDES_ALL" };
   }
-  if (st.rating) f.rating100 = { value: st.rating * 20 - 1, modifier: "GREATER_THAN" };
+  if (st.rating) f.rating100 = { value: ratingFilterMin(st.rating), modifier: "GREATER_THAN" };
   if (kind === "scene") {
     if (st.played === "yes") f.play_count = { value: 0, modifier: "GREATER_THAN" };
     if (st.played === "no") f.play_count = { value: 0, modifier: "EQUALS" };
@@ -125,7 +125,7 @@ export function mediaBrowser(host, opts) {
       <div class="kb-tagpick" data-tp></div>
       <div class="kb-tagpick kb-perfpick" data-pp hidden></div>
       <label class="kb-lab">${t("Rating from")}
-        <select class="kb-field" data-f="rating">${[0, 1, 2, 3, 4, 5].map((n) => `<option value="${n}">${n ? "★".repeat(n) : t("any")}</option>`).join("")}</select></label>
+        <select class="kb-field" data-f="rating"><option value="0">${t("any")}</option>${ratingFilterSteps().map(([n, l]) => `<option value="${n}">${l}</option>`).join("")}</select></label>
       ${kind === "scene" ? `<label class="kb-lab">${t("Watched")}
         <select class="kb-field" data-f="played"><option value="">${t("any")}</option><option value="yes">${t("watched")}</option><option value="no">${t("never")}</option><option value="resume">${t("started")}</option></select></label>
       <label class="kb-lab">${t("Resolution")}

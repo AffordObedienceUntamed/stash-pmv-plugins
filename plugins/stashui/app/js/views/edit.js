@@ -1,6 +1,6 @@
 // Edit drawer: one item in detail, several items together (add/remove tags, rating).
 
-import { esc, openDrawer, toast, errorToast, starsHtml, plural, confirmDialog } from "../ui.js";
+import { esc, openDrawer, toast, errorToast, starsHtml, ratingClick, ratingFromInput, plural, confirmDialog } from "../ui.js";
 import { t } from "../i18n.js";
 import { getScene, getImage, getGallery, updateItem, bulkUpdate, destroyItems, favoriteTagId, setFavorite } from "../api.js";
 import { tagPicker } from "./tagpicker.js";
@@ -17,20 +17,26 @@ export function openEditor(kind, pieces, { onSaved, onDeleted } = {}) {
   return editMany(kind, pieces, { onSaved });
 }
 
+// The rating in the chosen system (stars, half stars … or 0–10); v = rating100, 0 = none
 function starInput(host, value, onChange) {
-  let v = Math.round((value || 0) / 20);
+  let v = value || 0;
   const paint = () => {
-    host.innerHTML = starsHtml(v * 20, true) + `<button type="button" class="kb-btn is-ghost" data-clear${v ? "" : " hidden"}>${t("None")}</button>`;
+    host.innerHTML = starsHtml(v, true) + `<button type="button" class="kb-btn is-ghost" data-clear${v ? "" : " hidden"}>${t("None")}</button>`;
   };
   host.addEventListener("click", (e) => {
-    const s = e.target.closest("[data-star]");
-    if (s) {
-      const n = Number(s.dataset.star);
-      v = v === n ? 0 : n;
-    } else if (e.target.closest("[data-clear]")) v = 0;
+    const r = ratingClick(e, v);
+    if (r !== undefined) v = r || 0;
+    else if (e.target.closest("[data-clear]")) v = 0;
     else return;
     paint();
-    onChange(v * 20);
+    onChange(v);
+  });
+  host.addEventListener("change", (e) => {
+    const r = e.target.matches("[data-ratedec]") ? ratingFromInput(e.target) : undefined;
+    if (r === undefined) return;
+    v = r || 0;
+    host.querySelector("[data-clear]").hidden = !v;
+    onChange(v);
   });
   paint();
 }

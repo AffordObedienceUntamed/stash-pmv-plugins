@@ -304,16 +304,78 @@ export function pop(el, scale = 1.25) {
   el.animate([{ transform: "scale(1)" }, { transform: `scale(${scale})` }, { transform: "scale(.94)" }, { transform: "scale(1)" }], { duration: 420, easing: "cubic-bezier(.3,1.6,.5,1)" });
 }
 
+// ---------- Rating: the system chosen in Stash (classic Stash → Settings → Interface → Editing) ----------
+// Stash keeps every rating as 1–100; it's shown as stars (whole, half, quarter or tenth) or as 0.0–10.0.
+let RS = (() => {
+  const v = store.get("ratingSystem", null);
+  return v && v.type ? v : { type: "stars", step: 1 };
+})();
+export const ratingSystem = () => RS;
+export function setRatingSystem(opts) {
+  const o = opts || {};
+  const next = { type: o.type === "decimal" ? "decimal" : "stars", step: { full: 1, half: 0.5, quarter: 0.25, tenth: 0.1 }[o.starPrecision] || 1 };
+  const changed = next.type !== RS.type || next.step !== RS.step;
+  RS = next;
+  store.set("ratingSystem", RS);
+  return changed;
+}
+const round = (v, step) => Math.round(Math.round(v / step) * step * 100) / 100;
+// rating100 → what's shown: stars 0–5 (in the chosen steps) or 0.0–10.0
+export const ratingValue = (r) => (!r ? 0 : RS.type === "decimal" ? Math.round(r) / 10 : round(r / 20, RS.step));
+const fmtVal = (v) => (RS.type === "decimal" ? v.toFixed(1) : String(v));
+// Short text: "★★★★", "★ 3.5" or "7.5"
+export function ratingText(r) {
+  if (!r) return "";
+  const v = ratingValue(r);
+  return RS.type === "decimal" ? fmtVal(v) : RS.step === 1 ? "★".repeat(v) : "★ " + fmtVal(v);
+}
+export const ratingToast = (r) => (r ? t("Rating: {r}", { r: RS.type === "decimal" ? fmtVal(ratingValue(r)) + " / 10" : ratingText(r) }) : t("Rating removed"));
+
 export function starsHtml(rating100, interactive) {
-  const n = Math.round((rating100 || 0) / 20);
+  if (RS.type === "decimal") {
+    const v = ratingValue(rating100);
+    return interactive
+      ? `<span class="kb-stars kb-rate-dec" role="group" aria-label="${t("Rating")}"><input class="kb-field" type="number" min="0" max="10" step="0.1" inputmode="decimal" data-ratedec value="${v ? v.toFixed(1) : ""}" placeholder="–" aria-label="${t("Rating")} (0–10)"><small>/ 10</small></span>`
+      : `<span class="kb-stars kb-rate-dec"><b>${v ? fmtVal(v) : "–"}</b><small>/ 10</small></span>`;
+  }
+  const v = ratingValue(rating100);
   return (
-    `<span class="kb-stars"${interactive ? ` role="group" aria-label="${t("Rating")}"` : ""}>` +
+    `<span class="kb-stars${RS.step < 1 ? " is-fine" : ""}"${interactive ? ` role="group" aria-label="${t("Rating")}"` : ""}>` +
     [1, 2, 3, 4, 5]
-      .map((i) => (interactive ? `<button type="button" data-star="${i}" class="${i <= n ? "is-on" : ""}" aria-label="${t("{n} stars", { n: i })}">★</button>` : `<span class="${i <= n ? "is-on" : ""}">★</span>`))
+      .map((i) => {
+        // a partly filled star (half, quarter, tenth)
+        const fill = Math.max(0, Math.min(1, v - (i - 1)));
+        const cls = fill >= 1 ? "is-on" : fill > 0 ? "is-part" : "";
+        const style = fill > 0 && fill < 1 ? ` style="--fill:${Math.round(fill * 100)}%"` : "";
+        return interactive ? `<button type="button" data-star="${i}" class="${cls}"${style} aria-label="${t("{n} stars", { n: i })}">★</button>` : `<span class="${cls}"${style}>★</span>`;
+      })
       .join("") +
     "</span>"
   );
 }
+// A click on the stars → the new rating100; null = removed (the same value again); undefined = not a star.
+// With half/quarter/tenth stars, where on the star you click counts.
+export function ratingClick(e, current100) {
+  const b = e.target.closest("[data-star]");
+  if (!b) return undefined;
+  const i = Number(b.dataset.star);
+  let v = i;
+  if (RS.step < 1) {
+    const r = b.getBoundingClientRect();
+    const frac = r.width ? Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) : 1;
+    v = round(i - 1 + Math.max(RS.step, Math.ceil(frac / RS.step - 1e-6) * RS.step), RS.step);
+  }
+  return ratingValue(current100) === v ? null : Math.round(v * 20);
+}
+// The decimal field → rating100 (empty or 0 = removed; undefined = not a number, leave it)
+export function ratingFromInput(el) {
+  if (el.validity && el.validity.badInput) return undefined;
+  const v = Math.max(0, Math.min(10, parseFloat(String(el.value).replace(",", ".")) || 0));
+  return v ? Math.max(1, Math.round(v * 10)) : null;
+}
+// "Rating from" filter: the steps of the chosen system → [value, label]; and the matching rating100 limit
+export const ratingFilterSteps = () => (RS.type === "decimal" ? [1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => [n, "≥ " + n]) : [1, 2, 3, 4, 5].map((n) => [n, "★".repeat(n)]));
+export const ratingFilterMin = (n) => (RS.type === "decimal" ? n * 10 : n * 20) - 1;
 
 // Debounce
 export function debounce(fn, ms) {

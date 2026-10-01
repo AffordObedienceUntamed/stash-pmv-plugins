@@ -1,7 +1,7 @@
 // Duplicates: scenes that look the same (Stash compares their perceptual hashes – "phashes"), side by side
 // with resolution, size and bitrate. Keep the best, delete the rest – or mark a group as "not duplicates".
 
-import { esc, icon, toast, errorToast, confirmDialog, fmtDuration, fmtBytes, fmtNum, plural, store } from "../ui.js";
+import { esc, icon, toast, errorToast, confirmDialog, fmtDuration, fmtBytes, fmtNum, plural, store, ratingText } from "../ui.js";
 import { t } from "../i18n.js";
 import { gql } from "../api.js";
 
@@ -93,7 +93,7 @@ export async function render(main) {
                   <a class="kb-dupe-thumb" href="#/scene/${s.id}">${s.paths.screenshot ? `<img alt="" loading="lazy" src="${esc(s.paths.screenshot)}">` : ""}${i === 0 ? `<span class="kb-dupe-badge">${t("Best")}</span>` : ""}${f.duration ? `<span class="kb-dupe-dur">${fmtDuration(f.duration)}</span>` : ""}</a>
                   <b title="${esc(s.title || f.basename || "")}">${esc(s.title || f.basename || "#" + s.id)}</b>
                   <small>${esc(fileLine(f))}</small>
-                  <small><b>${esc(fmtBytes(f.size))}</b>${s.play_count ? " · " + plural(s.play_count, "play", "plays") : ""}${s.o_counter ? " · " + s.o_counter + " O" : ""}${s.rating100 ? " · " + "★".repeat(Math.round(s.rating100 / 20)) : ""}</small>
+                  <small><b>${esc(fmtBytes(f.size))}</b>${s.play_count ? " · " + plural(s.play_count, "play", "plays") : ""}${s.o_counter ? " · " + s.o_counter + " O" : ""}${s.rating100 ? " · " + ratingText(s.rating100) : ""}</small>
                   <small class="kb-dupe-path" title="${esc(f.path || "")}">${esc(f.path || "")}</small>
                   <button type="button" class="kb-btn is-ghost kb-pdanger" data-del="${s.id}">${icon("trash")}${t("Delete")}</button>
                 </article>`;
