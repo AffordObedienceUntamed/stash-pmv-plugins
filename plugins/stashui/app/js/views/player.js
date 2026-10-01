@@ -804,7 +804,19 @@ export async function render(host, params) {
     });
   };
   async function putCover(dataUrl) {
-    const d = await gql(`mutation($i: SceneUpdateInput!) { sceneUpdate(input: $i) { id paths { screenshot } } }`, { i: { id: x.id, cover_image: dataUrl } });
+    // Windows: Stash renames the old cover file before deleting it – while it's still open (just
+    // shown in the browser, or the virus scanner checks the new file) that fails and Stash changes
+    // nothing. The lock is gone after a moment, so try again a few times.
+    let d;
+    for (const wait of [0, 800, 1600, 3000, 5000]) {
+      if (wait) await new Promise((r) => setTimeout(r, wait));
+      try {
+        d = await gql(`mutation($i: SceneUpdateInput!) { sceneUpdate(input: $i) { id paths { screenshot } } }`, { i: { id: x.id, cover_image: dataUrl } });
+        break;
+      } catch (e) {
+        if (wait === 5000 || !/used by another process|being used|sharing violation/i.test(e.message || "")) throw e;
+      }
+    }
     x.paths.screenshot = d.sceneUpdate.paths.screenshot;
     v.poster = x.paths.screenshot;
     if (ctx.hang) {
@@ -848,9 +860,12 @@ export async function render(host, params) {
       errorToast(e, "Cover");
     }
   }
+  let undoing = false;
   async function undoCover() {
+    if (undoing) return; // still trying (the file can be locked for a moment)
     const prev = oldCovers.pop();
     if (!prev) return;
+    undoing = true;
     try {
       await putCover(prev);
       toast(t("The old cover is back"), "ok");
@@ -858,6 +873,7 @@ export async function render(host, params) {
       oldCovers.push(prev);
       errorToast(e, "Cover");
     }
+    undoing = false;
     paintCoverUndo();
   }
 
