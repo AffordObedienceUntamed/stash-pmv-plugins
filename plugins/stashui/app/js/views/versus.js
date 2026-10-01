@@ -5,7 +5,7 @@
 // The standings are kept in Stash (Stash UI's plugin settings), so they're the same in every browser;
 // star ratings only change with "Turn into star ratings" (and it asks first).
 
-import { esc, icon, toast, errorToast, store, confirmDialog, fmtDuration } from "../ui.js";
+import { esc, icon, toast, errorToast, store, confirmDialog, fmtDuration, fmtRes, starsHtml, plural } from "../ui.js";
 import { t } from "../i18n.js";
 import { gql, pluginConfig, setPluginConfig } from "../api.js";
 import { tagPicker } from "./tagpicker.js";
@@ -16,28 +16,28 @@ import { loadStandings } from "../standings.js";
 const KINDS = {
   scene: {
     label: "Scenes",
-    query: `query($f: FindFilterType, $x: SceneFilterType, $ids: [ID!]) { r: findScenes(filter: $f, scene_filter: $x, ids: $ids) { count scenes { id title rating100 date files { basename duration width height } paths { screenshot preview stream } } } }`,
+    query: `query($f: FindFilterType, $x: SceneFilterType, $ids: [ID!]) { r: findScenes(filter: $f, scene_filter: $x, ids: $ids) { count scenes { id title rating100 date play_count o_counter files { basename duration width height } paths { screenshot preview stream } performers { name } studio { name } tags { name } } } }`,
     list: "scenes",
     bulk: "mutation($i: BulkSceneUpdateInput!) { bulkSceneUpdate(input: $i) { id } }",
     open: (id) => "scene/" + id,
   },
   image: {
     label: "Images",
-    query: `query($f: FindFilterType, $x: ImageFilterType, $ids: [ID!]) { r: findImages(filter: $f, image_filter: $x, ids: $ids) { count images { id title rating100 visual_files { __typename ... on ImageFile { width height basename } ... on VideoFile { width height basename format video_codec } } paths { thumbnail image } } } }`,
+    query: `query($f: FindFilterType, $x: ImageFilterType, $ids: [ID!]) { r: findImages(filter: $f, image_filter: $x, ids: $ids) { count images { id title rating100 visual_files { __typename ... on ImageFile { width height basename } ... on VideoFile { width height basename format video_codec } } paths { thumbnail image } performers { name } studio { name } tags { name } date o_counter } } }`,
     list: "images",
     bulk: "mutation($i: BulkImageUpdateInput!) { bulkImageUpdate(input: $i) { id } }",
     open: (id) => "image/" + id,
   },
   performer: {
     label: "Performers",
-    query: `query($f: FindFilterType, $x: PerformerFilterType, $ids: [ID!]) { r: findPerformers(filter: $f, performer_filter: $x, ids: $ids) { count performers { id name rating100 image_path scene_count } } }`,
+    query: `query($f: FindFilterType, $x: PerformerFilterType, $ids: [ID!]) { r: findPerformers(filter: $f, performer_filter: $x, ids: $ids) { count performers { id name disambiguation rating100 image_path scene_count image_count birthdate country gender favorite o_counter } } }`,
     list: "performers",
     bulk: "mutation($i: BulkPerformerUpdateInput!) { bulkPerformerUpdate(input: $i) { id } }",
     open: (id) => "performer/" + id,
   },
   marker: {
     label: "Moments",
-    query: `query($f: FindFilterType, $x: SceneMarkerFilterType, $ids: [ID!]) { r: findSceneMarkers(filter: $f, scene_marker_filter: $x, ids: $ids) { count scene_markers { id title seconds end_seconds screenshot primary_tag { id name } scene { id title files { basename duration } paths { stream screenshot } } } } }`,
+    query: `query($f: FindFilterType, $x: SceneMarkerFilterType, $ids: [ID!]) { r: findSceneMarkers(filter: $f, scene_marker_filter: $x, ids: $ids) { count scene_markers { id title seconds end_seconds screenshot primary_tag { id name } tags { name } scene { id title files { basename duration width height } paths { stream screenshot } performers { name } studio { name } } } } }`,
     list: "scene_markers",
     // the scene, starting at the moment
     open: (id, x) => (x ? `scene/${x.scene.id}?t=${Math.floor(x.seconds || 0)}` : "versus/ranking"),
@@ -348,7 +348,6 @@ export function render(main, params = {}) {
     const played = w + l;
     const sub =
       k === "scene" ? [x.files[0] && fmtDuration(x.files[0].duration), x.date].filter(Boolean).join(" · ")
-      : k === "performer" ? t("{n} scenes", { n: x.scene_count || 0 })
       : k === "marker" ? `${sceneName(x.scene)} · ${fmtDuration(x.seconds || 0)}`
       : "";
     const span = k === "marker" ? markerSpan(x) : null;
@@ -370,11 +369,35 @@ export function render(main, params = {}) {
           : `<img src="${esc(thumbOf(k, x) || "")}" alt="" loading="eager"${k === "image" && x.paths.image ? ` data-full="${esc(x.paths.image)}"` : ""}>`;
     return `<button type="button" class="kb-vs-card" data-side="${i}">
         <span class="kb-vs-media">${media}</span>
-        <span class="kb-vs-info"><b>${esc(titleOf(k, x))}</b><small>${esc(sub)}</small>
+        <span class="kb-vs-info"><b>${esc(titleOf(k, x))}</b><small>${esc(sub)}</small>${details(k, x)}
           <small class="kb-vs-elo">${played ? `${Math.round(elo)} · ${w}–${l}` : t("New")}</small></span>
         <span class="kb-vs-open" data-open="${esc(x.id)}" title="${esc(t("Open"))}">${icon("fwd")}</span>
         <span class="kb-vs-key">${i === 0 ? "←" : "→"}</span>
       </button>`;
+  }
+
+  // More about what's on the card: who, where from, how good, how often watched, tags
+  function details(k, x) {
+    const names = (list) => (list || []).map((p) => p.name).filter(Boolean);
+    const line = (ic, text) => (text ? `<span class="kb-vs-line">${icon(ic)}<span>${esc(text)}</span></span>` : "");
+    const out = [];
+    if (k === "performer") {
+      const age = x.birthdate ? Math.floor((Date.now() - Date.parse(x.birthdate)) / (365.25 * 864e5)) : null;
+      out.push(line("person", [x.disambiguation, age ? t("{n} years", { n: age }) : "", x.country].filter(Boolean).join(" · ")));
+      out.push(line("image", [x.scene_count ? plural(x.scene_count, "scene", "scenes") : "", x.image_count ? plural(x.image_count, "image", "images") : ""].filter(Boolean).join(" · ")));
+    } else {
+      const sc = k === "marker" ? x.scene || {} : x;
+      const f = k === "image" ? (x.visual_files || [])[0] || {} : (sc.files || [])[0] || {};
+      out.push(line("person", names(sc.performers).slice(0, 3).join(", ") + (names(sc.performers).length > 3 ? " …" : "")));
+      out.push(line("film", [sc.studio && sc.studio.name, f.width ? fmtRes(f.width, f.height) : "", k === "image" ? x.date : ""].filter(Boolean).join(" · "))); // (a scene's date is in the line above)
+      if (k === "scene" && (x.play_count || x.o_counter)) out.push(line("play", [x.play_count ? plural(x.play_count, "play", "plays") : "", x.o_counter ? x.o_counter + " O" : ""].filter(Boolean).join(" · ")));
+    }
+    const tags = names(x.tags);
+    const stars = x.rating100 ? `<span class="kb-vs-line">${starsHtml(x.rating100)}</span>` : "";
+    return (
+      `<span class="kb-vs-details">${stars}${out.join("")}</span>` +
+      (tags.length ? `<span class="kb-vs-tags">${tags.slice(0, 5).map((tg) => `<i>${esc(tg)}</i>`).join("")}${tags.length > 5 ? `<i>+${tags.length - 5}</i>` : ""}</span>` : "")
+    );
   }
 
   function vote(side) {

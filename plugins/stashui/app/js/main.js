@@ -4,6 +4,7 @@ import { esc, icon, store, errorToast, fmtNum, $, folderMode, setRatingSystem } 
 import { t, initLang } from "./i18n.js";
 import { gql, loadFolders, favoriteTagId, stats } from "./api.js";
 import { applyTheme, initAmbient } from "./theme.js";
+import { LATEST } from "./changelog.js";
 
 applyTheme(); // chosen colors before anything is drawn
 initAmbient();
@@ -36,6 +37,7 @@ const ROUTES = [
   { re: /^history$/, view: "history" },
   { re: /^stats$/, view: "stats" },
   { re: /^playlists$/, view: "playlists" },
+  { re: /^whatsnew$/, view: "whatsnew" },
   { re: /^versus$/, view: "versus" },
   { re: /^versus\/ranking$/, view: "versus", params: { tab: "ranking" } },
   { re: /^duplicates$/, view: "dupes" },
@@ -110,6 +112,7 @@ const loaders = {
   stats: () => import("./views/stats.js"),
   versus: () => import("./views/versus.js"),
   playlists: () => import("./views/playlists.js"),
+  whatsnew: () => import("./views/whatsnew.js"),
   dupes: () => import("./views/dupes.js"),
   queue: () => import("./views/queue.js"),
   tasks: () => import("./views/tasks.js"),
@@ -215,6 +218,7 @@ const NAV = [
     { href: "duplicates", label: "Duplicates", icon: "copies", match: /^duplicates/ },
     { href: "settings", label: "Settings", icon: "gear", match: /^settings/ },
     { href: "plugins", label: "Plugins", icon: "plug", match: /^plugins/ },
+    { href: "whatsnew", label: "What's new", icon: "info", match: /^whatsnew/, count: "news" },
     { href: "extern/classic", label: "Classic Stash", icon: "door", match: /^extern\/classic/ },
   ] },
 ];
@@ -248,6 +252,7 @@ function renderRail() {
     `<div class="kb-rail-foot" id="rail-foot"></div>`;
 
   paintRailGroups();
+  setNewsDot();
   rail.addEventListener("click", (e) => {
     const gh = e.target.closest("[data-railgrp]");
     if (gh) {
@@ -466,6 +471,12 @@ export async function refreshCounts() {
 export function setQueueCount() {
   const c = document.querySelector('[data-count="queue"]');
   if (c) c.textContent = (store.get("queue", []).length || "") + "";
+}
+
+// A dot at "What's new" while there are patch notes you haven't opened yet
+export function setNewsDot() {
+  const c = document.querySelector('[data-count="news"]');
+  if (c) c.classList.toggle("is-dot", store.get("newsSeen", "") !== LATEST);
 }
 
 export function setJobCount(n) {

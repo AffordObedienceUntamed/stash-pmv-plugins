@@ -36,7 +36,7 @@ async function loadSprites(vttUrl, spriteUrl) {
 const PLAY_MODES = [
   ["order", "next", "In order"],
   ["shuffle", "shuffle", "Random order"],
-  ["one", "repeat", "Repeat this video"],
+  ["one", "repeatone", "Repeat this video"],
   ["all", "repeat", "Repeat all"],
   ["stop", "stop", "Stop at the end"],
 ];
@@ -158,7 +158,7 @@ export async function render(host, params, query = {}) {
             <span class="kb-time"><span data-cur>0:00</span> / <span data-dur>${fmtDuration(f.duration)}</span></span>
             <span class="kb-spacer"></span>
             <button class="kb-btn is-ghost kb-toggle${prefs.heat ? " is-on" : ""}" data-heatbtn title="${t("Highlights: heat curve and jump marks on the timeline (J jumps to the next one)")}">${icon("bolt")}<span>${t("Highlights")}</span></button>
-            <button class="kb-btn is-ghost kb-pmode" data-pmode></button>
+            <button class="kb-btn is-ghost kb-toggle kb-playmode" data-pmode></button>
             <button class="kb-btn is-icon is-ghost" data-mute aria-label="${t("Sound on/off (M)")}" title="${t("Sound on/off (M)")}"></button>
             <input class="kb-vol" type="range" min="0" max="1" step="0.02" data-vol aria-label="${t("Volume")}">
             <span class="kb-pmenu-wrap"><button class="kb-btn is-icon is-ghost" data-menubtn aria-label="${t("Quality, subtitles, speed")}" title="${t("Quality, subtitles, speed")}">${icon("sliders")}</button><div class="kb-pmenu" data-menu hidden></div></span>
@@ -757,7 +757,7 @@ export async function render(host, params, query = {}) {
     const b = $("[data-pmode]");
     if (!b) return;
     const [mode, ic, label] = modeOf();
-    b.innerHTML = `${icon(ic)}${mode === "one" ? '<small class="kb-pmode-one">1</small>' : ""}<span>${esc(t(label))}</span>`;
+    b.innerHTML = `${icon(ic)}<span>${esc(t(label))}</span>`;
     b.title = `${t(label)} – ${t("click: how it goes on at the end")}`;
     b.classList.toggle("is-on", mode !== "order");
   }

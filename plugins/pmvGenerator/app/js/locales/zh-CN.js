@@ -1211,4 +1211,6 @@ export default {
   "Judge": "裁判",
   "Versus picks": "次 Versus 选择",
   "Finisher": "终结者",
+  "What's new": "更新内容",
+  "What changed in Stash UI, the PMV Generator and Media Storm – newest first.": "Stash UI、PMV 生成器和 Media Storm 的更新内容——最新的在前。",
 };
