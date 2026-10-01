@@ -1103,4 +1103,12 @@ export default {
   "Old cover": "旧封面",
   "Put the cover back that the scene had before": "恢复该场景之前的封面",
   "The old cover is back": "已恢复旧封面",
+  "Rating system": "评分方式",
+  "How ratings are shown and set. Saved in Stash – classic Stash uses the same setting.": "评分的显示和设置方式。保存在 Stash 中——经典 Stash 使用同一设置。",
+  "Stars (whole)": "星级（整星）",
+  "Stars (half)": "星级（半星）",
+  "Stars (quarter)": "星级（四分之一星）",
+  "Stars (tenth)": "星级（十分之一星）",
+  "Decimal (0.0–10.0)": "小数（0.0–10.0）",
+  "Rating system saved": "评分方式已保存",
 };

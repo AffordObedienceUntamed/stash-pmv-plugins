@@ -2,7 +2,7 @@
 // translated when shown (the English text is the key).
 // Fields and types come live from Stash; unknown options end up under "More options".
 
-import { esc, icon, toast, errorToast, store, confirmDialog, fmtDate, folderMode } from "../ui.js";
+import { esc, icon, toast, errorToast, store, confirmDialog, fmtDate, folderMode, ratingSystem, setRatingSystem } from "../ui.js";
 import { t, locale, LANGS, chosen, choose } from "../i18n.js";
 import { gql } from "../api.js";
 import { typeInfo, selection, fieldHtml, readFields, unwrap, labelOf, LABELS } from "../forms.js";
@@ -47,7 +47,7 @@ SECTIONS.splice(SECTIONS.findIndex((x) => x.id === "classic-ui"), 0, Object.assi
 const CUSTOM_ENTRIES = {
   look: ["Colors", "Liquid glass"],
   "player-ui": ["At the end of a video", "Start at a random spot", "Info panel in fullscreen", "Sound in previews"],
-  "this-ui": ["Language", "Folder loading", "This interface as home page", "Install as app", "Studio on scenes", "Other plugins in the menu", "Thumbnail size", "Favorites", "Reset interface settings"],
+  "this-ui": ["Language", "Folder loading", "This interface as home page", "Install as app", "Studio on scenes", "Other plugins in the menu", "Rating system", "Thumbnail size", "Favorites", "Reset interface settings"],
   database: ["Back up database", "Optimize database", "Clean up generated files"],
   login: ["API key"],
 };
@@ -335,6 +335,11 @@ function renderLook(body) {
   bindTheme(body);
 }
 
+const RATE_SYS = [["stars:full", "Stars (whole)"], ["stars:half", "Stars (half)"], ["stars:quarter", "Stars (quarter)"], ["stars:tenth", "Stars (tenth)"], ["decimal:", "Decimal (0.0–10.0)"]];
+const rateSysNow = () => {
+  const r = ratingSystem();
+  return r.type === "decimal" ? "decimal:" : "stars:" + ({ 0.5: "half", 0.25: "quarter", 0.1: "tenth" }[r.step] || "full");
+};
 const setPlayer = (patch) => store.set("player", Object.assign(store.get("player", {}), patch));
 function renderPlayerUi(body) {
   const player = store.get("player", {});
@@ -371,6 +376,8 @@ async function renderApp(body) {
       <div class="kb-set kb-set-ext"><div class="kb-set-label"><b>${t("Other plugins in the menu")}</b><small>${t("Plugins with their own page get an entry under “Extensions” on the left. Fold the group with a click on its heading, or hide it here – all of it or single plugins.")}</small></div>
         <select class="kb-field" data-extmode><option value="show">${t("Show")}</option><option value="hide">${t("Hide")}</option></select>
         <div class="kb-extpick" data-extpick></div></div>
+      <label class="kb-set"><span class="kb-set-label"><b>${t("Rating system")}</b><small>${t("How ratings are shown and set. Saved in Stash – classic Stash uses the same setting.")}</small></span>
+        <select class="kb-field" data-ratesys>${RATE_SYS.map(([v, l]) => `<option value="${v}"${rateSysNow() === v ? " selected" : ""}>${t(l)}</option>`).join("")}</select></label>
       <label class="kb-set"><span class="kb-set-label"><b>${t("Thumbnail size")}</b><small>${t("How tall a row in the lists is.")}</small></span>
         <input type="range" min="130" max="480" step="10" data-rowh value="${store.get("rowHeight", 250)}"></label>
       <div class="kb-set"><div class="kb-set-label"><b>${t("Favorites")}</b><small>${t("The heart is the Stash tag “Favorite”. You'll find it in classic Stash too.")}</small></div></div>
@@ -453,6 +460,19 @@ async function renderApp(body) {
       toast(t("Saved"), "ok");
     } catch (err) {
       errorToast(err, "Save");
+    }
+  };
+  // Stash's own setting (configuration.ui.ratingSystemOptions) – only this one key is changed
+  body.querySelector("[data-ratesys]").onchange = async (e) => {
+    const [type, starPrecision] = e.target.value.split(":");
+    const opts = type === "decimal" ? { type: "decimal", starPrecision: "full" } : { type: "stars", starPrecision };
+    try {
+      await gql(`mutation($p: Map) { configureUI(partial: $p) }`, { p: { ratingSystemOptions: opts } });
+      setRatingSystem(opts);
+      toast(t("Rating system saved"), "ok");
+    } catch (err) {
+      e.target.value = rateSysNow();
+      errorToast(err, "Rating system");
     }
   };
   body.querySelector("[data-foldermode]").onchange = (e) => {

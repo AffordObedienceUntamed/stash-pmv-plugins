@@ -380,6 +380,28 @@ export function ratingClick(e, current100) {
   }
   return ratingValue(current100) === v ? null : Math.round(v * 20);
 }
+// Half/quarter/tenth stars: hovering shows exactly what a click would set
+function starAt(e) {
+  const b = e.target.closest && e.target.closest(".kb-stars.is-fine [data-star]");
+  if (!b) return null;
+  const r = b.getBoundingClientRect();
+  const frac = r.width ? Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) : 1;
+  return { b, v: round(Number(b.dataset.star) - 1 + Math.max(RS.step, Math.ceil(frac / RS.step - 1e-6) * RS.step), RS.step) };
+}
+if (typeof document !== "undefined") {
+  document.addEventListener("mousemove", (e) => {
+    const h = starAt(e);
+    if (!h) return;
+    h.b.parentElement.querySelectorAll("[data-star]").forEach((s, i) => {
+      s.classList.add("is-hov");
+      s.style.setProperty("--hfill", Math.round(Math.max(0, Math.min(1, h.v - i)) * 100) + "%");
+    });
+  });
+  document.addEventListener("mouseout", (e) => {
+    const g = e.target.closest && e.target.closest(".kb-stars.is-fine");
+    if (g && !g.contains(e.relatedTarget)) g.querySelectorAll(".is-hov").forEach((s) => s.classList.remove("is-hov"));
+  });
+}
 // The decimal field → rating100 (empty or 0 = removed; undefined = not a number, leave it)
 export function ratingFromInput(el) {
   if (el.validity && el.validity.badInput) return undefined;
