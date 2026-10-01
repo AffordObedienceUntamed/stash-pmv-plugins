@@ -282,6 +282,12 @@
 @media (max-width: 380px) {
   .kb-player .kb-ctrl-row .kb-btn.is-icon, .kb-player .kb-ctrl-row .kb-toggle { width: 30px; }
 }
+/* From the beginning / 10 s back / forward – and the short note on the picture */
+.kb-skip .kb-ic { width: 22px; height: 22px; }
+.kb-seekflash { position: absolute; left: 50%; top: 50%; z-index: 4; padding: 8px 16px; border-radius: 999px; color: #fff; font: 700 18px/1 var(--f-label); background: rgba(0, 0, 0, .55); opacity: 0; transform: translate(-50%, -50%) scale(.9); pointer-events: none; transition: opacity .25s, transform .25s var(--ease); }
+.kb-seekflash.is-on { opacity: 1; transform: translate(-50%, -50%) scale(1); transition: none; }
+.kb-seekflash:empty { display: none; }
+@media (max-width: 460px) { .kb-player .kb-skip-start, .kb-player .kb-ctrl-row [data-mini] { display: none; } }
 /* Fullscreen: only the picture – the info bar steps aside */
 .kb-stage:fullscreen, .kb-stage.has-panel:fullscreen { display: grid; overflow: hidden; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
 .kb-stage.kb-player.has-panel:fullscreen .kb-screen, .kb-stage.has-panel:fullscreen .kb-screen { height: auto; }

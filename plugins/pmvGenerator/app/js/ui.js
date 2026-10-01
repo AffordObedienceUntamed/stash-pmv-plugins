@@ -37,6 +37,11 @@ const ICONS = {
   pause: '<path d="M7 4.5h3.5v15H7zM13.5 4.5H17v15h-3.5z" fill="currentColor"/>',
   next: '<path d="M5 5v14l10-7zM16.5 5H19v14h-2.5z" fill="currentColor"/>',
   prev: '<path d="M19 5v14L9 12zM7.5 5H5v14h2.5z" fill="currentColor"/>',
+  // from the beginning: a turning arrow around a small play triangle
+  replay: '<g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.6 12.5a7.5 7.5 0 1 0 2.3-6.1"/><path d="M5 3.8v3.9h3.9"/></g><path d="M10.4 9.3v5.6l4.4-2.8z" fill="currentColor"/>',
+  // 10 seconds back / forward: a turning arrow with "10" in it
+  back10: '<g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.6 12.5a7.5 7.5 0 1 0 2.3-6.1"/><path d="M5 3.8v3.9h3.9"/></g><text x="12.3" y="15.6" text-anchor="middle" font-size="7.6" font-weight="700" font-family="Bahnschrift, Segoe UI, sans-serif" fill="currentColor">10</text>',
+  fwd10: '<g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19.4 12.5a7.5 7.5 0 1 1-2.3-6.1"/><path d="M19 3.8v3.9h-3.9"/></g><text x="11.7" y="15.6" text-anchor="middle" font-size="7.6" font-weight="700" font-family="Bahnschrift, Segoe UI, sans-serif" fill="currentColor">10</text>',
   shuffle: '<g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h3.5c4.5 0 5.5 10 10 10H20M4 17h3.5c1.8 0 3-1.6 4-3.5M20 7h-2.5c-1.8 0-3 1.6-4 3.5M17.5 4.5 20 7l-2.5 2.5M17.5 14.5 20 17l-2.5 2.5"/></g>',
   repeat: '<g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11V9a3 3 0 0 1 3-3h12M16.5 3.5 19 6l-2.5 2.5M20 13v2a3 3 0 0 1-3 3H5M7.5 20.5 5 18l2.5-2.5"/></g>',
   // repeat with a "1" in the middle (repeat this one)

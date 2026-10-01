@@ -29,7 +29,7 @@ Open it: just open Stash (e.g. `http://localhost:9999`) – the home page redire
 | What's new | The patch notes of Stash UI, the PMV Generator and Media Storm, newest first (English and Chinese); a dot in the menu while there's something you haven't opened yet |
 | Playlists | Smart playlists: set filters in Scenes or Images (tags, performers, rating, never watched, resolution, length, format, favorites, sort) and press **Save as playlist** – it always holds what matches now. Play, shuffle or add to the queue with one click; open one to change its filters and save again. Kept in Stash, so they're the same in every browser – and the PMV Generator can take its clips from one |
 | History | Everything you've watched, most recent first |
-| Versus | Two scenes, images, performers or **moments** (markers – each plays its stretch in a loop) side by side – click (or ←/→) the better one. Every pick moves an Elo standing: beating a stronger one counts more. Three ways to play: **fair matches** (similar strength, least played first), **winner stays** (how long a streak?) and **climb** (a newcomer climbs until it loses – that's its place); optional tag filter, **U** undoes, **F** plays it fullscreen, the card under the mouse is heard, a level every 25 picks. **Ranking** shows the top 100 with points and wins–losses. The standings are kept in Stash, so they're the same in every browser and on every device (merged if you play on two); only **Turn into star ratings** changes ratings. The upper quarter of the moments (3+ matches) are your **best moments**: the player marks them gold, J jumps there first, a random start lands on one, and the PMV Generator prefers them (top 10 % five stars … bottom 10 % one star, only those with 3+ matches – it asks first). |
+| Versus | Two scenes, images, performers or **moments** (markers – each plays its stretch in a loop) side by side – click (or ←/→) the better one. Every pick moves an Elo standing: beating a stronger one counts more. Three ways to play: **fair matches** (similar strength, least played first), **winner stays** (how long a streak?) and **climb** (a newcomer climbs until it loses – that's its place); optional tag filter, **U** undoes, **F** plays it fullscreen, the card under the mouse is heard, a level every 25 picks. **Ranking** shows the top 100 with points and wins–losses. The standings are kept in Stash, so they're the same in every browser and on every device (merged if you play on two); only **Turn into star ratings** changes ratings (top 10 % five stars … bottom 10 % one star, only those with 3+ matches – it asks first). The upper quarter of the moments (3+ matches) are your **best moments**: the player marks them gold, J jumps there first, a random start lands on one, and the PMV Generator prefers them. |
 | Media Storm | Opens the Media Storm panel – shown when the Media Storm plugin is installed |
 | PMV Generator | Opens the PMV Generator – shown when the PMV Generator plugin is installed |
 | Tasks | Scan for new files, generate previews, auto tag, clean – with live progress and stop |
@@ -89,7 +89,8 @@ Stash UI works on its own. If you also install **Media Storm** or the **PMV Gene
 | Key | Player | Image viewer |
 |---|---|---|
 | Space | Play/pause | Slideshow on/off |
-| ← / → | 5 s back/forward (Shift: 30 s) | Previous/next image |
+| ← / → | 5 s back/forward (Shift: 30 s); the buttons next to play jump 10 s | Previous/next image |
+| Home | From the beginning (also a button) | – |
 | N / P | Next/previous scene | – |
 | J | Next highlight | – |
 | 0–9 | Jump to 0–90 % | – |

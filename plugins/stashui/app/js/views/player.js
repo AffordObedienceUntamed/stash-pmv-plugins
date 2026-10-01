@@ -134,6 +134,7 @@ export async function render(host, params, query = {}) {
       <div class="kb-screen">
         <video class="kb-video" playsinline preload="auto" poster="${esc(x.paths.screenshot || "")}"></video>
         <div class="kb-bigplay" data-bigplay hidden>${icon("play")}</div>
+        <div class="kb-seekflash" data-seekflash aria-hidden="true"></div>
         <div class="kb-resume-hint" data-resume hidden></div>
         <div class="kb-topbar">
           <button class="kb-btn is-icon is-ghost" data-close aria-label="${t("Close (Esc)")}" title="${t("Close (Esc)")}">${icon("back")}</button>
@@ -155,6 +156,9 @@ export async function render(host, params, query = {}) {
             <button class="kb-btn is-icon is-ghost" data-prev aria-label="${t("Previous (P)")}" title="${t("Previous (P)")}">${icon("prev")}</button>
             <button class="kb-btn is-icon is-ghost kb-playbtn" data-play aria-label="${t("Play/pause (Space)")}">${icon("play")}</button>
             <button class="kb-btn is-icon is-ghost" data-next aria-label="${t("Next (N)")}" title="${t("Next (N)")}">${icon("next")}</button>
+            <button class="kb-btn is-icon is-ghost kb-skip kb-skip-start" data-restart aria-label="${t("From the beginning (Home)")}" title="${t("From the beginning (Home)")}">${icon("replay")}</button>
+            <button class="kb-btn is-icon is-ghost kb-skip" data-skip="-10" aria-label="${t("10 seconds back")}" title="${t("10 seconds back")}">${icon("back10")}</button>
+            <button class="kb-btn is-icon is-ghost kb-skip" data-skip="10" aria-label="${t("10 seconds forward")}" title="${t("10 seconds forward")}">${icon("fwd10")}</button>
             <span class="kb-time"><span data-cur>0:00</span> / <span data-dur>${fmtDuration(f.duration)}</span></span>
             <span class="kb-spacer"></span>
             <button class="kb-btn is-ghost kb-toggle${prefs.heat ? " is-on" : ""}" data-heatbtn title="${t("Highlights: heat curve and jump marks on the timeline (J jumps to the next one)")}">${icon("bolt")}<span>${t("Highlights")}</span></button>
@@ -548,6 +552,9 @@ export async function render(host, params, query = {}) {
     if (el.closest(".kb-vr")) return woke || vr.dragged() ? undefined : toggle(); // a drag looks around, a click pauses
     if (el.closest("[data-next]")) return next(1);
     if (el.closest("[data-prev]")) return next(-1);
+    if (el.closest("[data-restart]")) return seekTo(0, "↺ 0:00");
+    const sk = el.closest("[data-skip]");
+    if (sk) return skipBy(Number(sk.dataset.skip));
     if (el.closest("[data-fs]")) return fullscreen();
     if (el.closest("[data-mini]")) return toMini();
     if (el.closest("[data-menubtn]")) {
@@ -1002,6 +1009,24 @@ export async function render(host, params, query = {}) {
   }
 
   // ---------- Keyboard ----------
+  // Jumping: from the beginning, 10 s back / forward – with a short note on the picture
+  let flashT = 0;
+  function seekTo(at, note) {
+    const end = (v.duration || dur || 0) - 0.5;
+    v.currentTime = Math.max(0, end > 0 ? Math.min(at, end) : at);
+    watch.seeked(v.currentTime);
+    if (v.paused && at === 0) v.play().catch(() => {});
+    const f = $("[data-seekflash]");
+    if (!f) return;
+    f.textContent = note;
+    f.classList.remove("is-on");
+    void f.offsetWidth;
+    f.classList.add("is-on");
+    clearTimeout(flashT);
+    flashT = setTimeout(() => f.classList.remove("is-on"), 700);
+  }
+  const skipBy = (s) => seekTo(v.currentTime + s, s < 0 ? `−${-s} s` : `+${s} s`);
+
   const onKey = (e) => {
     if (e.target.closest && e.target.closest("input, textarea, select, .kb-drawer, .kb-dialog")) return;
     if (document.querySelector("#overlay-root .kb-drawer, #overlay-root .kb-dialog")) return;
@@ -1012,6 +1037,7 @@ export async function render(host, params, query = {}) {
     else if (k === "arrowright") (v.currentTime += e.shiftKey ? 30 : 5), watch.seeked(v.currentTime);
     else if (k === "arrowleft") (v.currentTime -= e.shiftKey ? 30 : 5), watch.seeked(v.currentTime);
     else if (k === "j") nextHighlight();
+    else if (k === "home") seekTo(0, "↺ 0:00");
     else if (k === "arrowup") (v.volume = Math.min(1, v.volume + 0.05)), (prefs.volume = v.volume), syncVol();
     else if (k === "arrowdown") (v.volume = Math.max(0, v.volume - 0.05)), (prefs.volume = v.volume), syncVol();
     else if (k === "m") (v.muted = !v.muted), syncVol();

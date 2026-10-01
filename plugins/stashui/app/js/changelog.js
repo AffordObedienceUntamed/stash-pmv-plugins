@@ -4,6 +4,11 @@
 
 export const CHANGES = [
   {
+    v: "3.32.0",
+    date: "2026-10-01",
+    items: [["ui", "Player: buttons to start from the beginning (also the Home key) and to jump 10 seconds back or forward, with a short note on the picture.", "播放器：新增“从头开始”（也可按 Home 键）以及后退/前进 10 秒按钮，画面上会短暂显示提示。"]],
+  },
+  {
     v: "3.31.0",
     date: "2026-10-01",
     items: [
