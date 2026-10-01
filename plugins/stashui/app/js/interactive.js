@@ -51,7 +51,26 @@ export async function rememberFs(sceneId, name, path) {
   else delete all[sceneId];
   await setPluginConfig("stashui", { funscripts: JSON.stringify(all) }).catch(() => {});
 }
-export const samePath = (a, b) => !!a && !!b && a.replace(/\\/g, "/").toLowerCase() === b.replace(/\\/g, "/").toLowerCase();
+// Which variant (funscript file) a scene plays: { sceneId: path } – kept in Stash UI's plugin settings.
+// No entry: the script with the video's name (what Stash itself plays).
+export async function variantChoices() {
+  try {
+    return JSON.parse((await pluginConfig("stashui")).fsVariants || "{}") || {};
+  } catch (e) {
+    return {};
+  }
+}
+export async function rememberVariant(sceneId, path) {
+  const all = await variantChoices();
+  if (path) all[sceneId] = path;
+  else delete all[sceneId];
+  await setPluginConfig("stashui", { fsVariants: JSON.stringify(all) }).catch(() => {});
+}
+// The variant's funscript (parsed) – read by the backend, the browser can't open library paths
+export async function readVariant(path) {
+  return JSON.parse((await runBackend({ mode: "funscript_read", path })).content);
+}
+export const samePath =(a, b) => !!a && !!b && a.replace(/\\/g, "/").toLowerCase() === b.replace(/\\/g, "/").toLowerCase();
 // "Some Clip (hard) v2.funscript" → ["some", "clip", "hard", "v2"]
 export const nameWords = (str) => String(str || "").toLowerCase().replace(/\.[a-z0-9]{2,9}$/, "").split(/[^\p{L}\p{N}]+/u).filter((w) => w.length > 1);
 
@@ -130,12 +149,13 @@ class Handy {
     if (force || !this.syncedAt || Date.now() - this.syncedAt > RESYNC) await this.syncClock();
   }
   // Hand the scene's script to the device
-  async load(funscriptPath, apiKey) {
+  // (variant: a chosen variant's funscript, parsed – it isn't Stash's own, so it always goes the upload way)
+  async load(funscriptPath, apiKey, variant) {
     // (no "already loaded" shortcut: a scene's funscript keeps its address – /scene/ID/funscript –
     // also when another file was chosen for it, so the script is always sent fresh)
     this.set("uploading");
     let url;
-    if (cfg.useStashHostedFunscript) {
+    if (cfg.useStashHostedFunscript && !variant) {
       // the device fetches it from Stash itself (only works when Stash can be reached from the internet)
       const u = new URL(funscriptPath.replace("/funscript", "/interactive_csv"), location.href);
       if (apiKey === undefined) apiKey = await gql(`query { configuration { general { apiKey } } }`).then((d) => d.configuration.general.apiKey).catch(() => "");
@@ -143,7 +163,7 @@ class Handy {
       u.searchParams.set("v", Date.now()); // a new address each time – the device doesn't reuse an old copy
       url = u.toString();
     } else {
-      const fs = await (await fetch(funscriptPath, { credentials: "same-origin", cache: "no-store" })).json();
+      const fs = variant || (await (await fetch(funscriptPath, { credentials: "same-origin", cache: "no-store" })).json());
       const fd = new FormData();
       fd.append("syncFile", new File([toCsv(fs)], `${Math.round(Math.random() * 1e8)}.csv`), "script.csv");
       const up = await (await fetch(UPLOAD, { method: "POST", body: fd })).json();
@@ -214,9 +234,10 @@ export async function testHandy() {
 
 // The player: follows the video while a scene with a script is open. Returns a stop function.
 // onState(h) is told every change (for the status in the player bar).
-export function attachHandy(video, scene, { apiKey, onState, loop } = {}) {
+export function attachHandy(video, scene, { apiKey, onState, loop, getVariant } = {}) {
   let h = null;
   let alive = true;
+  let variant = null; // the chosen variant's funscript (parsed), or null: the scene's own
   let busy = Promise.resolve();
   const queue = (fn) => (busy = busy.then(() => alive && h && fn()).catch((e) => h && h.set("error", e.message)));
   const tell = (x) => alive && onState && onState(x);
@@ -226,8 +247,10 @@ export function attachHandy(video, scene, { apiKey, onState, loop } = {}) {
     h.listeners.add(tell);
     if (h.off) return tell(h); // disconnected in the menu – stays so until "Connect"
     try {
+      if (getVariant) variant = await getVariant().catch(() => null);
+      if (!alive) return;
       if (h.state !== "ready") await h.connect();
-      await h.load(scene.paths.funscript, apiKey);
+      await h.load(scene.paths.funscript, apiKey, variant);
       if (loop && loop()) await h.loop(true);
       if (!video.paused) await h.play(video.currentTime);
     } catch (e) {
@@ -250,7 +273,7 @@ export function attachHandy(video, scene, { apiKey, onState, loop } = {}) {
       h.script = "";
       try {
         await h.connect(true);
-        await h.load(scene.paths.funscript, apiKey);
+        await h.load(scene.paths.funscript, apiKey, variant);
         if (!video.paused) await h.play(video.currentTime);
       } catch (e) {
         h.set("error", e.message);
@@ -272,9 +295,14 @@ export function attachHandy(video, scene, { apiKey, onState, loop } = {}) {
       if (!h) return;
       h.script = "";
       await queue(async () => {
-        await h.load(scene.paths.funscript, apiKey);
+        await h.load(scene.paths.funscript, apiKey, variant);
         if (!video.paused) await h.play(video.currentTime, true);
       });
+    },
+    // another variant (parsed funscript; null: the scene's own): the Handy loads it and goes on from where the video is
+    async setVariant(fs) {
+      variant = fs || null;
+      await this.reload();
     },
     async disconnect() {
       if (h) await h.disconnect();

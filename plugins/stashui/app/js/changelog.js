@@ -4,6 +4,15 @@
 
 export const CHANGES = [
   {
+    v: "3.37.0",
+    date: "2026-10-02",
+    items: [
+      ["ui", "Several funscripts per video: scripts next to the video that start with its name (“Video.funscript”, “Video (Soft).funscript”, “Video - Hard.funscript” …) are variants, labelled by the rest of the file name. Pick one in the Handy menu or the Funscript list – the Handy loads it and carries on from where the video is; the choice is remembered per scene.", "每个视频可有多个 funscript：视频旁以其名称开头的脚本（“Video.funscript”、“Video (Soft).funscript”、“Video - Hard.funscript” …）即为变体，以文件名其余部分作标签。在 Handy 菜单或 Funscript 列表中选择——Handy 加载后从视频当前位置继续；选择按场景记住。"],
+      ["ui", "Stacked heatmap: every variant as a stripe with label, length and a click to choose it – in the Handy menu and the Funscript list.", "叠放热力图：每个变体一条，带标签、时长，点击即可选择——位于 Handy 菜单和 Funscript 列表中。"],
+      ["ui", "Length check: a script that can't be read, has no movements, or is much longer or shorter than its video gets a warning (the stripe shows where it ends). New tab Problems on the Interactive page lists such scenes and the scenes with several scripts – each list can be set as a tag.", "长度检查：无法读取、没有动作、或比视频长得多/短得多的脚本会收到警告（条带显示其结束位置）。“互动”页面的新标签“问题”列出这些场景以及有多个脚本的场景——每个列表都可设为标签。"],
+    ],
+  },
+  {
     v: "3.36.0",
     date: "2026-10-01",
     items: [

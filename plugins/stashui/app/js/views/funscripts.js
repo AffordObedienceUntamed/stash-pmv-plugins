@@ -5,13 +5,30 @@
 
 import { esc, icon, toast, errorToast, openDrawer, confirmDialog, fmtDuration, plural, debounce } from "../ui.js";
 import { t } from "../i18n.js";
-import { findItems } from "../api.js";
+import { findItems, gql } from "../api.js";
 import { go } from "../main.js";
 import { mediaBrowser } from "./media.js";
 import { runBackend, fsSources, rememberFs, samePath, nameWords } from "../interactive.js";
+import { issueText } from "../fsvariants.js";
+
+const TAG_PROBLEMS = "Funscript problem";
+const TAG_MULTI = "Several funscripts";
+
+// Put a tag on exactly these scenes: added where missing, taken off scenes that have it but aren't in the list
+async function syncTag(name, ids) {
+  let tag = (await gql(`query FsvFindTag($q: String!) { findTags(filter: { q: $q, per_page: -1 }) { tags { id name } } }`, { q: name })).findTags.tags.find((x) => x.name.toLowerCase() === name.toLowerCase());
+  if (!tag) tag = (await gql(`mutation FsvCreateTag($n: String!) { tagCreate(input: { name: $n }) { id name } }`, { n: name })).tagCreate;
+  const have = (await gql(`query FsvTagged($t: [ID!]) { findScenes(scene_filter: { tags: { value: $t, modifier: INCLUDES } }, filter: { per_page: -1 }) { scenes { id } } }`, { t: [tag.id] })).findScenes.scenes.map((s) => s.id);
+  const add = ids.filter((i) => !have.includes(i));
+  const rem = have.filter((i) => !ids.includes(i));
+  const bulk = (list, mode) => list.length && gql(`mutation FsvTagScenes($i: BulkSceneUpdateInput!) { bulkSceneUpdate(input: $i) { id } }`, { i: { ids: list, tag_ids: { ids: [tag.id], mode } } });
+  await bulk(add, "ADD");
+  await bulk(rem, "REMOVE");
+  return { added: add.length, removed: rem.length };
+}
 
 export function render(main, params, query) {
-  const tab = params.tab === "files" ? "files" : "scenes";
+  const tab = params.tab === "files" || params.tab === "problems" ? params.tab : "scenes";
   main.innerHTML = `
     <header class="kb-head">
       <div class="kb-head-title">
@@ -22,6 +39,7 @@ export function render(main, params, query) {
         <div class="kb-seg">
           <a href="#/interactive" class="${tab === "scenes" ? "is-on" : ""}">${icon("film")}${t("With funscript")} <span data-n="scenes"></span></a>
           <a href="#/interactive/files" class="${tab === "files" ? "is-on" : ""}">${icon("plug")}${t("Funscripts without a video")} <span data-n="files"></span></a>
+          <a href="#/interactive/problems" class="${tab === "problems" ? "is-on" : ""}">${icon("info")}${t("Problems")} <span data-n="problems"></span></a>
         </div>
       </div>
     </header>
@@ -37,7 +55,56 @@ export function render(main, params, query) {
       base: () => ({ filter: { interactive: true } }),
       onCount: (k, n) => (main.querySelector('[data-n="scenes"]').textContent = n),
     });
-  } else paintFiles();
+  } else if (tab === "problems") paintProblems();
+  else paintFiles();
+
+  // ---------- Problems: broken scripts, scripts that don't fit the video, scenes with several scripts ----------
+  async function paintProblems() {
+    body.innerHTML = `<div class="kb-loading">${t("Checking every funscript …")}</div>`;
+    let r;
+    try {
+      r = await runBackend({ mode: "funscript_scan" });
+    } catch (e) {
+      body.innerHTML = `<div class="kb-empty"><b>${t("Couldn't check the funscripts")}</b><p>${esc(e.message)}</p><p>${t("Stash UI's backend needs Python (like the PMV Generator) – after updating, reload the plugins in Stash once.")}</p></div>`;
+      return;
+    }
+    if (!alive) return;
+    main.querySelector('[data-n="problems"]').textContent = r.problems.length;
+    const row = (s, info) => `<a class="kb-fsl-row kb-fsl-scene" href="#/scene/${esc(s.id)}">
+        ${s.screenshot ? `<img alt="" loading="lazy" src="${esc(s.screenshot)}">` : icon("film")}
+        <span><b>${esc(s.title)}</b><small>${info}</small></span></a>`;
+    const why = (s) =>
+      s.variants
+        .map((v) => `${esc(v.label || t("Standard"))}: ${esc(issueText(v, s.duration))}`)
+        .join(" · ");
+    const section = (key, title, hint, list, line, tagName) => `
+      <section class="kb-fsp-sec" data-sec="${key}">
+        <div class="kb-fsp-sechead"><h3 class="kb-fsp-h">${title} <span class="kb-hint">${list.length}</span></h3>
+          <button type="button" class="kb-btn is-ghost" data-tag="${key}" ${list.length ? "" : "disabled"}>${icon("tag")}${t("Tag these scenes “{tag}”", { tag: esc(tagName) })}</button></div>
+        <p class="kb-hint">${hint}</p>
+        <div class="kb-fsl">${list.length ? list.map((s) => row(s, line(s))).join("") : `<p class="kb-hint">${t("Nothing found")}</p>`}</div>
+      </section>`;
+    body.innerHTML =
+      `<p class="kb-hint">${t("{n} scenes checked.", { n: r.scanned })}${r.unreachable ? " " + t("{n} scenes skipped – their video can't be reached from here.", { n: r.unreachable }) : ""}</p>` +
+      section("problems", t("Problems"), t("A script that can't be read or has no movements, or one that is much longer or shorter than its video."), r.problems, why, TAG_PROBLEMS) +
+      section("multi", t("Several scripts"), t("Scenes with more than one funscript next to the video – choose between them in the player."), r.multi, (s) => t("{n} scripts", { n: s.count }), TAG_MULTI);
+    body.onclick = async (e) => {
+      const b = e.target.closest("[data-tag]");
+      if (!b) return;
+      const key = b.dataset.tag;
+      const [name, list] = key === "problems" ? [TAG_PROBLEMS, r.problems] : [TAG_MULTI, r.multi];
+      if (!(await confirmDialog({ title: t("Tag these scenes?"), text: t("The tag “{tag}” is put on these {n} scenes and taken off scenes that no longer qualify.", { tag: name, n: list.length }), ok: t("Tag") })).ok) return;
+      b.classList.add("is-busy");
+      try {
+        const res = await syncTag(name, list.map((s) => s.id));
+        toast(t("Tagged: {add} added, {rem} removed", { add: res.added, rem: res.removed }), "ok");
+      } catch (er) {
+        errorToast(er, "Tag");
+      } finally {
+        b.classList.remove("is-busy");
+      }
+    };
+  }
 
   // ---------- Funscripts without a video ----------
   async function paintFiles() {

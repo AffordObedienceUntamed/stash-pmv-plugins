@@ -1262,3 +1262,24 @@ html.kb-glass .kb-pl { border-color: var(--glass-edge); }
 .kb-fsl-row b { overflow: hidden; font: 600 14.5px/1.25 var(--f-text); white-space: nowrap; text-overflow: ellipsis; }
 .kb-fsl-row small { overflow: hidden; color: var(--faint); font: 400 12px/1.25 var(--f-label); white-space: nowrap; text-overflow: ellipsis; }
 .kb-fsl-scene img { flex: none; width: 72px; height: 42px; border-radius: 4px; object-fit: cover; background: var(--base); }
+
+/* Script variants: one stripe per funscript (heatmap), label left, warning below */
+.kb-fsv { display: flex; flex-direction: column; gap: 3px; }
+.kb-fsv-row { display: grid; grid-template-columns: 112px minmax(0, 1fr) 56px; align-items: center; gap: 4px 10px; width: 100%; padding: 6px 8px; border: 0; border-radius: 8px; color: var(--text); text-align: left; background: none; cursor: pointer; }
+.kb-fsv-row:hover { background: var(--bg-3); }
+.kb-fsv-row.is-on { box-shadow: inset 3px 0 0 var(--ok); background: var(--bg-2); }
+.kb-fsv-row.has-issue .kb-fsv-lab b::after { content: " ⚠"; color: var(--warn, #e0a030); }
+.kb-fsv-lab { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.kb-fsv-lab b { overflow: hidden; font: 600 13px/1.2 var(--f-text); white-space: nowrap; text-overflow: ellipsis; }
+.kb-fsv-lab small { color: var(--faint); font: 400 11.5px/1.2 var(--f-label); }
+.kb-fsv-bar { position: relative; display: block; height: 22px; overflow: hidden; border-radius: 4px; background-color: rgba(128, 128, 128, .12); }
+.kb-fsv-over { position: absolute; top: 0; right: 0; bottom: 0; background: rgba(255, 60, 60, .38); border-left: 2px solid #ff5050; }
+.kb-fsv-miss { position: absolute; top: 0; right: 0; bottom: 0; background: repeating-linear-gradient(135deg, rgba(224, 160, 48, .35) 0 4px, transparent 4px 8px); }
+.kb-fsv-tag { color: var(--ok); font: 700 11.5px/1 var(--f-label); text-align: right; }
+.kb-fsv-warn { grid-column: 2 / -1; color: var(--warn, #e0a030); font: 500 12px/1.3 var(--f-label); }
+.kb-fsv-box[hidden] { display: none; }
+.kb-fsp-sec { margin-bottom: 22px; max-width: 980px; }
+.kb-fsp-sechead { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.kb-fsp-sechead .kb-fsp-h { margin: 10px 0 4px; }
+a.kb-fsl-row { color: inherit; text-decoration: none; }
+a.kb-fsl-row:hover { background: var(--bg-3); }

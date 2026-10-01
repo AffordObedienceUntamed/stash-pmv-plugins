@@ -688,3 +688,5 @@ html.kb-glass .kb-pmvg-fromvid { border-color: var(--glass-edge); background: va
 .kb-mkadd { margin-top: 4px; }
 .kb-stage.is-flash::after { content: ""; position: absolute; inset: 0; z-index: 20; background: #fff; pointer-events: none; animation: kb-cover-flash .4s ease-out forwards; }
 @keyframes kb-cover-flash { from { opacity: .8; } to { opacity: 0; } }
+.kb-hp-var { grid-column: 1 / -1; padding-bottom: 8px; border-bottom: 1px solid rgba(255, 255, 255, .08); }
+.kb-hp-var[hidden] { display: none; }

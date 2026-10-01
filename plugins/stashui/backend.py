@@ -22,8 +22,24 @@ Called through Stash's `runPluginOperation` (interface: raw):
 * mode "funscript_remove": the scene's funscript goes aside (renamed to .funscript.bak), Stash scans.
       args:   {"mode": "funscript_remove", "scene_id": "12"}
       output: {"removed": bool}
+
+* mode "funscript_variants": the funscripts next to a scene's video that start with its name
+  ("V.funscript", "V (Soft).funscript", "V - Hard.funscript" …), each read: length, speed stripes
+  (for the heatmap), number of movements, a hash of the movements, problems.
+      args:   {"mode": "funscript_variants", "scene_id": "12"}
+      output: {"video", "duration", "variants": [{"path", "name", "label", "main", "length", "actions",
+               "speed": [..], "peak", "hash", "issues": ["broken"|"unsorted"|"long"|"short"]}]}
+  "long"/"short": the script is more than max(5 s, 5 %) longer, or max(10 s, 10 %) shorter than the video.
+
+* mode "funscript_read": the text of one library funscript (the Handy gets a chosen variant this way).
+      args:   {"mode": "funscript_read", "path": "<a .funscript in the library>"}   output: {"content"}
+
+* mode "funscript_scan": all interactive scenes, checked: {"scanned", "unreachable",
+  "problems": [{"id", "title", "screenshot", "variants": [{"name", "label", "issues", "length"}]}],
+  "multi": [{"id", "title", "screenshot", "count"}]}
 """
 
+import hashlib
 import json
 import os
 import sys
@@ -182,12 +198,171 @@ def funscript_remove(stash, args):
     return {"removed": True}
 
 
+# ---------- Variants: several funscripts for one video ----------
+BUCKETS = 160  # the heatmap of a script: this many stripes
+SPEED_UNITS = 400  # units per second that count as "full intensity" in the picture (the front end scales)
+
+
+def scene_file(stash, sid):
+    if not sid.isdigit():
+        raise ValueError("no scene")
+    sc = stash.gql("query($id: ID!) { findScene(id: $id) { files { path duration } } }", {"id": sid})["findScene"]
+    if not sc or not sc.get("files"):
+        raise ValueError("the scene has no file")
+    return sc["files"][0]["path"], float(sc["files"][0].get("duration") or 0)
+
+
+def find_variants(video, exts):
+    """The funscripts next to a video that start with its name: "V.funscript", "V (Soft).funscript",
+    "V - Hard.funscript" … → [(path, label)], the one with the exact name first (label "")."""
+    d = os.path.dirname(video)
+    stem = os.path.splitext(os.path.basename(video))[0]
+    low = stem.lower()
+    try:
+        names = os.listdir(d)
+    except OSError:
+        return []
+    others = {os.path.splitext(n)[0].lower() for n in names if os.path.splitext(n)[1].lower() in exts} - {low}
+    out = []
+    for n in sorted(names, key=str.lower):
+        if not n.lower().endswith(".funscript"):
+            continue
+        s = n[: -len(".funscript")]
+        sl = s.lower()
+        if not sl.startswith(low):
+            continue
+        rest = s[len(stem):]
+        if rest and rest[0].isalnum():
+            continue  # "Video2" – another name
+        if sl in others or any(len(o) > len(low) and o.startswith(low) and sl.startswith(o) and (len(sl) == len(o) or not sl[len(o)].isalnum()) for o in others):
+            continue  # that one belongs to another video ("Video 2.funscript" next to "Video 2.mp4")
+        label = rest.strip(" -_.()[]{}") if rest else ""
+        out.append((os.path.join(d, n), label))
+    out.sort(key=lambda x: (x[1] != "", x[1].lower()))
+    return out
+
+
+def analyze(path, duration, buckets=True):
+    """Read a funscript: length, speed stripes for the heatmap, a hash over the movements and problems:
+    broken (not readable / no movements), unsorted, long / short (against the video's length)."""
+    info = {"path": path, "name": os.path.basename(path), "issues": []}
+    try:
+        st = os.stat(path)
+        info.update(size=st.st_size, mtime=int(st.st_mtime))
+        with open(path, encoding="utf-8-sig", errors="replace") as f:
+            fs = json.load(f)
+        acts = fs.get("actions") if isinstance(fs, dict) else None
+        if not isinstance(acts, list):
+            raise ValueError
+    except Exception:
+        info.update(actions=0, length=0, hash="", speed=[], issues=["broken"])
+        return info
+    good = []
+    for a in acts:
+        try:
+            at, pos = float(a["at"]), float(a["pos"])
+        except Exception:
+            continue
+        if at == at and pos == pos and at >= 0:
+            good.append((at, pos))
+    if len(good) < 2 or len(good) < len(acts) * 0.95:
+        info["issues"].append("broken")
+    if any(good[i][0] > good[i + 1][0] for i in range(len(good) - 1)):
+        info["issues"].append("unsorted")
+        good.sort()
+    length = good[-1][0] / 1000 if good else 0
+    info.update(actions=len(good), length=round(length, 1))
+    # the same movements → the same hash (name, metadata, rounding noise don't matter)
+    h = hashlib.sha1()
+    for at, pos in good:
+        h.update(f"{round(at)}:{round(pos)};".encode())
+    info["hash"] = h.hexdigest()[:16] if good else ""
+    if duration and length and "broken" not in info["issues"]:
+        if length > duration + max(5, duration * 0.05):
+            info["issues"].append("long")
+        elif length < duration - max(10, duration * 0.1):
+            info["issues"].append("short")
+    if buckets:
+        span = max(good[-1][0], 1) if good else 1
+        sp = [0.0] * BUCKETS
+        w = span / BUCKETS  # ms per stripe
+        for (a0, p0), (a1, p1) in zip(good, good[1:]):
+            if a1 <= a0:
+                continue
+            d = abs(p1 - p0) / (a1 - a0)  # movement per ms, spread over the stripes the stroke touches
+            for i in range(int(a0 / w), min(BUCKETS - 1, int(a1 / w)) + 1):
+                ov = min(a1, (i + 1) * w) - max(a0, i * w)
+                if ov > 0:
+                    sp[i] += d * ov
+        info["speed"] = [min(999, round(x / (w / 1000))) for x in sp]
+        info["peak"] = max(info["speed"]) if good else 0
+    return info
+
+
+def funscript_variants(stash, args):
+    video, duration = scene_file(stash, str(args.get("scene_id") or ""))
+    _, exts = libraries(stash)
+    main = os.path.splitext(video)[0] + ".funscript"
+    out = []
+    for p, label in find_variants(video, exts):
+        a = analyze(p, duration)
+        a["label"] = label
+        a["main"] = os.path.normcase(p) == os.path.normcase(main)
+        out.append(a)
+    return {"video": video, "duration": duration, "variants": out}
+
+
+def funscript_read(stash, args):
+    path = str(args.get("path") or "")
+    roots, _ = libraries(stash)
+    if not path.lower().endswith(".funscript") or not os.path.isfile(path) or not inside(path, roots):
+        raise ValueError("that funscript isn't in a Stash library folder")
+    if os.path.getsize(path) > MAX_SIZE:
+        raise ValueError("the funscript is too big")
+    with open(path, encoding="utf-8-sig", errors="replace") as f:
+        return {"content": f.read()}
+
+
+def funscript_scan(stash, args):
+    """All interactive scenes: which ones have a problem (broken / too long / too short), which have several scripts."""
+    d = stash.gql("query { findScenes(scene_filter: {interactive: true}, filter: {per_page: -1}) { scenes { id title paths { screenshot } files { path duration } } } }")
+    _, exts = libraries(stash)
+    problems, multi, n, unreachable = [], [], 0, 0
+    for sc in d["findScenes"]["scenes"]:
+        if not sc.get("files"):
+            continue
+        video, dur = sc["files"][0]["path"], float(sc["files"][0].get("duration") or 0)
+        if not os.path.isdir(os.path.dirname(video)):
+            unreachable += 1
+            continue
+        n += 1
+        vs = find_variants(video, exts)
+        bad = []
+        for p, label in vs:
+            a = analyze(p, dur, buckets=False)
+            iss = [i for i in a["issues"] if i != "unsorted"]
+            if iss:
+                bad.append({"name": a["name"], "label": label, "issues": iss, "length": a["length"]})
+        row = {"id": sc["id"], "title": sc.get("title") or os.path.basename(video), "screenshot": (sc.get("paths") or {}).get("screenshot"), "duration": dur}
+        if bad:
+            problems.append(dict(row, variants=bad))
+        if len(vs) > 1:
+            multi.append(dict(row, count=len(vs)))
+    return {"scanned": n, "unreachable": unreachable, "problems": problems, "multi": multi}
+
+
 def main():
     data = json.loads(sys.stdin.read() or "{}")
     args = data.get("args") or {}
     mode = str(args.get("mode") or "")
     try:
-        if mode == "funscript_list":
+        if mode == "funscript_variants":
+            out = funscript_variants(Stash(data.get("server_connection")), args)
+        elif mode == "funscript_read":
+            out = funscript_read(Stash(data.get("server_connection")), args)
+        elif mode == "funscript_scan":
+            out = funscript_scan(Stash(data.get("server_connection")), args)
+        elif mode == "funscript_list":
             out = funscript_list(Stash(data.get("server_connection")), args)
         elif mode == "funscript_save":
             out = funscript_save(Stash(data.get("server_connection")), args)

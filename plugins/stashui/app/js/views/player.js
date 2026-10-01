@@ -10,7 +10,8 @@ import { startMini, stopMini } from "../mini.js";
 import { placardHtml, bindPlacard } from "./placard.js";
 import { similarScenes } from "../similar.js";
 import { bestMarkers, bestMarkersNow } from "../standings.js";
-import { attachHandy, interactiveConfig, saveInteractiveConfig, handyPrefs, runBackend, fsSources, rememberFs } from "../interactive.js";
+import { attachHandy, interactiveConfig, saveInteractiveConfig, handyPrefs, runBackend, fsSources, rememberFs, variantChoices, rememberVariant, readVariant } from "../interactive.js";
+import { stackHtml, activeOf } from "../fsvariants.js";
 import { createVR, guessVR } from "../vr.js";
 import { videoGlow } from "../theme.js";
 import { BINS, watchRecorder, watchBins, motionBins, combine, peaks } from "../heat.js";
@@ -1042,6 +1043,7 @@ export async function render(host, params, query = {}) {
       title: t("Funscript for this scene"),
       body: `<p class="kb-hint">${t("Every .funscript in your Stash folders. The one you pick goes next to the video (as {name}) – it stays with this scene, also after a restart.", { name: esc(file.replace(/\.[^.]+$/, "") + ".funscript") })}</p>
         <div class="kb-fsp-cur" data-fscur></div>
+        <div class="kb-fsv-box" data-fsvbox hidden><h3 class="kb-fsp-h">${t("Scripts for this video")}</h3><div data-fsvbody></div></div>
         <input class="kb-field" type="search" data-fsq placeholder="${t("Search funscripts …")}" autocomplete="off">
         <div class="kb-fsp-list" data-fslist><div class="kb-loading">${t("Looking through your library …")}</div></div>`,
       foot: `<button type="button" class="kb-btn is-ghost" data-fsremove hidden>${icon("trash")}${t("Remove")}</button><span class="kb-spacer"></span><button type="button" class="kb-btn" data-fsupload>${icon("plus")}${t("From this computer …")}</button>`,
@@ -1101,9 +1103,13 @@ export async function render(host, params, query = {}) {
       el.querySelector("[data-fslist]").innerHTML = `<p class="kb-hint">${esc(e.message)}</p><p class="kb-hint">${t("Stash UI's backend needs Python (like the PMV Generator).")}</p>`;
     }
     el.querySelector("[data-fsq]").addEventListener("input", paint);
-    const remember = (name, path) => rememberFs(x.id, name, path);
+    paintVariants([el.querySelector("[data-fsvbox]")]);
+    // a new main funscript (or none): the remembered variant doesn't fit any more
+    const remember = (name, path) => (vpick = null, vdata = null, rememberVariant(x.id, null), rememberFs(x.id, name, path));
     el.addEventListener("click", async (e) => {
       const r = e.target.closest("[data-fspath]");
+      const vr = e.target.closest("[data-fsvpath]");
+      if (vr) return chooseVariant(vr.dataset.fsvpath).catch((er) => errorToast(er, "Funscript"));
       try {
         if (r) {
           const path = r.dataset.fspath;
@@ -1168,10 +1174,52 @@ export async function render(host, params, query = {}) {
     b.classList.toggle("is-busy", ["connecting", "syncing", "uploading"].includes(h.state));
     b.title = h.state === "error" ? `${h.error} – ${t("click to try again")}` : h.state === "ready" ? t("The Handy follows this scene – click to connect again") : t("Connecting the Handy …");
   }
+  // Variants: several funscripts for this video (see ../fsvariants.js). The one picked is remembered per scene.
+  let vdata = null; // the backend's answer: { duration, variants: [...] }
+  let vpick = null; // the remembered choice (a path) – null: the one with the video's name
+  async function loadVariants(force) {
+    if (vdata && !force) return vdata;
+    const [d, ch] = await Promise.all([runBackend({ mode: "funscript_variants", scene_id: x.id }), variantChoices()]);
+    vpick = ch[x.id] || null;
+    return (vdata = d);
+  }
+  // is there something to choose or to warn about? (a single script without problems shows nothing)
+  const variantsMatter = (d) => d.variants.length > 1 || d.variants.some((s) => s.issues.some((i) => i !== "unsorted"));
+  async function paintVariants(into) {
+    for (const box of into) {
+      try {
+        const d = await loadVariants();
+        box.hidden = !variantsMatter(d);
+        if (!box.hidden) box.querySelector("[data-fsvbody]").innerHTML = stackHtml(d, activeOf(d, vpick));
+      } catch (e) {
+        box.hidden = true; // no backend (needs Python) → just no variants
+      }
+    }
+  }
+  const variantBoxes = () => [...document.querySelectorAll("[data-fsvbox]")]; // the Handy menu and the funscript picker
+  async function chooseVariant(path) {
+    const d = await loadVariants();
+    const cur = activeOf(d, vpick);
+    const s = d.variants.find((y) => y.path === path);
+    if (!s || (cur && cur.path === s.path)) return;
+    const fs = await readVariant(path);
+    vpick = s.main ? null : path;
+    await rememberVariant(x.id, vpick);
+    if (handy) await handy.setVariant(s.main ? null : fs);
+    paintVariants(variantBoxes());
+    toast(t("Script “{name}” – the Handy follows it from here", { name: s.label || t("Standard") }), "ok");
+  }
   let handy = null;
   const startHandy = () => {
     if (handy) handy.stop();
-    handy = x.interactive && x.paths.funscript ? attachHandy(v, x, { onState: (h) => (paintHandy(h), paintHandyPanel()), loop: () => prefs.mode === "one" }) : null;
+    handy = x.interactive && x.paths.funscript ? attachHandy(v, x, {
+      onState: (h) => (paintHandy(h), paintHandyPanel()),
+      loop: () => prefs.mode === "one",
+      getVariant: async () => {
+        const p = (await variantChoices())[x.id];
+        return p ? readVariant(p) : null; // gone (renamed, deleted) → the scene's own
+      },
+    }) : null;
   };
   startHandy();
   const handyAway = (e) => {
@@ -1192,6 +1240,11 @@ export async function render(host, params, query = {}) {
     const c = await interactiveConfig();
     const p = handyPrefs();
     hp.innerHTML = `
+      <div class="kb-hp-var" data-fsvbox hidden>
+        <div class="kb-hp-row"><b>${t("Scripts for this video")}</b></div>
+        <div data-fsvbody></div>
+        <p class="kb-hp-hint">${t("Click one to switch – the Handy loads it and carries on from where the video is. Your choice is remembered for this scene.")}</p>
+      </div>
       <div class="kb-hp-col">
         <div class="kb-hp-row"><b>${t("Sync")}</b><span class="kb-hp-val" data-hpoffv></span><span class="kb-spacer"></span><button type="button" class="kb-btn is-ghost kb-hp-mini" data-hpreset>${t("Reset")}</button></div>
         <input type="range" class="kb-hp-range" min="-250" max="250" step="5" data-hpoff value="${c.funscriptOffset || 0}">
@@ -1214,6 +1267,7 @@ export async function render(host, params, query = {}) {
       </div>`;
     paintOffset();
     paintHandyPanel();
+    paintVariants([hp.querySelector("[data-fsvbox]")]);
     // the stroke as the device has it
     const h = handy && handy.device;
     if (h && h.state === "ready")
@@ -1261,6 +1315,10 @@ export async function render(host, params, query = {}) {
     hp.querySelector("[data-hpoff2]").disabled = !h || h.off;
   }
   if (hp) {
+    hp.addEventListener("click", (e) => {
+      const r = e.target.closest("[data-fsvpath]");
+      if (r) chooseVariant(r.dataset.fsvpath).catch((err) => errorToast(err, "Funscript"));
+    });
     hp.addEventListener("input", (e) => {
       if (e.target.matches("[data-hpoff]")) paintOffset();
       if (e.target.matches("[data-hpmin], [data-hpmax]")) paintStroke();
