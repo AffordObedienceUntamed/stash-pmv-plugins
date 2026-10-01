@@ -42,6 +42,7 @@ SHARED = [
     "app/js/audiox.js",
     "app/js/views/tagpicker.js",
     "app/js/views/perfpicker.js",
+    "app/js/playlists.js",
 ]
 SKIP_DIRS = {"__pycache__", ".cache", "tools"}
 PLACEHOLDER_URL = "https://github.com/OWNER/REPO"

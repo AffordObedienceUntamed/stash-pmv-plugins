@@ -1,7 +1,8 @@
 // Shared browsing building block: toolbar, filters, tabs (scenes/images/galleries),
 // salon hanging, multi-select with actions. State lives in the URL.
 
-import { esc, icon, store, debounce, seed, errorToast, toast, plural, fmtNum, confirmDialog, starsHtml, ratingFilterSteps, ratingFilterMin } from "../ui.js";
+import { esc, icon, store, debounce, seed, errorToast, toast, plural, fmtNum, confirmDialog, promptDialog, starsHtml, ratingFilterSteps } from "../ui.js";
+import { filterOf, QUERY_KEYS, loadPlaylists, savePlaylists, labelsFor } from "../playlists.js";
 import { t } from "../i18n.js";
 import { findItems, favoriteTagId, setFavorite, bulkUpdate, destroyItems } from "../api.js";
 import { toPiece, Hang } from "../pieces.js";
@@ -41,36 +42,8 @@ function readState(q, kind, defaults) {
   };
 }
 
-// Build the Stash filter. base: the page's restriction (folder, tag, gallery).
-function buildFilter(kind, st, base) {
-  const f = Object.assign({}, base && base.filter);
-  const inc = [...st.tags];
-  if (base && base.tagId) inc.unshift(base.tagId);
-  if (st.fav && app.favId) inc.push(app.favId);
-  if (inc.length || st.xtags.length) {
-    f.tags = { value: [...new Set(inc)], modifier: "INCLUDES_ALL", depth: 0 };
-    if (st.xtags.length) f.tags.excludes = st.xtags;
-  }
-  if (st.perfs.length) {
-    // On a performer's page the page's own performer stays in: then all of them together
-    const page = f.performers ? f.performers.value : [];
-    f.performers = page.length
-      ? { value: [...new Set([...page, ...st.perfs])], modifier: "INCLUDES_ALL" }
-      : { value: st.perfs, modifier: st.pany ? "INCLUDES" : "INCLUDES_ALL" };
-  }
-  if (st.rating) f.rating100 = { value: ratingFilterMin(st.rating), modifier: "GREATER_THAN" };
-  if (kind === "scene") {
-    if (st.played === "yes") f.play_count = { value: 0, modifier: "GREATER_THAN" };
-    if (st.played === "no") f.play_count = { value: 0, modifier: "EQUALS" };
-    if (st.played === "resume") f.resume_time = { value: 5, modifier: "GREATER_THAN" };
-    if (st.res) f.resolution = { value: st.res, modifier: "GREATER_THAN" };
-    if (st.len === "short") f.duration = { value: 60, modifier: "LESS_THAN" };
-    if (st.len === "mid") f.duration = { value: 60, value2: 600, modifier: "BETWEEN" };
-    if (st.len === "long") f.duration = { value: 600, modifier: "GREATER_THAN" };
-  }
-  if (st.ori && kind !== "gallery") f.orientation = { value: [st.ori] };
-  return f;
-}
+// Build the Stash filter. base: the page's restriction (folder, tag, gallery). (Shared with the playlists.)
+const buildFilter = (kind, st, base) => filterOf(kind, st, app.favId, base);
 
 export function mediaBrowser(host, opts) {
   // opts: { kinds, query, base(kind) → { filter, tagId }, defaults, counts: {kind: n}, onCount(kind, n), persist }
@@ -91,6 +64,7 @@ export function mediaBrowser(host, opts) {
         <button class="kb-btn" data-filter>${icon("filter")}<span>${t("Filter")}</span></button>
         <span class="kb-spacer"></span>
         <label class="kb-range" title="${t("Thumbnail size")}">${icon("image")}<input type="range" min="130" max="480" step="10" data-rowh value="${rowH()}" aria-label="${t("Size")}"></label>
+        ${opts.playlist ? `<button class="kb-btn" data-plsave title="${t("Keep these filters as a playlist – it always shows what matches them now")}">${icon("queue")}<span>${opts.query.pl ? t("Save playlist") : t("Save as playlist")}</span></button>` : ""}
         <button class="kb-btn" data-play title="${t("Play everything as a queue")}">${icon("play")}<span>${t("Play")}</span></button>
         <button class="kb-btn is-icon" data-select title="${t("Select")}" aria-label="${t("Select")}">${icon("select")}</button>
       </div>
@@ -113,6 +87,7 @@ export function mediaBrowser(host, opts) {
     $("[data-dir]").hidden = st.sort === "random";
     $("[data-filter]").classList.toggle("is-on", filterOpen);
     $("[data-play]").hidden = kind === "gallery";
+    if ($("[data-plsave]")) $("[data-plsave]").hidden = kind === "gallery";
     renderFilters();
   }
 
@@ -165,24 +140,51 @@ export function mediaBrowser(host, opts) {
     });
   }
 
+  // The filters as URL parameters (also what a playlist keeps)
+  const queryOf = () => ({
+    q: st.q,
+    sort: st.sort,
+    dir: st.dir,
+    tags: st.tags.join(","),
+    xtags: st.xtags.join(","),
+    perfs: st.perfs.join(","),
+    pany: st.pany && st.perfs.length > 1 ? "1" : "",
+    rating: st.rating || "",
+    fav: st.fav ? "1" : "",
+    played: st.played,
+    ori: st.ori,
+    res: st.res,
+    len: st.len,
+  });
+  let plId = opts.query.pl || ""; // opened from a playlist: "Save playlist" changes that one
   function persistQuery() {
-    setQuery({
-      kind: kinds.length > 1 ? kind : "",
-      q: st.q,
-      sort: st.sort,
-      dir: st.dir,
-      tags: st.tags.join(","),
-      xtags: st.xtags.join(","),
-      perfs: st.perfs.join(","),
-      pany: st.pany && st.perfs.length > 1 ? "1" : "",
-      rating: st.rating || "",
-      fav: st.fav ? "1" : "",
-      played: st.played,
-      ori: st.ori,
-      res: st.res,
-      len: st.len,
-      seed: st.sort === "random" ? st.seed : "",
-    });
+    setQuery(Object.assign({ kind: kinds.length > 1 ? kind : "" }, queryOf(), { seed: st.sort === "random" ? st.seed : "", pl: plId }));
+  }
+
+  // ---------- Keep the filters as a playlist ----------
+  async function savePlaylist() {
+    try {
+      const list = await loadPlaylists();
+      const cur = list.find((p) => p.id === plId);
+      const name = ((await promptDialog({ title: cur ? t("Save playlist") : t("Save as playlist"), label: cur ? t("Name – a new name renames the playlist") : t("Name – the playlist keeps these filters and always shows what matches them now"), value: cur ? cur.name : "", ok: t("Save") })) || "").trim();
+      if (!name) return;
+      const query = {};
+      const all = queryOf();
+      QUERY_KEYS.forEach((k) => all[k] && (query[k] = String(all[k])));
+      const labels = await labelsFor(st);
+      // the same name → that one is replaced; a playlist opened here with a new name → renamed
+      let pl = list.find((p) => p.name.toLowerCase() === name.toLowerCase()) || cur || null;
+      if (pl) Object.assign(pl, { name, kind, query, labels, changed: Date.now() });
+      else list.push((pl = { id: Date.now().toString(36), name, kind, query, labels, created: Date.now() }));
+      await savePlaylists(list);
+      plId = pl.id;
+      persistQuery();
+      const b = $("[data-plsave] span");
+      if (b) b.textContent = t("Save playlist");
+      toast(t("Playlist “{name}” saved", { name }), "ok", { label: t("Playlists"), run: () => go("playlists") });
+    } catch (e) {
+      errorToast(e, "Playlist");
+    }
   }
 
   function apply() {
@@ -354,6 +356,7 @@ export function mediaBrowser(host, opts) {
       return;
     }
     if (e.target.closest("[data-play]")) return playAll();
+    if (e.target.closest("[data-plsave]")) return savePlaylist();
   });
   host.addEventListener("change", (e) => {
     const el = e.target;

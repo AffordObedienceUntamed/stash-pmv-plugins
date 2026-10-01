@@ -16,6 +16,7 @@ import { perfPicker, hasPerformers } from "./perfpicker.js";
 import { LAYOUTS, slotsFor, aspectOfGroup, Compositor } from "../pmvfx.js";
 import { Playlist, fileTrack, filesFromDrop, isSongFile } from "../music.js";
 import { liveConnect, liveStatus, songTitle, LiveAudio } from "../live.js";
+import { stateOf, filterOf, loadPlaylists } from "../playlists.js";
 import { plexState, plexForget, plexSignIn, plexServers, plexConnect, PlexClient, plexTracks, PlexFollow } from "../plex.js";
 
 // config.js can override these (e.g. open saved scenes in Stash UI when that's where you came from).
@@ -31,6 +32,8 @@ const DEFAULTS = {
   plexSync: 0, // following Plex: cuts shifted by this (seconds)
   plexSyncs: {}, // … remembered per Plex player (phone over Bluetooth ≠ PC) and per listened app
   liveApp: "Spotify", // live: the app the generator listens to
+  clipFrom: "filter", // filter = the filters below | playlist = a smart playlist from Stash UI
+  clipList: "", // its id
   source: "scene",
   folders: [], // [{ id, path }] – empty = all folders
   tags: [],
@@ -289,7 +292,13 @@ export function render(main) {
 
       <section class="kb-card">
         <h2><span class="kb-pmvg-no">2</span>Clips</h2>
-        <div class="kb-pmvg-cols">
+        <div class="kb-pmvg-from">
+          <span class="kb-lab-t">Clips from</span>
+          <div class="kb-seg" data-seg="clipFrom"><button type="button" data-v="filter">These filters</button><button type="button" data-v="playlist">A playlist</button></div>
+          <select class="kb-field" data-cliplist aria-label="Playlist" hidden></select>
+          <p class="kb-hint" data-clipnote hidden></p>
+        </div>
+        <div class="kb-pmvg-cols" data-filtercols>
           <div class="kb-pmvg-block">
             <span class="kb-lab-t">What</span>
             <div class="kb-seg" data-seg="source"><button type="button" data-v="scene">Scenes</button><button type="button" data-v="image">Images</button><button type="button" data-v="both">Both</button></div>
@@ -510,8 +519,9 @@ export function render(main) {
     const clipOpts = [S.bestSpots && "best moments", S.smartCrop && "smart crop", S.matchCut && "match cuts", S.variety && "variety"].filter(Boolean);
     const src = { scene: "Scenes", image: "Images", both: "Scenes + images" }[S.source];
     const where = S.folders.length ? `from ${S.folders.length === 1 ? "1 folder" : S.folders.length + " folders"}` : "from all folders";
+    const plName = S.clipFrom === "playlist" ? ((typeof pls !== "undefined" && pls.find((p) => p.id === S.clipList)) || {}).name : null;
     $("[data-sum]").innerHTML = [
-      `<li><b>Clips</b>${S.rgPct >= 100 ? "RedGifs only" : `${esc(src)} ${esc(where)}${S.tags.length ? ` · ${S.tags.length} Tags${S.tags.length > 1 && S.tagMode === "any" ? " (any)" : ""}` : ""}${S.perfs.length ? ` · ${S.perfs.length} ${S.perfs.length === 1 ? "performer" : "performers"}` : ""}${S.fav ? " · favorites only" : ""}${+S.minRating ? ` · ★${S.minRating / 20}+` : ""}${+S.minLen ? ` · ≥ ${S.minLen / 60} min` : ""}${S.maxRes !== "any" ? ` · ≤ ${S.maxRes}p` : ""}`}${S.rgPct > 0 && S.rgPct < 100 ? ` · RedGifs ${S.rgPct} %` : ""}${S.rgPct > 0 ? ` (${esc(S.rgPicks.length ? S.rgPicks.map(rg.pickLabel).join(", ") : "trending")})` : ""}</li>`,
+      `<li><b>Clips</b>${S.rgPct >= 100 ? "RedGifs only" : plName ? `Playlist “${esc(plName)}”` : `${esc(src)} ${esc(where)}${S.tags.length ? ` · ${S.tags.length} Tags${S.tags.length > 1 && S.tagMode === "any" ? " (any)" : ""}` : ""}${S.perfs.length ? ` · ${S.perfs.length} ${S.perfs.length === 1 ? "performer" : "performers"}` : ""}${S.fav ? " · favorites only" : ""}${+S.minRating ? ` · ★${S.minRating / 20}+` : ""}${+S.minLen ? ` · ≥ ${S.minLen / 60} min` : ""}${S.maxRes !== "any" ? ` · ≤ ${S.maxRes}p` : ""}`}${S.rgPct > 0 && S.rgPct < 100 ? ` · RedGifs ${S.rgPct} %` : ""}${S.rgPct > 0 ? ` (${esc(S.rgPicks.length ? S.rgPicks.map(rg.pickLabel).join(", ") : "trending")})` : ""}</li>`,
       `<li><b>Selection</b>${clipOpts.length ? esc(clipOpts.join(", ")) : "random"}</li>`,
       `<li><b>Cutting</b>${esc(tabSum.cut)}</li>`,
       `<li><b>Effects</b>${fxOn} on${S.look !== "none" ? " · look " + esc(look) : ""}</li>`,
@@ -538,7 +548,8 @@ export function render(main) {
       S[key] = key === "quality" ? Number(b.dataset.v) : b.dataset.v;
       save();
       paintSegs();
-      if (["source", "shape", "tagMode", "minRating", "minLen", "maxRes"].includes(key)) {
+      if (key === "clipFrom") paintClipFrom();
+      if (["source", "shape", "tagMode", "minRating", "minLen", "maxRes", "clipFrom"].includes(key)) {
         updateCount();
         paintSummary();
       }
@@ -747,18 +758,52 @@ export function render(main) {
     const seq = ++countSeq;
     const el = $("[data-count]");
     try {
-      const favId = S.fav ? await favoriteTagId(false) : null;
-      const kinds = S.source === "both" ? ["scene", "image"] : [S.source];
-      const n = await Promise.all(kinds.map((k) => countItems(k, buildFilter(k, S, favId))));
+      const spec = await clipSpec(S);
+      const kinds = spec.kinds;
+      const n = await Promise.all(kinds.map((k) => countItems(k, spec.filter(k))));
       if (seq !== countSeq || !alive) return;
       const total = n.reduce((a, b) => a + b, 0);
       el.textContent = kinds.map((k, i) => `${n[i]} ${k === "scene" ? "scenes" : "images"}`).join(" + ") + " match" + (total < 8 ? " – rather few, clips will repeat" : "");
       el.classList.toggle("is-warn", total === 0);
     } catch (err) {
-      if (seq === countSeq) el.textContent = "";
+      if (seq === countSeq) el.textContent = err.message || "";
     }
   }
   updateCount();
+
+  // ---------- Clips from a playlist (Stash UI's smart playlists) ----------
+  let pls = [];
+  function paintClipFrom() {
+    const fromList = S.clipFrom === "playlist";
+    const sel = $("[data-cliplist]");
+    sel.hidden = !fromList;
+    $("[data-filtercols]").classList.toggle("is-dim", fromList);
+    const note = $("[data-clipnote]");
+    note.hidden = !fromList || pls.length > 0;
+    note.innerHTML = "No playlists yet – in Stash UI, set filters in Scenes or Images and press “Save as playlist”.";
+    sel.innerHTML = pls.length ? pls.map((p) => `<option value="${esc(p.id)}">${esc(p.name)} (${p.kind === "image" ? "images" : "scenes"})</option>`).join("") : `<option value="">–</option>`;
+    if (fromList && pls.length && !pls.some((p) => p.id === S.clipList)) {
+      S.clipList = pls[0].id;
+      save();
+    }
+    sel.value = S.clipList;
+  }
+  loadPlaylists()
+    .then((list) => {
+      pls = list;
+      if (!alive) return;
+      paintClipFrom();
+      paintSummary();
+      updateCount();
+    })
+    .catch(() => {});
+  $("[data-cliplist]").addEventListener("change", (e) => {
+    S.clipList = e.target.value;
+    save();
+    paintSummary();
+    updateCount();
+  });
+  paintClipFrom();
 
   // ---------- Song ----------
 
@@ -1674,6 +1719,20 @@ async function spriteSpots(s, dur) {
   return list.slice().sort(() => Math.random() - 0.5).sort((x, y) => y.score - x.score + (Math.random() - 0.5) * 0.4);
 }
 
+// Which clips: the filters on the page, or a smart playlist → { kinds, filter(kind) }
+async function clipSpec(S) {
+  if (S.clipFrom === "playlist") {
+    const pl = (await loadPlaylists()).find((p) => p.id === S.clipList);
+    if (!pl) throw new Error("Pick a playlist – or save one in Stash UI first");
+    const st = stateOf(pl.query);
+    const f = filterOf(pl.kind, st, st.fav ? await favoriteTagId(false) : null);
+    if (pl.kind === "scene" && !f.duration) f.duration = { value: 4, modifier: "GREATER_THAN" };
+    return { kinds: [pl.kind === "image" ? "image" : "scene"], filter: () => f };
+  }
+  const favId = S.fav ? await favoriteTagId(false) : null;
+  return { kinds: S.source === "both" ? ["scene", "image"] : [S.source], filter: (k) => buildFilter(k, S, favId) };
+}
+
 const MAX_RES = { 720: "FULL_HD", 1080: "QUAD_HD", 1440: "VR_HD" }; // "up to …" = below the next size
 
 function buildFilter(kind, S, favId) {
@@ -2082,14 +2141,14 @@ class Generator {
   // ---------- Clips ----------
 
   async fetchSources() {
-    const kinds = this.S.source === "both" ? ["scene", "image"] : [this.S.source];
-    const favId = this.S.fav ? await favoriteTagId(false) : null;
+    const spec = await clipSpec(this.S);
+    const kinds = spec.kinds;
     const lists = await Promise.all(
       kinds.map(async (k) => {
         const q = k === "scene"
           ? `query($f: FindFilterType, $x: SceneFilterType) { r: findScenes(filter: $f, scene_filter: $x) { count scenes { id title paths { stream sprite vtt } files { duration width height basename } scene_markers { seconds } performers { id } } } }`
           : `query($f: FindFilterType, $x: ImageFilterType) { r: findImages(filter: $f, image_filter: $x) { count images { id title paths { image } visual_files { __typename ... on ImageFile { width height basename } } performers { id } } } }`;
-        const d = await gql(q, { f: { per_page: 60, page: this.page[k], sort: "random_" + this.seed }, x: buildFilter(k, this.S, favId) });
+        const d = await gql(q, { f: { per_page: 60, page: this.page[k], sort: "random_" + this.seed }, x: spec.filter(k) });
         const items = k === "scene" ? d.r.scenes : d.r.images;
         // Reached the end → start over with a new random order
         this.page[k] = this.page[k] * 60 >= d.r.count ? 1 : this.page[k] + 1;

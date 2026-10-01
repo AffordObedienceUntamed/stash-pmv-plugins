@@ -35,6 +35,7 @@ const ROUTES = [
   { re: /^search$/, view: "search" },
   { re: /^history$/, view: "history" },
   { re: /^stats$/, view: "stats" },
+  { re: /^playlists$/, view: "playlists" },
   { re: /^versus$/, view: "versus" },
   { re: /^versus\/ranking$/, view: "versus", params: { tab: "ranking" } },
   { re: /^duplicates$/, view: "dupes" },
@@ -108,6 +109,7 @@ const loaders = {
   history: () => import("./views/history.js"),
   stats: () => import("./views/stats.js"),
   versus: () => import("./views/versus.js"),
+  playlists: () => import("./views/playlists.js"),
   dupes: () => import("./views/dupes.js"),
   queue: () => import("./views/queue.js"),
   tasks: () => import("./views/tasks.js"),
@@ -201,6 +203,7 @@ const NAV = [
   ] },
   { group: "Watch", items: [
     { href: "queue", label: "Queue", icon: "queue", match: /^queue/, count: "queue" },
+    { href: "playlists", label: "Playlists", icon: "slides", match: /^playlists/ },
     { href: "history", label: "History", icon: "history", match: /^history/ },
     { href: "versus", label: "Versus", icon: "trophy", match: /^versus/ },
     { action: "storm", label: "Media Storm", icon: "bolt", plugin: "mediaStorm" },

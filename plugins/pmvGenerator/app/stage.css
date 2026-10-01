@@ -595,6 +595,11 @@
 .kb-pmvg-legend .kb-chip { box-shadow: none; background: var(--base); }
 .kb-pmvg-sw { width: 10px; height: 10px; border-radius: 2px; }
 .kb-pmvg .is-dim { opacity: .4; pointer-events: none; }
+/* Clips from: the filters or a smart playlist */
+.kb-pmvg-from { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 14px; }
+.kb-pmvg-from .kb-lab-t { margin: 0; }
+.kb-pmvg-from select { flex: 1; min-width: 200px; max-width: 420px; }
+.kb-pmvg-from .kb-hint { flex-basis: 100%; margin: 0; }
 
 /* PMV Generator: music from a video, cutting the song */
 .kb-pmvg-fromvid { margin-top: 12px; border: 1px solid var(--bg-3); border-radius: 6px; background: var(--base); }
