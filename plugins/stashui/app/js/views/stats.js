@@ -3,7 +3,8 @@
 // before it. Stash keeps only the moment of a play, not its length: a play's length is estimated per
 // scene (its watch time ÷ its plays); under a minute counts as a quick look.
 
-import { esc, fmtNum, fmtBytes, store } from "../ui.js";
+import { esc, icon, fmtNum, fmtBytes, store, toast } from "../ui.js";
+import { loadStandings } from "../standings.js";
 import { t, locale } from "../i18n.js";
 import { gql } from "../api.js";
 
@@ -173,6 +174,7 @@ export async function render(main) {
   // ---------- Page ----------
   body.innerHTML = `
     <section class="kb-card kb-st-week" data-week></section>
+    <section class="kb-card kb-st-card kb-st-badges" data-badges></section>
     <div class="kb-st-bar">
       <div class="kb-seg" data-period>${PERIODS.map(([n, l]) => `<button type="button" data-n="${n}">${t(l)}</button>`).join("")}</div>
       <span class="kb-hint kb-st-since" data-since></span>
@@ -471,11 +473,88 @@ export async function render(main) {
     }
   }
 
+  // ---------- Achievements: a streak of days and milestones in steps ----------
+  // Day streak: days in a row with at least one play (today not yet watched doesn't break it)
+  function streaks() {
+    const days = [...new Set(plays.map((e) => dayStart(e.at)))].sort((a, b) => a - b);
+    let best = 0;
+    let run = 0;
+    let prev = null;
+    for (const d of days) {
+      // (days differ by 23–25 h around daylight saving time)
+      run = prev != null && Math.round((d - prev) / DAY) === 1 ? run + 1 : 1;
+      best = Math.max(best, run);
+      prev = d;
+    }
+    const today = dayStart(Date.now());
+    const last = days[days.length - 1];
+    const cur = last != null && Math.round((today - last) / DAY) <= 1 ? run : 0;
+    return { cur, best, today: last === today };
+  }
+  const BADGES = [
+    { id: "streak", icon: "bolt", name: "On a roll", what: "days in a row", steps: [3, 7, 14, 30, 60], value: (x) => x.streak.best },
+    { id: "plays", icon: "play", name: "Regular", what: "plays", steps: [50, 100, 500, 1000, 5000], value: () => plays.length },
+    { id: "hours", icon: "film", name: "Marathon", what: "hours watched", steps: [10, 50, 100, 250, 500], value: () => Math.floor((st.total_play_duration || 0) / 3600), when: () => hasTime },
+    { id: "explore", icon: "search", name: "Explorer", what: "% of the library seen", steps: [10, 25, 50, 75, 100], value: () => (st.scene_count ? Math.floor((st.scenes_played / st.scene_count) * 100) : 0) },
+    { id: "night", icon: "history", name: "Night owl", what: "plays between midnight and 4", steps: [10, 50, 200, 500], value: () => plays.filter((e) => new Date(e.at).getHours() < 4).length },
+    { id: "versus", icon: "trophy", name: "Judge", what: "Versus picks", steps: [25, 100, 500, 1000, 2500], value: (x) => x.votes },
+    { id: "o", icon: "drop", name: "Finisher", what: "O", steps: [10, 50, 100, 500], value: () => st.total_o_count || 0, when: () => hasO },
+  ];
+  const ROMAN = ["I", "II", "III", "IV", "V"];
+  let votes = 0;
+  let votesIn = false; // newly earned ones are only told once everything (also Versus) is known
+  function paintBadges() {
+    const el = body.querySelector("[data-badges]");
+    const x = { streak: streaks(), votes };
+    const earnedNow = [];
+    const cards = BADGES.filter((b) => !b.when || b.when())
+      .map((b) => {
+        const v = b.value(x);
+        const tier = b.steps.filter((n) => v >= n).length; // 0 = none yet
+        const next = b.steps[tier];
+        const from = tier ? b.steps[tier - 1] : 0;
+        const pct = next ? Math.max(0, Math.min(100, ((v - from) / (next - from)) * 100)) : 100;
+        if (tier) earnedNow.push(b.id + ":" + tier);
+        return `<div class="kb-st-badge${tier ? " is-earned" : ""}${!next ? " is-max" : ""}" title="${esc(next ? t("Next step: {n} {what}", { n: fmtNum(next), what: t(b.what) }) : t("All steps reached"))}">
+          <span class="kb-st-medal" data-tier="${tier}">${icon(b.icon)}${tier ? `<em>${ROMAN[tier - 1]}</em>` : ""}</span>
+          <span class="kb-st-badge-txt"><b>${esc(t(b.name))}</b><small>${fmtNum(v)}${next ? " / " + fmtNum(next) : ""} ${esc(t(b.what))}</small>
+          <span class="kb-st-pips">${b.steps.map((_, i) => `<i class="${i < tier ? "is-on" : ""}"></i>`).join("")}</span>
+          ${next ? `<span class="kb-st-prog"><s style="width:${pct}%"></s></span>` : ""}</span></div>`;
+      })
+      .join("");
+    const sx = x.streak;
+    el.innerHTML = `
+      <div class="kb-st-head"><h2>${t("Achievements")}</h2><span class="kb-hint">${t("{n} of {m} steps reached", { n: earnedNow.reduce((a, k) => a + Number(k.split(":")[1]), 0), m: BADGES.filter((b) => !b.when || b.when()).reduce((a, b) => a + b.steps.length, 0) })}</span></div>
+      <div class="kb-st-streak${sx.cur >= 3 ? " is-hot" : ""}">${icon("bolt")}<span><b>${t("{n} days in a row", { n: sx.cur })}</b><small>${sx.cur && !sx.today ? t("Watch something today to keep it going") : sx.cur ? t("Today counts already") : t("Watch something today to start a streak")} · ${t("best: {n} days", { n: sx.best })}</small></span></div>
+      <div class="kb-st-badgegrid">${cards}</div>`;
+    // Newly earned since the last visit
+    if (!votesIn) return;
+    const seen = store.get("badgesSeen", null);
+    if (seen) {
+      const fresh = earnedNow.filter((k) => !seen.includes(k));
+      fresh.slice(0, 3).forEach((k) => {
+        const [id, tier] = k.split(":");
+        const b = BADGES.find((y) => y.id === id);
+        if (b) toast(t("New achievement: {name} {tier}", { name: t(b.name), tier: ROMAN[tier - 1] }), "ok");
+      });
+    }
+    store.set("badgesSeen", earnedNow);
+  }
+  // Versus picks come from Stash UI's plugin settings
+  loadStandings()
+    .then((d) => (votes = d.votes || 0))
+    .catch(() => {})
+    .finally(() => {
+      votesIn = true;
+      if (main.isConnected) paintBadges();
+    });
+
   function paintAll() {
     const r = rangeOf(days);
     body.querySelectorAll("[data-period] [data-n]").forEach((b) => b.classList.toggle("is-on", +b.dataset.n === days));
     body.querySelectorAll("[data-metric] [data-m]").forEach((b) => b.classList.toggle("is-on", b.dataset.m === metric));
     paintWeek();
+    paintBadges();
     paintKpis(r);
     paintChart(r);
     ["scenes", "performers", "tags", "studios", "o"].forEach((k) => paintTop(r, k));

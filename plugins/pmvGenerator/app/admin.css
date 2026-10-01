@@ -354,6 +354,32 @@ body.kb-embedded .kb-main { padding: 0; }
 .kb-st-cover b { color: var(--pink); font: 700 22px/1 var(--f-display); }
 .kb-st-lib .kb-st-facts { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
 
+/* achievements */
+.kb-st-streak { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; padding: 10px 14px; border-radius: 8px; background: color-mix(in srgb, var(--base) 55%, transparent); }
+.kb-st-streak > .kb-ic { width: 30px; height: 30px; color: var(--faint); }
+.kb-st-streak.is-hot > .kb-ic { color: #ffb347; filter: drop-shadow(0 0 8px rgba(255, 140, 50, .7)); }
+.kb-st-streak span { display: flex; flex-direction: column; gap: 3px; }
+.kb-st-streak b { color: var(--text); font: 700 20px/1.1 var(--f-display); }
+.kb-st-streak small { color: var(--text-2); font: 400 13px/1.3 var(--f-label); }
+.kb-st-badgegrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.kb-st-badge { display: flex; gap: 12px; align-items: center; padding: 10px 12px; border: 1px solid var(--bg-3); border-radius: 8px; background: var(--bg-2); opacity: .72; }
+.kb-st-badge.is-earned { opacity: 1; border-color: color-mix(in srgb, #ffd166 35%, var(--bg-3)); }
+.kb-st-medal { position: relative; display: grid; flex: none; place-items: center; width: 46px; height: 46px; border-radius: 50%; color: var(--faint); background: var(--bg-3); }
+.kb-st-medal .kb-ic { width: 22px; height: 22px; }
+.kb-st-medal[data-tier="1"] { color: #3b2412; background: radial-gradient(circle at 35% 30%, #f3c79a, #b87333); }
+.kb-st-medal[data-tier="2"] { color: #2a2d33; background: radial-gradient(circle at 35% 30%, #ffffff, #a9b0bb); }
+.kb-st-medal[data-tier="3"] { color: #3a2a00; background: radial-gradient(circle at 35% 30%, #fff1b8, #e0a800); }
+.kb-st-medal[data-tier="4"], .kb-st-medal[data-tier="5"] { color: #12233a; background: radial-gradient(circle at 35% 30%, #e6fbff, #6fd3f2); box-shadow: 0 0 12px rgba(143, 227, 255, .55); }
+.kb-st-medal em { position: absolute; right: -4px; bottom: -4px; min-width: 20px; padding: 2px 4px; border-radius: 999px; color: var(--paper); font: 700 10px/1 var(--f-label); font-style: normal; text-align: center; background: var(--ink); }
+.kb-st-badge-txt { display: flex; flex: 1; flex-direction: column; gap: 4px; min-width: 0; }
+.kb-st-badge-txt b { color: var(--text); font: 600 15px/1.2 var(--f-label); }
+.kb-st-badge-txt small { overflow: hidden; color: var(--text-2); font: 400 12px/1.2 var(--f-label); white-space: nowrap; text-overflow: ellipsis; }
+.kb-st-pips { display: flex; gap: 3px; }
+.kb-st-pips i { width: 14px; height: 4px; border-radius: 2px; background: var(--bg-3); }
+.kb-st-pips i.is-on { background: #ffd166; }
+.kb-st-prog { display: block; height: 3px; border-radius: 2px; background: var(--bg-3); }
+.kb-st-prog s { display: block; height: 100%; border-radius: 2px; background: var(--pink); }
+
 @media (max-width: 900px) {
   .kb-st-weekgrid, .kb-st-rhythm, .kb-st-lib { grid-template-columns: 1fr; }
   .kb-st-plot, .kb-st-x, .kb-st-olane { margin-left: 44px; }
