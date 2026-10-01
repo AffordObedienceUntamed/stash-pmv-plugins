@@ -297,3 +297,18 @@ export async function saveActivity(id, resumeTime, playDuration) {
 export async function addPlay(id) {
   await gql(`mutation($id: ID!) { sceneAddPlay(id: $id) { count } }`, { id });
 }
+
+// ---------- A plugin's settings in Stash ----------
+// Stash replaces a plugin's settings as a whole on every save – so always read them fresh, change
+// only the given keys (undefined = remove) and write everything back. Things kept there by these
+// plugins (PMV presets, Versus standings) survive that way.
+export async function pluginConfig(id) {
+  const d = await gql(`query($i: [ID!]) { configuration { plugins(include: $i) } }`, { i: [id] });
+  return (d.configuration.plugins || {})[id] || {};
+}
+export async function setPluginConfig(id, patch) {
+  const next = Object.assign({}, await pluginConfig(id), patch);
+  Object.keys(patch).forEach((k) => patch[k] === undefined && delete next[k]);
+  await gql(`mutation($id: ID!, $i: Map!) { configurePlugin(plugin_id: $id, input: $i) }`, { id, i: next });
+  return next;
+}

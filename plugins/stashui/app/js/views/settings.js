@@ -4,7 +4,7 @@
 
 import { esc, icon, toast, errorToast, store, confirmDialog, fmtDate, folderMode, ratingSystem, setRatingSystem } from "../ui.js";
 import { t, locale, LANGS, chosen, choose } from "../i18n.js";
-import { gql } from "../api.js";
+import { gql, setPluginConfig } from "../api.js";
 import { typeInfo, selection, fieldHtml, readFields, unwrap, labelOf, LABELS } from "../forms.js";
 import { go } from "../main.js";
 import { pokeJobs } from "../jobs.js";
@@ -455,7 +455,7 @@ async function renderApp(body) {
   };
   body.querySelector("[data-home]").onchange = async (e) => {
     try {
-      await gql(`mutation($i: Map!) { configurePlugin(plugin_id: "stashui", input: $i) }`, { i: Object.assign({}, cfg, { keepClassicHome: !e.target.checked }) });
+      await setPluginConfig("stashui", { keepClassicHome: !e.target.checked });
       localStorage.setItem("stashui.keepClassicHome", String(!e.target.checked));
       toast(t("Saved"), "ok");
     } catch (err) {

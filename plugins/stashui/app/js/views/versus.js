@@ -2,11 +2,12 @@
 // (Elo, like chess): beat a stronger one and you climb a lot, beat a weaker one and it's a little.
 // Three ways to play: fair matches (similar strength, the least played first), winner stays (a streak),
 // and climb (a newcomer climbs up until it loses – that's its place).
-// The standings live in this browser; only "Turn into star ratings" writes to Stash (and asks first).
+// The standings are kept in Stash (Stash UI's plugin settings), so they're the same in every browser;
+// star ratings only change with "Turn into star ratings" (and it asks first).
 
 import { esc, icon, toast, errorToast, store, confirmDialog, fmtDuration } from "../ui.js";
 import { t } from "../i18n.js";
-import { gql } from "../api.js";
+import { gql, pluginConfig, setPluginConfig } from "../api.js";
 import { tagPicker } from "./tagpicker.js";
 import { go } from "../main.js";
 import { isGif } from "../pieces.js";
@@ -47,13 +48,77 @@ const thumbOf = (kind, x) => (kind === "scene" ? x.paths.screenshot : kind === "
 // Where an item starts: its star rating, if it has one (so the first matches aren't wasted)
 const startElo = (x) => 1500 + (x.rating100 != null ? (x.rating100 - 50) * 6 : 0);
 const today = () => new Date().toISOString().slice(0, 10);
+const KIND_KEYS = ["scene", "image", "performer"];
+const blank = () => ({ scene: {}, image: {}, performer: {}, votes: 0, day: "", dayVotes: 0, bestStreak: 0, resets: {} });
+// Two states (this browser, Stash – or two devices) → one: per item the one with more matches;
+// after "Start over" the newer start counts for that kind
+function mergeVs(a, b) {
+  const out = blank();
+  KIND_KEYS.forEach((k) => {
+    const ra = (a.resets || {})[k] || 0;
+    const rb = (b.resets || {})[k] || 0;
+    if (ra || rb) out.resets[k] = Math.max(ra, rb);
+    if (ra !== rb) return (out[k] = Object.assign({}, (ra > rb ? a : b)[k]));
+    out[k] = Object.assign({}, b[k]);
+    Object.entries(a[k] || {}).forEach(([id, r]) => {
+      const o = out[k][id];
+      if (!o || r[1] + r[2] > o[1] + o[2]) out[k][id] = r;
+    });
+  });
+  out.votes = Math.max(a.votes || 0, b.votes || 0);
+  out.bestStreak = Math.max(a.bestStreak || 0, b.bestStreak || 0);
+  const [n] = [a, b].sort((x, y) => (y.day || "").localeCompare(x.day || ""));
+  out.day = n.day || "";
+  out.dayVotes = a.day === b.day ? Math.max(a.dayVotes || 0, b.dayVotes || 0) : n.dayVotes || 0;
+  return out;
+}
+const parseVs = (txt) => {
+  try {
+    return Object.assign(blank(), JSON.parse(txt || "{}"));
+  } catch (e) {
+    return blank();
+  }
+};
 
 export function render(main, params = {}) {
   const S = Object.assign({ kind: "scene", mode: "fair", tags: [] }, store.get("versusView", {}));
   const saveView = () => store.set("versusView", S);
   // { scene: { id: [elo, wins, losses] }, image: …, performer: …, votes, day, dayVotes, bestStreak }
-  const data = Object.assign({ scene: {}, image: {}, performer: {}, votes: 0, day: "", dayVotes: 0, bestStreak: 0 }, store.get("versus", {}));
-  const saveData = () => store.set("versus", data);
+  // This browser keeps a copy (starts at once); Stash has the real thing – written a few seconds after
+  // the last pick, merged with what's there (another device may have played meanwhile)
+  const data = Object.assign(blank(), store.get("versus", {}));
+  let pushTimer = 0;
+  const adopt = (m) => {
+    Object.assign(data, m);
+    store.set("versus", data);
+  };
+  async function pushData() {
+    clearTimeout(pushTimer);
+    pushTimer = 0;
+    try {
+      const merged = mergeVs(data, parseVs((await pluginConfig("stashui")).versus));
+      await setPluginConfig("stashui", { versus: JSON.stringify(merged) });
+      adopt(merged);
+    } catch (e) {
+      console.warn("[Stash UI] Versus → Stash:", e); // the copy in this browser stays; next pick tries again
+    }
+  }
+  const saveData = () => {
+    store.set("versus", data);
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(pushData, 3000);
+  };
+  // What Stash has (played in another browser?) → merged in
+  const pulled = pluginConfig("stashui")
+    .then((cfg) => {
+      const remote = parseVs(cfg.versus);
+      const merged = mergeVs(data, remote);
+      adopt(merged);
+      // something only in this browser (e.g. from before) → into Stash
+      if (JSON.stringify(merged) !== JSON.stringify(mergeVs(remote, remote))) saveData();
+      return true;
+    })
+    .catch(() => false);
   let pool = [];
   let pair = null; // [a, b]
   let champ = null; // winner stays / climb: the one that stays
@@ -364,9 +429,10 @@ export function render(main, params = {}) {
       <ol class="kb-vs-rank" data-rank>${top.length ? `<li class="kb-loading">${t("Loading …")}</li>` : ""}</ol>`;
     body.querySelector("[data-stars]").onclick = () => toStars(all);
     body.querySelector("[data-restart]").onclick = async () => {
-      const r = await confirmDialog({ title: t("Start over?"), text: t("The standings of all {kind} in this browser are cleared. Star ratings in Stash stay.", { kind: t(KINDS[S.kind].label) }), ok: t("Start over"), danger: true });
+      const r = await confirmDialog({ title: t("Start over?"), text: t("The standings of all {kind} are cleared (in every browser). Star ratings stay.", { kind: t(KINDS[S.kind].label) }), ok: t("Start over"), danger: true });
       if (!r.ok) return;
       data[S.kind] = {};
+      data.resets = Object.assign({}, data.resets, { [S.kind]: Date.now() });
       saveData();
       paintRanking();
     };
@@ -464,8 +530,11 @@ export function render(main, params = {}) {
   document.addEventListener("keydown", onKey);
 
   reset();
+  // the ranking again once Stash's standings are in
+  pulled.then((ok) => ok && alive && ranking && paintRanking());
   return () => {
     alive = false;
+    if (pushTimer) pushData(); // not yet in Stash – now
     clearInterval(montage);
     document.removeEventListener("keydown", onKey);
     document.removeEventListener("fullscreenchange", onFs);

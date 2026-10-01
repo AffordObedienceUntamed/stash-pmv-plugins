@@ -1084,7 +1084,6 @@ export default {
   "Turn into star ratings …": "转换为星级评分 …",
   "Start over": "重新开始",
   "Start over?": "重新开始？",
-  "The standings of all {kind} in this browser are cleared. Star ratings in Stash stay.": "本浏览器中所有{kind}的排名都会被清空。Stash 中的星级评分保持不变。",
   "Turn into star ratings?": "转换为星级评分？",
   "Sets the star rating in Stash for {n} {kind} from their standing (top 10 % five stars … bottom 10 % one star). Their current ratings are replaced.": "根据排名为 {n} 个{kind}设置 Stash 中的星级评分（前 10% 五星 … 后 10% 一星）。它们现有的评分会被替换。",
   "Set ratings": "设置评分",
@@ -1112,4 +1111,5 @@ export default {
   "Decimal (0.0–10.0)": "小数（0.0–10.0）",
   "Rating system saved": "评分方式已保存",
   "The earlier cover couldn't be loaded": "无法加载之前的封面",
+  "The standings of all {kind} are cleared (in every browser). Star ratings stay.": "所有{kind}的排名都会被清空（在所有浏览器中）。星级评分保持不变。",
 };

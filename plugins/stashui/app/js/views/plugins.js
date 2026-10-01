@@ -6,7 +6,7 @@
 
 import { esc, icon, toast, errorToast, confirmDialog, fmtDate } from "../ui.js";
 import { t } from "../i18n.js";
-import { gql } from "../api.js";
+import { gql, setPluginConfig } from "../api.js";
 import { pokeJobs, onJobs } from "../jobs.js";
 import { setQuery } from "../main.js";
 
@@ -392,8 +392,10 @@ export async function render(main, params, query) {
       } else if (el.value !== "") input[el.dataset.ps] = el.value;
     });
     try {
-      await gql(`mutation($id: ID!, $i: Map!) { configurePlugin(plugin_id: $id, input: $i) }`, { id, i: input });
-      state.cfg[id] = input;
+      // only the settings on this form – whatever else the plugin keeps there stays
+      const cleared = {};
+      f.querySelectorAll("[data-ps]").forEach((el) => !(el.dataset.ps in input) && (cleared[el.dataset.ps] = undefined));
+      state.cfg[id] = await setPluginConfig(id, Object.assign(cleared, input));
       toast(t("Plugin settings saved"), "ok");
     } catch (err) {
       errorToast(err, "Save");

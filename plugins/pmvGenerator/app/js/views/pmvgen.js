@@ -5,7 +5,7 @@
 
 import { esc, icon, toast, errorToast, fmtDuration, fmtBytes, fmtNum, store, promptDialog, confirmDialog } from "../ui.js";
 import * as rg from "../redgifs.js";
-import { gql, favoriteTagId, countItems } from "../api.js";
+import { gql, favoriteTagId, countItems, pluginConfig, setPluginConfig } from "../api.js";
 import { analyzeFile, analyzeBuffer, sliceBuffer, songFromFrames, rescale, shift } from "../beats.js";
 import { extractAudio, parseTime, fmtTime } from "../audiox.js";
 import { scanPmv } from "../pmvscan.js";
@@ -1021,11 +1021,9 @@ export function render(main) {
   // they're also there in every browser. Stored as one JSON text so Stash leaves the names alone.
   let presetList = {};
   const presets = () => presetList;
-  const pluginCfg = async () => ((await gql(`query { configuration { plugins(include: ["pmvGenerator"]) } }`)).configuration.plugins || {}).pmvGenerator || {};
+  const pluginCfg = () => pluginConfig("pmvGenerator");
   async function writePresets(all) {
-    // Stash replaces a plugin's whole settings – keep whatever else is in there
-    const cfg = Object.assign({}, await pluginCfg(), { presets: JSON.stringify(all) });
-    await gql(`mutation($c: Map!) { configurePlugin(plugin_id: "pmvGenerator", input: $c) }`, { c: cfg });
+    await setPluginConfig("pmvGenerator", { presets: JSON.stringify(all) });
     presetList = all;
   }
   async function loadPresets() {
