@@ -4,7 +4,7 @@
 // Handy's own script hosting, or fetched by the device from Stash), the clock is matched with the
 // Handy server, then playback follows the video: play at a position, stop, again on seeking.
 
-import { gql } from "./api.js";
+import { gql, pluginConfig, setPluginConfig } from "./api.js";
 import { store } from "./ui.js";
 
 const API = "https://www.handyfeeling.com/api/handy/v2/";
@@ -29,6 +29,31 @@ export async function saveInteractiveConfig(patch) {
   if (keyChanged) handy = null; // a new key → a new connection
   return cfg;
 }
+
+// ---------- Funscripts and scenes (Stash UI's backend) ----------
+export async function runBackend(args) {
+  const d = await gql(`mutation($a: Map) { runPluginOperation(plugin_id: "stashui", args: $a) }`, { a: args });
+  const out = d.runPluginOperation || {};
+  if (out.error) throw new Error(out.error);
+  return out;
+}
+// Which file a scene's funscript came from: { sceneId: { name, path } } – kept in Stash UI's plugin settings
+export async function fsSources() {
+  try {
+    return JSON.parse((await pluginConfig("stashui")).funscripts || "{}") || {};
+  } catch (e) {
+    return {};
+  }
+}
+export async function rememberFs(sceneId, name, path) {
+  const all = await fsSources();
+  if (name) all[sceneId] = { name, path };
+  else delete all[sceneId];
+  await setPluginConfig("stashui", { funscripts: JSON.stringify(all) }).catch(() => {});
+}
+export const samePath = (a, b) => !!a && !!b && a.replace(/\\/g, "/").toLowerCase() === b.replace(/\\/g, "/").toLowerCase();
+// "Some Clip (hard) v2.funscript" → ["some", "clip", "hard", "v2"]
+export const nameWords = (str) => String(str || "").toLowerCase().replace(/\.[a-z0-9]{2,9}$/, "").split(/[^\p{L}\p{N}]+/u).filter((w) => w.length > 1);
 
 // A funscript → the CSV the Handy wants ("ms,position" per line; inverted and range turned into 0–100)
 // (invert: the menu's switch – up becomes down, on top of what the script says)

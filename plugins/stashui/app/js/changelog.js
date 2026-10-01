@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.36.0",
+    date: "2026-10-01",
+    items: [
+      ["ui", "New page Interactive (Watch): all scenes with a funscript, as a normal list – and the funscripts in your library that don't belong to a video yet, each with “Choose video …” (similar names first, or search).", "新页面“互动”（观看）：所有带 funscript 的场景，以普通列表显示——以及媒体库中尚未属于任何视频的 funscript，每个都可“选择视频 …”（名称相似的优先，也可搜索）。"],
+    ],
+  },
+  {
     v: "3.35.2",
     date: "2026-10-01",
     items: [["ui", "Funscript list: the script you picked last is the one marked “in use” – the copy next to the video isn't listed as an extra entry any more.", "Funscript 列表：标记为“使用中”的是你最后选择的脚本——视频旁边的副本不再作为单独条目列出。"]],

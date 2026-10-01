@@ -10,7 +10,7 @@ import { startMini, stopMini } from "../mini.js";
 import { placardHtml, bindPlacard } from "./placard.js";
 import { similarScenes } from "../similar.js";
 import { bestMarkers, bestMarkersNow } from "../standings.js";
-import { attachHandy, interactiveConfig, saveInteractiveConfig, handyPrefs } from "../interactive.js";
+import { attachHandy, interactiveConfig, saveInteractiveConfig, handyPrefs, runBackend, fsSources, rememberFs } from "../interactive.js";
 import { createVR, guessVR } from "../vr.js";
 import { videoGlow } from "../theme.js";
 import { BINS, watchRecorder, watchBins, motionBins, combine, peaks } from "../heat.js";
@@ -1022,27 +1022,7 @@ export async function render(host, params, query = {}) {
   // .funscript in the library (Stash UI's backend looks), the best matches first; picking one puts it
   // next to the video – so it stays with the scene, after restarts and in classic Stash too – and has
   // Stash scan the video. Which file it came from is kept in Stash UI's settings (shown next time).
-  const runBackend = async (args) => {
-    const d = await gql(`mutation($a: Map) { runPluginOperation(plugin_id: "stashui", args: $a) }`, { a: args });
-    const out = d.runPluginOperation || {};
-    if (out.error) throw new Error(out.error);
-    return out;
-  };
   const words = (str) => String(str || "").toLowerCase().replace(/\.[a-z0-9]{2,5}$/, "").split(/[^\p{L}\p{N}]+/u).filter((w) => w.length > 1);
-  // Which file a scene's funscript came from (shown in the picker) – kept in Stash UI's plugin settings
-  const fsSources = async () => {
-    try {
-      return JSON.parse((await pluginConfig("stashui")).funscripts || "{}") || {};
-    } catch (e) {
-      return {};
-    }
-  };
-  async function rememberFs(name, path) {
-    const all = await fsSources();
-    if (name) all[x.id] = { name, path };
-    else delete all[x.id];
-    await setPluginConfig("stashui", { funscripts: JSON.stringify(all) }).catch(() => {});
-  }
   // wait until Stash has scanned the video (interactive on – or off after removing), then reopen
   async function afterFunscript(msg, want = true) {
     toast(msg, "ok");
@@ -1121,7 +1101,7 @@ export async function render(host, params, query = {}) {
       el.querySelector("[data-fslist]").innerHTML = `<p class="kb-hint">${esc(e.message)}</p><p class="kb-hint">${t("Stash UI's backend needs Python (like the PMV Generator).")}</p>`;
     }
     el.querySelector("[data-fsq]").addEventListener("input", paint);
-    const remember = (name, path) => rememberFs(name, path);
+    const remember = (name, path) => rememberFs(x.id, name, path);
     el.addEventListener("click", async (e) => {
       const r = e.target.closest("[data-fspath]");
       try {
