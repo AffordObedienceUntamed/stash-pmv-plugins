@@ -4,7 +4,7 @@
 
 import { esc, icon, fmtNum, store, seed, errorToast, folderMode, openDrawer, confirmDialog } from "../ui.js";
 import { t } from "../i18n.js";
-import { stats, findItems, loadFolders } from "../api.js";
+import { gql, stats, findItems, loadFolders } from "../api.js";
 import { toPiece, Hang } from "../pieces.js";
 import { app, go } from "../main.js";
 import { roomsHtml, fillRoomCovers } from "./folder.js";
@@ -39,6 +39,8 @@ function wall(el, fetcher, rowHeight) {
 
 const BUILTIN = {
   resume: { title: "Continue watching", hint: "Started scenes, most recently watched first" },
+  foryou: { title: "For you", hint: "Unwatched scenes with the tags you watched most this week" },
+  rewatch: { title: "Long time no see", hint: "Favorites and top-rated scenes you haven't watched for a month" },
   fav: { title: "Favorites", hint: "Scenes and images with the heart, mixed" },
   new: { title: "Recently added", hint: "The newest scenes and images" },
   folders: { title: "Folders", hint: "Your biggest folders" },
@@ -60,8 +62,35 @@ const SCENE_ONLY = new Set(["last_played_at", "play_count", "duration"]);
 
 const loadLayout = () => {
   const l = store.get("homeLayout", null);
-  return Array.isArray(l) && l.length ? l : DEFAULT_LAYOUT.map((x) => ({ ...x }));
+  if (!(Array.isArray(l) && l.length)) return DEFAULT_LAYOUT.map((x) => ({ ...x }));
+  // Built-in sections added in a newer version show up in a layout saved before (after "Continue watching")
+  let at = l.findIndex((s) => s.id === "resume") + 1;
+  Object.keys(BUILTIN).forEach((id) => {
+    if (l.some((s) => s.id === id)) return;
+    l.splice(at++, 0, { id });
+  });
+  return l;
 };
+
+// The tags you watched most in the last 7 days (plays in that time; the favorite tag doesn't count)
+async function topTagsOfWeek() {
+  const since = Date.now() - 7 * 864e5;
+  const d = await gql(`query($f: FindFilterType, $s: SceneFilterType) { findScenes(filter: $f, scene_filter: $s) { scenes { play_history tags { id name } } } }`, {
+    f: { per_page: -1 },
+    s: { last_played_at: { value: new Date(since).toISOString(), modifier: "GREATER_THAN" } },
+  });
+  const m = new Map();
+  for (const sc of d.findScenes.scenes) {
+    const n = (sc.play_history || []).filter((x) => Date.parse(x) >= since).length || 1;
+    for (const tg of sc.tags || []) {
+      if (tg.id === app.favId) continue;
+      const e = m.get(tg.id) || { tag: tg, n: 0 };
+      e.n += n;
+      m.set(tg.id, e);
+    }
+  }
+  return [...m.values()].sort((a, b) => b.n - a.n).slice(0, 3).map((e) => e.tag);
+}
 const saveLayout = (l) => store.set("homeLayout", l);
 const titleOf = (s) => (s.custom ? s.custom.title || t("My section") : t(BUILTIN[s.id].title));
 
@@ -131,6 +160,8 @@ export async function render(main) {
       .map((s) => {
         const links =
           s.id === "resume" ? `<a href="#/history">${t("History")}</a>`
+          : s.id === "foryou" ? `<span class="kb-home-why" data-why></span>`
+          : s.id === "rewatch" ? `<a href="#/scenes?rating=4&sort=last_played_at&dir=ASC">${t("All")}</a>`
           : s.id === "fav" ? `<a href="#/scenes?fav=1">${t("All scenes")}</a> <a href="#/images?fav=1">${t("All images")}</a>`
           : s.id === "new" ? `<a href="#/scenes">${t("Scenes")}</a> <a href="#/images">${t("Images")}</a>`
           : s.id === "folders" ? `<a href="#/folders">${t("All folders")}</a>`
@@ -156,6 +187,34 @@ export async function render(main) {
       return async () => {
         const r = await findItems("scene", { per_page: 12, sort: "last_played_at", direction: "DESC" }, { resume_time: { value: 5, modifier: "GREATER_THAN" } });
         return pieces("scene", r).filter((p) => p.resume < 0.97);
+      };
+    if (s.id === "foryou")
+      return async () => {
+        const tags = await topTagsOfWeek();
+        if (!tags.length) return [];
+        const why = box.querySelector('[data-home="foryou"] [data-why]');
+        if (why) why.innerHTML = `${esc(t("because you watched"))} ${tags.map((tg) => `<a href="#/scenes?tags=${esc(tg.id)}&played=no">${esc(tg.name)}</a>`).join(", ")}`;
+        const f = { tags: { value: tags.map((tg) => tg.id), modifier: "INCLUDES", depth: 0 } };
+        const fresh = await findItems("scene", { per_page: 12, sort: seed() }, Object.assign({ play_count: { value: 0, modifier: "EQUALS" } }, f));
+        let list = pieces("scene", fresh);
+        if (list.length < 6) {
+          // few unwatched ones left: also those not seen for two weeks
+          const old = await findItems("scene", { per_page: 12 - list.length, sort: seed() }, Object.assign({ last_played_at: { value: new Date(Date.now() - 14 * 864e5).toISOString(), modifier: "LESS_THAN" } }, f));
+          const have = new Set(list.map((p) => p.id));
+          list = list.concat(pieces("scene", old).filter((p) => !have.has(p.id)));
+        }
+        return list;
+      };
+    if (s.id === "rewatch")
+      return async () => {
+        // favorites and 4 stars and up, watched before but not in the last 30 days
+        const old = { play_count: { value: 0, modifier: "GREATER_THAN" }, last_played_at: { value: new Date(Date.now() - 30 * 864e5).toISOString(), modifier: "LESS_THAN" } };
+        const [a, b] = await Promise.all([
+          findItems("scene", { per_page: 8, sort: seed() }, Object.assign({ rating100: { value: 79, modifier: "GREATER_THAN" } }, old)),
+          app.favId ? findItems("scene", { per_page: 8, sort: seed() }, Object.assign({ tags: { value: [app.favId], modifier: "INCLUDES_ALL" } }, old)) : { items: [] },
+        ]);
+        const seen = new Set();
+        return [...pieces("scene", a), ...pieces("scene", b)].filter((p) => !seen.has(p.id) && seen.add(p.id)).sort(() => Math.random() - 0.5).slice(0, 12);
       };
     if (s.id === "fav")
       return async () => {

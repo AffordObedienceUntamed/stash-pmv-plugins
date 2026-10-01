@@ -18,7 +18,7 @@ Open it: just open Stash (e.g. `http://localhost:9999`) – the home page redire
 
 | Section | What it does |
 |---|---|
-| Start | Greeting, figures, continue watching, favorites, recently added, folders, random (“Shuffle”). **Customize**: show/hide sections, drag them into your order, and add your own – scenes, images or both, sorted as you like, filtered by tags, performers or favorites, 8–40 items (kept in this browser) |
+| Start | Greeting, figures, continue watching, **for you** (unwatched scenes with the tags you watched most this week – it says which), **long time no see** (favorites and 4-star scenes not watched for a month), favorites, recently added, folders, random (“Shuffle”). **Customize**: show/hide sections, drag them into your order, and add your own – scenes, images or both, sorted as you like, filtered by tags, performers or favorites, 8–40 items (kept in this browser) |
 | Search | Across everything: tags, folders, scenes, images, galleries |
 | Scenes / Images / Galleries | Justified rows with search, sorting, filters (include/exclude tags, performers, rating, favorites, watched, resolution, duration, format), infinite scrolling, preview video on hover |
 | Folders | Every folder with cover images, subfolders and its items; “Include subfolders” shows everything below. The folder tree sits in the navigation on the left. Folders without scenes and images are hidden |

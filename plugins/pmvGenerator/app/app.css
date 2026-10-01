@@ -232,6 +232,8 @@ span.kb-tree-caret { display: inline-block; }
 .kb-h2::before { content: ""; flex: none; width: 18px; height: 11px; background: var(--hatch); }
 .kb-h2 a { color: var(--faint); font: 400 14px/1 var(--f-label); }
 .kb-h2 a:hover { color: var(--pink); }
+.kb-home-why { color: var(--faint); font: 400 14px/1.3 var(--f-label); }
+.kb-home-why a { font-weight: 600; }
 
 /* ---------- Controls ---------- */
 

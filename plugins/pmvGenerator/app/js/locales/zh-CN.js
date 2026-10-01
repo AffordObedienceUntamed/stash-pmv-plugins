@@ -1180,4 +1180,9 @@ export default {
   "from {r}": "{r} 起",
   "never watched": "从未观看",
   "not {x}": "不含 {x}",
+  "For you": "为你推荐",
+  "Long time no see": "好久没看了",
+  "because you watched": "因为你看过",
+  "Unwatched scenes with the tags you watched most this week": "带有你本周最常看标签的未看场景",
+  "Favorites and top-rated scenes you haven't watched for a month": "一个月没看过的收藏和高分场景",
 };
