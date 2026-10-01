@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.35.0",
+    date: "2026-10-01",
+    items: [
+      ["ui", "“Funscript” in the player now lists every .funscript in your Stash folders – the ones matching the video first, with search. Pick one and it stays with the scene (also after a restart, also in classic Stash); switch or remove it any time.", "播放器中的“Funscript”现在会列出 Stash 文件夹中的所有 .funscript——与视频匹配的排在前面，并可搜索。选中后它会一直属于该场景（重启后、在经典 Stash 中也一样）；随时可以更换或移除。"],
+    ],
+  },
+  {
     v: "3.34.0",
     date: "2026-10-01",
     items: [

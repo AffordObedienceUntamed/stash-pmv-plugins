@@ -1234,3 +1234,19 @@ html.kb-glass .kb-pl { border-color: var(--glass-edge); }
 .kb-set-sub .kb-ic { width: 18px; height: 18px; color: var(--pink); }
 .kb-set-handy small.is-ok { color: var(--ok); }
 .kb-set-handy small.is-err { color: #ff7a8e; }
+
+/* Funscript picker (player → Funscript) */
+.kb-fsp .kb-drawer-body { display: flex; flex-direction: column; gap: 10px; }
+.kb-fsp-cur { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; color: var(--text); font: 500 13.5px/1.3 var(--f-label); background: var(--bg-2); }
+.kb-fsp-cur .kb-ic { flex: none; width: 16px; height: 16px; color: var(--ok); }
+.kb-fsp-list { display: flex; flex-direction: column; gap: 2px; }
+.kb-fsp-h { margin: 10px 0 4px; color: var(--faint); font: 700 11.5px/1 var(--f-label); text-transform: uppercase; letter-spacing: .06em; }
+.kb-fsp-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border: 0; border-radius: 8px; color: var(--text); text-align: left; background: none; cursor: pointer; }
+.kb-fsp-row:hover { background: var(--bg-3); }
+.kb-fsp-row.is-on { box-shadow: inset 3px 0 0 var(--ok); background: var(--bg-2); }
+.kb-fsp-row.is-busy { opacity: .5; pointer-events: none; }
+.kb-fsp-row > .kb-ic { flex: none; width: 16px; height: 16px; color: var(--faint); }
+.kb-fsp-row span { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 0; }
+.kb-fsp-row b { overflow: hidden; font: 600 14px/1.25 var(--f-text); white-space: nowrap; text-overflow: ellipsis; }
+.kb-fsp-row small { overflow: hidden; color: var(--faint); font: 400 12px/1.25 var(--f-label); white-space: nowrap; text-overflow: ellipsis; }
+.kb-fsp-row em { flex: none; color: var(--ok); font: 700 11.5px/1 var(--f-label); font-style: normal; }

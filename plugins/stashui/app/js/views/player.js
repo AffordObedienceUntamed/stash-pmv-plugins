@@ -1,9 +1,9 @@
 // Scene player: custom controls, timeline with thumbnails, resume, history,
 // queue/random/endless, keyboard, placard with all details.
 
-import { esc, icon, fmtDuration, store, toast, errorToast, promptDialog, confirmDialog } from "../ui.js";
+import { esc, icon, fmtDuration, store, toast, errorToast, promptDialog, confirmDialog, openDrawer } from "../ui.js";
 import { t } from "../i18n.js";
-import { getScene, findItems, saveActivity, addPlay, gql } from "../api.js";
+import { getScene, findItems, saveActivity, addPlay, gql, pluginConfig, setPluginConfig } from "../api.js";
 import { toPiece } from "../pieces.js";
 import { app, go, closeOverlay, setQueueCount } from "../main.js";
 import { startMini, stopMini } from "../mini.js";
@@ -1018,45 +1018,151 @@ export async function render(host, params, query = {}) {
 
   // ---------- Keyboard ----------
   // ---------- A funscript for this scene ----------
-  // Stash finds funscripts by name (video.mp4 → video.funscript next to it): Stash UI's backend puts
-  // the chosen file there and has Stash scan the video; then the scene opens again – with the Handy.
-  function addFunscript() {
-    const inp = document.createElement("input");
-    inp.type = "file";
-    inp.accept = ".funscript,.json,application/json";
-    inp.onchange = async () => {
-      const file = inp.files[0];
-      if (!file) return;
-      try {
-        const text = await file.text();
-        let fs;
-        try {
-          fs = JSON.parse(text);
-        } catch (e) {
-          throw new Error(t("That's not a funscript"));
-        }
-        if (!fs || !Array.isArray(fs.actions) || !fs.actions.length) throw new Error(t("That's not a funscript"));
-        if (x.interactive && !(await confirmDialog({ title: t("Replace the funscript?"), text: t("The one there now is kept next to the video as .funscript.bak."), ok: t("Replace") })).ok) return;
-        toast(t("Saving the funscript …"));
-        const d = await gql(`mutation($a: Map) { runPluginOperation(plugin_id: "stashui", args: $a) }`, { a: { mode: "funscript_save", scene_id: x.id, content: text } });
-        const out = d.runPluginOperation || {};
-        if (out.error) throw new Error(out.error);
-        toast(t("Funscript saved – Stash is scanning the video …"), "ok");
-        // wait until Stash has noticed it (the scan runs in the background)
-        for (let i = 0; i < 20 && host.isConnected; i++) {
-          await new Promise((r) => setTimeout(r, 1500));
-          const s = await getScene(x.id).catch(() => null);
-          if (s && s.interactive && s.paths.funscript) {
-            toast(t("Funscript ready – plays on the Handy"), "ok");
-            return go(`scene/${x.id}?t=${Math.floor(v.currentTime)}`); // the scene again, at the same spot
-          }
-        }
-        if (host.isConnected) toast(t("The funscript is next to the video – Stash hasn't scanned it yet. Open the scene again in a moment."));
-      } catch (e) {
-        errorToast(e, "Funscript");
+  // Stash finds funscripts by name (video.mp4 → video.funscript next to it). The button shows every
+  // .funscript in the library (Stash UI's backend looks), the best matches first; picking one puts it
+  // next to the video – so it stays with the scene, after restarts and in classic Stash too – and has
+  // Stash scan the video. Which file it came from is kept in Stash UI's settings (shown next time).
+  const runBackend = async (args) => {
+    const d = await gql(`mutation($a: Map) { runPluginOperation(plugin_id: "stashui", args: $a) }`, { a: args });
+    const out = d.runPluginOperation || {};
+    if (out.error) throw new Error(out.error);
+    return out;
+  };
+  const words = (str) => String(str || "").toLowerCase().replace(/\.[a-z0-9]{2,5}$/, "").split(/[^\p{L}\p{N}]+/u).filter((w) => w.length > 1);
+  // Which file a scene's funscript came from (shown in the picker) – kept in Stash UI's plugin settings
+  const fsSources = async () => {
+    try {
+      return JSON.parse((await pluginConfig("stashui")).funscripts || "{}") || {};
+    } catch (e) {
+      return {};
+    }
+  };
+  async function rememberFs(name, path) {
+    const all = await fsSources();
+    if (name) all[x.id] = { name, path };
+    else delete all[x.id];
+    await setPluginConfig("stashui", { funscripts: JSON.stringify(all) }).catch(() => {});
+  }
+  // wait until Stash has scanned the video (interactive on – or off after removing), then reopen
+  async function afterFunscript(msg, want = true) {
+    toast(msg, "ok");
+    for (let i = 0; i < 20 && host.isConnected; i++) {
+      await new Promise((r) => setTimeout(r, 1500));
+      const s = await getScene(x.id).catch(() => null);
+      if (s && !!s.interactive === want) {
+        return go(`scene/${x.id}?t=${Math.floor(v.currentTime)}`); // the scene again, at the same spot
       }
+    }
+    if (host.isConnected) toast(t("Stash hasn't scanned the video yet – open the scene again in a moment."));
+  }
+  async function addFunscript() {
+    const file = (f.path || "").split(/[\\/]/).pop();
+    const mine = new Set([...words(file), ...words(x.title)]);
+    const dr = openDrawer({
+      title: t("Funscript for this scene"),
+      body: `<p class="kb-hint">${t("Every .funscript in your Stash folders. The one you pick goes next to the video (as {name}) – it stays with this scene, also after a restart.", { name: esc(file.replace(/\.[^.]+$/, "") + ".funscript") })}</p>
+        <div class="kb-fsp-cur" data-fscur></div>
+        <input class="kb-field" type="search" data-fsq placeholder="${t("Search funscripts …")}" autocomplete="off">
+        <div class="kb-fsp-list" data-fslist><div class="kb-loading">${t("Looking through your library …")}</div></div>`,
+      foot: `<button type="button" class="kb-btn is-ghost" data-fsremove hidden>${icon("trash")}${t("Remove")}</button><span class="kb-spacer"></span><button type="button" class="kb-btn" data-fsupload>${icon("plus")}${t("From this computer …")}</button>`,
+    });
+    const el = dr.el;
+    el.classList.add("kb-fsp");
+    let files = [];
+    let current = null;
+    const saved = (await fsSources())[x.id];
+    const score = (fl) => {
+      const w = words(fl.name);
+      if (!w.length || !mine.size) return 0;
+      const hit = w.filter((y) => mine.has(y)).length;
+      return hit / Math.max(w.length, mine.size) + (fl.name.toLowerCase().replace(/\.funscript$/, "") === file.toLowerCase().replace(/\.[^.]+$/, "") ? 1 : 0);
     };
-    inp.click();
+    const short = (dir) => dir.split(/[\\/]/).filter(Boolean).slice(-2).join(" / ");
+    const row = (fl) => `<button type="button" class="kb-fsp-row${current && fl.path === current ? " is-on" : ""}" data-fspath="${esc(fl.path)}">
+        ${icon("plug")}<span><b>${esc(fl.name.replace(/\.funscript$/i, ""))}</b><small>${esc(short(fl.dir))}${fl.paired ? ` · ${t("belongs to a video")}` : ""} · ${Math.max(1, Math.round(fl.size / 1024))} KB</small></span>
+        ${current && fl.path === current ? `<em>${t("in use")}</em>` : ""}</button>`;
+    function paint() {
+      const q = el.querySelector("[data-fsq]").value.trim().toLowerCase();
+      const list = el.querySelector("[data-fslist]");
+      if (!files.length) return (list.innerHTML = `<p class="kb-hint">${t("No .funscript files in your Stash folders. Put them in a library folder (or use “From this computer”).")}</p>`);
+      const shown = q ? files.filter((fl) => (fl.name + " " + fl.dir).toLowerCase().includes(q)) : files;
+      const best = q ? [] : shown.filter((fl) => fl.s > 0).slice(0, 8);
+      const rest = shown.filter((fl) => !best.includes(fl)).slice(0, 300);
+      list.innerHTML =
+        (best.length ? `<h3 class="kb-fsp-h">${t("Matching this video")}</h3>${best.map(row).join("")}` : "") +
+        (rest.length ? `<h3 class="kb-fsp-h">${q ? t("Found") : t("All funscripts")}</h3>${rest.map(row).join("")}` : `<p class="kb-hint">${t("Nothing found")}</p>`) +
+        (shown.length - best.length > 300 ? `<p class="kb-hint">${t("… search to find more")}</p>` : "");
+    }
+    function paintCurrent() {
+      const c = el.querySelector("[data-fscur]");
+      el.querySelector("[data-fsremove]").hidden = !current;
+      c.innerHTML = current
+        ? `${icon("check")}<span>${t("In use: {name}", { name: `<b>${esc((saved && saved.name) || current.split(/[\\/]/).pop())}</b>` })}</span>`
+        : `<span class="kb-hint">${t("This scene has no funscript yet.")}</span>`;
+    }
+    try {
+      const r = await runBackend({ mode: "funscript_list", scene_id: x.id });
+      current = r.current;
+      files = (r.files || []).map((fl) => Object.assign(fl, { s: score(fl) })).sort((p, q) => q.s - p.s || p.name.localeCompare(q.name));
+      if (r.truncated) toast(t("Very many funscripts – only the first 20 000 are listed"));
+      paintCurrent();
+      paint();
+    } catch (e) {
+      el.querySelector("[data-fslist]").innerHTML = `<p class="kb-hint">${esc(e.message)}</p><p class="kb-hint">${t("Stash UI's backend needs Python (like the PMV Generator).")}</p>`;
+    }
+    el.querySelector("[data-fsq]").addEventListener("input", paint);
+    const remember = (name, path) => rememberFs(name, path);
+    el.addEventListener("click", async (e) => {
+      const r = e.target.closest("[data-fspath]");
+      try {
+        if (r) {
+          const path = r.dataset.fspath;
+          if (current && path === current) return dr.close();
+          if (current && !(await confirmDialog({ title: t("Use this funscript instead?"), text: t("The one in use now is kept next to the video as .funscript.bak."), ok: t("Use it") })).ok) return;
+          r.classList.add("is-busy");
+          await runBackend({ mode: "funscript_save", scene_id: x.id, source: path });
+          await remember(path.split(/[\\/]/).pop(), path);
+          dr.close();
+          return afterFunscript(t("Funscript chosen – Stash is scanning the video …"));
+        }
+        if (e.target.closest("[data-fsremove]")) {
+          if (!(await confirmDialog({ title: t("Remove the funscript?"), text: t("It's renamed to .funscript.bak next to the video – the scene isn't interactive any more."), ok: t("Remove"), danger: true })).ok) return;
+          await runBackend({ mode: "funscript_remove", scene_id: x.id });
+          await remember(null);
+          dr.close();
+          return afterFunscript(t("Funscript removed"), false);
+        }
+        if (e.target.closest("[data-fsupload]")) {
+          const inp = document.createElement("input");
+          inp.type = "file";
+          inp.accept = ".funscript,.json,application/json";
+          inp.onchange = async () => {
+            const fl = inp.files[0];
+            if (!fl) return;
+            try {
+              const text = await fl.text();
+              let js;
+              try {
+                js = JSON.parse(text);
+              } catch (er) {
+                throw new Error(t("That's not a funscript"));
+              }
+              if (!js || !Array.isArray(js.actions) || !js.actions.length) throw new Error(t("That's not a funscript"));
+              await runBackend({ mode: "funscript_save", scene_id: x.id, content: text });
+              await remember(fl.name, null);
+              dr.close();
+              afterFunscript(t("Funscript saved – Stash is scanning the video …"));
+            } catch (er) {
+              errorToast(er, "Funscript");
+            }
+          };
+          inp.click();
+        }
+      } catch (er) {
+        if (r) r.classList.remove("is-busy");
+        errorToast(er, "Funscript");
+      }
+    });
   }
 
   // ---------- Interactive: The Handy plays the scene's funscript (settings: Settings → Player) ----------
