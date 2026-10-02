@@ -245,6 +245,7 @@ function renderRail() {
   const rail = document.getElementById("rail");
   rail.innerHTML =
     `<a class="kb-mark" href="#/" aria-label="${t("Stash, home page")}"><span>Stash</span></a>` +
+    `<button type="button" class="kb-nsfw-btn" data-action="nsfw" data-nsfwbtn aria-pressed="false" title="${t("NSFW mode: blur all pictures and previews")}" aria-label="${t("NSFW mode: blur all pictures and previews")}">${icon("eye")}</button>` +
     NAV.map((g) =>
       (g.group ? groupHead(g.group) : "") +
       `<nav class="kb-nav"${g.group ? ` data-railbody="${g.group}"` : ""}>` +
@@ -284,11 +285,16 @@ function renderRail() {
     if (a) document.getElementById("app").classList.remove("is-rail-open");
     if (a && a.dataset.action === "storm") openStorm();
     if (a && a.dataset.action === "pmv") location.href = PMV_PAGE;
+    if (a && a.dataset.action === "nsfw") {
+      import("./display.js").then((m) => m.toggleNsfw());
+      document.getElementById("app").classList.remove("is-rail-open");
+    }
     if (a && a.dataset.action === "log") import("./eventlog.js").then((m) => m.toggleLog());
   });
   renderTree();
   refreshCounts();
   refreshPluginLinks();
+  import("./display.js").then((m) => m.applyDisplay()); // (the NSFW button shows its state)
 }
 
 // Menu entries of companion plugins (Media Storm, PMV Generator) only show when they're installed and on
@@ -525,6 +531,7 @@ export function openStorm() {
 // ---------- Start ----------
 
 async function init() {
+  import("./display.js").then((m) => m.applyDisplay()); // menu width, studio logo, NSFW blur … (Settings → This interface)
   // Language first: "auto" follows the interface language set in Stash
   let stashLang = "";
   try {

@@ -4,6 +4,15 @@
 
 export const CHANGES = [
   {
+    v: "3.49.0",
+    date: "2026-10-02",
+    items: [
+      ["ui", "Studio logo on thumbnails: choose the corner (bottom left / right, top left / right) and the size (small to extra large) – next to the on / off switch (Settings → This interface).", "缩略图上的工作室标志：可选择位置（左下/右下/左上/右上）和大小（小到特大）——位于开/关开关旁（设置 → 此界面）。"],
+      ["ui", "NSFW mode: an eye button at the top of the menu on the left (and in the settings) blurs all pictures and hover previews – choose the strength, whether the player and the image viewer are blurred too, and whether a thumbnail shows clear while the mouse is on it.", "NSFW 模式：左侧菜单顶部的眼睛按钮（以及设置中）可模糊所有图片和悬停预览——可选择强度、播放器和图片查看器是否也模糊，以及鼠标指向时缩略图是否清晰显示。"],
+      ["ui", "Mute button on the home page (the same switch as “Sound in previews” in the settings), a setting for the width of the menu on the left, the shape of thumbnails (as the picture is, all posters, all scenes) and whether hover previews play (always, never, not with posters).", "主页上的静音按钮（与设置中的“预览声音”是同一开关）；新增设置：左侧菜单宽度、缩略图形状（按图片本身、全部海报、全部场景），以及悬停预览是否播放（始终、从不、海报时不播放）。"],
+    ],
+  },
+  {
     v: "3.48.0",
     date: "2026-10-02",
     items: [["ui", "Interactive → Overview: how many scenes have a funscript, several scripts or problems, the average intensity with a histogram, the most intense and the calmest scenes, scenes with long pauses (more than 20 s without a movement) and how much of the video the scripts cover.", "互动 → 概览：有多少场景带 funscript、多个脚本或有问题，平均强度及直方图，最激烈和最平缓的场景，有长停顿（超过 20 秒无动作）的场景，以及脚本覆盖视频的比例。"]],

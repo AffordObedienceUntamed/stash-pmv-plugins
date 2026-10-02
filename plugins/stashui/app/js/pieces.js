@@ -5,6 +5,7 @@ import { t } from "./i18n.js";
 import { tierNow } from "./tiers.js";
 import { tierBadge } from "./versusx.js";
 import { critOf } from "./ratingx.js";
+import { cardAspect, previewsOn } from "./display.js";
 
 // Stash files animated GIFs as video files (codec "gif") but serves the GIF itself: those are images
 export const isGif = (vf) => !!vf && vf.__typename === "VideoFile" && (/gif/i.test(vf.format || "") || /gif/i.test(vf.video_codec || "") || /\.gif$/i.test(vf.basename || vf.path || ""));
@@ -188,7 +189,7 @@ export class Hang {
     let row = [];
     let sum = 0;
     for (const p of this.pieces) {
-      const ar = Math.min(3, Math.max(0.42, p.w / p.h || 1));
+      const ar = cardAspect() || Math.min(3, Math.max(0.42, p.w / p.h || 1)); // (posters / scenes: every thumbnail the same shape)
       row.push([p, ar]);
       sum += ar;
       if (sum * H + G * (row.length - 1) >= W) {
@@ -296,7 +297,7 @@ export class Hang {
       this.hoverNode = n;
       this.stopPreview();
       const p = n._piece;
-      if (!p || !p.preview) return;
+      if (!p || !p.preview || !previewsOn()) return;
       this.previewTimer = setTimeout(() => this.startPreview(n, p), 280);
     });
     this.el.addEventListener("pointerleave", () => {

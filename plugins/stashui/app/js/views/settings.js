@@ -2,6 +2,7 @@
 // translated when shown (the English text is the key).
 // Fields and types come live from Stash; unknown options end up under "More options".
 
+import { applyDisplay } from "../display.js";
 import { esc, icon, toast, errorToast, store, confirmDialog, fmtDate, folderMode, ratingSystem, setRatingSystem } from "../ui.js";
 import { t, locale, LANGS, chosen, choose } from "../i18n.js";
 import { gql, setPluginConfig } from "../api.js";
@@ -419,6 +420,24 @@ async function renderApp(body) {
       <div class="kb-set"><div class="kb-set-label"><b>${t("Install as app")}</b><small data-installhint></small></div><button type="button" class="kb-btn" data-install hidden>${icon("phone")}${t("Install")}</button></div>
       <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("Studio on scenes")}</b><small>${t("Shows the studio's logo (or its name) in the corner of scene thumbnails.")}</small></span>
         <span class="kb-switch"><input type="checkbox" data-studiologo${store.get("studioLogos", false) ? " checked" : ""}><i></i></span></label>
+      <label class="kb-set"><span class="kb-set-label"><b>${t("Studio logo: corner")}</b><small>${t("Where the logo sits on a thumbnail.")}</small></span>
+        <select class="kb-field" data-dsp="studioPos">${[["bl", "Bottom left"], ["br", "Bottom right"], ["tl", "Top left"], ["tr", "Top right"]].map(([v, l]) => `<option value="${v}"${store.get("studioPos", "bl") === v ? " selected" : ""}>${t(l)}</option>`).join("")}</select></label>
+      <label class="kb-set"><span class="kb-set-label"><b>${t("Studio logo: size")}</b><small>${t("How big the logo is.")}</small></span>
+        <select class="kb-field" data-dsp="studioSize">${[["s", "Small"], ["m", "Medium"], ["l", "Large"], ["xl", "Extra large"]].map(([v, l]) => `<option value="${v}"${store.get("studioSize", "m") === v ? " selected" : ""}>${t(l)}</option>`).join("")}</select></label>
+      <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("NSFW mode")}</b><small>${t("Blurs all pictures and hover previews – also with the eye button at the top of the menu on the left.")}</small></span>
+        <span class="kb-switch"><input type="checkbox" data-dsp="nsfw"${store.get("nsfw", false) ? " checked" : ""}><i></i></span></label>
+      <label class="kb-set"><span class="kb-set-label"><b>${t("NSFW mode: what is blurred")}</b><small>${t("Thumbnails and previews – or also the player and the image viewer.")}</small></span>
+        <select class="kb-field" data-dsp="nsfwScope">${[["cards", "Thumbnails and previews"], ["all", "Everything, also player and viewer"]].map(([v, l]) => `<option value="${v}"${store.get("nsfwScope", "cards") === v ? " selected" : ""}>${t(l)}</option>`).join("")}</select></label>
+      <label class="kb-set"><span class="kb-set-label"><b>${t("NSFW mode: blur strength")}</b></span>
+        <input type="range" min="6" max="40" step="2" data-dsp="nsfwBlur" value="${store.get("nsfwBlur", 18)}"></label>
+      <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("NSFW mode: clear while the mouse is on it")}</b><small>${t("A thumbnail shows sharp as long as you point at it.")}</small></span>
+        <span class="kb-switch"><input type="checkbox" data-dsp="nsfwHover"${store.get("nsfwHover", false) ? " checked" : ""}><i></i></span></label>
+      <label class="kb-set"><span class="kb-set-label"><b>${t("Menu width")}</b><small>${t("How wide the menu on the left is (on a computer).")}</small></span>
+        <input type="range" min="180" max="360" step="4" data-dsp="railWidth" value="${store.get("railWidth", 236)}"></label>
+      <label class="kb-set"><span class="kb-set-label"><b>${t("Thumbnail shape")}</b><small>${t("Each as its picture is – or all as posters (portrait) or all as scenes (landscape).")}</small></span>
+        <select class="kb-field" data-dsp="cardFormat">${[["auto", "As the picture is"], ["poster", "Posters (portrait)"], ["scene", "Scenes (landscape)"]].map(([v, l]) => `<option value="${v}"${store.get("cardFormat", "auto") === v ? " selected" : ""}>${t(l)}</option>`).join("")}</select></label>
+      <label class="kb-set"><span class="kb-set-label"><b>${t("Hover previews")}</b><small>${t("Whether a thumbnail plays a short clip when you point at it.")}</small></span>
+        <select class="kb-field" data-dsp="previewMode">${[["on", "Always"], ["off", "Never"], ["poster", "Not with posters"]].map(([v, l]) => `<option value="${v}"${store.get("previewMode", "on") === v ? " selected" : ""}>${t(l)}</option>`).join("")}</select></label>
       <div class="kb-set kb-set-ext"><div class="kb-set-label"><b>${t("Other plugins in the menu")}</b><small>${t("Plugins with their own page get an entry under “Extensions” on the left. Fold the group with a click on its heading, or hide it here – all of it or single plugins.")}</small></div>
         <select class="kb-field" data-extmode><option value="show">${t("Show")}</option><option value="hide">${t("Hide")}</option></select>
         <div class="kb-extpick" data-extpick></div></div>
@@ -487,6 +506,18 @@ async function renderApp(body) {
     extChanged();
   });
 
+  // display options of this browser (display.js puts them on the page)
+  body.querySelectorAll("[data-dsp]").forEach((el) => {
+    const apply = () => {
+      const k = el.dataset.dsp;
+      store.set(k, el.type === "checkbox" ? el.checked : el.type === "range" ? Number(el.value) : el.value);
+      applyDisplay();
+      window.dispatchEvent(new Event("stash:display-changed"));
+    };
+    el.addEventListener(el.type === "range" ? "input" : "change", apply);
+    if (el.type === "range") el.addEventListener("change", () => toast(t("Saved"), "ok"));
+    else el.addEventListener("change", () => toast(t("Saved"), "ok"));
+  });
   body.querySelector("[data-studiologo]").onchange = (e) => {
     store.set("studioLogos", e.target.checked);
     toast(t("Saved"), "ok");

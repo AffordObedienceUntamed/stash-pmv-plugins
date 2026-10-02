@@ -134,11 +134,22 @@ export async function render(main) {
         <h1 class="kb-h1">${greeting()}</h1>
         <div class="kb-figures" data-figures></div>
       </div>
-      <div class="kb-head-tools"><button type="button" class="kb-btn is-ghost" data-customize>${icon("edit")}<span>${t("Customize")}</span></button></div>
+      <div class="kb-head-tools"><button type="button" class="kb-btn is-ghost" data-mute title="${t("Sound in hover previews")}"></button><button type="button" class="kb-btn is-ghost" data-customize>${icon("edit")}<span>${t("Customize")}</span></button></div>
     </header>
     <div data-sections></div>`;
   const $ = (s) => main.querySelector(s);
   const box = $("[data-sections]");
+  // Mute: the same switch as Settings → Player and previews → Sound in previews
+  const paintMute = () => {
+    const on = store.get("previewSound", true);
+    $("[data-mute]").innerHTML = `${icon(on ? "volume" : "mute")}<span>${on ? t("Sound on") : t("Muted")}</span>`;
+    $("[data-mute]").setAttribute("aria-pressed", !on);
+  };
+  paintMute();
+  $("[data-mute]").onclick = () => {
+    store.set("previewSound", !store.get("previewSound", true));
+    paintMute();
+  };
 
   stats()
     .then((s) => {
