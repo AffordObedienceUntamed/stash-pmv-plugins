@@ -67,6 +67,7 @@ const DEFAULTS = {
   format: "16:9",
   split: "cols",
   fit: "contain", // contain = whole clip, blurred border (less confusing than cropping); cover = fill
+  view: "contain", // the picture in the window: contain = all of it (bars if the shapes differ), cover = fills the window (crops), fill = stretched
   quality: 720,
   record: true,
   collapsed: {}, // style sections the user closed (all open by default)
@@ -399,8 +400,12 @@ export function render(main) {
             </div>
             <span class="kb-lab-t">Picture <small>– “Fit” shows the whole clip, “Fill” crops it to fill the frame</small></span>
             <div class="kb-pmvg-row">
-              <div class="kb-seg" data-seg="format"><button type="button" data-v="16:9">16:9 landscape</button><button type="button" data-v="9:16">9:16 portrait</button></div>
+              <div class="kb-seg" data-seg="format"><button type="button" data-v="16:9">16:9 landscape</button><button type="button" data-v="9:16">9:16 portrait</button><button type="button" data-v="window" title="The picture gets the shape of your window and follows it when you resize the window (not while recording)">Match window</button></div>
               <div class="kb-seg" data-seg="fit"><button type="button" data-v="contain" title="Whole picture, rest blurred">Fit</button><button type="button" data-v="cover" title="Picture fills everything, edges are cropped">Fill</button></div>
+            </div>
+            <span class="kb-lab-t">In the window <small>– when the picture and the window have different shapes: bars, filled (cropped) or stretched</small></span>
+            <div class="kb-pmvg-row">
+              <div class="kb-seg" data-seg="view"><button type="button" data-v="contain" title="All of the picture, bars where the shapes differ">Show all</button><button type="button" data-v="cover" title="The picture fills the window, the edges are cut off">Fill the window</button><button type="button" data-v="fill" title="The picture is stretched to the window (distorts)">Stretch</button></div>
             </div>
           </div>
         </div>
@@ -512,7 +517,7 @@ export function render(main) {
     const tabSum = {
       cut: `${CUTS.find(([v]) => v === S.cut)[1]} · ${lays} ${lays === 1 ? "layout" : "layouts"}`,
       fx: `${fxOn} on`,
-      look: `${look} · ${S.format}`,
+      look: `${look} · ${S.format === "window" ? "window shape" : S.format}`,
       sound: `Song ${S.songVol} · Clips ${S.fx.voice ? S.clipVol : "off"}`,
       out: [S.intro && "Intro", S.outro && "Outro", S.record && "Recording"].filter(Boolean).join(" · ") || "live only",
     };
@@ -528,7 +533,7 @@ export function render(main) {
       `<li><b>Cutting</b>${esc(tabSum.cut)}</li>`,
       `<li><b>Effects</b>${fxOn} on${S.look !== "none" ? " · look " + esc(look) : ""}</li>`,
       `<li><b>Sound</b>Song ${S.songVol} % · clips ${S.fx.voice ? `${S.clipVol} %, ${S.voiceMode === "always" ? "always" : "only on drops"}` : "off"}</li>`,
-      `<li><b>Output</b>${esc(S.format)} · ${esc(tabSum.out)}${S.record ? " · " + S.quality + "p" : ""}</li>`,
+      `<li><b>Output</b>${esc(S.format === "window" ? "window shape" : S.format)} · ${esc(tabSum.out)}${S.record ? " · " + S.quality + "p" : ""}</li>`,
     ].join("");
   }
   paintSegs();
@@ -1832,9 +1837,7 @@ class Generator {
     this.ti = 0;
     this.log = []; // sequence (cuts, layouts) – readable on the stage element for tests
     this.dir = S.split;
-    const long = S.quality === 1080 ? 1920 : 1280;
-    const short = S.quality === 1080 ? 1080 : 720;
-    [this.W, this.H] = S.format === "9:16" ? [short, long] : [long, short];
+    [this.W, this.H] = this.sizeFor();
     this.sources = [];
     this.srcIdx = 0;
     this.page = { scene: 1, image: 1 };
@@ -1961,6 +1964,13 @@ class Generator {
       e.preventDefault();
     };
     document.addEventListener("keydown", this.onKey);
+    this.stage.dataset.view = this.S.view || "contain";
+    let resizeT = 0;
+    this.onResize = () => {
+      clearTimeout(resizeT);
+      resizeT = setTimeout(() => this.followWindow(), 350);
+    };
+    window.addEventListener("resize", this.onResize);
     el.addEventListener("input", (e) => {
       const r = e.target.closest("[data-vol]");
       if (r) this.setVolume(r.dataset.vol, Number(r.value));
@@ -2431,6 +2441,30 @@ class Generator {
       v.requestVideoFrameCallback(cb);
     };
     v.requestVideoFrameCallback(cb);
+  }
+
+  // The size of the picture: 16:9 or 9:16 – or the shape of the window ("Match window")
+  sizeFor() {
+    const S = this.S;
+    const long = S.quality === 1080 ? 1920 : 1280;
+    const short = S.quality === 1080 ? 1080 : 720;
+    if (S.format === "window") {
+      const ar = Math.min(2.6, Math.max(0.4, window.innerWidth / Math.max(1, window.innerHeight)));
+      const even = (n) => Math.max(2, Math.round(n / 2) * 2);
+      return ar >= 1 ? [long, even(long / ar)] : [even(long * ar), long];
+    }
+    return S.format === "9:16" ? [short, long] : [long, short];
+  }
+
+  // The window changed shape: the picture follows (only "Match window", and not while recording – a video can't change its size)
+  followWindow() {
+    if (this.closed || this.done || this.S.format !== "window" || this.S.record || !this.layout) return;
+    const [W, H] = this.sizeFor();
+    if (Math.abs(W / H - this.W / this.H) < 0.03) return;
+    [this.W, this.H] = [W, H];
+    this.comp.resize(W, H);
+    this.setLayout(this.layout, this.now(), this.dir); // the fields are worked out again for the new shape
+    this.log.push({ t: this.now(), type: "resize", w: W, h: H });
   }
 
   dropUnused(old) {
@@ -3171,6 +3205,7 @@ class Generator {
     if (this.ac && this.ac.state !== "closed") this.ac.close().catch(() => {});
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
     document.removeEventListener("keydown", this.onKey);
+    window.removeEventListener("resize", this.onResize);
     document.body.classList.remove("kb-noscroll");
     if (this.blobUrl) setTimeout(() => URL.revokeObjectURL(this.blobUrl), 60000);
     this.el.remove();

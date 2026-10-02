@@ -87,6 +87,16 @@ export class Compositor {
     this.lines = makeScanlines(off(4, 4));
   }
 
+  // The canvas got another size (the window changed shape): the buffers for echo and RGB split follow
+  resize(W, H) {
+    this.c.width = this.W = W;
+    this.c.height = this.H = H;
+    for (const k of ["prev", "red", "cyan"]) {
+      this[k].width = W;
+      this[k].height = H;
+    }
+  }
+
   // ---------- Triggers (from the generator) ----------
 
   flash(t, a, color, force) {
