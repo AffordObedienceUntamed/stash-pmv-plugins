@@ -1430,3 +1430,13 @@ a.kb-log-ref:hover { text-decoration: underline; }
 html.kb-glass .kb-evlog { border-color: var(--glass-edge); border-radius: 18px; background: var(--glass-shine), var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); box-shadow: var(--glass-shadow); }
 html.kb-glass .kb-log-head, html.kb-glass .kb-log-foot { border-color: var(--glass-edge); }
 html.kb-glass .kb-log-list li:hover, html.kb-glass .kb-log-btn:hover, html.kb-glass .kb-log-filter button:hover { background: color-mix(in srgb, var(--bg-3) 45%, transparent); }
+
+/* Tiers everywhere: badge on cards, titles, filter chips */
+.kb-tierpos { position: absolute; left: 8px; top: 8px; z-index: 2; pointer-events: none; }
+.kb-tierpos .kb-tier { height: 20px; min-width: 22px; font-size: 12px; background: color-mix(in srgb, var(--tc) 30%, rgba(0, 0, 0, .55)); box-shadow: 0 2px 8px rgba(0, 0, 0, .35); }
+.kb-plc-title .kb-tier, .kb-topbar-title .kb-tier, .kb-h1 .kb-tier { margin-right: 8px; vertical-align: middle; }
+.kb-h1 .kb-tier { height: 28px; min-width: 32px; font-size: 16px; }
+.kb-tierfilter { display: inline-flex; align-items: center; gap: 8px; }
+.kb-tierchips button[data-tier] { color: var(--tc); font-weight: 800; }
+.kb-tierchips button[data-tier].is-on { color: var(--ink); background: var(--tc); }
+html.kb-glass .kb-tierpos .kb-tier { backdrop-filter: blur(6px); }

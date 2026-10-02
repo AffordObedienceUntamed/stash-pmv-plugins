@@ -2,6 +2,8 @@
 
 import { esc, icon, fmtDuration, fmtRes, fmtDate, fmtBytes, invNo, plural, store } from "./ui.js";
 import { t } from "./i18n.js";
+import { tierNow } from "./tiers.js";
+import { tierBadge } from "./versusx.js";
 
 // Stash files animated GIFs as video files (codec "gif") but serves the GIF itself: those are images
 export const isGif = (vf) => !!vf && vf.__typename === "VideoFile" && (/gif/i.test(vf.format || "") || /gif/i.test(vf.video_codec || "") || /\.gif$/i.test(vf.basename || vf.path || ""));
@@ -25,6 +27,7 @@ export function toPiece(kind, x, favId) {
       rating: x.rating100 || 0,
       studio: x.studio || null,
       interactive: !!x.interactive,
+      tier: tierNow("scene", x.id),
     };
   }
   if (kind === "image") {
@@ -42,6 +45,7 @@ export function toPiece(kind, x, favId) {
       stamp: isVid ? (vf.duration ? fmtDuration(vf.duration) : t("Clip")) : gif ? "GIF" : "",
       meta: [isVid ? t("Clip") : gif ? "GIF" : t("Image"), vf.width ? `${vf.width} × ${vf.height}` : "", fmtBytes(vf.size)].filter(Boolean).join(", "),
       rating: x.rating100 || 0,
+      tier: tierNow("image", x.id),
     };
   }
   // Gallery
@@ -75,6 +79,7 @@ function pieceHtml(p) {
     (p.stamp ? `<span class="kb-stamp">${p.interactive ? `<i class="kb-ia" title="${esc(t("Funscript – plays on The Handy"))}">${icon("plug")}</i>` : ""}${esc(p.stamp)}</span>` : "") +
     (p.resume ? `<span class="kb-resume"><i style="width:${(p.resume * 100).toFixed(1)}%"></i></span>` : "") +
     (p.fav ? `<span class="kb-dot" title="${t("Favorite")}"></span>` : "") +
+    (p.tier ? `<span class="kb-tierpos">${tierBadge(p.tier)}</span>` : "") +
     studioBadge(p) +
     `<span class="kb-pick" role="checkbox" aria-checked="false" aria-label="${t("Select")}">${icon("check")}</span>` +
     `<span class="kb-placard"><b>${esc(p.title)}</b><small>${esc(p.meta)}</small></span>` +

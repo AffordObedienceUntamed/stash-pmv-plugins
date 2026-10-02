@@ -4,6 +4,8 @@ import { esc, icon, debounce, errorToast, toast, plural, promptDialog, starsHtml
 import { t, locale } from "../i18n.js";
 import { findPerformers, updatePerformer, createPerformer, gql } from "../api.js";
 import { go, setQuery } from "../main.js";
+import { ensureTiers, hasTiers, idsOfTiers, tierNow } from "../tiers.js";
+import { TIERS, tierBadge } from "../versusx.js";
 
 const SORTS = [
   ["name", "Alphabetical"],
@@ -51,6 +53,7 @@ export function performerCard(p) {
   return `<a class="kb-perf" href="#/performer/${p.id}" data-pid="${p.id}">
     <span class="kb-perf-img"><img alt="" loading="lazy" src="${esc(p.image_path || "")}">
       <button type="button" class="kb-perf-fav${p.favorite ? " is-on" : ""}" data-pfav title="${t("Favorite")}">${icon("heart")}</button>
+      ${tierNow("performer", p.id) ? `<span class="kb-tierpos">${tierBadge(tierNow("performer", p.id))}</span>` : ""}
       ${p.o_counter ? `<span class="kb-perf-o">${icon("drop")}${p.o_counter}</span>` : ""}</span>
     <b>${esc(p.name)}${p.disambiguation ? ` <small>(${esc(p.disambiguation)})</small>` : ""}</b>
     <small>${sub || "&nbsp;"}</small>
@@ -90,6 +93,7 @@ export async function render(main, params, query) {
         <label class="kb-search">${icon("search")}<input class="kb-field" type="search" data-q placeholder="${t("Search performers")}" value="${esc(query.q || "")}"></label>
         <select class="kb-field" data-sort aria-label="${t("Sort order")}">${SORTS.map(([v, l]) => `<option value="${v}">${t(l)}</option>`).join("")}</select>
         <select class="kb-field" data-gender aria-label="${t("Gender")}"><option value="">${t("Everyone")}</option>${GENDERS.map(([v, l]) => `<option value="${v}">${t(l)}</option>`).join("")}</select>
+        <span class="kb-seg kb-tierchips" data-tf hidden title="${t("Tier")}">${TIERS.map((x) => `<button type="button" data-tier="${x.k}" style="--tc:${x.color}">${x.k}</button>`).join("")}</span>
         <button type="button" class="kb-btn${query.fav === "1" ? " is-on" : ""}" data-favonly aria-pressed="${query.fav === "1"}">${icon("heart")}${t("Favorites")}</button>
         <button type="button" class="kb-btn" data-new>${icon("plus")}${t("New performer")}</button>
       </div>
@@ -100,6 +104,20 @@ export async function render(main, params, query) {
   $("[data-sort]").value = query.sort || "name";
   $("[data-gender]").value = query.gender || "";
   let favOnly = query.fav === "1";
+  let tiers = (query.tier || "").split(",").filter(Boolean);
+  ensureTiers().then(() => {
+    $("[data-tf]").hidden = !hasTiers("performer") && !tiers.length;
+    main.querySelectorAll("[data-tf] [data-tier]").forEach((b) => b.classList.toggle("is-on", tiers.includes(b.dataset.tier)));
+  });
+  main.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-tf] [data-tier]");
+    if (!b) return;
+    const k = b.dataset.tier;
+    tiers = tiers.includes(k) ? tiers.filter((x) => x !== k) : [...tiers, k];
+    b.classList.toggle("is-on", tiers.includes(k));
+    setQuery({ tier: tiers.join(",") });
+    load(true);
+  });
   let list = [];
   let page = 1;
   let total = 0;
@@ -144,7 +162,8 @@ export async function render(main, params, query) {
     }
     try {
       const q = $("[data-q]").value.trim();
-      const r = await findPerformers({ q, page, perPage: PAGE, sort: $("[data-sort]").value, filter: filter() });
+      await ensureTiers();
+      const r = await findPerformers({ q, page, perPage: PAGE, sort: $("[data-sort]").value, filter: filter(), ids: idsOfTiers("performer", tiers) });
       if (my !== run) return;
       total = r.count;
       list = list.concat(r.performers);

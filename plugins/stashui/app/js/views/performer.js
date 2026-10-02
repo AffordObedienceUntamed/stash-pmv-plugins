@@ -1,5 +1,7 @@
 // A performer: photo, facts, heart, rating, tags, links – and all their scenes, images and galleries.
 
+import { tierNow } from "../tiers.js";
+import { tierBadge } from "../versusx.js";
 import { esc, icon, errorToast, toast, plural, starsHtml, ratingClick, ratingFromInput, ratingToast, fmtDate, pop, burst, store } from "../ui.js";
 import { t } from "../i18n.js";
 import { getPerformer, updatePerformer, gql } from "../api.js";
@@ -49,7 +51,7 @@ export async function render(main, params, query) {
       <button type="button" class="kb-perfhead-img" data-photo title="${t("Change photo")}"><img alt="" src="${esc(p.image_path || "")}"><span>${icon("camera")}${t("Change photo")}</span></button>
       <div class="kb-perfhead-body">
         <nav class="kb-crumbs"><span><a href="#/performers">${t("Performers")}</a></span></nav>
-        <h1 class="kb-h1">${esc(p.name)}${p.disambiguation ? ` <small>(${esc(p.disambiguation)})</small>` : ""}</h1>
+        <h1 class="kb-h1">${tierBadge(tierNow("performer", p.id))}${esc(p.name)}${p.disambiguation ? ` <small>(${esc(p.disambiguation)})</small>` : ""}</h1>
         ${p.alias_list && p.alias_list.length ? `<p class="kb-sub">${t("Also known as {names}", { names: p.alias_list.map(esc).join(", ") })}</p>` : ""}
         <p class="kb-sub">${[p.scene_count ? plural(p.scene_count, "scene", "scenes") : "", p.image_count ? plural(p.image_count, "image", "images") : "", p.gallery_count ? plural(p.gallery_count, "gallery", "galleries") : ""].filter(Boolean).join(t(", ")) || t("Nothing with this performer yet")}</p>
         <div class="kb-plc-acts">

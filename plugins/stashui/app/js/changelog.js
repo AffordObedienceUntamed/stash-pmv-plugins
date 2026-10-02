@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.46.0",
+    date: "2026-10-02",
+    items: [
+      ["ui", "Tiers everywhere: the S–F badge (from the Versus standings) now also sits on scene and image cards, performer cards, in the info panel, the player's title bar and on performer pages. Lists get a Tier filter (tick S, A …) for scenes, images and performers, and playlists can keep it – so “Best scenes: S + A” is a playlist that updates itself.", "等级无处不在：来自对决排名的 S–F 徽章现在也显示在场景和图片卡片、演员卡片、信息面板、播放器标题栏和演员页面上。列表新增“等级”筛选（勾选 S、A …），适用于场景、图片和演员，播放列表也可保存它——例如“最佳场景：S + A”就是一个会自动更新的播放列表。"],
+    ],
+  },
+  {
     v: "3.45.0",
     date: "2026-10-02",
     items: [["ui", "Plugins → Sources: every source unfolds (arrow) to show the plugins inside – search them, tick several and “Install selected”, or install, update one by one. Installed ones are marked, like in classic Stash.", "插件 → 来源：每个来源都可展开（箭头）显示其中的插件——可搜索，勾选多个后“安装所选”，也可逐个安装或更新；已安装的会被标记，与经典 Stash 一样。"]],

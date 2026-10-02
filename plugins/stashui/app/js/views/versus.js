@@ -14,6 +14,7 @@ import { isGif } from "../pieces.js";
 import { loadStandings } from "../standings.js";
 import { tiersOf, tierBadge, TIERS, matchOpts, pushLedger, popLedger, mergeLedger, blankLedger, ledgerHtml, openOptions, overviewHtml, openSnapshots } from "../versusx.js";
 import { logEvent, toggleLog } from "../eventlog.js";
+import { ensureTiers } from "../tiers.js";
 
 const KINDS = {
   scene: {
@@ -122,7 +123,7 @@ export function render(main, params = {}) {
       const merged = mergeVs(data, parseVs((await pluginConfig("stashui")).versus));
       await setPluginConfig("stashui", { versus: JSON.stringify(merged) });
       adopt(merged);
-      loadStandings(true).catch(() => {}); // the player and the PMV Generator see the new best moments
+      loadStandings(true).then(() => ensureTiers(true)).catch(() => {}); // the player and the PMV Generator see the new best moments; the tier badges follow
     } catch (e) {
       console.warn("[Stash UI] Versus → Stash:", e); // the copy in this browser stays; next pick tries again
     }

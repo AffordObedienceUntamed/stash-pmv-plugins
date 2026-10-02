@@ -51,11 +51,12 @@ const KIND = {
   gallery: { query: "findGalleries", filterArg: "gallery_filter", filterType: "GalleryFilterType", list: "galleries", frag: F_GALLERY },
 };
 
-export async function findItems(kind, find, filter) {
+// ids: only these (e.g. the scenes of some tiers) – null: no restriction
+export async function findItems(kind, find, filter, ids) {
   const k = KIND[kind];
   const d = await gql(
-    `query($f: FindFilterType, $x: ${k.filterType}) { r: ${k.query}(filter: $f, ${k.filterArg}: $x) { count ${k.list} { ${k.frag} } } }`,
-    { f: find, x: filter || {} }
+    `query($f: FindFilterType, $x: ${k.filterType}, $ids: [ID!]) { r: ${k.query}(filter: $f, ${k.filterArg}: $x, ids: $ids) { count ${k.list} { ${k.frag} } } }`,
+    { f: find, x: filter || {}, ids: ids || null }
   );
   return { count: d.r.count, items: d.r[k.list] };
 }
@@ -96,10 +97,11 @@ export const F_PERFORMER = `id name disambiguation alias_list gender birthdate d
   measurements tattoos piercings details urls favorite rating100 o_counter scene_count image_count gallery_count image_path created_at
   tags { id name }`;
 
-export async function findPerformers({ q, page = 1, perPage = 60, sort = "name", dir, filter } = {}) {
-  const d = await gql(`query($f: FindFilterType, $p: PerformerFilterType) { findPerformers(filter: $f, performer_filter: $p) { count performers { id name disambiguation gender favorite rating100 scene_count image_count o_counter image_path birthdate country } } }`, {
+export async function findPerformers({ q, page = 1, perPage = 60, sort = "name", dir, filter, ids } = {}) {
+  const d = await gql(`query($f: FindFilterType, $p: PerformerFilterType, $ids: [ID!]) { findPerformers(filter: $f, performer_filter: $p, ids: $ids) { count performers { id name disambiguation gender favorite rating100 scene_count image_count o_counter image_path birthdate country } } }`, {
     f: { q: q || undefined, page, per_page: perPage, sort, direction: dir || (sort === "name" ? "ASC" : "DESC") },
     p: filter || {},
+    ids: ids || null,
   });
   return d.findPerformers;
 }

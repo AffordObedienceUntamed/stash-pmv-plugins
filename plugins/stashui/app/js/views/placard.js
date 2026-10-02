@@ -6,6 +6,8 @@ import { updateItem, setFavorite, favoriteTagId, addO, removeO } from "../api.js
 import { app, setQueueCount } from "../main.js";
 import { openEditor } from "./edit.js";
 import { perfPicker } from "./perfpicker.js";
+import { tierNow } from "../tiers.js";
+import { tierBadge } from "../versusx.js";
 
 function fileInfo(kind, x) {
   if (kind === "scene") {
@@ -34,7 +36,7 @@ export function placardHtml(kind, x) {
   return `
     <div class="kb-plc">
       <p class="kb-plc-inv">${t({ scene: "Scene", image: "Image", gallery: "Gallery" }[kind])} #${x.id}${x.date ? `${t(", ")}${fmtDate(x.date)}` : ""}</p>
-      <h2 class="kb-plc-title">${esc(title)}</h2>
+      <h2 class="kb-plc-title">${tierBadge(tierNow(kind, x.id))}${esc(title)}</h2>
       ${info.lines.filter(Boolean).map((l) => `<p class="kb-plc-meta">${esc(l)}</p>`).join("")}
       <div class="kb-plc-acts">
         <div data-rate>${starsHtml(x.rating100, true)}</div>

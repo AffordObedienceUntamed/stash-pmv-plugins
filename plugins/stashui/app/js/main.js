@@ -532,6 +532,7 @@ async function init() {
     stashLang = c.interface.language || "";
     setRatingSystem((c.ui || {}).ratingSystemOptions);
     import("./standings.js").then((m) => m.bestMarkers()).catch(() => {}); // best moments, for the player
+    await import("./tiers.js").then((m) => m.ensureTiers()).catch(() => {}); // the tier badges (Versus standings)
   } catch (e) { /* older Stash or no answer – the browser language decides */ }
   await initLang(stashLang);
   document.getElementById("rail").setAttribute("aria-label", t("Navigation"));

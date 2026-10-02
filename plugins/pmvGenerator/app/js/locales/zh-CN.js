@@ -1495,4 +1495,5 @@ export default {
   "Install selected ({n})": "安装所选（{n}）",
   "Select all not installed": "选择所有未安装的",
   "Show the plugins in this source": "显示此来源中的插件",
+  "Tier": "等级",
 };

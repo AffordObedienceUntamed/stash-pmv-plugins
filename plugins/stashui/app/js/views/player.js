@@ -13,6 +13,8 @@ import { bestMarkers, bestMarkersNow } from "../standings.js";
 import { attachHandy, interactiveConfig, saveInteractiveConfig, handyPrefs, runBackend, fsSources, rememberFs, variantChoices, rememberVariant, readVariant } from "../interactive.js";
 import { stackHtml, activeOf, heatBg, duplicatesOf } from "../fsvariants.js";
 import { logEvent } from "../eventlog.js";
+import { tierNow, ensureTiers } from "../tiers.js";
+import { tierBadge } from "../versusx.js";
 import { createVR, guessVR } from "../vr.js";
 import { videoGlow } from "../theme.js";
 import { BINS, watchRecorder, watchBins, motionBins, combine, peaks } from "../heat.js";
@@ -141,7 +143,7 @@ export async function render(host, params, query = {}) {
         <div class="kb-resume-hint" data-resume hidden></div>
         <div class="kb-topbar">
           <button class="kb-btn is-icon is-ghost" data-close aria-label="${t("Close (Esc)")}" title="${t("Close (Esc)")}">${icon("back")}</button>
-          <span class="kb-topbar-title">${esc(x.title || f.basename || "")}</span>
+          <span class="kb-topbar-title">${tierBadge(tierNow("scene", x.id))}${esc(x.title || f.basename || "")}</span>
           <button class="kb-btn is-icon is-ghost" data-panel aria-label="${t("Details on/off (I)")}" title="${t("Details on/off (I)")}">${icon("info")}</button>
         </div>
         <div class="kb-controls">
