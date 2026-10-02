@@ -49,6 +49,11 @@ Called through Stash's `runPluginOperation` (interface: raw):
   mode "funscript_dupe_restore" {"paths": [... .funscriptdupe]}: the other way round (not over an existing file).
       output: {"done": [paths], "skipped": [{"path", "reason"}]}
 
+* mode "funscript_overview": numbers for all interactive scenes: {"total", "scanned", "read", "with_variants",
+  "with_problems", "issues": {"broken", "long", "short"}, "avg_speed" (units/s), "edges", "hist" (scripts per intensity
+  range), "avg_cover", "intense", "calm" (scenes: id, title, screenshot, speed, gap, gap_at, gaps, cover),
+  "gap_scenes", "longest_gaps"}. A gap is a pause in the movements of more than 20 s.
+
 * mode "funscript_save_variant": an edited script becomes a new variant next to the video:
   "<video> (<label>).funscript" (a taken name gets " 2", " 3" …) – the original isn't touched.
       args:   {"mode": "funscript_save_variant", "scene_id": "12", "label": "Soft", "content": "<funscript text>"}
@@ -216,6 +221,7 @@ def funscript_remove(stash, args):
 
 # ---------- Variants: several funscripts for one video ----------
 BUCKETS = 160  # the heatmap of a script: this many stripes
+GAP_MS = 20000  # a pause in the movements longer than this counts as a gap
 SPEED_UNITS = 400  # units per second that count as "full intensity" in the picture (the front end scales)
 
 
@@ -288,6 +294,13 @@ def analyze(path, duration, buckets=True):
         good.sort()
     length = good[-1][0] / 1000 if good else 0
     info.update(actions=len(good), length=round(length, 1))
+    # intensity (units moved per second over the whole script) and pauses (a gap between two movements; the start counts too)
+    if good and length:
+        travel = sum(abs(p1 - p0) for (_, p0), (_, p1) in zip(good, good[1:]))
+        info["mean_speed"] = round(travel / length)
+        gaps = [(good[0][0], 0)] + [(b[0] - a[0], a[0]) for a, b in zip(good, good[1:])]
+        g, at = max(gaps)
+        info.update(gap_max=round(g / 1000, 1), gap_at=round(at / 1000, 1), gaps=sum(1 for x, _ in gaps if x > GAP_MS))
     # the same movements → the same hash (name, metadata, rounding noise don't matter)
     h = hashlib.sha1()
     for at, pos in good:
@@ -483,12 +496,58 @@ def funscript_save_variant(stash, args):
     return {"path": target, "name": os.path.basename(target)}
 
 
+def funscript_overview(stash, args):
+    """Numbers for all interactive scenes: scripts, variants, problems, intensity (histogram, most intense / calmest),
+    pauses (scenes with gaps, the longest), how much of the video the script covers."""
+    d = stash.gql("query { stats { scene_count } findScenes(scene_filter: {interactive: true}, filter: {per_page: -1}) { scenes { id title paths { screenshot } files { path duration } } } }")
+    _, exts = libraries(stash)
+    rows, n, with_var, bad, unreachable = [], 0, 0, 0, 0
+    kinds = {"broken": 0, "long": 0, "short": 0}
+    for sc in d["findScenes"]["scenes"]:
+        if not sc.get("files"):
+            continue
+        video, dur = sc["files"][0]["path"], float(sc["files"][0].get("duration") or 0)
+        if not os.path.isdir(os.path.dirname(video)):
+            unreachable += 1
+            continue
+        n += 1
+        vs = find_variants(video, exts)
+        if len(vs) > 1:
+            with_var += 1
+        main_path = os.path.splitext(video)[0] + ".funscript"
+        flagged = False
+        for p, label in vs:
+            a = analyze(p, dur, buckets=False)
+            for k in ("broken", "long", "short"):
+                if k in a["issues"]:
+                    kinds[k] += 1
+                    flagged = True
+            if os.path.normcase(p) == os.path.normcase(main_path) and a.get("mean_speed") is not None:
+                rows.append({"id": sc["id"], "title": sc.get("title") or os.path.basename(video), "screenshot": (sc.get("paths") or {}).get("screenshot"),
+                             "speed": a["mean_speed"], "gap": a["gap_max"], "gap_at": a["gap_at"], "gaps": a["gaps"], "cover": round(min(1.0, a["length"] / dur), 2) if dur else 1})
+        bad += flagged
+    edges = [0, 50, 100, 150, 200, 300, 400]  # units per second
+    hist = [0] * len(edges)
+    for r in rows:
+        hist[max(i for i, e in enumerate(edges) if r["speed"] >= e)] += 1
+    by_speed = sorted(rows, key=lambda r: r["speed"])
+    return {
+        "total": int(d["stats"]["scene_count"]), "scanned": n, "unreachable": unreachable, "read": len(rows), "with_variants": with_var, "with_problems": bad, "issues": kinds,
+        "avg_speed": round(sum(r["speed"] for r in rows) / len(rows)) if rows else 0, "edges": edges, "hist": hist,
+        "avg_cover": round(sum(r["cover"] for r in rows) / len(rows), 2) if rows else 0,
+        "intense": by_speed[::-1][:6], "calm": by_speed[:6],
+        "gap_scenes": sum(1 for r in rows if r["gaps"]), "longest_gaps": sorted((r for r in rows if r["gaps"]), key=lambda r: -r["gap"])[:10],
+    }
+
+
 def main():
     data = json.loads(sys.stdin.read() or "{}")
     args = data.get("args") or {}
     mode = str(args.get("mode") or "")
     try:
-        if mode == "funscript_save_variant":
+        if mode == "funscript_overview":
+            out = funscript_overview(Stash(data.get("server_connection")), args)
+        elif mode == "funscript_save_variant":
             out = funscript_save_variant(Stash(data.get("server_connection")), args)
         elif mode == "funscript_dupes":
             out = funscript_dupes(Stash(data.get("server_connection")), args)

@@ -1455,3 +1455,15 @@ html.kb-glass .kb-tierpos .kb-tier { backdrop-filter: blur(6px); }
 .kb-critf .kb-adv-row { grid-template-columns: minmax(0, 1fr) auto; }
 html.kb-glass .kb-critchip { border: 1px solid var(--glass-edge); background: var(--glass-shine), color-mix(in srgb, var(--bg-3) 34%, transparent); }
 html.kb-glass .kb-critchip i { background: linear-gradient(90deg, var(--pink) var(--v), rgba(255, 255, 255, .16) var(--v)); }
+
+/* Funscript overview */
+a.kb-vx-stat { color: inherit; text-decoration: none; }
+a.kb-vx-stat:hover { background: var(--bg-3); }
+.kb-vx-stat b small { color: var(--faint); font: 400 13px/1 var(--f-label); }
+.kb-hist { display: flex; align-items: flex-end; gap: 8px; height: 150px; max-width: 700px; padding-top: 8px; }
+.kb-hist > div { display: grid; flex: 1; grid-template-rows: 1fr auto auto; justify-items: center; gap: 3px; height: 100%; min-width: 0; }
+.kb-hist i { align-self: end; width: 100%; min-height: 2px; border-radius: 5px 5px 2px 2px; background: linear-gradient(to top, color-mix(in srgb, var(--pink) 45%, var(--bg-3)), var(--pink)); }
+.kb-hist b { font: 700 12.5px/1 var(--f-label); font-variant-numeric: tabular-nums; }
+.kb-hist small { color: var(--faint); font: 400 11.5px/1 var(--f-label); white-space: nowrap; }
+html.kb-glass a.kb-vx-stat:hover { background: var(--glass-shine), color-mix(in srgb, var(--bg-3) 55%, transparent); }
+html.kb-glass .kb-hist i { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3); }

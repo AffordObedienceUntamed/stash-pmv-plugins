@@ -39,7 +39,7 @@ async function syncTag(name, ids) {
 }
 
 export function render(main, params, query) {
-  const tab = ["files", "problems", "dupes"].includes(params.tab) ? params.tab : "scenes";
+  const tab = ["files", "problems", "dupes", "overview"].includes(params.tab) ? params.tab : "scenes";
   main.innerHTML = `
     <header class="kb-head">
       <div class="kb-head-title">
@@ -52,6 +52,7 @@ export function render(main, params, query) {
           <a href="#/interactive/files" class="${tab === "files" ? "is-on" : ""}">${icon("plug")}${t("Funscripts without a video")} <span data-n="files"></span></a>
           <a href="#/interactive/problems" class="${tab === "problems" ? "is-on" : ""}">${icon("info")}${t("Problems")} <span data-n="problems"></span></a>
           <a href="#/interactive/dupes" class="${tab === "dupes" ? "is-on" : ""}">${icon("queue")}${t("Duplicates")} <span data-n="dupes"></span></a>
+          <a href="#/interactive/overview" class="${tab === "overview" ? "is-on" : ""}">${icon("chart")}${t("Overview")}</a>
         </div>
       </div>
     </header>
@@ -69,6 +70,7 @@ export function render(main, params, query) {
     });
   } else if (tab === "problems") paintProblems();
   else if (tab === "dupes") import("./fsdupes.js").then((m) => m.paintDupes(body, main, () => alive));
+  else if (tab === "overview") import("./fsoverview.js").then((m) => m.paintOverview(body, () => alive));
   else paintFiles();
 
   // ---------- Speed and heatmap: interactive scenes Stash hasn't measured yet ----------

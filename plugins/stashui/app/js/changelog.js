@@ -4,6 +4,11 @@
 
 export const CHANGES = [
   {
+    v: "3.48.0",
+    date: "2026-10-02",
+    items: [["ui", "Interactive → Overview: how many scenes have a funscript, several scripts or problems, the average intensity with a histogram, the most intense and the calmest scenes, scenes with long pauses (more than 20 s without a movement) and how much of the video the scripts cover.", "互动 → 概览：有多少场景带 funscript、多个脚本或有问题，平均强度及直方图，最激烈和最平缓的场景，有长停顿（超过 20 秒无动作）的场景，以及脚本覆盖视频的比例。"]],
+  },
+  {
     v: "3.47.0",
     date: "2026-10-02",
     items: [
