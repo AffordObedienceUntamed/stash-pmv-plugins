@@ -4,7 +4,8 @@ import { esc, icon, debounce, errorToast, toast, plural, promptDialog, starsHtml
 import { t, locale } from "../i18n.js";
 import { findPerformers, updatePerformer, createPerformer, gql } from "../api.js";
 import { go, setQuery } from "../main.js";
-import { ensureTiers, hasTiers, idsOfTiers, tierNow } from "../tiers.js";
+import { ensureTiers, hasTiers, tierNow } from "../tiers.js";
+import { restrictIds, critInfo, parseCrit, critStr, critText, sortByCrit, openCritFilter } from "../ratingx.js";
 import { TIERS, tierBadge } from "../versusx.js";
 
 const SORTS = [
@@ -93,6 +94,7 @@ export async function render(main, params, query) {
         <label class="kb-search">${icon("search")}<input class="kb-field" type="search" data-q placeholder="${t("Search performers")}" value="${esc(query.q || "")}"></label>
         <select class="kb-field" data-sort aria-label="${t("Sort order")}">${SORTS.map(([v, l]) => `<option value="${v}">${t(l)}</option>`).join("")}</select>
         <select class="kb-field" data-gender aria-label="${t("Gender")}"><option value="">${t("Everyone")}</option>${GENDERS.map(([v, l]) => `<option value="${v}">${t(l)}</option>`).join("")}</select>
+        <button type="button" class="kb-btn" data-critopen hidden>${icon("sliders")}<span data-crittext>${t("Criteria …")}</span></button>
         <span class="kb-seg kb-tierchips" data-tf hidden title="${t("Tier")}">${TIERS.map((x) => `<button type="button" data-tier="${x.k}" style="--tc:${x.color}">${x.k}</button>`).join("")}</span>
         <button type="button" class="kb-btn${query.fav === "1" ? " is-on" : ""}" data-favonly aria-pressed="${query.fav === "1"}">${icon("heart")}${t("Favorites")}</button>
         <button type="button" class="kb-btn" data-new>${icon("plus")}${t("New performer")}</button>
@@ -105,6 +107,29 @@ export async function render(main, params, query) {
   $("[data-gender]").value = query.gender || "";
   let favOnly = query.fav === "1";
   let tiers = (query.tier || "").split(",").filter(Boolean);
+  let crit = query.crit || "";
+  let critAll = null; // sorted by a criterion: everything that matches, fetched once and ordered here
+  // the criteria of the detailed rating: filter button, and a sort entry for each
+  critInfo("performer")
+    .then((info) => {
+      const names = info.names.filter((n) => info.have.has(n));
+      const sel = $("[data-sort]");
+      sel.insertAdjacentHTML("beforeend", names.map((n) => `<option value="${esc("crit:" + n)}">${t("Detailed")}: ${esc(n)}</option>`).join(""));
+      if (query.sort && query.sort.startsWith("crit:") && !names.includes(query.sort.slice(5))) sel.insertAdjacentHTML("beforeend", `<option value="${esc(query.sort)}">${t("Detailed")}: ${esc(query.sort.slice(5))}</option>`);
+      sel.value = query.sort || "name";
+      $("[data-critopen]").hidden = !names.length && !crit;
+      if (crit) $("[data-crittext]").textContent = critText(parseCrit(crit));
+    })
+    .catch(() => {});
+  main.addEventListener("click", (e) => {
+    if (!e.target.closest("[data-critopen]")) return;
+    openCritFilter("performer", parseCrit(crit), (l) => {
+      crit = critStr(l);
+      $("[data-crittext]").textContent = l.length ? critText(l) : t("Criteria …");
+      setQuery({ crit });
+      load(true);
+    });
+  });
   ensureTiers().then(() => {
     $("[data-tf]").hidden = !hasTiers("performer") && !tiers.length;
     main.querySelectorAll("[data-tf] [data-tier]").forEach((b) => b.classList.toggle("is-on", tiers.includes(b.dataset.tier)));
@@ -163,7 +188,14 @@ export async function render(main, params, query) {
     try {
       const q = $("[data-q]").value.trim();
       await ensureTiers();
-      const r = await findPerformers({ q, page, perPage: PAGE, sort: $("[data-sort]").value, filter: filter(), ids: idsOfTiers("performer", tiers) });
+      const sortV = $("[data-sort]").value;
+      const ids = await restrictIds("performer", { tier: tiers, crit, sort: sortV });
+      let r;
+      if (sortV.startsWith("crit:")) {
+        if (reset || !critAll) critAll = findPerformers({ q, page: 1, perPage: -1, sort: "rating", filter: filter(), ids }).then(async (all) => ({ count: all.count, performers: await sortByCrit("performer", sortV.slice(5), all.performers, "DESC") }));
+        const all = await critAll;
+        r = { count: all.count, performers: all.performers.slice((page - 1) * PAGE, page * PAGE) };
+      } else r = await findPerformers({ q, page, perPage: PAGE, sort: sortV, filter: filter(), ids });
       if (my !== run) return;
       total = r.count;
       list = list.concat(r.performers);

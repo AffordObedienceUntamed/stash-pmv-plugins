@@ -1496,4 +1496,8 @@ export default {
   "Select all not installed": "选择所有未安装的",
   "Show the plugins in this source": "显示此来源中的插件",
   "Tier": "等级",
+  "Criteria …": "评分项 …",
+  "Detailed rating – filter": "详细评分——筛选",
+  "Nothing rated in detail yet – use “★+ Detailed” on a scene or performer first.": "还没有详细评分——请先在场景或演员上使用“★+ 详细”。",
+  "Only items rated at least this high in each point you choose.": "仅显示你所选的每个评分项至少达到此分数的条目。",
 };

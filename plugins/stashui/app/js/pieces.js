@@ -4,6 +4,7 @@ import { esc, icon, fmtDuration, fmtRes, fmtDate, fmtBytes, invNo, plural, store
 import { t } from "./i18n.js";
 import { tierNow } from "./tiers.js";
 import { tierBadge } from "./versusx.js";
+import { critOf } from "./ratingx.js";
 
 // Stash files animated GIFs as video files (codec "gif") but serves the GIF itself: those are images
 export const isGif = (vf) => !!vf && vf.__typename === "VideoFile" && (/gif/i.test(vf.format || "") || /gif/i.test(vf.video_codec || "") || /\.gif$/i.test(vf.basename || vf.path || ""));
@@ -28,6 +29,7 @@ export function toPiece(kind, x, favId) {
       studio: x.studio || null,
       interactive: !!x.interactive,
       tier: tierNow("scene", x.id),
+      crit: critOf("scene", x),
     };
   }
   if (kind === "image") {
@@ -80,6 +82,7 @@ function pieceHtml(p) {
     (p.resume ? `<span class="kb-resume"><i style="width:${(p.resume * 100).toFixed(1)}%"></i></span>` : "") +
     (p.fav ? `<span class="kb-dot" title="${t("Favorite")}"></span>` : "") +
     (p.tier ? `<span class="kb-tierpos">${tierBadge(p.tier)}</span>` : "") +
+    (p.crit ? `<span class="kb-critbars" aria-hidden="true">${p.crit.slice(0, 6).map((c) => `<i style="--v:${c.score * 20}%" title="${esc(c.name)}: ${c.score} / 5"></i>`).join("")}</span>` : "") +
     studioBadge(p) +
     `<span class="kb-pick" role="checkbox" aria-checked="false" aria-label="${t("Select")}">${icon("check")}</span>` +
     `<span class="kb-placard"><b>${esc(p.title)}</b><small>${esc(p.meta)}</small></span>` +

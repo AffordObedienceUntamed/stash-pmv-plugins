@@ -7,7 +7,8 @@ import { findItems } from "../api.js";
 import { toPiece } from "../pieces.js";
 import { app, go, setQueueCount } from "../main.js";
 import { stateOf, filterOf, findOf, loadPlaylists, savePlaylists, linkOf } from "../playlists.js";
-import { ensureTiers, idsOfTiers } from "../tiers.js";
+import { ensureTiers } from "../tiers.js";
+import { restrictIds, parseCrit, critText } from "../ratingx.js";
 
 const SORT_NAMES = { created_at: "Recently added", date: "Date", last_played_at: "Last watched", play_count: "Most watched", rating: "Rating", duration: "Duration", title: "Title", filesize: "File size", path: "Path", random: "Random", o_counter: "O counter" };
 const UNIT = { scene: ["scene", "scenes"], image: ["image", "images"] };
@@ -25,6 +26,7 @@ function describe(pl) {
   if (st.rating) out.push(t("from {r}", { r: ratingText(st.rating * 20) || st.rating }));
   if (st.fav) out.push(t("Favorites only"));
   if (st.tier.length) out.push(t("Tier {tier}", { tier: st.tier.join(" + ") }));
+  if (st.crit) out.push(critText(parseCrit(st.crit)));
   if (st.played) out.push({ yes: t("watched"), no: t("never watched"), resume: t("started") }[st.played]);
   if (st.res) out.push({ WEB_HD: t("720p and up"), STANDARD_HD: t("1080p and up"), QUAD_HD: "4K" }[st.res] || st.res);
   if (st.len) out.push({ short: t("under 1 min"), mid: t("1–10 min"), long: t("over 10 min") }[st.len]);
@@ -92,7 +94,7 @@ export async function render(main) {
       const card = body.querySelector(`[data-id="${CSS.escape(pl.id)}"]`);
       try {
         await ensureTiers();
-        const r = await findItems(pl.kind, findOf(pl, { per_page: 4 }), filterOf(pl.kind, stateOf(pl.query), app.favId), idsOfTiers(pl.kind, stateOf(pl.query).tier));
+        const r = await findItems(pl.kind, findOf(pl, { per_page: 4 }), filterOf(pl.kind, stateOf(pl.query), app.favId), await restrictIds(pl.kind, stateOf(pl.query)));
         if (!alive || !card) return;
         card.querySelector("[data-count]").innerHTML = `${icon(pl.kind === "image" ? "image" : "film")}${esc(plural(r.count, UNIT[pl.kind][0], UNIT[pl.kind][1]))}`;
         const thumbs = r.items.map((x) => toPiece(pl.kind, x, app.favId).thumb).filter(Boolean);
@@ -108,7 +110,7 @@ export async function render(main) {
   async function items(pl, random) {
     const find = random ? Object.assign(findOf(pl, { per_page: 200 }), { sort: "random_" + Math.floor(Math.random() * 1e8) }) : findOf(pl, { per_page: 200 });
     await ensureTiers();
-    const r = await findItems(pl.kind, find, filterOf(pl.kind, stateOf(pl.query), app.favId), idsOfTiers(pl.kind, stateOf(pl.query).tier));
+    const r = await findItems(pl.kind, find, filterOf(pl.kind, stateOf(pl.query), app.favId), await restrictIds(pl.kind, stateOf(pl.query)));
     return r.items.map((x) => toPiece(pl.kind, x, app.favId));
   }
   const asQueue = (pieces) => pieces.map((p) => ({ kind: p.kind, id: p.id, title: p.title, thumb: p.thumb }));

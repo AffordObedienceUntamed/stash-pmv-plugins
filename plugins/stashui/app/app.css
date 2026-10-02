@@ -1440,3 +1440,18 @@ html.kb-glass .kb-log-list li:hover, html.kb-glass .kb-log-btn:hover, html.kb-gl
 .kb-tierchips button[data-tier] { color: var(--tc); font-weight: 800; }
 .kb-tierchips button[data-tier].is-on { color: var(--ink); background: var(--tc); }
 html.kb-glass .kb-tierpos .kb-tier { backdrop-filter: blur(6px); }
+
+/* Detailed rating in lists: bars on cards, chips in the panel, the filter */
+.kb-critbars { position: absolute; left: 8px; bottom: 44px; z-index: 2; display: flex; flex-direction: column; gap: 3px; width: 52px; opacity: 0; transition: opacity .18s; pointer-events: none; }
+.kb-piece:hover .kb-critbars { opacity: 1; }
+.kb-critbars i { display: block; height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--pink) var(--v), rgba(255, 255, 255, .28) var(--v)); box-shadow: 0 1px 3px rgba(0, 0, 0, .5); }
+.kb-critlist { display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 8px 0 2px; }
+.kb-critchip { display: inline-grid; grid-template-columns: auto 38px auto; align-items: center; gap: 6px; padding: 3px 8px; border-radius: 6px; background: var(--bg-2); font: 500 12px/1.2 var(--f-label); }
+.kb-critchip i { display: block; height: 5px; border-radius: 3px; background: linear-gradient(90deg, var(--pink) var(--v), var(--bg-3) var(--v)); }
+.kb-critchip em { color: var(--pink); font-style: normal; font-weight: 700; }
+.kb-critfilter { display: inline-flex; align-items: center; gap: 8px; }
+.kb-critseg { flex-wrap: wrap; justify-content: flex-end; }
+.kb-adv-row.is-cur { outline: 2px solid color-mix(in srgb, var(--pink) 70%, transparent); outline-offset: -2px; }
+.kb-critf .kb-adv-row { grid-template-columns: minmax(0, 1fr) auto; }
+html.kb-glass .kb-critchip { border: 1px solid var(--glass-edge); background: var(--glass-shine), color-mix(in srgb, var(--bg-3) 34%, transparent); }
+html.kb-glass .kb-critchip i { background: linear-gradient(90deg, var(--pink) var(--v), rgba(255, 255, 255, .16) var(--v)); }

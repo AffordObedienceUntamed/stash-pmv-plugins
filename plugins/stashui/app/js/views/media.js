@@ -5,7 +5,8 @@ import { esc, icon, store, debounce, seed, errorToast, toast, plural, fmtNum, co
 import { filterOf, QUERY_KEYS, loadPlaylists, savePlaylists, labelsFor } from "../playlists.js";
 import { t } from "../i18n.js";
 import { findItems, favoriteTagId, setFavorite, bulkUpdate, destroyItems } from "../api.js";
-import { ensureTiers, hasTiers, idsOfTiers } from "../tiers.js";
+import { ensureTiers, hasTiers } from "../tiers.js";
+import { restrictIds, critInfo, critKinds, parseCrit, critStr, critText, sortByCrit, openCritFilter } from "../ratingx.js";
 import { TIERS } from "../versusx.js";
 import { toPiece, Hang } from "../pieces.js";
 import { app, setQuery, go, setQueueCount } from "../main.js";
@@ -42,6 +43,7 @@ function readState(q, kind, defaults) {
     len: q.len || "",
     ia: q.ia || "",
     tier: (q.tier || "").split(",").filter(Boolean),
+    crit: q.crit || "",
     seed: q.seed || "",
   };
 }
@@ -55,7 +57,7 @@ export function mediaBrowser(host, opts) {
   let kind = kinds.includes(opts.query.kind) ? opts.query.kind : opts.initialKind || kinds[0];
   let st = readState(opts.query, kind, opts.defaults && opts.defaults[kind]);
   let hang = null;
-  let filterOpen = !!(st.tags.length || st.xtags.length || st.perfs.length || st.rating || st.fav || st.played || st.ori || st.res || st.len || st.ia || st.tier.length);
+  let filterOpen = !!(st.tags.length || st.xtags.length || st.perfs.length || st.rating || st.fav || st.played || st.ori || st.res || st.len || st.ia || st.tier.length || st.crit);
   const rowH = () => store.get("rowHeight", 250);
 
   host.innerHTML = `
@@ -86,6 +88,18 @@ export function mediaBrowser(host, opts) {
     const sortSel = $("[data-sort]");
     sortSel.innerHTML = SORTS[kind].map(([k, name]) => `<option value="${k}">${t(name)}</option>`).join("");
     sortSel.value = SORTS[kind].some(([k]) => k === st.sort) ? st.sort : SORTS[kind][0][0];
+    // a sort by a criterion of the detailed rating (the entries are added when the criteria are known)
+    if (String(st.sort).startsWith("crit:")) {
+      sortSel.insertAdjacentHTML("beforeend", `<option value="${esc(st.sort)}">${t("Detailed")}: ${esc(st.sort.slice(5))}</option>`);
+      sortSel.value = st.sort;
+    }
+    if (critKinds(kind))
+      critInfo(kind).then((info) => {
+        const names = info.names.filter((n) => info.have.has(n));
+        if (!names.length || $("[data-sort]") !== sortSel || !sortSel.isConnected) return;
+        sortSel.insertAdjacentHTML("beforeend", names.filter((n) => !sortSel.querySelector(`option[value="${CSS.escape("crit:" + n)}"]`)).map((n) => `<option value="${esc("crit:" + n)}">${t("Detailed")}: ${esc(n)}</option>`).join(""));
+        sortSel.value = st.sort;
+      }).catch(() => {});
     st.sort = sortSel.value;
     $("[data-dir]").innerHTML = st.dir === "ASC" ? "↑" : "↓";
     $("[data-dir]").hidden = st.sort === "random";
@@ -115,11 +129,17 @@ export function mediaBrowser(host, opts) {
         <select class="kb-field" data-f="len"><option value="">${t("any")}</option><option value="short">${t("under 1 min")}</option><option value="mid">${t("1–10 min")}</option><option value="long">${t("over 10 min")}</option></select></label>` : ""}
       ${kind !== "gallery" ? `<label class="kb-lab">${t("Format")}
         <select class="kb-field" data-f="ori"><option value="">${t("any")}</option><option value="PORTRAIT">${t("Portrait")}</option><option value="LANDSCAPE">${t("Landscape")}</option><option value="SQUARE">${t("Square")}</option></select></label>` : ""}
+      ${critKinds(kind) ? `<div class="kb-lab kb-critfilter" data-cf hidden><span>${t("Detailed")}</span><button type="button" class="kb-btn" data-critopen>${icon("sliders")}<span data-crittext>${st.crit ? esc(critText(parseCrit(st.crit))) : t("Criteria …")}</span></button></div>` : ""}
       ${kind !== "gallery" ? `<div class="kb-lab kb-tierfilter" data-tf hidden><span>${t("Tier")}</span><span class="kb-seg kb-tierchips">${TIERS.map((x) => `<button type="button" data-tier="${x.k}" class="${st.tier.includes(x.k) ? "is-on" : ""}" style="--tc:${x.color}">${x.k}</button>`).join("")}</span></div>` : ""}
       <label class="kb-check"><input type="checkbox" data-f="fav"${st.fav ? " checked" : ""}>${t("Favorites only")}</label>
       <button class="kb-btn is-ghost" data-clear>${t("Reset")}</button>`;
     box.querySelectorAll("select[data-f]").forEach((s) => (s.value = st[s.dataset.f] || (s.dataset.f === "rating" ? "0" : "")));
     // the tier filter only shows when there are tiers (Versus has been played)
+    if (critKinds(kind))
+      critInfo(kind).then((info) => {
+        const cf = box.querySelector("[data-cf]");
+        if (cf) cf.hidden = !info.have.size && !st.crit;
+      }).catch(() => {});
     ensureTiers().then(() => {
       const tf = box.querySelector("[data-tf]");
       if (tf) tf.hidden = !hasTiers(kind) && !st.tier.length;
@@ -169,6 +189,7 @@ export function mediaBrowser(host, opts) {
     len: st.len,
     ia: st.ia,
     tier: st.tier.join(","),
+    crit: st.crit,
   });
   let plId = opts.query.pl || ""; // opened from a playlist: "Save playlist" changes that one
   function persistQuery() {
@@ -215,11 +236,19 @@ export function mediaBrowser(host, opts) {
     const sort = st.sort === "random" ? "random_" + st.seed : st.sort;
     $("[data-result]").textContent = "";
     const box = $("[data-hang]");
+    let critAll = null;
     hang = new Hang(box, {
       rowHeight: rowH(),
       fetchPage: async (page) => {
         await ensureTiers(); // (the badge on the cards, and the tier filter)
-        const r = await findItems(kind, { q: st.q || undefined, page, per_page: 60, sort, direction: st.dir }, filter, idsOfTiers(kind, st.tier));
+        const ids = await restrictIds(kind, st); // tier and detailed-rating filters (and "sorted by a criterion": those that have it)
+        if (String(st.sort).startsWith("crit:")) {
+          // Stash can't sort by a criterion: everything that matches is fetched once and ordered here
+          if (!critAll) critAll = findItems(kind, { q: st.q || undefined, per_page: -1, sort: "rating", direction: "DESC" }, filter, ids).then((r) => sortByCrit(kind, st.sort.slice(5), r.items, st.dir));
+          const all = await critAll;
+          return { count: all.length, pieces: all.slice((page - 1) * 60, page * 60).map((x) => toPiece(kind, x, app.favId)) };
+        }
+        const r = await findItems(kind, { q: st.q || undefined, page, per_page: 60, sort, direction: st.dir }, filter, ids);
         return { count: r.count, pieces: r.items.map((x) => toPiece(kind, x, app.favId)) };
       },
       onLoaded: (h) => {
@@ -359,11 +388,19 @@ export function mediaBrowser(host, opts) {
       return renderTools();
     }
     if (e.target.closest("[data-clear]") || e.target.closest("[data-clearall]")) {
-      Object.assign(st, { q: "", tags: [], xtags: [], perfs: [], pany: false, rating: 0, fav: false, played: "", ori: "", res: "", len: "", ia: "", tier: [] });
+      Object.assign(st, { q: "", tags: [], xtags: [], perfs: [], pany: false, rating: 0, fav: false, played: "", ori: "", res: "", len: "", ia: "", tier: [], crit: "" });
       const qi = $("[data-q]");
       if (qi) qi.value = "";
       renderTools();
       return apply();
+    }
+    if (e.target.closest("[data-critopen]")) {
+      return openCritFilter(kind, parseCrit(st.crit), (list) => {
+        st.crit = critStr(list);
+        const tx = $("[data-crittext]");
+        if (tx) tx.textContent = list.length ? critText(list) : t("Criteria …");
+        apply();
+      });
     }
     const tb = e.target.closest("[data-tf] [data-tier]");
     if (tb) {
@@ -417,7 +454,9 @@ export function mediaBrowser(host, opts) {
       const base = opts.base ? opts.base(kind) : null;
       const sort = st.sort === "random" ? "random_" + (st.seed || seed().replace("random_", "")) : st.sort;
       await ensureTiers();
-      const r = await findItems(kind, { q: st.q || undefined, per_page: 200, sort, direction: st.dir }, buildFilter(kind, st, base), idsOfTiers(kind, st.tier));
+      const crit = String(st.sort).startsWith("crit:");
+      const r = await findItems(kind, { q: st.q || undefined, per_page: crit ? -1 : 200, sort: crit ? "rating" : sort, direction: crit ? "DESC" : st.dir }, buildFilter(kind, st, base), await restrictIds(kind, st));
+      if (crit) r.items = (await sortByCrit(kind, st.sort.slice(5), r.items, st.dir)).slice(0, 200);
       if (!r.items.length) return toast(t("Nothing to play"));
       const list = r.items.map((x) => toPiece(kind, x, app.favId));
       store.set("queue", list.map((p) => ({ kind: p.kind, id: p.id, title: p.title, thumb: p.thumb })));

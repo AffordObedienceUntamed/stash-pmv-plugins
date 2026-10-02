@@ -8,6 +8,7 @@ import { openEditor } from "./edit.js";
 import { perfPicker } from "./perfpicker.js";
 import { tierNow } from "../tiers.js";
 import { tierBadge } from "../versusx.js";
+import { critOf } from "../ratingx.js";
 
 function fileInfo(kind, x) {
   if (kind === "scene") {
@@ -44,6 +45,7 @@ export function placardHtml(kind, x) {
         ${kind === "scene" ? `<button class="kb-plc-btn" data-advrate title="${t("Rate by several criteria – Stash's rating follows")}">★+ ${t("Detailed")}</button>` : ""}
         <button class="kb-plc-btn" data-o title="${t("O counter (O), right-click subtracts one")}">${icon("drop")}<span data-ocount>${x.o_counter || 0}</span></button>
       </div>
+      ${kind === "scene" && critOf("scene", x) ? `<div class="kb-critlist" title="${t("Detailed rating")}">${critOf("scene", x).map((c) => `<span class="kb-critchip"><b>${esc(c.name)}</b><i style="--v:${c.score * 20}%"></i><em>${c.score}</em></span>`).join("")}</div>` : ""}
       ${kind === "scene" ? `<p class="kb-plc-meta">${x.play_count ? t("Watched {what}, last {when}", { what: plural(x.play_count, "time", "times"), when: fmtAgo(x.last_played_at) }) : t("Never watched to the end")}</p>` : ""}
       ${
         kind !== "gallery"

@@ -80,7 +80,7 @@ export function scoresOf(item) {
 }
 
 // ---------- Tags ----------
-async function tagIndex() {
+export async function tagIndex() {
   const d = await gql(`query AdvTags { s: findTags(tag_filter: { name: { value: "★", modifier: INCLUDES } }, filter: { per_page: -1 }) { tags { id name } } p: findTags(tag_filter: { name: { value: "Advanced", modifier: INCLUDES } }, filter: { per_page: -1 }) { tags { id name } } }`);
   const idx = new Map();
   [...d.s.tags, ...d.p.tags].forEach((x) => idx.set(x.name, x.id));
@@ -138,6 +138,7 @@ export async function openAdvRating(kind, item, { onChange } = {}) {
   const el = dr.el;
   el.classList.add("kb-adv");
   const body = el.querySelector(".kb-drawer-body") || el;
+  let curRow = 0; // keyboard: the row the number keys rate
   const paint = () => {
     const scores = scoresOf(item);
     const res = compute(cfg, scores);
@@ -148,7 +149,7 @@ export async function openAdvRating(kind, item, { onChange } = {}) {
         return `<section class="kb-adv-group"><h3 class="kb-fsp-h">${esc(g.name)}</h3>${cs
           .map((x) => {
             const s = scores[x.name];
-            return `<div class="kb-adv-row${s == null ? " is-unrated" : ""}" ${x.desc ? `title="${esc(x.desc)}"` : ""}><b>${esc(x.name)}</b>
+            return `<div class="kb-adv-row${s == null ? " is-unrated" : ""}" data-row="${esc(x.name)}" ${x.desc ? `title="${esc(x.desc)}"` : ""}><b>${esc(x.name)}</b>
               ${stars(s, x.name)}
               <button type="button" class="kb-adv-zero${s === 0 ? " is-on" : ""}" data-zero data-crit="${esc(x.name)}" title="${t("Rate 0")}">0</button>
               <button type="button" class="kb-adv-clear" data-clear="${esc(x.name)}" title="${t("Not rated")}" ${s == null ? "hidden" : ""}>×</button></div>`;
@@ -165,7 +166,37 @@ export async function openAdvRating(kind, item, { onChange } = {}) {
     body.innerHTML = `<p class="kb-hint">${t("Rate each point from 1 to 5 (0 is allowed too). Stash's own rating follows – the weighted result of everything you rated.")}</p>
       <div class="kb-adv-top"><span>${t("Rating")}: <b>${item.rating100 ? esc(ratingText(item.rating100)) : "–"}</b></span>${unrated ? `<span class="kb-adv-badge">${t("{n} not rated", { n: unrated })}</span>` : ""}</div>
       ${rows}${detail}`;
+    const rs = [...body.querySelectorAll(".kb-adv-row")];
+    curRow = Math.min(curRow, Math.max(0, rs.length - 1));
+    rs[curRow] && rs[curRow].classList.add("is-cur");
   };
+  // ↑ ↓ choose the point, 0–5 rate it, Backspace takes the rating away
+  const onKey = async (e) => {
+    if (!el.isConnected) return document.removeEventListener("keydown", onKey, true);
+    if (e.target.closest && e.target.closest("input, textarea, select")) return;
+    const rs = [...body.querySelectorAll(".kb-adv-row")];
+    if (!rs.length) return;
+    let handled = true;
+    if (e.key === "ArrowDown") curRow = (curRow + 1) % rs.length;
+    else if (e.key === "ArrowUp") curRow = (curRow - 1 + rs.length) % rs.length;
+    else if (/^[0-5]$/.test(e.key) || e.key === "Backspace" || e.key === "Delete") {
+      const name = rs[curRow].dataset.row;
+      const n = /^[0-5]$/.test(e.key) ? Number(e.key) : null;
+      try {
+        await setScore(kind, item, cfg, name, n === scoresOf(item)[name] ? null : n);
+        onChange && onChange(item);
+        if (n != null) curRow = (curRow + 1) % rs.length; // on to the next point
+      } catch (er) {
+        errorToast(er, "Rating");
+      }
+    } else handled = false;
+    if (!handled) return;
+    e.preventDefault();
+    e.stopPropagation();
+    paint();
+    body.querySelector(".kb-adv-row.is-cur")?.scrollIntoView({ block: "nearest" });
+  };
+  document.addEventListener("keydown", onKey, true);
   el.addEventListener("click", async (e) => {
     const b = e.target.closest("[data-star], [data-zero], [data-clear]");
     try {

@@ -7,7 +7,7 @@ import { ratingFilterMin } from "./ui.js";
 import { gql, pluginConfig, setPluginConfig } from "./api.js";
 
 // The list's URL parameters that make up a playlist
-export const QUERY_KEYS = ["q", "sort", "dir", "tags", "xtags", "perfs", "pany", "rating", "fav", "played", "ori", "res", "len", "ia", "tier"];
+export const QUERY_KEYS = ["q", "sort", "dir", "tags", "xtags", "perfs", "pany", "rating", "fav", "played", "ori", "res", "len", "ia", "tier", "crit"];
 
 // URL parameters → filter state (as the lists keep it)
 export function stateOf(q = {}) {
@@ -28,6 +28,7 @@ export function stateOf(q = {}) {
     len: q.len || "",
     ia: q.ia || "", // funscript: yes | no
     tier: list(q.tier), // only these tiers (S–F, from the Versus standings)
+    crit: q.crit || "", // detailed rating: "Name:min,Name:min"
     seed: q.seed || "",
   };
 }

@@ -4,6 +4,14 @@
 
 export const CHANGES = [
   {
+    v: "3.47.0",
+    date: "2026-10-02",
+    items: [
+      ["ui", "Detailed rating in lists: a Detailed filter in Scenes and Performers (“Chemistry ≥ 4”, several points together), a sort by any point (“Detailed: Chemistry”), small bars of a scene's scores on its card (on hover), score chips in the info panel and on performer pages – and playlists keep the filter.", "列表中的详细评分：场景和演员页面新增“详细”筛选（“默契 ≥ 4”，可组合多个评分项）、按任意评分项排序（“详细：默契”）、场景卡片上的小型分数条（悬停时显示）、信息面板和演员页面上的分数标签——播放列表也会保存该筛选。"],
+      ["ui", "Keys for the detailed rating: R opens it in the player; in the list ↑ ↓ choose the point, 0–5 rate it and jump on, Backspace takes the rating away.", "详细评分快捷键：在播放器中按 R 打开；在列表中用 ↑ ↓ 选择评分项，按 0–5 评分并跳到下一项，Backspace 清除评分。"],
+    ],
+  },
+  {
     v: "3.46.0",
     date: "2026-10-02",
     items: [
