@@ -4,6 +4,11 @@
 
 export const CHANGES = [
   {
+    v: "3.45.0",
+    date: "2026-10-02",
+    items: [["ui", "Plugins → Sources: every source unfolds (arrow) to show the plugins inside – search them, tick several and “Install selected”, or install, update one by one. Installed ones are marked, like in classic Stash.", "插件 → 来源：每个来源都可展开（箭头）显示其中的插件——可搜索，勾选多个后“安装所选”，也可逐个安装或更新；已安装的会被标记，与经典 Stash 一样。"]],
+  },
+  {
     v: "3.44.0",
     date: "2026-10-02",
     items: [

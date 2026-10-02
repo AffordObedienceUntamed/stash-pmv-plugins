@@ -45,7 +45,7 @@ export async function render(main, params, query) {
   let tab = TABS.includes(query.tab) ? query.tab : "installed";
   let alive = true;
   let busy = false;
-  const state = { plugins: [], cfg: {}, packages: [], sources: [], updates: null, source: query.source || "", avail: {}, q: "" };
+  const state = { plugins: [], cfg: {}, packages: [], sources: [], updates: null, source: query.source || "", avail: {}, q: "", open: new Set(), sel: new Set(), srcq: {} }; // open: sources unfolded on the Sources tab; sel: "url|id" ticked there
 
   main.innerHTML = `
     <header class="kb-head">
@@ -215,11 +215,14 @@ export async function render(main, params, query) {
         <div class="kb-srclist">${
           state.sources.length
             ? state.sources
-                .map((s, i) => `<div class="kb-srcrow" data-i="${i}">
-                  <div><b>${esc(s.name || s.url)}</b><small>${esc(s.url)}${s.local_path ? " · " + esc(s.local_path) : ""}</small></div>
+                .map((s, i) => `<div class="kb-srcitem${state.open.has(s.url) ? " is-open" : ""}" data-i="${i}">
+                <div class="kb-srcrow">
+                  <button type="button" class="kb-srccaret" data-srcopen="${i}" aria-expanded="${state.open.has(s.url)}" title="${t("Show the plugins in this source")}"><i></i></button>
+                  <div data-srcopen="${i}" class="kb-srcname"><b>${esc(s.name || s.url)}</b><small>${esc(s.url)}${s.local_path ? " · " + esc(s.local_path) : ""}</small></div>
                   <button class="kb-btn is-ghost" data-srcedit="${i}">${icon("edit")}${t("Edit")}</button>
                   <button class="kb-btn is-ghost kb-pdanger" data-srcdel="${i}">${icon("trash")}${t("Remove")}</button>
-                </div>`)
+                </div>
+                <div class="kb-srcpkgs" data-srcpkgs="${i}"${state.open.has(s.url) ? "" : " hidden"}></div></div>`)
                 .join("")
             : `<p class="kb-hint">${t("No sources yet.")}</p>`
         }</div>
@@ -233,6 +236,50 @@ export async function render(main, params, query) {
         </form>
         ${missing.length ? `<div class="kb-srcsuggest"><span class="kb-hint">${t("Suggested:")}</span>${missing.map((s) => `<button class="kb-chip" data-suggest="${esc(s.url)}">${icon("plus")}${esc(s.name)}</button>`).join("")}</div>` : ""}
       </div>`;
+    state.sources.forEach((s) => state.open.has(s.url) && fillSourcePkgs(s));
+  }
+
+  // The plugins inside one source (unfolded on the Sources tab): tick several and install them together, or one by one
+  async function fillSourcePkgs(s) {
+    const box = pane.querySelector(`[data-srcpkgs="${state.sources.indexOf(s)}"]`);
+    if (!box) return;
+    if (!state.avail[s.url]) {
+      box.innerHTML = `<div class="kb-loading">${t("Loading …")}</div>`;
+      try {
+        state.avail[s.url] = (await gql(`query($s: String!) { availablePackages(type: Plugin, source: $s) { ${PKG} } }`, { s: s.url })).availablePackages || [];
+      } catch (e) {
+        if (tab === "sources" && box.isConnected) box.innerHTML = `<p class="kb-hint">${t("Couldn't load this source")}: ${esc(e.message)}</p>`;
+        return;
+      }
+    }
+    if (tab !== "sources" || !box.isConnected) return;
+    const q = (state.srcq[s.url] || "").toLowerCase();
+    const all = state.avail[s.url].slice().sort((a, b) => a.name.localeCompare(b.name));
+    const list = all.filter((p) => !q || p.name.toLowerCase().includes(q) || String((p.metadata || {}).description || "").toLowerCase().includes(q) || p.package_id.toLowerCase().includes(q));
+    const free = (p) => !state.packages.some((x) => x.package_id === p.package_id) && !manualCopy(p); // can be installed
+    const key = (p) => s.url + "|" + p.package_id;
+    const ticked = all.filter((p) => state.sel.has(key(p)) && free(p));
+    box.innerHTML = `<div class="kb-srcpkgs-bar">
+        <label class="kb-search">${icon("search")}<input class="kb-field" type="search" data-srcq="${esc(s.url)}" placeholder="${t("Search plugins")}" value="${esc(state.srcq[s.url] || "")}"></label>
+        <span class="kb-hint">${t("{n} plugins", { n: all.length })}</span><span class="kb-spacer"></span>
+        <button class="kb-btn is-ghost" data-selall="${esc(s.url)}"${all.some(free) ? "" : " disabled"}>${t("Select all not installed")}</button>
+        <button class="kb-btn is-primary" data-installsel="${esc(s.url)}"${ticked.length && !busy ? "" : " disabled"}>${icon("download")}${t("Install selected ({n})", { n: ticked.length })}</button>
+      </div>
+      ${list.length ? list.map((p) => srcPkgRow(s, p, free(p), key(p))).join("") : `<p class="kb-hint">${t("Nothing found")}</p>`}`;
+  }
+  function srcPkgRow(s, p, free, key) {
+    const mine = state.packages.find((x) => x.package_id === p.package_id);
+    const desc = (p.metadata || {}).description || "";
+    const needs = (p.requires || []).map((r) => r.name || r.package_id);
+    let action;
+    if (!mine && manualCopy(p)) action = `<span class="kb-pinstalled" title="${t("Remove the manual copy from the plugins folder first to install it from here.")}">${icon("check")}${t("Installed manually")}</span>`;
+    else if (!mine) action = `<button class="kb-btn" data-install="${esc(p.package_id)}" data-src="${esc(s.url)}"${busy ? " disabled" : ""}>${icon("download")}${t("Install")}</button>`;
+    else if (mine.version !== p.version) action = `<button class="kb-btn is-primary" data-update="${esc(p.package_id)}"${busy ? " disabled" : ""}>${t("Update to {v}", { v: p.version })}</button>`;
+    else action = `<span class="kb-pinstalled">${icon("check")}${t("Installed")}</span>`;
+    return `<div class="kb-srcpkg${free ? "" : " is-have"}">
+      <input type="checkbox" data-pkgsel="${esc(key)}" ${free ? "" : "disabled"}${state.sel.has(key) && free ? " checked" : ""} aria-label="${esc(p.name)}">
+      <span><b>${esc(p.name)}</b><small>${esc([p.version ? t("Version {v}", { v: p.version }) : "", p.date ? fmtDate(p.date) : "", p.package_id].filter(Boolean).join(t(", ")))}</small>${desc ? `<em>${esc(desc)}</em>` : ""}${needs.length ? `<small>${esc(t("Needs: {list}", { list: needs.join(t(", ")) }))}</small>` : ""}</span>
+      ${action}</div>`;
   }
 
   // ---------- Actions ----------
@@ -301,6 +348,17 @@ export async function render(main, params, query) {
       }
       return;
     }
+    const so = e.target.closest("[data-srcopen]");
+    if (so) {
+      const s = state.sources[Number(so.dataset.srcopen)];
+      state.open.has(s.url) ? state.open.delete(s.url) : state.open.add(s.url);
+      const item = so.closest(".kb-srcitem");
+      item.classList.toggle("is-open", state.open.has(s.url));
+      item.querySelector(".kb-srccaret").setAttribute("aria-expanded", state.open.has(s.url));
+      item.querySelector("[data-srcpkgs]").hidden = !state.open.has(s.url);
+      if (state.open.has(s.url)) fillSourcePkgs(s);
+      return;
+    }
     if (busy) return;
     const b = e.target.closest("button");
     if (!b) return;
@@ -319,8 +377,20 @@ export async function render(main, params, query) {
         return pk && runJob("update", [spec(pk)], [pk.name]);
       }
       if (b.dataset.install) {
-        const pk = (state.avail[state.source] || []).find((p) => p.package_id === b.dataset.install);
-        return pk && runJob("install", [{ id: pk.package_id, sourceURL: state.source }], [pk.name]);
+        const url = b.dataset.src || state.source; // (from a source unfolded on the Sources tab, or from Browse)
+        const pk = (state.avail[url] || []).find((p) => p.package_id === b.dataset.install);
+        return pk && runJob("install", [{ id: pk.package_id, sourceURL: url }], [pk.name]);
+      }
+      if (b.dataset.installsel) {
+        const url = b.dataset.installsel;
+        const picked = (state.avail[url] || []).filter((p) => state.sel.has(url + "|" + p.package_id) && !state.packages.some((x) => x.package_id === p.package_id) && !manualCopy(p));
+        picked.forEach((p) => state.sel.delete(url + "|" + p.package_id));
+        return runJob("install", picked.map((p) => ({ id: p.package_id, sourceURL: url })), picked.map((p) => p.name));
+      }
+      if (b.dataset.selall) {
+        const url = b.dataset.selall;
+        (state.avail[url] || []).filter((p) => !state.packages.some((x) => x.package_id === p.package_id) && !manualCopy(p)).forEach((p) => state.sel.add(url + "|" + p.package_id));
+        return fillSourcePkgs(state.sources.find((s) => s.url === url));
       }
       if (b.dataset.uninstall) {
         const pk = state.packages.find((p) => p.package_id === b.dataset.uninstall);
@@ -402,7 +472,23 @@ export async function render(main, params, query) {
     }
   });
 
+  main.addEventListener("input", (e) => {
+    const q = e.target.closest("[data-srcq]");
+    if (!q) return;
+    state.srcq[q.dataset.srcq] = q.value;
+    clearTimeout(q._t);
+    q._t = setTimeout(() => {
+      const s = state.sources.find((x) => x.url === q.dataset.srcq);
+      if (s) fillSourcePkgs(s).then(() => pane.querySelector(`[data-srcq="${CSS.escape(s.url)}"]`)?.focus());
+    }, 180);
+  });
   main.addEventListener("change", async (e) => {
+    const pk = e.target.closest("[data-pkgsel]");
+    if (pk) {
+      pk.checked ? state.sel.add(pk.dataset.pkgsel) : state.sel.delete(pk.dataset.pkgsel);
+      const s = state.sources.find((x) => pk.dataset.pkgsel.startsWith(x.url + "|"));
+      return s && fillSourcePkgs(s);
+    }
     const src = e.target.closest("[data-source]");
     if (src) {
       state.source = src.value;

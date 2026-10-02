@@ -407,3 +407,25 @@ body.kb-embedded .kb-main { padding: 0; }
 .kb-dupe-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 .kb-linkbtn { padding: 0; border: 0; color: var(--pink); font: inherit; text-decoration: underline; background: none; cursor: pointer; }
 .kb-more-wrap { display: flex; justify-content: center; margin: 18px 0; }
+
+/* Sources: unfold a source to see (and install) the plugins inside */
+.kb-srcitem { border-bottom: 1px solid var(--line); }
+.kb-srcitem > .kb-srcrow { border-bottom: 0; }
+.kb-srcname { cursor: pointer; }
+.kb-srccaret { display: grid; flex: none; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 6px; color: var(--text-2); background: none; cursor: pointer; }
+.kb-srccaret:hover { color: var(--text); background: var(--bg-3); }
+.kb-srccaret i { width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-45deg); transition: transform .18s; }
+.kb-srcitem.is-open .kb-srccaret i { transform: rotate(45deg); }
+.kb-srcpkgs { display: flex; flex-direction: column; gap: 4px; margin: 0 0 12px 36px; padding: 10px; border-radius: 10px; background: var(--bg-2); }
+.kb-srcpkgs[hidden] { display: none; }
+.kb-srcpkgs-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding-bottom: 6px; }
+.kb-srcpkgs-bar .kb-search { flex: 1; min-width: 180px; max-width: 320px; }
+.kb-srcpkg { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 8px 6px; border-top: 1px solid var(--line); }
+.kb-srcpkg > span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.kb-srcpkg b { font: 600 14.5px/1.3 var(--f-text); }
+.kb-srcpkg small { color: var(--faint); font: 400 12.5px/1.35 var(--f-label); }
+.kb-srcpkg em { color: var(--text-2); font: 400 13px/1.4 var(--f-text); font-style: normal; }
+.kb-srcpkg.is-have b { color: var(--text-2); }
+@media (max-width: 700px) { .kb-srcpkgs { margin-left: 0; } .kb-srcpkg { grid-template-columns: 22px minmax(0, 1fr); } .kb-srcpkg > :last-child { grid-column: 2; justify-self: start; } }
+html.kb-glass .kb-srcpkgs { border: 1px solid var(--glass-edge); border-radius: 16px; background: var(--glass-shine), color-mix(in srgb, var(--bg-3) 30%, transparent); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12); }
+html.kb-glass .kb-srccaret:hover { background: color-mix(in srgb, var(--bg-3) 45%, transparent); }

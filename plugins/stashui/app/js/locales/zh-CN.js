@@ -1492,4 +1492,7 @@ export default {
   "{n} ratings recalculated": "已重新计算 {n} 个评分",
   "{r0} beat {r1} (+{dw} / −{dl})": "{r0} 胜 {r1}（+{dw} / −{dl}）",
   "marker": "精彩片段",
+  "Install selected ({n})": "安装所选（{n}）",
+  "Select all not installed": "选择所有未安装的",
+  "Show the plugins in this source": "显示此来源中的插件",
 };
