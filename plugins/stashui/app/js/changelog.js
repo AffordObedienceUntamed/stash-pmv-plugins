@@ -4,6 +4,14 @@
 
 export const CHANGES = [
   {
+    v: "3.53.0",
+    date: "2026-10-04",
+    items: [
+      ["ui", "Make and edit studios in Stash UI: “New studio” on the Studios page, “Edit” on a studio's page (name, aliases, links, details, parent studio, tags, logo by upload, link, paste or drop) and “Delete studio”. A studio typed into the Studio field of the edit drawer can be created right there.", "在 Stash UI 中创建和编辑工作室：工作室页面的“新建工作室”，工作室页面的“编辑”（名称、别名、链接、简介、上级工作室、标签，徽标可上传、链接、粘贴或拖入）以及“删除工作室”。在编辑面板的“工作室”字段中输入新名称即可直接创建。"],
+      ["ui", "Scraping for studios: “Fill in from the internet” on a studio – search by name in StashDB-style boxes or the installed studio scrapers, or paste a link; the fields, parent studio and logo are filled in for you to check and save.", "工作室刮削：在工作室上点击“从网上填写”——在 StashDB 类站点或已安装的工作室刮削器中按名称搜索，或粘贴链接；字段、上级工作室和徽标会自动填入，供你检查后保存。"],
+    ],
+  },
+  {
     v: "3.52.0",
     date: "2026-10-04",
     items: [

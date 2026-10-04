@@ -987,6 +987,10 @@ section.kb-pe-photo { display: grid; grid-template-columns: 120px 1fr; gap: 14px
 .kb-pe-img.is-over { border-color: var(--pink); }
 .kb-pe-img img { width: 100%; height: 100%; object-fit: cover; }
 .kb-pe-img img.is-empty { visibility: hidden; }
+.kb-pe-studio section.kb-pe-photo { grid-template-columns: 170px 1fr; }
+.kb-pe-studio .kb-pe-img { aspect-ratio: 16 / 10; padding: 8px; }
+.kb-pe-studio .kb-pe-img img { object-fit: contain; }
+html.kb-glass .kb-pe-studio .kb-pe-img { background: rgba(255, 255, 255, .1); }
 .kb-pe-photo-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .kb-pe-photo-tools b { flex-basis: 100%; font: 700 17px/1.2 var(--f-display); font-stretch: 88%; }
 .kb-pe-photo-tools small { flex-basis: 100%; }

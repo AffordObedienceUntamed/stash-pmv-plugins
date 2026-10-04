@@ -1,6 +1,6 @@
 // Studio picker with suggestions. multi: several studios (filters); otherwise one (editing – picking replaces).
 
-import { esc, fmtNum } from "../ui.js";
+import { esc, fmtNum, errorToast } from "../ui.js";
 import { t } from "../i18n.js";
 import { gql } from "../api.js";
 
@@ -12,7 +12,8 @@ export function studiosCache(force) {
   return all;
 }
 
-// opts: { include: [id], names: { id: name } (for studios the cache doesn't know yet), multi, placeholder, onChange(ids) }
+// opts: { include: [id], names: { id: name } (for studios the cache doesn't know yet), multi, exclude: [id] (not offered),
+//         create(name) → { id, name } (a typed-in new name makes a studio), placeholder, onChange(ids) }
 export function studioPicker(host, opts) {
   let inc = [...(opts.include || [])];
   let studios = [];
@@ -42,12 +43,14 @@ export function studioPicker(host, opts) {
       return;
     }
     shown = studios
-      .filter((s) => !inc.includes(s.id))
+      .filter((s) => !inc.includes(s.id) && !(opts.exclude || []).includes(s.id))
       .filter((s) => !q || s.name.toLowerCase().includes(q) || (s.aliases || []).some((a) => a.toLowerCase().includes(q)))
       .slice(0, 30);
-    sugg.innerHTML = shown.length
-      ? shown.map((s, i) => `<button type="button" role="option" data-i="${i}" class="${i === active ? "is-active" : ""}">${esc(s.name)}<small>${fmtNum(s.scene_count || 0)}</small></button>`).join("")
-      : `<button type="button" disabled>${t("No matching studio")}</button>`;
+    const create = opts.create && q && !studios.some((s) => s.name.toLowerCase() === q);
+    sugg.innerHTML =
+      shown.map((s, i) => `<button type="button" role="option" data-i="${i}" class="${i === active ? "is-active" : ""}">${esc(s.name)}<small>${fmtNum(s.scene_count || 0)}</small></button>`).join("") +
+      (create ? `<button type="button" data-create class="${active === shown.length ? "is-active" : ""}">${esc(t("New studio “{name}”", { name: input.value.trim() }))}</button>` : "") +
+      (!shown.length && !create ? `<button type="button" disabled>${t("No matching studio")}</button>` : "");
     sugg.hidden = false;
   }
   function add(s) {
@@ -61,6 +64,18 @@ export function studioPicker(host, opts) {
     emit();
   }
 
+  async function createFromInput() {
+    const n = input.value.trim();
+    if (!n) return;
+    try {
+      const s = await opts.create(n);
+      studios = [...studios, Object.assign({ scene_count: 0, aliases: [] }, s)];
+      add(s);
+    } catch (e) {
+      errorToast(e, "Studio");
+    }
+  }
+
   input.addEventListener("focus", showSugg);
   input.addEventListener("input", () => {
     active = 0;
@@ -70,11 +85,14 @@ export function studioPicker(host, opts) {
   input.addEventListener("keydown", (e) => {
     if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       e.preventDefault();
-      active = (active + (e.key === "ArrowDown" ? 1 : -1) + shown.length) % Math.max(shown.length, 1);
+      const max = shown.length + (sugg.querySelector("[data-create]") ? 1 : 0);
+      active = (active + (e.key === "ArrowDown" ? 1 : -1) + max) % Math.max(max, 1);
       showSugg();
     } else if (e.key === "Enter") {
       e.preventDefault();
-      if (shown.length) add(shown[Math.max(active, 0)]);
+      if (active >= 0 && active < shown.length) add(shown[active]);
+      else if (sugg.querySelector("[data-create]")) createFromInput();
+      else if (shown.length) add(shown[0]);
     } else if (e.key === "Backspace" && !input.value && inc.length) {
       inc.pop();
       renderChips();
@@ -82,10 +100,11 @@ export function studioPicker(host, opts) {
     }
   });
   sugg.addEventListener("mousedown", (e) => {
-    const b = e.target.closest("button[data-i]");
+    const b = e.target.closest("button");
     if (!b) return;
     e.preventDefault();
-    add(shown[Number(b.dataset.i)]);
+    if (b.dataset.create != null) createFromInput();
+    else if (b.dataset.i != null) add(shown[Number(b.dataset.i)]);
   });
   chips.addEventListener("click", (e) => {
     const rm = e.target.closest("[data-rm]");

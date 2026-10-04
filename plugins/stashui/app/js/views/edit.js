@@ -6,6 +6,7 @@ import { getScene, getImage, getGallery, updateItem, bulkUpdate, destroyItems, f
 import { tagPicker } from "./tagpicker.js";
 import { perfPicker, knowPerformers } from "./perfpicker.js";
 import { studioPicker } from "./studiopicker.js";
+import { createStudio } from "./studioedit.js";
 import { app } from "../main.js";
 
 const UNITS = { scene: ["scene", "scenes"], image: ["image", "images"], gallery: ["gallery", "galleries"] };
@@ -89,7 +90,7 @@ async function editOne(kind, id, { onSaved, onDeleted }) {
   const picker = tagPicker(el.querySelector("[data-tags]"), { include: tagIds, allowCreate: true, placeholder: t("Search or create a tag") });
   knowPerformers(x.performers);
   const perfs = perfPicker(el.querySelector("[data-perfs]"), { include: (x.performers || []).map((p) => p.id), modes: false, allowCreate: true, placeholder: t("Search or create a performer") });
-  const studio = studioPicker(el.querySelector("[data-studio]"), { include: x.studio ? [x.studio.id] : [], names: x.studio ? { [x.studio.id]: x.studio.name } : {}, placeholder: t("Search studio") });
+  const studio = studioPicker(el.querySelector("[data-studio]"), { include: x.studio ? [x.studio.id] : [], names: x.studio ? { [x.studio.id]: x.studio.name } : {}, create: createStudio, placeholder: t("Search or create a studio") });
   el.querySelector("[data-cancel]").onclick = d.close;
   // the calendar (a hidden date field opens its picker; what you pick is written out in the field)
   const dtxt = el.querySelector('[data-e="date"]');
@@ -182,7 +183,7 @@ function editMany(kind, pieces, { onSaved }) {
   const rmP = tagPicker(el.querySelector("[data-rm]"), { placeholder: t("Search tag") });
   const addPerf = perfPicker(el.querySelector("[data-padd]"), { modes: false, allowCreate: true, placeholder: t("Search or create a performer") });
   const rmPerf = perfPicker(el.querySelector("[data-prm]"), { modes: false, placeholder: t("Search performer") });
-  const setStudio = studioPicker(el.querySelector("[data-studio]"), { placeholder: t("Search studio") });
+  const setStudio = studioPicker(el.querySelector("[data-studio]"), { create: createStudio, placeholder: t("Search or create a studio") });
   starInput(el.querySelector("[data-stars]"), 0, (v) => (state.rating100 = v));
   el.querySelector("[data-cancel]").onclick = d.close;
   el.querySelector("[data-save]").onclick = async () => {

@@ -4,8 +4,9 @@
 import { esc, icon, debounce, errorToast, plural, starsHtml } from "../ui.js";
 import { t } from "../i18n.js";
 import { gql, routeSignal } from "../api.js";
-import { setQuery } from "../main.js";
 import { mediaBrowser } from "./media.js";
+import { openStudioEditor } from "./studioedit.js";
+import { go } from "../main.js";
 
 const SORTS = [
   ["name", "Alphabetical"],
@@ -40,6 +41,7 @@ async function renderList(main, query) {
       <div class="kb-head-tools">
         <label class="kb-search">${icon("search")}<input class="kb-field" type="search" data-q placeholder="${t("Search studios")}" value="${esc(query.q || "")}"></label>
         <select class="kb-field" data-sort aria-label="${t("Sort order")}">${SORTS.map(([v, l]) => `<option value="${v}">${t(l)}</option>`).join("")}</select>
+        <button class="kb-btn is-primary" data-new>${icon("plus")}<span>${t("New studio")}</span></button>
       </div>
     </header>
     <div class="kb-perfgrid kb-studiogrid" data-list><div class="kb-loading">${t("Loading …")}</div></div>
@@ -73,7 +75,7 @@ async function renderList(main, query) {
       $("[data-sub]").textContent = plural(total, "studio", "studios");
       const list = d.findStudios.studios;
       if (reset) $("[data-list]").innerHTML = "";
-      if (!loaded && !list.length) $("[data-list]").innerHTML = `<div class="kb-empty"><b>${t("No studios found")}</b><p>${$("[data-q]").value ? t("Try another search.") : t("Studios are made in classic Stash or by a scraper – then they show up here.")}</p></div>`;
+      if (!loaded && !list.length) $("[data-list]").innerHTML = `<div class="kb-empty"><b>${t("No studios found")}</b><p>${$("[data-q]").value ? t("Try another search.") : t("Make one with “New studio” – or let a scraper fill it in.")}</p></div>`;
       else $("[data-list]").insertAdjacentHTML("beforeend", list.map(card).join(""));
       loaded += list.length;
       page++;
@@ -91,6 +93,7 @@ async function renderList(main, query) {
   };
   $("[data-q]").addEventListener("input", debounce(reload, 300));
   $("[data-sort]").onchange = reload;
+  $("[data-new]").onclick = () => openStudioEditor(null, { name: $("[data-q]").value.trim(), onSaved: (id) => go("studio/" + id) });
   load(true);
   return () => {
     alive = false;
@@ -135,13 +138,16 @@ async function renderOne(main, id, query) {
         <nav class="kb-crumbs"><span><a href="#/studios">${t("Studios")}</a></span>${s.parent_studio ? `<span><a href="#/studio/${esc(s.parent_studio.id)}">${esc(s.parent_studio.name)}</a></span>` : ""}</nav>
         <h1 class="kb-h1">${esc(s.name)}</h1>
         <p class="kb-sub">${counts.join(" · ") || "&nbsp;"}</p>
-        ${s.rating100 ? `<div class="kb-plc-acts">${starsHtml(s.rating100)}</div>` : ""}
+        <div class="kb-plc-acts">${s.rating100 ? starsHtml(s.rating100) : ""}<button class="kb-plc-btn" data-edit>${icon("edit")}${t("Edit")}</button><button class="kb-plc-btn" data-scrape>${icon("search")}${t("Fill in from the internet")}</button></div>
         ${facts.length ? `<dl class="kb-facts">${facts.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`).join("")}</dl>` : ""}
         ${(s.tags || []).length ? `<div class="kb-chips">${s.tags.map((tg) => `<a class="kb-chip" href="#/tag/${esc(tg.id)}">${esc(tg.name)}</a>`).join("")}</div>` : ""}
         ${s.details ? `<p class="kb-lead kb-perf-details">${esc(s.details)}</p>` : ""}
       </div>
     </header>
     <section data-browser></section>`;
+  const edit = (scrape) => openStudioEditor(id, { scrape, onSaved: () => go("studio/" + id, true), onDeleted: () => go("studios", true) });
+  main.querySelector("[data-edit]").onclick = () => edit(false);
+  main.querySelector("[data-scrape]").onclick = () => edit(true);
   const kinds = ["scene", "image", "gallery"].filter((k) => (k === "scene" ? s.scene_count : k === "image" ? s.image_count : s.gallery_count));
   const b = mediaBrowser(main.querySelector("[data-browser]"), {
     kinds: kinds.length ? kinds : ["scene"],
