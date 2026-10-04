@@ -6,7 +6,8 @@
 import { esc, icon, fmtNum, fmtBytes, store, toast } from "../ui.js";
 import { loadStandings } from "../standings.js";
 import { t, locale } from "../i18n.js";
-import { gql } from "../api.js";
+import { gql, stats } from "../api.js";
+import { isLarge } from "../scale.js";
 
 const PERIODS = [
   [7, "7 days"],
@@ -19,7 +20,6 @@ const DAY = 864e5;
 const LOOK = 60; // s – shorter plays are quick looks
 
 const Q = `query($f: FindFilterType, $s: SceneFilterType) {
-  stats { scene_count scenes_size scenes_duration image_count total_o_count total_play_duration total_play_count scenes_played }
   findScenes(filter: $f, scene_filter: $s) {
     scenes {
       id title play_count o_counter play_duration play_history o_history
@@ -88,17 +88,23 @@ export async function render(main) {
   const body = main.querySelector("[data-body]");
 
   let d;
+  let totals;
+  const big = await isLarge(); // a big library: the 4000 most played scenes (reading the history of every one would take too long)
   try {
-    d = await gql(Q, {
-      f: { per_page: -1, sort: "play_count", direction: "DESC" },
-      s: { play_count: { value: 0, modifier: "GREATER_THAN" }, OR: { o_counter: { value: 0, modifier: "GREATER_THAN" } } },
-    });
+    [d, totals] = await Promise.all([
+      gql(Q, {
+        f: { per_page: big ? 4000 : -1, sort: "play_count", direction: "DESC" },
+        s: { play_count: { value: 0, modifier: "GREATER_THAN" }, OR: { o_counter: { value: 0, modifier: "GREATER_THAN" } } },
+      }),
+      stats(),
+    ]);
   } catch (e) {
     body.innerHTML = `<div class="kb-empty"><b>${t("Couldn't load the statistics")}</b><p>${esc(e.message)}</p></div>`;
     return;
   }
-  const st = d.stats;
+  const st = totals;
   const scenes = d.findScenes.scenes;
+  if (big && scenes.length >= 4000) setTimeout(() => body.insertAdjacentHTML("afterbegin", `<p class="kb-hint">${t("Big library: the figures come from the 4000 most played scenes.")}</p>`), 0);
 
   // ---------- Events ----------
   const plays = []; // { at, s, len, look }
@@ -443,12 +449,13 @@ export async function render(main) {
   }
 
   // ---------- Library ----------
-  let added = null; // created_at of every scene (loaded once)
+  const addedCache = new Map(); // period → how many scenes were added in it (a count each – not every scene)
   async function paintLib(r) {
     const el = body.querySelector("[data-lib]");
     const pct = st.scene_count ? Math.round((st.scenes_played / st.scene_count) * 100) : 0;
     const never = Math.max(0, st.scene_count - st.scenes_played);
-    const addedN = added ? added.filter((x) => x >= r.from && x < r.to).length : null;
+    const addedKey = r.from + "-" + r.to;
+    const addedN = addedCache.has(addedKey) ? addedCache.get(addedKey) : null;
     el.innerHTML = `
       <h2>${t("Your library")}</h2>
       <div class="kb-st-lib">
@@ -464,11 +471,13 @@ export async function render(main) {
           ${addedN != null ? `<li><small>${days ? t("Added in the last {n} days", { n: days }) : t("Added")}</small><b>${fmtNum(addedN)}</b></li>` : ""}
         </ul>
       </div>`;
-    if (!added) {
+    if (!addedCache.has(addedKey)) {
       try {
-        const a = await gql(`query StatsAdded { findScenes(filter: { per_page: -1 }) { scenes { created_at } } }`);
-        added = a.findScenes.scenes.map((x) => Date.parse(x.created_at)).filter(Boolean);
-        paintLib(rangeOf(days));
+        const a = await gql(`query StatsAdded($s: SceneFilterType) { findScenes(filter: { per_page: 0 }, scene_filter: $s) { count } }`, {
+          s: { created_at: { value: new Date(r.from).toISOString(), value2: new Date(r.to).toISOString(), modifier: "BETWEEN" } },
+        });
+        addedCache.set(addedKey, a.findScenes.count);
+        paintLib(r);
       } catch (e) { /* the rest stays */ }
     }
   }

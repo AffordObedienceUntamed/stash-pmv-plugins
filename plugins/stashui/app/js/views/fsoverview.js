@@ -5,16 +5,28 @@
 import { esc, icon, fmtDuration } from "../ui.js";
 import { t } from "../i18n.js";
 import { runBackend } from "../interactive.js";
+import { gateHtml, againHtml } from "./fsgate.js";
+
+let cache = null; // { at, r } – the last overview, kept for this visit
 
 const sceneRow = (s, info) => `<a class="kb-fsl-row kb-fsl-scene" href="#/scene/${esc(s.id)}">
     ${s.screenshot ? `<img alt="" loading="lazy" src="${esc(s.screenshot)}">` : icon("film")}
     <span><b>${esc(s.title)}</b><small>${info}</small></span></a>`;
 
-export async function paintOverview(body, alive) {
-  body.innerHTML = `<div class="kb-loading">${t("Reading every funscript …")}</div>`;
+export async function paintOverview(body, alive, scan) {
+  // Reading every funscript takes long on a big library: on a click, not when the tab opens
+  if (!scan && !cache) {
+    body.innerHTML = gateHtml(t("Overview of all funscripts"), t("Reads every funscript of every scene that has one: how intense they are, where the pauses are and how much of each video they cover."), t("Read the funscripts"));
+    body.onclick = (e) => e.target.closest("[data-scan]") && paintOverview(body, alive, true);
+    return;
+  }
   let r;
   try {
-    r = await runBackend({ mode: "funscript_overview" });
+    if (scan) {
+      body.innerHTML = `<div class="kb-loading">${t("Reading every funscript …")}</div>`;
+      cache = { at: Date.now(), r: await runBackend({ mode: "funscript_overview" }) };
+    }
+    r = cache.r;
   } catch (e) {
     body.innerHTML = `<div class="kb-empty"><b>${t("Couldn't read the funscripts")}</b><p>${esc(e.message)}</p><p>${t("Stash UI's backend needs Python (like the PMV Generator) – after updating, reload the plugins in Stash once.")}</p></div>`;
     return;
@@ -25,7 +37,8 @@ export async function paintOverview(body, alive) {
   const max = Math.max(1, ...r.hist);
   const labels = r.edges.map((e, i) => (i === r.edges.length - 1 ? `${e}+` : `${e}–${r.edges[i + 1]}`));
   const list = (title, items, info, empty) => `<section class="kb-fsp-sec"><h3 class="kb-fsp-h">${title}</h3><div class="kb-fsl">${items.length ? items.map((s) => sceneRow(s, info(s))).join("") : `<p class="kb-hint">${empty}</p>`}</div></section>`;
-  body.innerHTML = `
+  body.onclick = (e) => e.target.closest("[data-rescan]") && paintOverview(body, alive, true);
+  body.innerHTML = `${againHtml(cache.at)}
     <div class="kb-vx-over">
       ${stat(`${r.scanned}<small> / ${r.total}</small>`, t("scenes with a funscript"))}
       ${stat(r.with_variants, t("with several scripts"), "#/interactive/problems")}

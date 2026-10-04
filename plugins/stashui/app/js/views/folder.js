@@ -64,12 +64,25 @@ export async function render(main, params, query) {
     return;
   }
   let tree;
+  // Counting the folders reads the whole library once – on a big library that takes minutes: it says so and can be cancelled
+  const ctl = new AbortController();
+  const slow = setTimeout(() => {
+    main.innerHTML = `<div class="kb-empty"><b>${t("Counting your folders …")}</b><p>${t("This reads the whole library once and can take several minutes on a big library. The result is kept, so it only takes this long the first time (and after a scan).")}</p><button class="kb-btn" data-cancelload>${t("Cancel")}</button></div>`;
+    main.querySelector("[data-cancelload]").onclick = () => ctl.abort();
+  }, 2500);
   try {
-    tree = await loadFolders();
+    tree = await loadFolders(false, { user: true, signal: ctl.signal });
   } catch (e) {
+    clearTimeout(slow);
+    if (e && e.name === "AbortError") {
+      main.innerHTML = `<div class="kb-empty"><b>${t("Cancelled")}</b><p>${t("The folders weren't loaded.")}</p><button class="kb-btn is-primary" data-again>${t("Try again")}</button></div>`;
+      main.querySelector("[data-again]").onclick = () => render(main, params, query);
+      return;
+    }
     errorToast(e, "Folders");
     throw e;
   }
+  clearTimeout(slow);
 
   if (!params.id) {
     main.innerHTML = `

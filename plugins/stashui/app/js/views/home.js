@@ -19,13 +19,45 @@ function greeting() {
   return t("Good evening.");
 }
 
-// A small wall with a fixed number of items
-function wall(el, fetcher, rowHeight) {
+// Home sections: a section is only asked for when it comes into view (a long page asks for what you scroll to),
+// two at a time (the queries are heavy on a big library), and the result is kept for five minutes (coming back
+// to the home page doesn't ask again; "Shuffle" does).
+const homeCache = new Map(); // section → { at, pieces }
+const HOME_TTL = 5 * 60000;
+let homeActive = 0;
+const homeWait = [];
+async function homeSlot(fn) {
+  while (homeActive >= 2) await new Promise((r) => homeWait.push(r));
+  homeActive++;
+  try {
+    return await fn();
+  } finally {
+    homeActive--;
+    const w = homeWait.shift();
+    if (w) w();
+  }
+}
+const whenVisible = (el) =>
+  new Promise((res) => {
+    const io = new IntersectionObserver((es) => es.some((e) => e.isIntersecting) && (io.disconnect(), res()), { rootMargin: "400px" });
+    io.observe(el);
+  });
+window.addEventListener("stash:library-changed", () => homeCache.clear());
+
+// A small wall with a fixed number of items (key: the section – its result is kept)
+function wall(el, fetcher, rowHeight, key) {
   return new Hang(el, {
     rowHeight: rowHeight || 210,
     fetchPage: async (page) => {
       if (page > 1) return { count: 0, pieces: [] };
-      const pieces = await fetcher();
+      const hit = key && homeCache.get(key);
+      let pieces;
+      if (hit && Date.now() - hit.at < HOME_TTL) pieces = hit.pieces;
+      else {
+        await whenVisible(el);
+        pieces = await homeSlot(fetcher);
+        if (key) homeCache.set(key, { at: Date.now(), pieces });
+      }
       if (!pieces.length) el.closest("section").hidden = true;
       return { count: pieces.length, pieces };
     },
@@ -188,7 +220,7 @@ export async function render(main) {
       const el = sec.querySelector("[data-w]");
       if (s.id === "folders") return paintFolders(sec);
       if (s.id === "random") return paintRandom(sec, el);
-      hangs.push(wall(el, fetcherFor(s)));
+      hangs.push(wall(el, fetcherFor(s), undefined, s.id));
     });
   }
 

@@ -1,6 +1,7 @@
 // A performer: photo, facts, heart, rating, tags, links – and all their scenes, images and galleries.
 
 import { tierNow } from "../tiers.js";
+import { largeNow } from "../scale.js";
 import { tierBadge } from "../versusx.js";
 import { critOf } from "../ratingx.js";
 import { esc, icon, errorToast, toast, plural, starsHtml, ratingClick, ratingFromInput, ratingToast, fmtDate, pop, burst, store } from "../ui.js";
@@ -100,6 +101,7 @@ export async function render(main, params, query) {
   const HIDE_KEY = "perfTagLinkHidden";
   async function offerLinks() {
     const box = main.querySelector("[data-taglink]");
+    if (largeNow()) return (box.innerHTML = ""); // (a hint that counts the performer's scenes and images per tag – too much work on a big library)
     const hidden = new Set(store.get(HIDE_KEY, []));
     const list = sources().filter((s) => !hidden.has(p.id + ":" + s.key)).slice(0, 12);
     if (!list.length) return (box.innerHTML = "");

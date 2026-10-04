@@ -10,7 +10,7 @@ import { startMini, stopMini } from "../mini.js";
 import { placardHtml, bindPlacard } from "./placard.js";
 import { similarScenes } from "../similar.js";
 import { bestMarkers, bestMarkersNow } from "../standings.js";
-import { attachHandy, interactiveConfig, saveInteractiveConfig, handyPrefs, runBackend, fsSources, rememberFs, variantChoices, rememberVariant, readVariant } from "../interactive.js";
+import { attachHandy, interactiveConfig, saveInteractiveConfig, handyPrefs, runBackend, runBackendCached, fsSources, rememberFs, variantChoices, rememberVariant, readVariant } from "../interactive.js";
 import { stackHtml, activeOf, heatBg, duplicatesOf } from "../fsvariants.js";
 import { logEvent } from "../eventlog.js";
 import { tierNow, ensureTiers } from "../tiers.js";
@@ -1013,9 +1013,11 @@ export async function render(host, params, query = {}) {
   });
   paintCoverUndo();
   async function goToFolder(path) {
-    const { loadFolders } = await import("../api.js");
-    const tree = await loadFolders();
+    const { loadFolders, folderIdForPath } = await import("../api.js");
     const dir = (path || "").split(/[\\/]/).slice(0, -1).join("\\");
+    const id = await folderIdForPath(dir).catch(() => null);
+    if (id) return go("folder/" + id);
+    const tree = await loadFolders(false, { user: true });
     const n = [...tree.nodes.values()].find((n) => n.path === dir);
     if (n) go("folder/" + n.id);
   }
@@ -1089,7 +1091,7 @@ export async function render(host, params, query = {}) {
         : `<span class="kb-hint">${t("This scene has no funscript yet.")}</span>`;
     }
     try {
-      const r = await runBackend({ mode: "funscript_list", scene_id: x.id });
+      const r = await runBackendCached({ mode: "funscript_list", scene_id: x.id });
       current = r.current;
       // picked from the library before → that file is "in use", and the copy next to the video isn't listed;
       // otherwise (put there by hand, or “From this computer”) the copy itself is what's in use

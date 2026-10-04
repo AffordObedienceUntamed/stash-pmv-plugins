@@ -2,7 +2,8 @@
 
 import { esc, icon, store, errorToast, fmtNum, $, folderMode, setRatingSystem } from "./ui.js";
 import { t, initLang } from "./i18n.js";
-import { gql, loadFolders, favoriteTagId, stats } from "./api.js";
+import { gql, loadFolders, favoriteTagId, stats, abortRoute } from "./api.js";
+import { isLarge } from "./scale.js";
 import { applyTheme, initAmbient } from "./theme.js";
 import { LATEST } from "./changelog.js";
 
@@ -176,6 +177,7 @@ async function route() {
 }
 
 async function mountBase(r, main, seq) {
+  abortRoute(); // what the page you left was still asking for isn't needed any more (an open player doesn't count: the page stays)
   if (app.base && app.base.cleanup) app.base.cleanup();
   app.base = { hash: hashNow(), cleanup: null };
   document.getElementById("app").classList.remove("is-rail-open");
@@ -427,10 +429,15 @@ window.addEventListener("stash:library-changed", () => {
 async function renderTree() {
   const box = document.getElementById("tree");
   if (!box) return;
+  await isLarge(); // a big library: no folder counting on its own
+  if (folderMode() !== "all") {
+    document.querySelectorAll('#rail [data-railgrp="Folders"], #rail [data-railbody="Folders"]').forEach((el) => (el.style.display = "none"));
+    return;
+  }
   try {
     treeData = treeData || (await loadFolders());
   } catch (e) {
-    box.innerHTML = `<div class="kb-rail-foot">${t("Couldn't load folders")}</div>`;
+    box.innerHTML = `<div class="kb-rail-foot">${e.skipped ? t("Folders weren't loaded – open the Folders page.") : t("Couldn't load folders")}</div>`;
     return;
   }
   const cur = parseHash();
@@ -540,6 +547,7 @@ async function init() {
     stashLang = c.interface.language || "";
     setRatingSystem((c.ui || {}).ratingSystemOptions);
     import("./standings.js").then((m) => m.bestMarkers()).catch(() => {}); // best moments, for the player
+    isLarge(); // (the totals – big library or not – decide how much is loaded on its own; not waited for)
     await import("./tiers.js").then((m) => m.ensureTiers()).catch(() => {}); // the tier badges (Versus standings)
   } catch (e) { /* older Stash or no answer – the browser language decides */ }
   await initLang(stashLang);

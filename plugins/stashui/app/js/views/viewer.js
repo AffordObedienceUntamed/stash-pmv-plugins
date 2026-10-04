@@ -204,9 +204,11 @@ export async function render(host, params) {
       else closeOverlay();
     },
     goFolder: async () => {
-      const { loadFolders } = await import("../api.js");
-      const tree = await loadFolders();
+      const { loadFolders, folderIdForPath } = await import("../api.js");
       const dir = (vf.path || "").split(/[\\/]/).slice(0, -1).join("\\");
+      const fid = await folderIdForPath(dir).catch(() => null);
+      if (fid) return go("folder/" + fid);
+      const tree = await loadFolders(false, { user: true });
       const n = [...tree.nodes.values()].find((n) => n.path === dir);
       if (n) go("folder/" + n.id);
     },

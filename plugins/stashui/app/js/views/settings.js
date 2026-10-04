@@ -3,6 +3,7 @@
 // Fields and types come live from Stash; unknown options end up under "More options".
 
 import { applyDisplay } from "../display.js";
+import { forgetLarge, largeNow } from "../scale.js";
 import { esc, icon, toast, errorToast, store, confirmDialog, fmtDate, folderMode, ratingSystem, setRatingSystem } from "../ui.js";
 import { t, locale, LANGS, chosen, choose } from "../i18n.js";
 import { gql, setPluginConfig } from "../api.js";
@@ -415,6 +416,10 @@ async function renderApp(body) {
         <select class="kb-field" data-lang><option value="auto">${t("Automatic")}</option>${LANGS.map(([code, name]) => `<option value="${code}">${esc(name)}</option>`).join("")}</select></label>
       <label class="kb-set"><span class="kb-set-label"><b>${t("Folder loading")}</b><small>${t("Counting the folders reads the whole library once (then it's remembered) – on very big libraries that can take very long. “Off” loads no folders at all.")}</small></span>
         <select class="kb-field" data-foldermode>${[["all", "Everywhere"], ["page", "Only on the Folders page"], ["off", "Off"]].map(([v, l]) => `<option value="${v}"${folderMode() === v ? " selected" : ""}>${t(l)}</option>`).join("")}</select></label>
+      <label class="kb-set"><span class="kb-set-label"><b>${t("Large library mode")}</b><small>${t("For libraries with very many files (from 20 000 scenes or 100 000 images): folders aren't counted on their own, the home page loads what you scroll to, Versus plays preview clips, scans of all funscripts wait for a click. Takes effect after reloading the page.")}${largeNow() ? " " + t("Right now: on.") : ""}</small></span>
+        <select class="kb-field" data-dsp="largeMode">${[["auto", "Automatic"], ["on", "On"], ["off", "Off"]].map(([v, l]) => `<option value="${v}"${store.get("largeMode", "auto") === v ? " selected" : ""}>${t(l)}</option>`).join("")}</select></label>
+      <label class="kb-set"><span class="kb-set-label"><b>${t("Versus: scenes")}</b><small>${t("What a scene shows in Versus: the whole video (jumping through it) or only the preview clip – lighter on slow disks. Automatic follows the large library mode.")}</small></span>
+        <select class="kb-field" data-dsp="vsMedia">${[["auto", "Automatic"], ["preview", "Preview clips"], ["full", "Whole video"]].map(([v, l]) => `<option value="${v}"${store.get("vsMedia", "auto") === v ? " selected" : ""}>${t(l)}</option>`).join("")}</select></label>
       <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("This interface as home page")}</b><small>${t("Opening Stash goes straight to this interface. Off = classic Stash stays the home page.")}</small></span>
         <span class="kb-switch"><input type="checkbox" data-home${cfg.keepClassicHome ? "" : " checked"}><i></i></span></label>
       <div class="kb-set"><div class="kb-set-label"><b>${t("Install as app")}</b><small data-installhint></small></div><button type="button" class="kb-btn" data-install hidden>${icon("phone")}${t("Install")}</button></div>
@@ -511,6 +516,7 @@ async function renderApp(body) {
     const apply = () => {
       const k = el.dataset.dsp;
       store.set(k, el.type === "checkbox" ? el.checked : el.type === "range" ? Number(el.value) : el.value);
+      if (k === "largeMode") forgetLarge();
       applyDisplay();
       window.dispatchEvent(new Event("stash:display-changed"));
     };

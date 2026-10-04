@@ -37,6 +37,18 @@ export async function runBackend(args) {
   if (out.error) throw new Error(out.error);
   return out;
 }
+// The backend's list of all funscripts walks every folder of the library – on a big library on a slow disk that
+// takes long, so one answer is kept for ten minutes (a scan of the funscripts of all scenes is a button, see Interactive)
+const listCache = new Map();
+export async function runBackendCached(args, ttl = 10 * 60000) {
+  const key = JSON.stringify(args);
+  const hit = listCache.get(key);
+  if (hit && Date.now() - hit.at < ttl) return hit.out;
+  const out = await runBackend(args);
+  listCache.set(key, { at: Date.now(), out });
+  return out;
+}
+export const forgetBackendCache = () => listCache.clear();
 // Which file a scene's funscript came from: { sceneId: { name, path } } – kept in Stash UI's plugin settings
 export async function fsSources() {
   try {
@@ -46,6 +58,7 @@ export async function fsSources() {
   }
 }
 export async function rememberFs(sceneId, name, path) {
+  forgetBackendCache(); // (the list of funscripts has changed)
   const all = await fsSources();
   if (name) all[sceneId] = { name, path };
   else delete all[sceneId];

@@ -1,13 +1,25 @@
 // Stash GraphQL – all queries and mutations in one place.
 
 import { t, locale } from "./i18n.js";
+import { LARGE_SCENES, LARGE_IMAGES } from "./scale.js";
 
-export async function gql(query, variables) {
+// Requests of the page you're on stop when you leave it (a long query for a page nobody looks at any more
+// only keeps Stash busy): routeSignal() is the signal of the current page, abortRoute() ends it (main.js, on navigating).
+let routeCtl = new AbortController();
+export const routeSignal = () => routeCtl.signal;
+export function abortRoute() {
+  routeCtl.abort();
+  routeCtl = new AbortController();
+}
+
+// opts.signal: an AbortSignal that cancels the request
+export async function gql(query, variables, opts) {
   const res = await fetch("/graphql", {
     method: "POST",
     credentials: "same-origin",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ query, variables }),
+    signal: opts && opts.signal,
   });
   if (!res.ok) throw new Error(t("Stash answers with {status}", { status: res.status }));
   const json = await res.json();
@@ -52,13 +64,22 @@ const KIND = {
 };
 
 // ids: only these (e.g. the scenes of some tiers) – null: no restriction
-export async function findItems(kind, find, filter, ids) {
+export async function findItems(kind, find, filter, ids, opts) {
   const k = KIND[kind];
   const d = await gql(
     `query($f: FindFilterType, $x: ${k.filterType}, $ids: [ID!]) { r: ${k.query}(filter: $f, ${k.filterArg}: $x, ids: $ids) { count ${k.list} { ${k.frag} } } }`,
-    { f: find, x: filter || {}, ids: ids || null }
+    { f: find, x: filter || {}, ids: ids || null },
+    { signal: (opts && opts.signal) || routeSignal() }
   );
   return { count: d.r.count, items: d.r[k.list] };
+}
+
+// Only the ids (and the rating) of everything that matches – light even when there are many (to sort or count here)
+const IDKIND = { scene: ["findScenes", "scene_filter", "SceneFilterType", "scenes"], image: ["findImages", "image_filter", "ImageFilterType", "images"], performer: ["findPerformers", "performer_filter", "PerformerFilterType", "performers"] };
+export async function findIds(kind, find, filter, ids) {
+  const [fn, arg, type, list] = IDKIND[kind];
+  const d = await gql(`query($f: FindFilterType, $x: ${type}, $ids: [ID!]) { r: ${fn}(filter: $f, ${arg}: $x, ids: $ids) { count ${list} { id rating100 } } }`, { f: find, x: filter || {}, ids: ids || null }, { signal: routeSignal() });
+  return { count: d.r.count, items: d.r[list] };
 }
 
 export async function countItems(kind, filter) {
@@ -102,7 +123,7 @@ export async function findPerformers({ q, page = 1, perPage = 60, sort = "name",
     f: { q: q || undefined, page, per_page: perPage, sort, direction: dir || (sort === "name" ? "ASC" : "DESC") },
     p: filter || {},
     ids: ids || null,
-  });
+  }, { signal: routeSignal() });
   return d.findPerformers;
 }
 
@@ -121,10 +142,41 @@ export async function createPerformer(name) {
   return d.performerCreate;
 }
 
-export async function stats() {
-  const d = await gql(`query { stats { scene_count image_count gallery_count tag_count performer_count scenes_duration scenes_size images_size total_play_count total_play_duration } }`);
-  return d.stats;
+// Stash's totals. Stash works out all of them whichever fields are asked for (on a big library that took 20 s cold),
+// so this is asked once and shared: several parts of the page ask at the same time. A big library keeps the last answer
+// in the browser for a quarter of an hour; a small one asks again after a minute.
+const STATS_Q = `query { stats { scene_count image_count gallery_count tag_count performer_count scenes_duration scenes_size images_size total_play_count total_play_duration scenes_played total_o_count } }`;
+const STATS_KEY = "stashui.statsCache";
+let statsP = null;
+let statsAt = 0;
+export function stats(force) {
+  if (!force && statsP && Date.now() - statsAt < (statsBig ? 15 * 60000 : 60000)) return statsP;
+  if (!force && !statsP) {
+    try {
+      const c = JSON.parse(localStorage.getItem(STATS_KEY) || "null");
+      if (c && c.data && Date.now() - c.at < 15 * 60000 && (c.data.scene_count >= LARGE_SCENES || c.data.image_count >= LARGE_IMAGES)) {
+        statsBig = true;
+        statsAt = c.at;
+        return (statsP = Promise.resolve(c.data));
+      }
+    } catch (e) { /* none stored */ }
+  }
+  statsAt = Date.now();
+  statsP = gql(STATS_Q)
+    .then((d) => {
+      statsBig = d.stats.scene_count >= LARGE_SCENES || d.stats.image_count >= LARGE_IMAGES;
+      try {
+        statsBig ? localStorage.setItem(STATS_KEY, JSON.stringify({ at: Date.now(), data: d.stats })) : localStorage.removeItem(STATS_KEY);
+      } catch (e) { /* blocked */ }
+      return d.stats;
+    })
+    .catch((e) => {
+      statsP = null;
+      throw e;
+    });
+  return statsP;
 }
+let statsBig = false;
 
 // ---------- Folders ----------
 
@@ -137,10 +189,10 @@ let folderCache = null;
 // the browser and reused as long as the number of scenes and images hasn't changed; scans, cleans and
 // deletions (libraryChanged) throw it away.
 const TREE_KEY = "stashui.folderTree";
-async function folderData() {
+async function folderData(opts) {
   let key = null;
   try {
-    const s = (await gql(`query { stats { scene_count image_count } }`)).stats;
+    const s = await stats();
     key = s.scene_count + "/" + s.image_count;
     const cached = JSON.parse(localStorage.getItem(TREE_KEY) || "null");
     if (cached && cached.v === 1 && cached.key === key) return cached;
@@ -149,7 +201,7 @@ async function folderData() {
     findFolders(filter: { per_page: -1 }) { folders { id path basename parent_folder { id } } }
     findScenes(filter: { per_page: -1 }) { scenes { files { parent_folder { id } } } }
     findImages(filter: { per_page: -1 }) { images { visual_files { ... on ImageFile { parent_folder { id } } ... on VideoFile { parent_folder { id } } } } }
-  }`);
+  }`, undefined, { signal: opts && opts.signal });
   const counts = {}; // folder id → [videos, images]
   const add = (file, i) => {
     const id = file && file.parent_folder && file.parent_folder.id;
@@ -166,10 +218,17 @@ async function folderData() {
   return data;
 }
 
-export function loadFolders(force) {
+// opts.user: asked for by the person (the Folders page, "Folder" in the player) – otherwise a try that failed or was
+// cancelled isn't repeated for half an hour (it would hang on every page load); opts.signal cancels the counting.
+const FAIL_KEY = "stashui.folderFail";
+export function loadFolders(force, opts = {}) {
   if (folderCache && !force) return folderCache;
+  if (!opts.user) {
+    const f = Number(sessionStorage.getItem(FAIL_KEY) || 0);
+    if (f && Date.now() - f < 30 * 60000) return Promise.reject(Object.assign(new Error("The folders weren't loaded – the last try didn't finish. Open the Folders page to try again."), { skipped: true }));
+  }
   folderCache = (async () => {
-    const data = await folderData();
+    const data = await folderData(opts);
     const nodes = new Map();
     for (const [id, path, name, parent] of data.folders) {
       const c = data.counts[id] || [0, 0];
@@ -200,17 +259,26 @@ export function loadFolders(force) {
     };
     roots.forEach(sortRec);
     roots.sort((a, b) => a.name.localeCompare(b.name, locale(), { numeric: true }));
+    sessionStorage.removeItem(FAIL_KEY);
     return { nodes, roots };
   })().catch((e) => {
     folderCache = null;
+    sessionStorage.setItem(FAIL_KEY, String(Date.now()));
     throw e;
   });
   return folderCache;
 }
 
+// The folder with this exact path (one small query – no need for the whole tree); null if Stash doesn't know it
+export async function folderIdForPath(path) {
+  const d = await gql(`query($p: String!) { findFolders(folder_filter: { path: { value: $p, modifier: EQUALS } }, filter: { per_page: 1 }) { folders { id } } }`, { p: path });
+  return d.findFolders.folders[0] ? d.findFolders.folders[0].id : null;
+}
+
 // After deleting, scanning, cleaning …: recount folders and refresh all displays (navigation, counts)
 export function libraryChanged() {
   folderCache = null;
+  statsP = null; // the totals changed too
   try {
     localStorage.removeItem(TREE_KEY);
   } catch (e) { /* blocked */ }

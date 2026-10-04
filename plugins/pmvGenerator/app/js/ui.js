@@ -1,5 +1,6 @@
 // Small helpers for display, formatting, messages and dialogs.
 
+import { largeNow } from "./scale.js";
 import { t, locale } from "./i18n.js";
 
 export const esc = (s) =>
@@ -130,7 +131,8 @@ export const invNo = (kind, id) => `${{ scene: "S", image: "I", gallery: "G" }[k
 // ---------- Storage ----------
 
 // Folders: "all" (navigation, home page, Folders page), "page" (only the Folders page) or "off"
-export const folderMode = () => store.get("folderMode") || (store.get("railFolders", true) ? "all" : "page");
+// (a big library: off until asked for – counting the folders reads the whole library)
+export const folderMode = () => store.get("folderMode") || (largeNow() ? "off" : store.get("railFolders", true) ? "all" : "page");
 
 export const store = {
   get(key, fallback) {
@@ -175,6 +177,7 @@ export function toast(msg, type, act) {
 }
 
 export function errorToast(e, what) {
+  if (e && e.name === "AbortError") return; // the request was stopped on purpose (the page was left, or cancelled)
   console.error("[Stash UI]", e);
   toast(`${what ? t(what) : t("Error")}: ${e.message || e}`, "error");
 }

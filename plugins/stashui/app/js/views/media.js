@@ -4,7 +4,7 @@
 import { esc, icon, store, debounce, seed, errorToast, toast, plural, fmtNum, confirmDialog, promptDialog, starsHtml, ratingFilterSteps } from "../ui.js";
 import { filterOf, QUERY_KEYS, loadPlaylists, savePlaylists, labelsFor } from "../playlists.js";
 import { t } from "../i18n.js";
-import { findItems, favoriteTagId, setFavorite, bulkUpdate, destroyItems } from "../api.js";
+import { findItems, findIds, favoriteTagId, setFavorite, bulkUpdate, destroyItems } from "../api.js";
 import { ensureTiers, hasTiers } from "../tiers.js";
 import { restrictIds, critInfo, critKinds, parseCrit, critStr, critText, sortByCrit, openCritFilter } from "../ratingx.js";
 import { TIERS } from "../versusx.js";
@@ -243,10 +243,14 @@ export function mediaBrowser(host, opts) {
         await ensureTiers(); // (the badge on the cards, and the tier filter)
         const ids = await restrictIds(kind, st); // tier and detailed-rating filters (and "sorted by a criterion": those that have it)
         if (String(st.sort).startsWith("crit:")) {
-          // Stash can't sort by a criterion: everything that matches is fetched once and ordered here
-          if (!critAll) critAll = findItems(kind, { q: st.q || undefined, per_page: -1, sort: "rating", direction: "DESC" }, filter, ids).then((r) => sortByCrit(kind, st.sort.slice(5), r.items, st.dir));
-          const all = await critAll;
-          return { count: all.length, pieces: all.slice((page - 1) * 60, page * 60).map((x) => toPiece(kind, x, app.favId)) };
+          // Stash can't sort by a criterion: the ids of everything that matches come once (just ids), are ordered here,
+          // and only the page you look at is fetched in full
+          if (!critAll) critAll = findIds(kind, { q: st.q || undefined, per_page: -1 }, filter, ids).then((r) => sortByCrit(kind, st.sort.slice(5), r.items, st.dir)).then((l) => l.map((x) => x.id));
+          const order = await critAll;
+          const pageIds = order.slice((page - 1) * 60, page * 60);
+          const got = pageIds.length ? await findItems(kind, { per_page: pageIds.length }, {}, pageIds) : { items: [] };
+          const byId = new Map(got.items.map((x) => [x.id, x]));
+          return { count: order.length, pieces: pageIds.map((id) => byId.get(id)).filter(Boolean).map((x) => toPiece(kind, x, app.favId)) };
         }
         const r = await findItems(kind, { q: st.q || undefined, page, per_page: 60, sort, direction: st.dir }, filter, ids);
         return { count: r.count, pieces: r.items.map((x) => toPiece(kind, x, app.favId)) };

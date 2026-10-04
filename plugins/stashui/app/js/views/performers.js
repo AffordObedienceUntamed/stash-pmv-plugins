@@ -6,6 +6,7 @@ import { findPerformers, updatePerformer, createPerformer, gql } from "../api.js
 import { go, setQuery } from "../main.js";
 import { ensureTiers, hasTiers, tierNow } from "../tiers.js";
 import { restrictIds, critInfo, parseCrit, critStr, critText, sortByCrit, openCritFilter } from "../ratingx.js";
+import { findIds } from "../api.js";
 import { TIERS, tierBadge } from "../versusx.js";
 
 const SORTS = [
@@ -192,9 +193,12 @@ export async function render(main, params, query) {
       const ids = await restrictIds("performer", { tier: tiers, crit, sort: sortV });
       let r;
       if (sortV.startsWith("crit:")) {
-        if (reset || !critAll) critAll = findPerformers({ q, page: 1, perPage: -1, sort: "rating", filter: filter(), ids }).then(async (all) => ({ count: all.count, performers: await sortByCrit("performer", sortV.slice(5), all.performers, "DESC") }));
-        const all = await critAll;
-        r = { count: all.count, performers: all.performers.slice((page - 1) * PAGE, page * PAGE) };
+        if (reset || !critAll) critAll = findIds("performer", { q: q || undefined, per_page: -1 }, filter(), ids).then((all) => sortByCrit("performer", sortV.slice(5), all.items, "DESC")).then((l) => l.map((x) => x.id));
+        const order = await critAll;
+        const pageIds = order.slice((page - 1) * PAGE, page * PAGE);
+        const got = pageIds.length ? await findPerformers({ perPage: pageIds.length, ids: pageIds }) : { performers: [] };
+        const byId = new Map(got.performers.map((x) => [x.id, x]));
+        r = { count: order.length, performers: pageIds.map((id) => byId.get(id)).filter(Boolean) };
       } else r = await findPerformers({ q, page, perPage: PAGE, sort: sortV, filter: filter(), ids });
       if (my !== run) return;
       total = r.count;

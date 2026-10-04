@@ -4,6 +4,14 @@
 
 export const CHANGES = [
   {
+    v: "3.50.0",
+    date: "2026-10-04",
+    items: [
+      ["fix", "Big libraries (from 20 000 scenes or 100 000 images – “Large library mode”, automatic or in the settings): Stash no longer gets hammered. Folders aren't counted on their own (the Folders page asks, shows progress and can be cancelled, and a try that failed isn't repeated on every page load), the home page loads sections when you scroll to them, two at a time, and keeps them for five minutes, Versus plays the preview clips instead of whole video files and lets go of old ones, and scans of all funscripts (Problems, Overview) start on a click and keep their result.", "大型媒体库（从 20 000 个场景或 100 000 张图片起——“大型媒体库模式”，自动或在设置中开启）：不再让 Stash 不堪重负。文件夹不会自动统计（“文件夹”页面会询问、显示进度并可取消，失败的尝试不会在每次加载页面时重复），主页在滚动到时才加载各部分，每次两个，并保留五分钟；对决播放预览片段而不是整个视频文件，并释放旧的；扫描所有 funscript（问题、概览）需点击才开始，并保留结果。"],
+      ["fix", "Fewer and lighter requests everywhere: Stash's totals are asked for once and shared (kept for 15 minutes on a big library), leaving a page stops what it was still asking for, sorting by a criterion fetches only ids and then the visible page, Statistics counts the scenes added instead of listing every scene, and the performer page skips its tag-link hint on a big library.", "各处请求更少更轻：Stash 的总数只请求一次并共享（大型媒体库保留 15 分钟），离开页面会停止其未完成的请求，按评分项排序只获取 ID 再获取可见页面，统计页面通过计数来统计新增场景而不是列出每个场景，大型媒体库上演员页面跳过标签关联提示。"],
+    ],
+  },
+  {
     v: "3.49.0",
     date: "2026-10-02",
     items: [

@@ -7,7 +7,7 @@
 
 import { esc, icon, toast, errorToast, store, confirmDialog, fmtDuration, fmtRes, starsHtml, plural } from "../ui.js";
 import { t } from "../i18n.js";
-import { gql, pluginConfig, setPluginConfig } from "../api.js";
+import { gql, pluginConfig, setPluginConfig, routeSignal } from "../api.js";
 import { tagPicker } from "./tagpicker.js";
 import { go } from "../main.js";
 import { isGif } from "../pieces.js";
@@ -15,6 +15,7 @@ import { loadStandings } from "../standings.js";
 import { tiersOf, tierBadge, TIERS, matchOpts, pushLedger, popLedger, mergeLedger, blankLedger, ledgerHtml, openOptions, overviewHtml, openSnapshots } from "../versusx.js";
 import { logEvent, toggleLog } from "../eventlog.js";
 import { ensureTiers } from "../tiers.js";
+import { largeNow } from "../scale.js";
 
 const KINDS = {
   scene: {
@@ -51,7 +52,13 @@ const MODES = [
   ["champ", "Winner stays", "The winner stays on – how long a streak?"],
   ["climb", "Climb", "A newcomer climbs up until it loses – that's its place"],
 ];
-const POOL = 200; // items loaded at a time (random, matching the filter)
+const POOL = 200; // items loaded at a time (random, matching the filter); 60 with light media
+// Light media: the generated preview clips (and pictures) instead of the whole video files – a big library lives on
+// slow disks and every open video file is read there. Setting "Versus: scenes" (automatic: on a big library).
+const lightMedia = () => {
+  const m = store.get("vsMedia", "auto");
+  return m === "preview" || (m === "auto" && largeNow());
+};
 
 const sceneName = (sc) => (sc && (sc.title || ((sc.files || [])[0] || {}).basename)) || "";
 const titleOf = (kind, x) =>
@@ -224,7 +231,7 @@ export function render(main, params = {}) {
   // (moments have tags too – the same filter works)
   async function loadPool() {
     const k = KINDS[S.kind];
-    const d = await gql(k.query, { f: { per_page: POOL, sort: "random_" + Math.floor(Math.random() * 1e8) }, x: filter() });
+    const d = await gql(k.query, { f: { per_page: lightMedia() ? 60 : POOL, sort: "random_" + Math.floor(Math.random() * 1e8) }, x: filter() }, { signal: routeSignal() });
     return d.r[k.list];
   }
 
@@ -320,6 +327,12 @@ export function render(main, params = {}) {
   async function showNext() {
     if (!alive || ranking) return;
     const arena = body.querySelector("[data-arena]");
+    // the videos of the round before are let go (an open video keeps its file stream running)
+    arena.querySelectorAll("video").forEach((v) => {
+      v.pause();
+      v.removeAttribute("src");
+      v.load();
+    });
     try {
       if (pool.length < 2) pool = await loadPool();
       if (!alive) return;
@@ -384,11 +397,16 @@ export function render(main, params = {}) {
     // Scenes: the video itself (Stash's preview clips are only 640 px wide), jumping through the scene
     // like a preview; the preview clip only if the browser can't play the file
     const dur = k === "scene" ? (x.files[0] || {}).duration || 0 : 0;
+    const light = lightMedia();
     const media =
-      k === "marker" && x.scene && x.scene.paths.stream
-        ? `<video src="${esc(x.scene.paths.stream)}#t=${span[0]}" poster="${esc(thumbOf(k, x) || "")}" data-from="${span[0]}" data-to="${span[1]}" muted autoplay playsinline preload="auto"></video>`
+      light && (k === "scene" || k === "marker")
+        ? k === "scene" && x.paths.preview
+          ? `<video src="${esc(x.paths.preview)}" poster="${esc(x.paths.screenshot || "")}" muted loop autoplay playsinline preload="metadata"></video>`
+          : `<img src="${esc(thumbOf(k, x) || "")}" alt="" loading="eager">`
+      : k === "marker" && x.scene && x.scene.paths.stream
+        ? `<video src="${esc(x.scene.paths.stream)}#t=${span[0]}" poster="${esc(thumbOf(k, x) || "")}" data-from="${span[0]}" data-to="${span[1]}" muted autoplay playsinline preload="metadata"></video>`
         : k === "scene" && x.paths.stream && dur > 8
-        ? `<video src="${esc(x.paths.stream)}#t=${Math.round(dur * 0.15)}" poster="${esc(x.paths.screenshot || "")}" data-dur="${dur}" data-fallback="${esc(x.paths.preview || "")}" muted autoplay playsinline preload="auto"></video>`
+        ? `<video src="${esc(x.paths.stream)}#t=${Math.round(dur * 0.15)}" poster="${esc(x.paths.screenshot || "")}" data-dur="${dur}" data-fallback="${esc(x.paths.preview || "")}" muted autoplay playsinline preload="metadata"></video>`
         : k === "scene" && x.paths.preview
         ? `<video src="${esc(x.paths.preview)}" poster="${esc(x.paths.screenshot || "")}" muted loop autoplay playsinline></video>`
         : k === "image" && vf.__typename === "VideoFile" && !isGif(vf)

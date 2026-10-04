@@ -8,10 +8,13 @@ import { t } from "../i18n.js";
 import { findItems, gql, pluginConfig, setPluginConfig } from "../api.js";
 import { go } from "../main.js";
 import { mediaBrowser } from "./media.js";
-import { runBackend, fsSources, rememberFs, samePath, nameWords } from "../interactive.js";
+import { runBackend, runBackendCached, fsSources, rememberFs, samePath, nameWords } from "../interactive.js";
 import { issueText } from "../fsvariants.js";
 import { pokeJobs } from "../jobs.js";
 import { logEvent } from "../eventlog.js";
+import { gateHtml, againHtml } from "./fsgate.js";
+
+let problemsCache = null; // { at, r } – the last check, kept for this visit
 
 // Names of the tags (changeable on the Problems tab, kept in Stash UI's settings as fsTags)
 const TAG_DEFAULTS = { problems: "Funscript problem", multi: "Several funscripts" };
@@ -106,11 +109,20 @@ export function render(main, params, query) {
   }
 
   // ---------- Problems: broken scripts, scripts that don't fit the video, scenes with several scripts ----------
-  async function paintProblems() {
-    body.innerHTML = `<div class="kb-loading">${t("Checking every funscript …")}</div>`;
+  async function paintProblems(scan) {
+    // Reading every funscript takes long on a big library: on a click, not when the tab opens
+    if (!scan && !problemsCache) {
+      body.innerHTML = gateHtml(t("Check all funscripts"), t("Reads every funscript of every scene that has one: which are broken, much longer or shorter than their video, and which scenes have several."), t("Check now"));
+      body.onclick = (e) => e.target.closest("[data-scan]") && paintProblems(true);
+      return;
+    }
     let r;
     try {
-      r = await runBackend({ mode: "funscript_scan" });
+      if (scan) {
+        body.innerHTML = `<div class="kb-loading">${t("Checking every funscript …")}</div>`;
+        problemsCache = { at: Date.now(), r: await runBackend({ mode: "funscript_scan" }) };
+      }
+      r = problemsCache.r;
     } catch (e) {
       body.innerHTML = `<div class="kb-empty"><b>${t("Couldn't check the funscripts")}</b><p>${esc(e.message)}</p><p>${t("Stash UI's backend needs Python (like the PMV Generator) – after updating, reload the plugins in Stash once.")}</p></div>`;
       return;
@@ -134,6 +146,7 @@ export function render(main, params, query) {
         <div class="kb-fsl">${list.length ? list.map((s) => row(s, line(s))).join("") : `<p class="kb-hint">${t("Nothing found")}</p>`}</div>
       </section>`;
     body.innerHTML =
+      againHtml(problemsCache.at) +
       `<p class="kb-hint">${t("{n} scenes checked.", { n: r.scanned })}${r.unreachable ? " " + t("{n} scenes skipped – their video can't be reached from here.", { n: r.unreachable }) : ""}</p>` +
       section("problems", t("Problems"), t("A script that can't be read or has no movements, or one that is much longer or shorter than its video."), r.problems, why, names.problems) +
       section("multi", t("Several scripts"), t("Scenes with more than one funscript next to the video – choose between them in the player."), r.multi, (s) => t("{n} scripts", { n: s.count }), names.multi) +
@@ -147,6 +160,7 @@ export function render(main, params, query) {
       await setPluginConfig("stashui", { fsTags: JSON.stringify(names) }).catch(() => {});
     };
     body.onclick = async (e) => {
+      if (e.target.closest("[data-rescan]")) return paintProblems(true);
       const g = e.target.closest("[data-gen]");
       if (g) return generateSpeeds(g);
       const b = e.target.closest("[data-tag]");
@@ -172,7 +186,7 @@ export function render(main, params, query) {
     let files;
     let sources;
     try {
-      [files, sources] = await Promise.all([runBackend({ mode: "funscript_list" }), fsSources()]);
+      [files, sources] = await Promise.all([runBackendCached({ mode: "funscript_list" }), fsSources()]);
     } catch (e) {
       body.innerHTML = `<div class="kb-empty"><b>${t("Couldn't look for funscripts")}</b><p>${esc(e.message)}</p><p>${t("Stash UI's backend needs Python (like the PMV Generator) – after updating, reload the plugins in Stash once.")}</p></div>`;
       return;
