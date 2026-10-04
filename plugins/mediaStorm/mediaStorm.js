@@ -23,6 +23,7 @@
     endless: false,
     // Mix & Video
     videoPct: 30,
+    markerPct: 0, // share of the videos that are marker clips (0 = off)
     loop: true,
     volume: 40,
     audioMode: "all", // all | hover | newest | mute
@@ -67,6 +68,7 @@
     includeTags: [],
     excludeTags: [],
     tagMatchAll: false,
+    markerTags: [], // [{ id, name }] – only marker clips with one of these tags (primary or extra)
     perfs: [], // [{ id, name }]
     perfMatchAll: false,
     minRating: 0,
@@ -114,6 +116,7 @@
     const s = Object.assign(clone(DEFAULTS), raw || {});
     if (!Array.isArray(s.includeTags)) s.includeTags = [];
     if (!Array.isArray(s.excludeTags)) s.excludeTags = [];
+    if (!Array.isArray(s.markerTags)) s.markerTags = [];
     if (!Array.isArray(s.perfs)) s.perfs = [];
     if (!Array.isArray(s.folders)) s.folders = [];
     // Carry old text fields (search terms/creator) over into the new picker
@@ -460,6 +463,39 @@
     }
   }`;
 
+  // Marker clips: the short moments marked in a scene. Stash cuts the clip itself (stream), plus a small preview.
+  const Q_MARKERS = `query MSMarkers($f: FindFilterType, $m: SceneMarkerFilterType) {
+    findSceneMarkers(filter: $f, scene_marker_filter: $m) {
+      count
+      scene_markers {
+        id title seconds
+        stream preview screenshot
+        primary_tag { name }
+        scene { id title files { width height duration } }
+      }
+    }
+  }`;
+
+  function normMarker(x) {
+    const sc = x.scene || {};
+    const f = (sc.files || [])[0] || {};
+    const mp4 = `/scene/${sc.id}/scene_marker/${x.id}/stream`;
+    const order = S.videoSource === "preview" ? [x.preview, x.stream, mp4] : [x.stream, mp4, x.preview];
+    return {
+      kind: "scene",
+      marker: true,
+      key: "m" + x.id,
+      id: sc.id,
+      title: x.title || (x.primary_tag && x.primary_tag.name) || sc.title,
+      w: f.width || 16,
+      h: f.height || 9,
+      sources: [...new Set(order.filter(Boolean))],
+      preview: x.preview,
+      poster: x.screenshot,
+      href: `/scenes/${sc.id}?t=${Math.floor(x.seconds || 0)}`,
+    };
+  }
+
   function normImage(x) {
     const vf = (x.visual_files || [])[0] || {};
     // animated images (webm/mp4 as an image) play as video – but a GIF (Stash files it as a video file
@@ -498,6 +534,40 @@
       poster: p.screenshot,
       href: "/scenes/" + x.id,
     };
+  }
+
+  // n random marker clips (tags from "Only marker clips with tags"; the other filters apply to their scenes)
+  async function fetchMarkers(n) {
+    if (n <= 0 || run.empty.marker) return [];
+    if (S.source === "playlist" && !msPlaylists) await loadMsPlaylists();
+    const scene = buildFilter("scene");
+    if (scene === null) {
+      run.empty.marker = true;
+      return [];
+    }
+    const m = {};
+    if (S.markerTags.length) m.tags = { value: S.markerTags.map((t) => t.id), modifier: "INCLUDES", depth: 0 };
+    if (Object.keys(scene).length) m.scene_filter = scene;
+    const session = run.session;
+    let data;
+    try {
+      data = (await gql(Q_MARKERS, { f: { per_page: Math.min(n * 2 + 4, 60), sort: seed() }, m })).findSceneMarkers;
+    } catch (e) {
+      console.error("[MediaStorm]", e);
+      toast("GraphQL error: " + e.message, "gqlerr");
+      run.empty.marker = true;
+      return [];
+    }
+    if (session !== run.session) return [];
+    if (!data || !data.count) {
+      run.empty.marker = true;
+      return [];
+    }
+    const list = data.scene_markers.map(normMarker);
+    const fresh = list.filter((d) => !run.onScreen.has(d.key));
+    const picked = (fresh.length >= n ? fresh : fresh.concat(list.filter((d) => !fresh.includes(d)))).slice(0, n);
+    picked.forEach((d) => run.onScreen.add(d.key));
+    return picked;
   }
 
   // Fetches n random media (new random seed per call) and reserves them against duplicates.
@@ -781,7 +851,7 @@
     items: [], // visible items, oldest first
     pending: 0, // items currently loading
     onScreen: new Set(),
-    empty: { image: false, scene: false },
+    empty: { image: false, scene: false, marker: false },
     ctx: null,
     acc: 0, // error diffusion for the image/video ratio
     z: 10,
@@ -837,20 +907,30 @@
         }
       }
       const nImg = nStash - nVid;
+      let nMk = 0;
+      if (S.markerPct > 0) {
+        for (let k = 0; k < nVid; k++) {
+          run.accMk = (run.accMk || 0) + S.markerPct / 100;
+          if (run.accMk >= 1) {
+            nMk++;
+            run.accMk -= 1;
+          }
+        }
+      }
 
-      const got = [].concat(...(await Promise.all([fetchMedia("image", nImg), fetchMedia("scene", nVid), fetchRedgifs(nRg)])));
+      const got = [].concat(...(await Promise.all([fetchMedia("image", nImg), fetchMedia("scene", nVid - nMk), fetchMarkers(nMk), fetchRedgifs(nRg)])));
       // If something is missing (no videos on this page, RedGifs unreachable …), fill up from the other sources.
-      const fillers = S.rgPct >= 100 ? ["redgifs"] : S.rgPct > 0 ? ["image", "scene", "redgifs"] : ["image", "scene"];
+      const fillers = S.rgPct >= 100 ? ["redgifs"] : S.rgPct > 0 ? ["image", "scene", "redgifs"] : S.markerPct >= 100 ? ["marker", "scene", "image"] : ["image", "scene"];
       for (const kind of fillers) {
         const missing = n - got.length;
         if (missing <= 0 || session !== run.session) break;
-        got.push(...(kind === "redgifs" ? await fetchRedgifs(missing) : await fetchMedia(kind, missing)));
+        got.push(...(kind === "redgifs" ? await fetchRedgifs(missing) : kind === "marker" ? await fetchMarkers(missing) : await fetchMedia(kind, missing)));
       }
       if (session !== run.session) return;
 
       const batch = shuffle(got);
       if (!batch.length) {
-        const stashDead = S.rgPct >= 100 || (run.empty.image && run.empty.scene);
+        const stashDead = S.rgPct >= 100 || (run.empty.image && run.empty.scene && (S.markerPct <= 0 || run.empty.marker));
         const rgDead = S.rgPct <= 0 || run.empty.redgifs;
         if (stashDead && rgDead) {
           if (S.rgPct >= 100 && run.rgError) stop("RedGifs: " + run.rgError);
@@ -1281,7 +1361,7 @@
     };
     v.addEventListener("error", tryNext);
     v.addEventListener("loadedmetadata", () => {
-      const full = it.d.kind === "scene" && it.src !== it.d.preview;
+      const full = it.d.kind === "scene" && !it.d.marker && it.src !== it.d.preview;
       if (S.randomStart && full && isFinite(v.duration) && v.duration > 12) {
         try {
           v.currentTime = v.duration * rand(0.05, 0.8);
@@ -2222,7 +2302,7 @@
       busy: false,
       items: [],
       pending: 0,
-      empty: { image: false, scene: false, redgifs: false },
+      empty: { image: false, scene: false, marker: false, redgifs: false },
       acc: Math.random(),
       accRg: Math.random(),
       z: 10,
@@ -2719,7 +2799,7 @@
   }
 
   function clearFilters() {
-    Object.assign(S, { source: "library", includeTags: [], excludeTags: [], tagMatchAll: false, perfs: [], perfMatchAll: false, minRating: 0, favPerformers: false, maxRes: "any", minLen: 0, folders: [] });
+    Object.assign(S, { source: "library", includeTags: [], excludeTags: [], tagMatchAll: false, markerTags: [], perfs: [], perfMatchAll: false, minRating: 0, favPerformers: false, maxRes: "any", minLen: 0, folders: [] });
     save();
     filtersChanged();
     syncPanel();
@@ -2739,7 +2819,7 @@
   }
 
   function filtersChanged() {
-    run.empty = { image: false, scene: false, redgifs: run.empty.redgifs };
+    run.empty = { image: false, scene: false, marker: false, redgifs: run.empty.redgifs };
     setEmptyNotice(false);
   }
 
@@ -2828,6 +2908,7 @@
         break;
       case "includeTags":
       case "excludeTags":
+      case "markerTags":
       case "tagMatchAll":
       case "perfs":
       case "perfMatchAll":
@@ -2879,6 +2960,7 @@
     maxItems: (v) => v,
     streamLimit: (v) => (v ? v : "auto"),
     videoPct: (v) => `${100 - v} % images, ${v} % videos`,
+    markerPct: (v) => (v ? v + " % of the videos" : "off"),
     volume: (v) => (v ? v + " %" : "muted"),
     sizeMin: (v) => v + " %",
     sizeMax: (v) => v + " %",
@@ -2911,7 +2993,7 @@
     `<label class="ms-row ms-text"><span>${label}</span>` +
     `<input class="ms-input" type="text" data-key="${key}" placeholder="${placeholder}" autocomplete="off" spellcheck="false" data-fb-done="1"></label>`;
   const tagBox = (key, label, what) =>
-    `<div class="ms-tags" data-tags="${key}"${what === "performer" ? ' data-what="performer"' : ""}><span>${label}</span><div class="ms-chips"></div>` +
+    `<div class="ms-tags" data-tags="${key}"${what ? ` data-what="${what}"` : ""}><span>${label}</span><div class="ms-chips"></div>` +
     `<input class="ms-input" type="text" placeholder="${what === "performer" ? "Search performer…" : "Search tag…"}" autocomplete="off" data-fb-done="1"><div class="ms-sugg" hidden></div></div>`; // data-fb-done: see "Robust against themes" in the CSS
   // Only visible if the current layout is in the list
   const cond = (when, body) => `<div class="ms-cond" data-when="${when}">${body}</div>`;
@@ -3010,6 +3092,8 @@
       id: "media", icon: "image", title: "Media",
       body: () =>
         rng("videoPct", "Mix", 0, 100, 5) +
+        rng("markerPct", "Marker clips", 0, 100, 5) +
+        hint("Marker clips are the short moments you marked in your scenes. This share of the videos plays them (only the marked part, looping) instead of whole scenes. Choose which markers under Source & filters.") +
         sel("imageQuality", "Image quality", [["full", "Original"], ["thumb", "Thumbnail (faster)"]]) +
         sel("videoSource", "Video source", [["stream", "Full video"], ["preview", "Preview clip (lighter)"]]) +
         rng("streamLimit", "Full videos at once", 0, 60) +
@@ -3085,6 +3169,8 @@
         tagBox("includeTags", "Only with tags") +
         chk("tagMatchAll", "All tags must match") +
         tagBox("excludeTags", "Exclude tags") +
+        tagBox("markerTags", "Only marker clips with tags", "marker") +
+        hint("Needs a share of marker clips under Media. Primary or extra tag of the marker; the filters above apply to the marker's scene.") +
         tagBox("perfs", "Only with performers", "performer") +
         chk("perfMatchAll", "All performers must be in it") +
         sel("minRating", "Minimum rating", [[0, "any"], [1, "★"], [2, "★★"], [3, "★★★"], [4, "★★★★"], [5, "★★★★★"]], true) +
@@ -3160,7 +3246,7 @@
   const SUMS = {
     tempo: () => `${S.beatSync ? "On the beat" : "Every " + S.intervalSec + " s"} ${S.batchSize} new, max ${S.maxItems}${S.endless ? " endless" : ""}`,
     beat: () => (!S.beatSync ? "Off" : S.songName ? S.songName.replace(/\.[^.]+$/, "") + (beat.song ? ` · ${Math.round(beat.song.bpm)} BPM` : "") : "No song chosen"),
-    media: () => `${S.videoPct} % videos${S.videoSource === "preview" ? ", preview clips" : ""}`,
+    media: () => `${S.videoPct} % videos${S.markerPct ? ", " + S.markerPct + " % marker clips" : ""}${S.videoSource === "preview" ? ", preview clips" : ""}`,
     sound: () => (S.audioMode === "mute" || !S.volume ? "Muted" : `${S.volume} %, ${AUDIO_NAMES[S.audioMode]}`),
     layout: () => `${LAYOUT_NAMES[S.layout]}, frame ${FRAME_NAMES[S.frame] || ""}`.replace(/, frame Soft$/, ""),
     fx: () => {
@@ -3187,6 +3273,7 @@
       const p = [S.source === "context" ? "Current page" : "Whole library"];
       if (S.includeTags.length) p.push(S.includeTags.length + (S.includeTags.length === 1 ? " tag" : " tags"));
       if (S.excludeTags.length) p.push("without " + S.excludeTags.length);
+      if (S.markerTags.length) p.push(S.markerTags.length + (S.markerTags.length === 1 ? " marker tag" : " marker tags"));
       if (S.perfs.length) p.push(S.perfs.length === 1 ? S.perfs[0].name : S.perfs.length + " performers");
       if (S.minRating) p.push("from " + "★".repeat(S.minRating));
       if (S.favPerformers) p.push("favorites");
@@ -3205,7 +3292,7 @@
   // Tile marked when something there narrows the selection or is additionally active
   const MODS = {
     fx: () => SUMS.fx() !== "Just zoom and fade",
-    source: () => S.source !== "library" || S.includeTags.length > 0 || S.excludeTags.length > 0 || S.perfs.length > 0 || S.minRating > 0 || S.favPerformers || S.maxRes !== "any" || S.minLen > 0,
+    source: () => S.source !== "library" || S.includeTags.length > 0 || S.excludeTags.length > 0 || S.markerTags.length > 0 || S.perfs.length > 0 || S.minRating > 0 || S.favPerformers || S.maxRes !== "any" || S.minLen > 0,
     folders: () => S.folders.length > 0,
     rg: () => S.rgPct > 0,
     beat: () => S.beatSync,
@@ -3472,12 +3559,15 @@
       timer = setTimeout(async () => {
         try {
           const perf = box.dataset.what === "performer";
+          const mk = box.dataset.what === "marker";
           const d = perf
             ? await gql(`query($f: FindFilterType) { findPerformers(filter: $f) { performers { id name image_count scene_count } } }`, { f: { q, per_page: 8 } })
-            : await gql(`query($f: FindFilterType) { findTags(filter: $f) { tags { id name image_count scene_count } } }`, { f: { q, per_page: 8 } });
+            : mk
+              ? await gql(`query($f: FindFilterType) { findTags(filter: $f, tag_filter: { marker_count: { value: 0, modifier: GREATER_THAN } }) { tags { id name scene_marker_count } } }`, { f: { q, per_page: 8 } })
+              : await gql(`query($f: FindFilterType) { findTags(filter: $f) { tags { id name image_count scene_count } } }`, { f: { q, per_page: 8 } });
           results = perf ? d.findPerformers.performers : d.findTags.tags;
           sugg.innerHTML = results.length
-            ? results.map((t, i) => `<div class="ms-sug" data-i="${i}">${esc(t.name)}<small>${t.image_count} I · ${t.scene_count} V</small></div>`).join("")
+            ? results.map((t, i) => `<div class="ms-sug" data-i="${i}">${esc(t.name)}<small>${mk ? (t.scene_marker_count || 0) + " M" : t.image_count + " I · " + t.scene_count + " V"}</small></div>`).join("")
             : `<div class="ms-sug ms-none">${perf ? "No performers found" : "No tags found"}</div>`;
           sugg.hidden = false;
         } catch (e) {

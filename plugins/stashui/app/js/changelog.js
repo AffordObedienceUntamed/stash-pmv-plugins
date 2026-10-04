@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.51.1",
+    date: "2026-10-04",
+    items: [
+      ["storm", "Media Storm 2.5.0: marker clips – a share of the videos (Media → “Marker clips”) plays the moments you marked in your scenes, only the marked part and looping. Under Source & filters, “Only marker clips with tags” picks the marker tags (primary or extra tag); the other filters apply to the marker's scene. A click opens the scene at that moment.", "媒体风暴 2.5.0：标记片段——视频中的一定比例（媒体 → “标记片段”）会播放你在场景中标记的片段，仅播放标记的部分并循环。在“来源与筛选”中，“仅含这些标签的标记片段”可选择标记标签（主标签或附加标签）；其他筛选条件作用于标记所在的场景。点击会在该时刻打开场景。"],
+    ],
+  },
+  {
     v: "3.51.0",
     date: "2026-10-04",
     items: [
