@@ -69,6 +69,7 @@
     excludeTags: [],
     tagMatchAll: false,
     markerTags: [], // [{ id, name }] – only marker clips with one of these tags (primary or extra)
+    markerTagsDeep: false, // … and with any of their sub-tags (recursive)
     perfs: [], // [{ id, name }]
     perfMatchAll: false,
     minRating: 0,
@@ -547,7 +548,7 @@
       return [];
     }
     const m = {};
-    if (S.markerTags.length) m.tags = { value: S.markerTags.map((t) => t.id), modifier: "INCLUDES", depth: 0 };
+    if (S.markerTags.length) m.tags = { value: S.markerTags.map((t) => t.id), modifier: "INCLUDES", depth: S.markerTagsDeep ? -1 : 0 };
     if (Object.keys(scene).length) m.scene_filter = scene;
     const session = run.session;
     let data;
@@ -2800,7 +2801,7 @@
   }
 
   function clearFilters() {
-    Object.assign(S, { source: "library", includeTags: [], excludeTags: [], tagMatchAll: false, markerTags: [], perfs: [], perfMatchAll: false, minRating: 0, favPerformers: false, maxRes: "any", minLen: 0, folders: [] });
+    Object.assign(S, { source: "library", includeTags: [], excludeTags: [], tagMatchAll: false, markerTags: [], markerTagsDeep: false, perfs: [], perfMatchAll: false, minRating: 0, favPerformers: false, maxRes: "any", minLen: 0, folders: [] });
     save();
     filtersChanged();
     syncPanel();
@@ -2910,6 +2911,7 @@
       case "includeTags":
       case "excludeTags":
       case "markerTags":
+      case "markerTagsDeep":
       case "tagMatchAll":
       case "perfs":
       case "perfMatchAll":
@@ -3171,6 +3173,7 @@
         chk("tagMatchAll", "All tags must match") +
         tagBox("excludeTags", "Exclude tags") +
         tagBox("markerTags", "Only marker clips with tags", "marker") +
+        chk("markerTagsDeep", "Including sub-tags (recursive)") +
         hint("Needs a share of marker clips under Media. Primary or extra tag of the marker; the filters above apply to the marker's scene.") +
         tagBox("perfs", "Only with performers", "performer") +
         chk("perfMatchAll", "All performers must be in it") +
@@ -3274,7 +3277,7 @@
       const p = [S.source === "context" ? "Current page" : "Whole library"];
       if (S.includeTags.length) p.push(S.includeTags.length + (S.includeTags.length === 1 ? " tag" : " tags"));
       if (S.excludeTags.length) p.push("without " + S.excludeTags.length);
-      if (S.markerTags.length) p.push(S.markerTags.length + (S.markerTags.length === 1 ? " marker tag" : " marker tags"));
+      if (S.markerTags.length) p.push(S.markerTags.length + (S.markerTags.length === 1 ? " marker tag" : " marker tags") + (S.markerTagsDeep ? " +sub" : ""));
       if (S.perfs.length) p.push(S.perfs.length === 1 ? S.perfs[0].name : S.perfs.length + " performers");
       if (S.minRating) p.push("from " + "★".repeat(S.minRating));
       if (S.favPerformers) p.push("favorites");

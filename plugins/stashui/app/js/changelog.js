@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.53.1",
+    date: "2026-10-05",
+    items: [
+      ["storm", "Media Storm 2.6.0: “Including sub-tags (recursive)” under the marker tag filter – enter a parent tag and the marker clips of all its sub-tags are included.", "媒体风暴 2.6.0：标记标签筛选新增“包含子标签（递归）”——输入上级标签后，其所有子标签的标记片段也会被包含。"],
+    ],
+  },
+  {
     v: "3.53.0",
     date: "2026-10-04",
     items: [

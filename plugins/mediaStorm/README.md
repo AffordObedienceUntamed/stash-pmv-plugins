@@ -128,7 +128,7 @@ Technical notes:
 - Random selection through GraphQL (`findImages` / `findScenes`, `sort: random_<seed>` with a new seed per call)
 - First wave right away, then the next one every X seconds, cumulative up to “at most at once”
 - Image/video mix in % (error diffusion, so the ratio holds even for small waves)
-- **Marker clips**: a share of the videos (Media → “Marker clips”) plays the moments marked in your scenes – only the marked part, looping – instead of whole scenes. Under Source & filters, “Only marker clips with tags” limits them to marker tags (primary or extra tag); the other filters apply to the marker's scene. A click opens the scene at that moment. (`findSceneMarkers` with the clip `stream` Stash cuts itself.)
+- **Marker clips**: a share of the videos (Media → “Marker clips”) plays the moments marked in your scenes – only the marked part, looping – instead of whole scenes. Under Source & filters, “Only marker clips with tags” limits them to marker tags (primary or extra tag; with **Including sub-tags (recursive)** a parent tag also catches all its sub-tags); the other filters apply to the marker's scene. A click opens the scene at that moment. (`findSceneMarkers` with the clip `stream` Stash cuts itself.)
 - Video loop on/off (off = the video fades out after its end and makes room)
 - Volume 0–100, applies right away to running videos
 - Fade-in on appearing, fade-out on stopping (sound fades in and out too)
