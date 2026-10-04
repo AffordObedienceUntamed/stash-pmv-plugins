@@ -354,8 +354,27 @@ function renderPlayerUi(body) {
         <select class="kb-field" data-pmode>${[["order", "In order"], ["shuffle", "Random order"], ["one", "Repeat this video"], ["all", "Repeat all"], ["stop", "Stop at the end"]].map(([v, l]) => `<option value="${v}"${mode === v ? " selected" : ""}>${t(l)}</option>`).join("")}</select></label>
       ${sw("data-randstart", !!player.randomStart, "Start at a random spot", "Every scene starts somewhere in the middle – for browsing around. Your resume points in Stash stay as they are.")}
       ${sw("data-fspanel", player.fsPanel !== false, "Info panel in fullscreen", "Move the mouse to the right edge in fullscreen to slide in the info panel.")}
+      <div class="kb-set"><div class="kb-set-label"><b>${t("External players")}</b><small>${t("The “External player” button in a scene's info panel hands the video to a player on this device – for formats the browser can't play. Choose the ones to offer; some need a small helper installed (see below each).")}</small></div></div>
+      <div class="kb-extpick" data-extpick></div>
       ${sw("data-psound", store.get("previewSound", true), "Sound in previews", "Hover previews play with sound (at the player's volume). Stash only puts sound into previews when “Preview audio” is on under Previews – regenerate them after switching it on.")}
     </form>`;
+  // External players: which ones the "External player" button offers (kept in Stash: the same on every device)
+  (async () => {
+    const { PLAYERS, playersHere, loadExtPlayers, saveExtPlayers, offeredPlayers } = await import("../extplayer.js");
+    const box = body.querySelector("[data-extpick]");
+    if (!box) return;
+    const on = new Set((await offeredPlayers()).map((p) => p.id));
+    box.innerHTML = playersHere()
+      .map((p) => `<label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${esc(p.name)}</b>${p.hint ? `<small>${esc(t(p.hint))}</small>` : ""}</span><span class="kb-switch"><input type="checkbox" data-xp="${p.id}"${on.has(p.id) ? " checked" : ""}><i></i></span></label>`)
+      .join("");
+    box.onchange = async (e) => {
+      const c = e.target.closest("[data-xp]");
+      if (!c) return;
+      c.checked ? on.add(c.dataset.xp) : on.delete(c.dataset.xp);
+      await saveExtPlayers({ enabled: [...on] });
+      toast(t("Saved"), "ok");
+    };
+  })().catch(() => {});
   body.querySelector("[data-pmode]").onchange = (e) => setPlayer({ mode: e.target.value });
   body.querySelector("[data-fspanel]").onchange = (e) => setPlayer({ fsPanel: e.target.checked });
   body.querySelector("[data-randstart]").onchange = (e) => setPlayer({ randomStart: e.target.checked });
@@ -437,6 +456,8 @@ async function renderApp(body) {
         <input type="range" min="6" max="40" step="2" data-dsp="nsfwBlur" value="${store.get("nsfwBlur", 18)}"></label>
       <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("NSFW mode: clear while the mouse is on it")}</b><small>${t("A thumbnail shows sharp as long as you point at it.")}</small></span>
         <span class="kb-switch"><input type="checkbox" data-dsp="nsfwHover"${store.get("nsfwHover", false) ? " checked" : ""}><i></i></span></label>
+      <label class="kb-set"><span class="kb-set-label"><b>${t("Menu on the left")}</b><small>${t("Full, icons only, or hidden until you press the menu button in the top left corner. The button at the top of the menu switches between them too.")}</small></span>
+        <select class="kb-field" data-dsp="railMode">${[["full", "Full"], ["mini", "Icons only"], ["hidden", "Hidden"]].map(([v, l]) => `<option value="${v}"${store.get("railMode", "full") === v ? " selected" : ""}>${t(l)}</option>`).join("")}</select></label>
       <label class="kb-set"><span class="kb-set-label"><b>${t("Menu width")}</b><small>${t("How wide the menu on the left is (on a computer).")}</small></span>
         <input type="range" min="180" max="360" step="4" data-dsp="railWidth" value="${store.get("railWidth", 236)}"></label>
       <label class="kb-set"><span class="kb-set-label"><b>${t("Thumbnail shape")}</b><small>${t("Each as its picture is – or all as posters (portrait) or all as scenes (landscape).")}</small></span>

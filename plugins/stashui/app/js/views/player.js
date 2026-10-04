@@ -1003,6 +1003,7 @@ export async function render(host, params, query = {}) {
       closeOverlay();
       if (ctx.hang) ctx.hang.remove(["scene:" + x.id]);
     },
+    position: () => v.currentTime,
     goFolder: () => goToFolder(f.path),
     music: () => import("./music.js").then((m) => m.openMusic(x, v)),
     cover: () => frameAsCover(),
@@ -1468,6 +1469,7 @@ export async function render(host, params, query = {}) {
   const skipBy = (s) => seekTo(v.currentTime + s, s < 0 ? `−${-s} s` : `+${s} s`);
 
   const onKey = (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return; // (the browser's own keys: Ctrl+R reloads, Ctrl+F searches …)
     if (e.target.closest && e.target.closest("input, textarea, select, .kb-drawer, .kb-dialog")) return;
     if (document.querySelector("#overlay-root .kb-drawer, #overlay-root .kb-dialog")) return;
     const k = e.key.toLowerCase();
@@ -1484,6 +1486,7 @@ export async function render(host, params, query = {}) {
     else if (k === "f") fullscreen();
     else if (k === "x") toMini();
     else if (k === "b") addMarker();
+    else if (k === "e") host.querySelector("[data-edit]") && host.querySelector("[data-edit]").click(); // edit
     else if (k === "r") host.querySelector("[data-advrate]") && host.querySelector("[data-advrate]").click(); // the detailed rating
     else if (k === "n") next(1);
     else if (k === "p") next(-1);

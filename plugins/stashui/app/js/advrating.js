@@ -173,6 +173,7 @@ export async function openAdvRating(kind, item, { onChange } = {}) {
   // ↑ ↓ choose the point, 0–5 rate it, Backspace takes the rating away
   const onKey = async (e) => {
     if (!el.isConnected) return document.removeEventListener("keydown", onKey, true);
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.target.closest && e.target.closest("input, textarea, select")) return;
     const rs = [...body.querySelectorAll(".kb-adv-row")];
     if (!rs.length) return;

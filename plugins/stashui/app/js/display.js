@@ -8,12 +8,15 @@ const clamp = (v, a, b) => Math.min(b, Math.max(a, Number(v) || a));
 export const STUDIO_SIZES = { s: 18, m: 26, l: 38, xl: 52 }; // logo height in px
 export const STUDIO_POS = ["bl", "br", "tl", "tr"]; // bottom left (as before), bottom right, top left, top right
 export const CARD_FORMATS = ["auto", "poster", "scene"]; // as the picture is · 2:3 portrait · 16:9 landscape
+export const RAIL_MODES = ["full", "mini", "hidden"]; // the menu on the left: as always · icons only · away until the menu button is pressed
 export const PREVIEW_MODES = ["on", "off", "poster"]; // always · never · not while posters are shown
 
 // Put the settings on the page: CSS variables and classes on <html>
 export function applyDisplay() {
   const r = document.documentElement;
-  r.style.setProperty("--rail", clamp(store.get("railWidth", 236), 180, 360) + "px");
+  const rail = RAIL_MODES.includes(store.get("railMode", "full")) ? store.get("railMode", "full") : "full";
+  r.dataset.rail = rail;
+  r.style.setProperty("--rail", (rail === "mini" ? 64 : rail === "hidden" ? 0 : clamp(store.get("railWidth", 236), 180, 360)) + "px");
   r.style.setProperty("--studio-h", (STUDIO_SIZES[store.get("studioSize", "m")] || 26) + "px");
   const pos = store.get("studioPos", "bl");
   r.dataset.studioPos = STUDIO_POS.includes(pos) ? pos : "bl";
@@ -25,6 +28,12 @@ export function applyDisplay() {
     b.classList.toggle("is-on", !!store.get("nsfw", false));
     b.setAttribute("aria-pressed", !!store.get("nsfw", false));
   });
+}
+// full → icons only → hidden → full (the button at the top of the menu)
+export function cycleRail() {
+  const cur = store.get("railMode", "full");
+  store.set("railMode", RAIL_MODES[(RAIL_MODES.indexOf(cur) + 1) % RAIL_MODES.length] || "mini");
+  applyDisplay();
 }
 export const nsfwOn = () => !!store.get("nsfw", false);
 export function toggleNsfw(force) {

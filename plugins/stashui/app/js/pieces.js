@@ -254,6 +254,11 @@ export class Hang {
     this.pieces.forEach((p) => this.selected.add(p.kind + ":" + p.id));
     this.syncPicks();
   }
+  // Select by key, also ones that aren't loaded (everything a search found, not only the first pages)
+  selectKeys(keys) {
+    keys.forEach((k) => this.selected.add(k));
+    this.syncPicks();
+  }
   clearSelection() {
     this.selected.clear();
     this.syncPicks();
@@ -271,8 +276,16 @@ export class Hang {
   emitSelect() {
     this.opts.onSelect && this.opts.onSelect(this.selected, this);
   }
+  // The selected ones: loaded pieces, and bare ones (kind, id) for selected items that were never loaded
   selectedPieces() {
-    return this.pieces.filter((p) => this.selected.has(p.kind + ":" + p.id));
+    const have = new Set();
+    const out = this.pieces.filter((p) => this.selected.has(p.kind + ":" + p.id) && have.add(p.kind + ":" + p.id));
+    this.selected.forEach((k) => {
+      if (have.has(k)) return;
+      const [kind, id] = k.split(":");
+      out.push({ kind, id, title: "#" + id, thumb: null, bare: true });
+    });
+    return out;
   }
 
   // ---------- Events ----------

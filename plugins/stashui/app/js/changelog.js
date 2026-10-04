@@ -4,6 +4,17 @@
 
 export const CHANGES = [
   {
+    v: "3.51.0",
+    date: "2026-10-04",
+    items: [
+      ["ui", "New pages: Markers (Watch) – every moment you marked as a grid with search, tag filter and sorting, hover preview, a click opens the scene at that moment – and Groups (Library) with a page for each group and its scenes in the group's order.", "新页面：标记（观看）——以网格显示你标记的每个时刻，支持搜索、标签筛选和排序，悬停预览，点击即可在该时刻打开场景；以及分组（媒体库），每个分组有自己的页面，场景按分组内顺序排列。"],
+      ["ui", "External player: the info panel of a scene has an “External player” button that hands the video to mpv, VLC, IINA, Infuse, MPC-HC, PotPlayer, nPlayer or MX Player (the ones that fit your system) – for formats the browser can't play. Choose the players under Settings → Player and previews.", "外部播放器：场景信息面板新增“外部播放器”按钮，可把视频交给 mpv、VLC、IINA、Infuse、MPC-HC、PotPlayer、nPlayer 或 MX Player（适合你系统的那些）播放——适用于浏览器无法播放的格式。在 设置 → 播放器和预览 中选择播放器。"],
+      ["ui", "The menu on the left can be full, icons only or hidden (button at its top, or in the settings; hidden opens with the menu button in the corner).", "左侧菜单可为完整、仅图标或隐藏（菜单顶部的按钮，或在设置中切换；隐藏时通过左上角的菜单按钮打开）。"],
+      ["ui", "Selecting: “Select all {n} results” selects everything a search found, not only the pages already loaded. The embedded classic Stash keeps its menu (Scenes, Images, Groups …).", "选择：“选择全部 {n} 个结果”会选中搜索找到的全部内容，而不只是已加载的页面。嵌入的经典 Stash 保留其菜单（场景、图片、分组 …）。"],
+      ["ui", "Dates are typed year first (2019, 2019-05 or 2019-05-17; a year alone becomes January 1st) with a calendar button; E opens the editor in the player, and keys with Ctrl / Cmd / Alt are left to the browser (Ctrl+R reloads the page again).", "日期以年份在前输入（2019、2019-05 或 2019-05-17；只写年份则为 1 月 1 日），并带日历按钮；在播放器中按 E 打开编辑器；带 Ctrl / Cmd / Alt 的按键交给浏览器处理（Ctrl+R 又可以刷新页面了）。"],
+    ],
+  },
+  {
     v: "3.50.0",
     date: "2026-10-04",
     items: [

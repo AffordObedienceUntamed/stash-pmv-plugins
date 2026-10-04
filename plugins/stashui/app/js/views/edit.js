@@ -1,6 +1,6 @@
 // Edit drawer: one item in detail, several items together (add/remove tags, rating).
 
-import { esc, openDrawer, toast, errorToast, starsHtml, ratingClick, ratingFromInput, plural, confirmDialog } from "../ui.js";
+import { esc, icon, openDrawer, toast, errorToast, starsHtml, ratingClick, ratingFromInput, plural, confirmDialog } from "../ui.js";
 import { t } from "../i18n.js";
 import { getScene, getImage, getGallery, updateItem, bulkUpdate, destroyItems, favoriteTagId, setFavorite } from "../api.js";
 import { tagPicker } from "./tagpicker.js";
@@ -11,6 +11,18 @@ const UNITS = { scene: ["scene", "scenes"], image: ["image", "images"], gallery:
 // Whole sentences per kind – other languages can't just insert the word
 const TITLES = { scene: ["Edit scene", "Delete scene?"], image: ["Edit image", "Delete image?"], gallery: ["Edit gallery", "Delete gallery?"] };
 const GET = { scene: getScene, image: getImage, gallery: getGallery };
+
+// "2019", "2019-05", "2019-5-7", "2019.05.17" or "2019/05/17" → "2019-05-17" (a year alone → January 1st, a month alone → the 1st)
+export function dateOf(text) {
+  const s = String(text || "").trim();
+  if (!s) return null;
+  const m = /^(\d{4})(?:[-./ ](\d{1,2})(?:[-./ ](\d{1,2}))?)?$/.exec(s);
+  if (!m) throw new Error(t("The date should start with the year – like 2019, 2019-05 or 2019-05-17."));
+  const [y, mo, d] = [m[1], Number(m[2] || 1), Number(m[3] || 1)];
+  const dt = new Date(Date.UTC(Number(y), mo - 1, d));
+  if (mo < 1 || mo > 12 || d < 1 || dt.getUTCMonth() !== mo - 1) throw new Error(t("That date doesn't exist."));
+  return `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+}
 
 export function openEditor(kind, pieces, { onSaved, onDeleted } = {}) {
   if (pieces.length === 1) return editOne(kind, pieces[0].id, { onSaved, onDeleted });
@@ -63,7 +75,7 @@ async function editOne(kind, id, { onSaved, onDeleted }) {
       <label class="kb-switch"><input type="checkbox" data-e="fav"${isFav ? " checked" : ""}><i></i><span>${t("Favorite (heart)")}</span></label>
       <div class="kb-form-row"><span>${t("Tags")}</span><div class="kb-tagpick" data-tags></div></div>
       <div class="kb-form-row"><span>${t("Performers")}</span><div class="kb-tagpick" data-perfs></div></div>
-      <label class="kb-form-row"><span>${t("Date")}</span><input class="kb-field" type="date" data-e="date" value="${esc(x.date || "")}"></label>
+      <div class="kb-form-row"><span>${t("Date")}</span><span class="kb-datefield"><input class="kb-field" type="text" inputmode="numeric" data-e="date" value="${esc(x.date || "")}" placeholder="${t("YYYY-MM-DD")}" autocomplete="off" title="${t("Year first: 2019, 2019-05 or 2019-05-17 – a year alone is saved as January 1st")}"><button type="button" class="kb-btn is-icon" data-datepick title="${t("Calendar")}" aria-label="${t("Calendar")}">${icon("slides")}</button><input type="date" class="kb-date-native" data-datenative tabindex="-1" aria-hidden="true"></span></div>
       <label class="kb-form-row"><span>${t("Description")}</span><textarea class="kb-field" data-e="details" rows="4">${esc(x.details || "")}</textarea></label>
       <label class="kb-form-row"><span>${t("Links (one per line)")}</span><textarea class="kb-field" data-e="urls" rows="2">${esc((x.urls || []).join("\n"))}</textarea></label>
       <label class="kb-switch"><input type="checkbox" data-e="organized"${x.organized ? " checked" : ""}><i></i><span>${t("Organized")}</span></label>
@@ -76,8 +88,28 @@ async function editOne(kind, id, { onSaved, onDeleted }) {
   knowPerformers(x.performers);
   const perfs = perfPicker(el.querySelector("[data-perfs]"), { include: (x.performers || []).map((p) => p.id), modes: false, allowCreate: true, placeholder: t("Search or create a performer") });
   el.querySelector("[data-cancel]").onclick = d.close;
+  // the calendar (a hidden date field opens its picker; what you pick is written out in the field)
+  const dtxt = el.querySelector('[data-e="date"]');
+  const dnat = el.querySelector("[data-datenative]");
+  if (dtxt && dnat) {
+    el.querySelector("[data-datepick]").onclick = () => {
+      try {
+        dnat.value = dateOf(dtxt.value) || "";
+      } catch (e) { /* not a date yet – the picker starts empty */ }
+      dnat.showPicker ? dnat.showPicker() : dnat.click();
+    };
+    dnat.onchange = () => (dtxt.value = dnat.value);
+  }
   el.querySelector("[data-save]").onclick = async () => {
     const v = (k) => el.querySelector(`[data-e="${k}"]`);
+    let date = null;
+    if (v("date")) {
+      try {
+        date = dateOf(v("date").value);
+      } catch (e) {
+        return errorToast(e, "Date");
+      }
+    }
     const fav = v("fav").checked;
     let tags = picker.include;
     const favTag = fav ? await favoriteTagId(true) : favId;
@@ -85,7 +117,7 @@ async function editOne(kind, id, { onSaved, onDeleted }) {
     const input = {
       id,
       title: v("title").value.trim(),
-      date: v("date").value || null,
+      date,
       details: v("details").value,
       urls: v("urls").value.split(/\n+/).map((u) => u.trim()).filter(Boolean),
       rating100: state.rating100 || null,

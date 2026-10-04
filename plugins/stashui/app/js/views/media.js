@@ -86,8 +86,9 @@ export function mediaBrowser(host, opts) {
       b.setAttribute("aria-selected", b.dataset.kind === kind);
     });
     const sortSel = $("[data-sort]");
-    sortSel.innerHTML = SORTS[kind].map(([k, name]) => `<option value="${k}">${t(name)}</option>`).join("");
-    sortSel.value = SORTS[kind].some(([k]) => k === st.sort) ? st.sort : SORTS[kind][0][0];
+    const sorts = SORTS[kind].concat((opts.extraSorts && opts.extraSorts[kind]) || []);
+    sortSel.innerHTML = sorts.map(([k, name]) => `<option value="${k}">${t(name)}</option>`).join("");
+    sortSel.value = sorts.some(([k]) => k === st.sort) ? st.sort : sorts[0][0];
     // a sort by a criterion of the detailed rating (the entries are added when the criteria are known)
     if (String(st.sort).startsWith("crit:")) {
       sortSel.insertAdjacentHTML("beforeend", `<option value="${esc(st.sort)}">${t("Detailed")}: ${esc(st.sort.slice(5))}</option>`);
@@ -313,7 +314,7 @@ export function mediaBrowser(host, opts) {
       bulkEl.addEventListener("click", onBulk);
     }
     bulkEl.innerHTML = `<b>${t("{what} selected", { what: plural(set.size, "item", "items") })}</b>
-      <button class="kb-btn" data-b="all">${h.done ? t("Select all") : t("Select all loaded")}</button>
+      <button class="kb-btn" data-b="all">${h.done ? t("Select all") : h.count ? t("Select all {n} results", { n: fmtNum(h.count) }) : t("Select all loaded")}</button>
       <button class="kb-btn" data-b="fav"><span class="kb-dotmini"></span>${t("Favorite")}</button>
       <button class="kb-btn" data-b="unfav">${t("Remove favorite")}</button>
       <button class="kb-btn" data-b="edit">${icon("edit")}${t("Edit")}</button>
@@ -329,7 +330,20 @@ export function mediaBrowser(host, opts) {
     const ids = pieces.map((p) => p.id);
     try {
       switch (b.dataset.b) {
-        case "all": return hang.selectAll();
+        case "all": {
+          if (hang.done || !hang.count) return hang.selectAll();
+          // not everything is loaded: the ids of everything that matches come in one go (just ids), so the selection covers all of it
+          b.disabled = true;
+          try {
+            const base = opts.base ? opts.base(kind) : null;
+            const r = await findIds(kind, { q: st.q || undefined, per_page: -1 }, buildFilter(kind, st, base), await restrictIds(kind, st));
+            hang.selectKeys(r.items.map((x) => kind + ":" + x.id));
+            toast(t("{n} selected", { n: fmtNum(r.items.length) }), "ok");
+          } finally {
+            b.disabled = false;
+          }
+          return;
+        }
         case "none": return exitSelect();
         case "fav":
         case "unfav": {

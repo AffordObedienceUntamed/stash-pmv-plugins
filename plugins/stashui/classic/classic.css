@@ -572,7 +572,8 @@ div.react-select__control .react-select__multi-value__remove:hover { color: var(
 
 /* ---------- Embedded in Stash UI: hide own navigation ---------- */
 
-html.kb-embed nav.top-nav { display: none !important; }
+/* Embedded in Stash UI: the menu of classic Stash stays (Scenes, Images, Groups … with their filters and selection), only its logo and the way back are dropped */
+html.kb-embed nav.top-nav .navbar-brand, html.kb-embed nav.top-nav .kb-back { display: none !important; }
 html.kb-embed body { padding-top: 0 !important; }
 html.kb-embed .main { margin-top: 0 !important; padding-top: 12px; }
 html.kb-embed .sidebar-pane .sidebar { margin-top: 0 !important; top: 0 !important; }

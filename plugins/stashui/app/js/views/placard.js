@@ -61,6 +61,7 @@ export function placardHtml(kind, x) {
         <button class="kb-plc-btn" data-edit>${icon("edit")}${t("Edit")}</button>
         <button class="kb-plc-btn" data-queue>${icon("queue")}${t("Queue")}</button>
         ${folder ? `<button class="kb-plc-btn" data-folder title="${esc(folder)}">${icon("folder")}${t("Folder")}</button>` : ""}
+        ${kind === "scene" ? `<button class="kb-plc-btn" data-extplay title="${t("Play this scene in an external player (mpv, VLC …) – for formats the browser can't play")}">${icon("tv")}${t("External player")}</button>` : ""}
         ${kind === "scene" ? `<button class="kb-plc-btn" data-cover title="${t("Use the frame you're looking at as the scene's cover")}">${icon("image")}${t("Cover")}</button>` : ""}
         ${kind === "scene" ? `<button class="kb-plc-btn" data-funscript title="${esc(x.interactive ? t("This scene has a funscript – choose another one to replace it") : t("Give this scene a funscript (for The Handy) – it's put next to the video"))}">${icon("plug")}${x.interactive ? t("Funscript ✓") : t("Funscript")}</button>` : ""}
         ${kind === "scene" && app.pmvPlugin !== null ? `<button class="kb-plc-btn" data-music title="${t("Use the music in the PMV Generator, or save it as a sound file")}">${icon("music")}${t("Music")}</button>` : ""}
@@ -70,13 +71,18 @@ export function placardHtml(kind, x) {
 }
 
 // Binds the buttons; refresh() reloads the details and redraws the placard.
-export function bindPlacard(host, kind, getItem, { refresh, onDeleted, goFolder, music, cover, funscript }) {
+export function bindPlacard(host, kind, getItem, { refresh, onDeleted, goFolder, music, cover, funscript, position }) {
   host.addEventListener("click", async (e) => {
     const x = getItem();
     if (!x) return;
     try {
       const r = ratingClick(e, x.rating100);
       if (r !== undefined) return rate(r);
+      const ext = e.target.closest("[data-extplay]");
+      if (ext) {
+        const { openPlayerMenu } = await import("../extplayer.js");
+        return openPlayerMenu(ext, x, position);
+      }
       if (e.target.closest("[data-advrate]")) {
         const { openAdvRating } = await import("../advrating.js");
         return openAdvRating(kind, x, {

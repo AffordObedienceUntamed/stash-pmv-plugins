@@ -215,6 +215,7 @@ export async function render(host, params) {
   });
 
   const onKey = (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.target.closest && e.target.closest("input, textarea, select")) return;
     if (document.querySelector("#overlay-root .kb-drawer, #overlay-root .kb-dialog")) return;
     const k = e.key.toLowerCase();

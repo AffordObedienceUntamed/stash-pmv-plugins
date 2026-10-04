@@ -32,6 +32,9 @@ const ROUTES = [
   { re: /^gallery\/(\d+)$/, view: "gallery", keys: ["id"] },
   { re: /^tags$/, view: "tags" },
   { re: /^tag\/(\d+)$/, view: "tag", keys: ["id"] },
+  { re: /^groups$/, view: "groups" },
+  { re: /^group\/(\d+)$/, view: "groups", keys: ["id"] },
+  { re: /^markers$/, view: "markers" },
   { re: /^performers$/, view: "performers" },
   { re: /^performer\/(\d+)$/, view: "performer", keys: ["id"] },
   { re: /^search$/, view: "search" },
@@ -112,6 +115,8 @@ const loaders = {
   tags: () => import("./views/tags.js"),
   tag: () => import("./views/tag.js"),
   performers: () => import("./views/performers.js"),
+  groups: () => import("./views/groups.js"),
+  markers: () => import("./views/markers.js"),
   performer: () => import("./views/performer.js"),
   search: () => import("./views/search.js"),
   history: () => import("./views/history.js"),
@@ -209,6 +214,7 @@ const NAV = [
     { href: "scenes", label: "Scenes", icon: "film", match: /^scene/, count: "scene_count" },
     { href: "images", label: "Images", icon: "image", match: /^image/, count: "image_count" },
     { href: "galleries", label: "Galleries", icon: "book", match: /^galler/, count: "gallery_count" },
+    { href: "groups", label: "Groups", icon: "layers", match: /^group/ },
     { href: "performers", label: "Performers", icon: "person", match: /^performer/, count: "performer_count" },
     { href: "tags", label: "Tags", icon: "tag", match: /^tag/, count: "tag_count" },
   ] },
@@ -216,6 +222,7 @@ const NAV = [
     { href: "queue", label: "Queue", icon: "queue", match: /^queue/, count: "queue" },
     { href: "playlists", label: "Playlists", icon: "slides", match: /^playlists/ },
     { href: "interactive", label: "Interactive", icon: "plug", match: /^interactive/ },
+    { href: "markers", label: "Markers", icon: "play", match: /^markers/ },
     { href: "history", label: "History", icon: "history", match: /^history/ },
     { href: "versus", label: "Versus", icon: "trophy", match: /^versus/ },
     { action: "storm", label: "Media Storm", icon: "bolt", plugin: "mediaStorm" },
@@ -247,14 +254,15 @@ function renderRail() {
   const rail = document.getElementById("rail");
   rail.innerHTML =
     `<a class="kb-mark" href="#/" aria-label="${t("Stash, home page")}"><span>Stash</span></a>` +
+    `<button type="button" class="kb-railmode-btn" data-action="railmode" title="${t("Menu: full, icons only, hidden")}" aria-label="${t("Menu: full, icons only, hidden")}">${icon("menu")}</button>` +
     `<button type="button" class="kb-nsfw-btn" data-action="nsfw" data-nsfwbtn aria-pressed="false" title="${t("NSFW mode: blur all pictures and previews")}" aria-label="${t("NSFW mode: blur all pictures and previews")}">${icon("eye")}</button>` +
     NAV.map((g) =>
       (g.group ? groupHead(g.group) : "") +
       `<nav class="kb-nav"${g.group ? ` data-railbody="${g.group}"` : ""}>` +
       g.items.map((it) =>
         it.action
-          ? `<button type="button" data-action="${it.action}"${it.plugin ? ` data-plugin="${it.plugin}"` : ""}>${icon(it.icon)}<span>${t(it.label)}</span></button>`
-          : `<a href="#/${it.href}" data-match="${it.match.source}">${icon(it.icon)}<span>${t(it.label)}</span>${it.count ? `<span class="kb-count" data-count="${it.count}"></span>` : ""}</a>`
+          ? `<button type="button" data-action="${it.action}"${it.plugin ? ` data-plugin="${it.plugin}"` : ""} title="${esc(t(it.label))}">${icon(it.icon)}<span>${t(it.label)}</span></button>`
+          : `<a href="#/${it.href}" data-match="${it.match.source}" title="${esc(t(it.label))}">${icon(it.icon)}<span>${t(it.label)}</span>${it.count ? `<span class="kb-count" data-count="${it.count}"></span>` : ""}</a>`
       ).join("") +
       `</nav>` +
       (g.group === "Watch" ? `<div data-extplugins hidden>${groupHead("Extensions", '<span class="kb-rail-n" data-extn></span>')}<nav class="kb-nav" data-extlist data-railbody="Extensions"></nav></div>` : "") +
@@ -287,6 +295,11 @@ function renderRail() {
     if (a) document.getElementById("app").classList.remove("is-rail-open");
     if (a && a.dataset.action === "storm") openStorm();
     if (a && a.dataset.action === "pmv") location.href = PMV_PAGE;
+    if (a && a.dataset.action === "railmode") {
+      import("./display.js").then((m) => m.cycleRail());
+      document.getElementById("app").classList.remove("is-rail-open");
+      return;
+    }
     if (a && a.dataset.action === "nsfw") {
       import("./display.js").then((m) => m.toggleNsfw());
       document.getElementById("app").classList.remove("is-rail-open");
