@@ -117,7 +117,7 @@ async function renderOne(main, id, query) {
   }
   const facts = [
     [t("Date"), g.date ? fmtDate(g.date) : ""],
-    [t("Studio"), g.studio ? `<a href="#/scenes?studio=${esc(g.studio.id)}">${esc(g.studio.name)}</a>` : ""],
+    [t("Studio"), g.studio ? `<a href="#/studio/${esc(g.studio.id)}">${esc(g.studio.name)}</a>` : ""],
     [t("Director"), esc(g.director || "")],
   ].filter(([, v]) => v);
   main.innerHTML = `

@@ -1529,4 +1529,13 @@ html.kb-glass .kb-extmenu { border-color: var(--glass-edge); border-radius: 16px
 .kb-mk-tags { margin-bottom: 8px; }
 .kb-group-img { display: block; overflow: hidden; border-radius: 10px; cursor: default; }
 .kb-group-img img { width: 100%; height: 100%; object-fit: cover; }
+.kb-studiogrid { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+.kb-studiocard .kb-perf-img { display: grid; place-items: center; aspect-ratio: 16 / 10; padding: 14px; }
+.kb-studiocard .kb-perf-img img { object-fit: contain; }
+.kb-studiocard .kb-perf-img em { overflow: hidden; max-height: 100%; color: var(--faint); font: 700 18px/1.2 var(--f-display); font-style: normal; text-align: center; word-break: break-word; }
+.kb-studio-img { display: grid; aspect-ratio: auto; place-items: center; width: 220px; height: 138px; padding: 14px; background: var(--bg-2); }
+.kb-studio-img img { object-fit: contain; }
+.kb-studio-img em { color: var(--faint); font: 700 20px/1.2 var(--f-display); font-style: normal; text-align: center; }
+.kb-plpick { max-width: 190px; }
+html.kb-glass .kb-studiocard .kb-perf-img, html.kb-glass .kb-studio-img { background: rgba(255, 255, 255, .1); border: 1px solid var(--glass-edge); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); }
 html.kb-glass .kb-mk-art { border: 1px solid var(--glass-edge); border-radius: 14px; }

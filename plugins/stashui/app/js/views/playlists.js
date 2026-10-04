@@ -23,6 +23,7 @@ function describe(pl) {
   st.tags.forEach((id) => out.push(name(id)));
   st.xtags.forEach((id) => out.push(t("not {x}", { x: name(id) })));
   if (st.perfs.length) out.push(st.perfs.map(name).join(st.pany ? t(" or ") : " + "));
+  if (st.studios.length) out.push(st.studios.map(name).join(t(" or ")));
   if (st.rating) out.push(t("from {r}", { r: ratingText(st.rating * 20) || st.rating }));
   if (st.fav) out.push(t("Favorites only"));
   if (st.tier.length) out.push(t("Tier {tier}", { tier: st.tier.join(" + ") }));

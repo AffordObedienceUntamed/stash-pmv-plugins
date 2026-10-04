@@ -2,7 +2,7 @@
 // salon hanging, multi-select with actions. State lives in the URL.
 
 import { esc, icon, store, debounce, seed, errorToast, toast, plural, fmtNum, confirmDialog, promptDialog, starsHtml, ratingFilterSteps } from "../ui.js";
-import { filterOf, QUERY_KEYS, loadPlaylists, savePlaylists, labelsFor } from "../playlists.js";
+import { filterOf, QUERY_KEYS, loadPlaylists, savePlaylists, labelsFor, linkOf } from "../playlists.js";
 import { t } from "../i18n.js";
 import { findItems, findIds, favoriteTagId, setFavorite, bulkUpdate, destroyItems } from "../api.js";
 import { ensureTiers, hasTiers } from "../tiers.js";
@@ -12,6 +12,7 @@ import { toPiece, Hang } from "../pieces.js";
 import { app, setQuery, go, setQueueCount } from "../main.js";
 import { tagPicker } from "./tagpicker.js";
 import { perfPicker, hasPerformers } from "./perfpicker.js";
+import { studioPicker, studiosCache } from "./studiopicker.js";
 import { openEditor } from "./edit.js";
 
 export const KIND_NAME = { scene: ["Scene", "Scenes"], image: ["Image", "Images"], gallery: ["Gallery", "Galleries"] };
@@ -35,6 +36,7 @@ function readState(q, kind, defaults) {
     xtags: (q.xtags || "").split(",").filter(Boolean),
     perfs: (q.perfs || "").split(",").filter(Boolean),
     pany: q.pany === "1",
+    studios: (q.studios || "").split(",").filter(Boolean),
     rating: Number(q.rating || 0),
     fav: q.fav === "1",
     played: q.played || "",
@@ -57,7 +59,7 @@ export function mediaBrowser(host, opts) {
   let kind = kinds.includes(opts.query.kind) ? opts.query.kind : opts.initialKind || kinds[0];
   let st = readState(opts.query, kind, opts.defaults && opts.defaults[kind]);
   let hang = null;
-  let filterOpen = !!(st.tags.length || st.xtags.length || st.perfs.length || st.rating || st.fav || st.played || st.ori || st.res || st.len || st.ia || st.tier.length || st.crit);
+  let filterOpen = !!(st.tags.length || st.xtags.length || st.perfs.length || st.studios.length || st.rating || st.fav || st.played || st.ori || st.res || st.len || st.ia || st.tier.length || st.crit);
   const rowH = () => store.get("rowHeight", 250);
 
   host.innerHTML = `
@@ -70,6 +72,7 @@ export function mediaBrowser(host, opts) {
         <button class="kb-btn" data-filter>${icon("filter")}<span>${t("Filter")}</span></button>
         <span class="kb-spacer"></span>
         <label class="kb-range" title="${t("Thumbnail size")}">${icon("image")}<input type="range" min="130" max="480" step="10" data-rowh value="${rowH()}" aria-label="${t("Size")}"></label>
+        ${opts.playlist ? `<select class="kb-field kb-plpick" data-plpick hidden title="${t("Your saved filters – the playlists made from this list")}" aria-label="${t("Saved filters")}"></select>` : ""}
         ${opts.playlist ? `<button class="kb-btn" data-plsave title="${t("Keep these filters as a playlist – it always shows what matches them now")}">${icon("queue")}<span>${opts.query.pl ? t("Save playlist") : t("Save as playlist")}</span></button>` : ""}
         <button class="kb-btn" data-play title="${t("Play everything as a queue")}">${icon("play")}<span>${t("Play")}</span></button>
         <button class="kb-btn is-icon" data-select title="${t("Select")}" aria-label="${t("Select")}">${icon("select")}</button>
@@ -118,6 +121,7 @@ export function mediaBrowser(host, opts) {
     box.innerHTML = `
       <div class="kb-tagpick" data-tp></div>
       <div class="kb-tagpick kb-perfpick" data-pp hidden></div>
+      <div class="kb-tagpick kb-studiopick" data-sp hidden></div>
       <label class="kb-lab">${t("Rating from")}
         <select class="kb-field" data-f="rating"><option value="0">${t("any")}</option>${ratingFilterSteps().map(([n, l]) => `<option value="${n}">${l}</option>`).join("")}</select></label>
       ${kind === "scene" ? `<label class="kb-lab">${t("Watched")}
@@ -171,6 +175,22 @@ export function mediaBrowser(host, opts) {
         },
       });
     });
+
+    // Studios – only when the library has any (a studio's own page already is that filter)
+    const sp = box.querySelector("[data-sp]");
+    studiosCache().then((all) => {
+      if ((!all.length && !st.studios.length) || (opts.base && (opts.base(kind) || {}).filter && opts.base(kind).filter.studios)) return;
+      sp.hidden = false;
+      studioPicker(sp, {
+        include: st.studios,
+        multi: true,
+        placeholder: t("Add studio …"),
+        onChange: (ids) => {
+          st.studios = ids;
+          apply();
+        },
+      });
+    }).catch(() => {});
   }
 
   // The filters as URL parameters (also what a playlist keeps)
@@ -182,6 +202,7 @@ export function mediaBrowser(host, opts) {
     xtags: st.xtags.join(","),
     perfs: st.perfs.join(","),
     pany: st.pany && st.perfs.length > 1 ? "1" : "",
+    studios: st.studios.join(","),
     rating: st.rating || "",
     fav: st.fav ? "1" : "",
     played: st.played,
@@ -192,6 +213,23 @@ export function mediaBrowser(host, opts) {
     tier: st.tier.join(","),
     crit: st.crit,
   });
+  // Saved filters: the playlists of this kind – one click applies it here
+  if (opts.playlist) {
+    loadPlaylists()
+      .then((list) => {
+        const pick = $("[data-plpick]");
+        const mine = list.filter((p) => (p.kind === "image" ? "image" : "scene") === kind);
+        if (!pick || !mine.length) return;
+        pick.innerHTML = `<option value="">${t("Saved filters")}</option>` + mine.map((p) => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join("");
+        pick.value = mine.some((p) => p.id === opts.query.pl) ? opts.query.pl : "";
+        pick.hidden = false;
+        pick.onchange = () => {
+          const pl = mine.find((p) => p.id === pick.value);
+          if (pl) go(linkOf(pl).slice(2));
+        };
+      })
+      .catch(() => {});
+  }
   let plId = opts.query.pl || ""; // opened from a playlist: "Save playlist" changes that one
   function persistQuery() {
     setQuery(Object.assign({ kind: kinds.length > 1 ? kind : "" }, queryOf(), { seed: st.sort === "random" ? st.seed : "", pl: plId }));
@@ -406,7 +444,7 @@ export function mediaBrowser(host, opts) {
       return renderTools();
     }
     if (e.target.closest("[data-clear]") || e.target.closest("[data-clearall]")) {
-      Object.assign(st, { q: "", tags: [], xtags: [], perfs: [], pany: false, rating: 0, fav: false, played: "", ori: "", res: "", len: "", ia: "", tier: [], crit: "" });
+      Object.assign(st, { q: "", tags: [], xtags: [], perfs: [], pany: false, studios: [], rating: 0, fav: false, played: "", ori: "", res: "", len: "", ia: "", tier: [], crit: "" });
       const qi = $("[data-q]");
       if (qi) qi.value = "";
       renderTools();

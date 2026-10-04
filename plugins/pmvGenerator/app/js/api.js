@@ -42,6 +42,7 @@ export const F_IMAGE = `id title details date rating100 o_counter organized crea
   paths { thumbnail image preview }
   tags { id name }
   performers { id name image_path }
+  studio { id name image_path }
   galleries { id title folder { path } files { path } }`;
 
 export const F_GALLERY = `id title details date rating100 organized created_at image_count urls
@@ -50,6 +51,7 @@ export const F_GALLERY = `id title details date rating100 organized created_at i
   paths { cover preview }
   performers { id name image_path }
   cover { id visual_files { ... on ImageFile { width height } ... on VideoFile { width height } } }
+  studio { id name image_path }
   tags { id name }`;
 
 export const F_TAG = `id name description favorite image_path scene_count image_count gallery_count aliases

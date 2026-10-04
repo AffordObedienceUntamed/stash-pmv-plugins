@@ -388,6 +388,7 @@
       if (exc.length) f.tags.excludes = exc;
     }
     if (list(q.perfs).length) f.performers = { value: list(q.perfs), modifier: q.pany === "1" ? "INCLUDES" : "INCLUDES_ALL" };
+    if (list(q.studios).length) f.studios = { value: list(q.studios), modifier: "INCLUDES", depth: -1 };
     if (Number(q.rating)) f.rating100 = { value: Number(q.rating) * 20 - 1, modifier: "GREATER_THAN" };
     if (kind === "scene") {
       if (q.played === "yes") f.play_count = { value: 0, modifier: "GREATER_THAN" };

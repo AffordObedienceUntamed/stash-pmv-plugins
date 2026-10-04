@@ -7,7 +7,7 @@ import { ratingFilterMin } from "./ui.js";
 import { gql, pluginConfig, setPluginConfig } from "./api.js";
 
 // The list's URL parameters that make up a playlist
-export const QUERY_KEYS = ["q", "sort", "dir", "tags", "xtags", "perfs", "pany", "rating", "fav", "played", "ori", "res", "len", "ia", "tier", "crit"];
+export const QUERY_KEYS = ["q", "sort", "dir", "tags", "xtags", "perfs", "pany", "studios", "rating", "fav", "played", "ori", "res", "len", "ia", "tier", "crit"];
 
 // URL parameters → filter state (as the lists keep it)
 export function stateOf(q = {}) {
@@ -20,6 +20,7 @@ export function stateOf(q = {}) {
     xtags: list(q.xtags),
     perfs: list(q.perfs),
     pany: q.pany === "1" || q.pany === true,
+    studios: list(q.studios), // only these studios (and their sub-studios)
     rating: Number(q.rating || 0),
     fav: q.fav === "1" || q.fav === true,
     played: q.played || "",
@@ -50,6 +51,7 @@ export function filterOf(kind, st, favId, base) {
       ? { value: [...new Set([...page, ...st.perfs])], modifier: "INCLUDES_ALL" }
       : { value: st.perfs, modifier: st.pany ? "INCLUDES" : "INCLUDES_ALL" };
   }
+  if (st.studios && st.studios.length && !f.studios) f.studios = { value: st.studios, modifier: "INCLUDES", depth: -1 };
   if (st.rating) f.rating100 = { value: ratingFilterMin(st.rating), modifier: "GREATER_THAN" };
   if (kind === "scene") {
     if (st.played === "yes") f.play_count = { value: 0, modifier: "GREATER_THAN" };
@@ -95,6 +97,7 @@ export async function labelsFor(st) {
   await Promise.all([
     ...[...st.tags, ...st.xtags].map((id) => one(`query($id: ID!) { findTag(id: $id) { id name } }`, id, "findTag")),
     ...st.perfs.map((id) => one(`query($id: ID!) { findPerformer(id: $id) { id name } }`, id, "findPerformer")),
+    ...(st.studios || []).map((id) => one(`query($id: ID!) { findStudio(id: $id) { id name } }`, id, "findStudio")),
   ]);
   return labels;
 }

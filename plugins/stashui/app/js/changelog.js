@@ -4,6 +4,15 @@
 
 export const CHANGES = [
   {
+    v: "3.52.0",
+    date: "2026-10-04",
+    items: [
+      ["ui", "New page: Studios (Library) – every studio as a logo card with search and sorting; a studio's page shows its scenes, images and galleries (sub-studios included), its links, aliases and parent studio. The studio shown on a group page links to it.", "新页面：工作室（媒体库）——每个工作室以徽标卡片显示，可搜索和排序；工作室页面显示其场景、图片和图库（含子工作室）、链接、别名和上级工作室。"],
+      ["ui", "Studios in the editor: the edit drawer of a scene, image or gallery has a Studio field, and “Edit several” can set one studio for all selected items.", "编辑器中的工作室：场景、图片或图库的编辑面板新增“工作室”字段；批量编辑可为所有选中项设置同一工作室。"],
+      ["ui", "Saved filters: lists have a Studio filter, a playlist keeps it, and Scenes / Images show a “Saved filters” menu to apply a saved one with one click (Playlists = your saved filters). Media Storm 2.5.1 understands the studio in a playlist too.", "已保存的筛选：列表新增工作室筛选，播放列表会保存它；场景/图片页面新增“已保存的筛选”菜单，一键应用（播放列表即已保存的筛选）。媒体风暴 2.5.1 也支持播放列表中的工作室。"],
+    ],
+  },
+  {
     v: "3.51.1",
     date: "2026-10-04",
     items: [
