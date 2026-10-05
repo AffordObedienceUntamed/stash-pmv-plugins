@@ -85,6 +85,7 @@ export async function loadPlaylists() {
 }
 export async function savePlaylists(list) {
   await setPluginConfig("stashui", { playlists: JSON.stringify(list) });
+  window.dispatchEvent(new Event("stash:playlists-changed")); // the menu lists them
 }
 
 // Names of the tags and performers in a filter (kept with the playlist, for its description)

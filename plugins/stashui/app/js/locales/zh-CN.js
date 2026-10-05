@@ -1706,6 +1706,7 @@ export default {
   "No studios found": "未找到工作室",
   "Part of": "隶属于",
   "Saved filters": "已保存的筛选",
+  "Delete this item (asks first)": "删除此项（会先确认）",
   "Search studio": "搜索工作室",
   "Search studios": "搜索工作室",
   "Set studio": "设置工作室",

@@ -187,7 +187,8 @@ export function errorToast(e, what) {
 
 // ---------- Dialogs ----------
 
-const overlayRoot = () => document.getElementById("overlay-root");
+// in fullscreen only the fullscreen element (and its children) is visible, so dialogs and drawers go in there
+const overlayRoot = () => document.fullscreenElement || document.getElementById("overlay-root");
 
 // Confirmation with an optional checkbox. Returns { ok, checked }.
 export function confirmDialog({ title, text, ok = t("OK"), danger = false, checkbox }) {

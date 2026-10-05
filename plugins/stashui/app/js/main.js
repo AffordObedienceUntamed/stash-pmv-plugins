@@ -158,10 +158,10 @@ async function route() {
       app.base.hash = "#/";
       app.base.direct = true; // closing leads to the home page instead of out of the app
     }
-    if (app.overlay) {
-      app.overlay.cleanup && app.overlay.cleanup();
-      app.overlay.el.remove();
-    }
+    // The old overlay stays in the DOM until the new one is drawn (no flash of the page underneath when
+    // you step from one image/scene to the next)
+    const prevEl = app.overlay ? app.overlay.el : null;
+    if (app.overlay) app.overlay.cleanup && app.overlay.cleanup();
     const el = document.createElement("div");
     el.className = "kb-overlay-host";
     overlayRoot.appendChild(el);
@@ -169,11 +169,12 @@ async function route() {
     app.overlay = { el, pushed, key: r.view + r.path };
     try {
       const mod = await loaders[r.view]();
-      if (seq !== routeSeq) return;
+      if (seq !== routeSeq) return void (prevEl && prevEl.remove());
       app.overlay.cleanup = await mod.render(el, r.params, r.query, r);
     } catch (e) {
       errorToast(e, "Couldn't open");
     }
+    if (prevEl) prevEl.remove();
     return;
   }
 
@@ -219,7 +220,7 @@ const railClosed = new Set(store.get("railClosed", []));
 const groupHead = (key, extra = "", label = null) =>
   `<button type="button" class="kb-rail-group${railClosed.has(key) ? " is-closed" : ""}" data-railgrp="${esc(key)}" aria-expanded="${!railClosed.has(key)}">${label != null ? esc(label) : t(key)}${extra}<i class="kb-rail-caret"></i></button>`;
 function paintRailGroups() {
-  document.querySelectorAll("#rail [data-railbody]").forEach((b) => (b.hidden = railClosed.has(b.dataset.railbody)));
+  document.querySelectorAll("#rail [data-railbody]").forEach((b) => (b.hidden = railClosed.has(b.dataset.railbody) || (b.id === "savedtree" && !b.innerHTML)));
 }
 
 const navHtml = (it) =>
@@ -238,7 +239,10 @@ function groupHtml(g) {
     run = "";
   };
   for (const e of g.items) {
-    if (e.folders) {
+    if (e.saved) {
+      flush();
+      out += `${groupHead("Saved filters")}<div class="kb-tree" id="savedtree" data-railbody="Saved filters" hidden></div>`;
+    } else if (e.folders) {
       flush();
       out += `${groupHead("Folders")}<div class="kb-tree" id="tree" data-railbody="Folders"><div class="kb-rail-foot">${t("Loading …")}</div></div>`;
     } else run += e.nav ? navHtml(e.nav) : extHtml(e.ext);
@@ -269,6 +273,7 @@ function renderRail() {
     bindRail(rail);
   }
   refreshCounts();
+  renderSaved();
   markRail(parseHash());
   pluginsOn ? applyPluginLinks() : refreshPluginLinks();
   import("./display.js").then((m) => m.applyDisplay()); // (the NSFW button shows its state)
@@ -489,6 +494,28 @@ async function renderTree() {
   };
   box.innerHTML = treeData.roots.map((r) => row(r, 0)).join("");
 }
+
+// Saved filters in the menu: Stash's own (scenes, images) and the playlists – one click opens the list with it
+async function renderSaved() {
+  const box = document.getElementById("savedtree");
+  if (!box) return;
+  const head = document.querySelector('#rail [data-railgrp="Saved filters"]');
+  try {
+    const [{ loadPlaylists, linkOf }, { loadStashFilters }] = await Promise.all([import("./playlists.js"), import("./stashfilters.js")]);
+    const [pls, sc, im] = await Promise.all([loadPlaylists().catch(() => []), loadStashFilters("scene").catch(() => []), loadStashFilters("image").catch(() => [])]);
+    const row = (href, name, hint) => `<div class="kb-tree-row" style="--d:0"><span class="kb-tree-caret"></span><a href="${esc(href)}" title="${esc(hint)}">${esc(name)}</a></div>`;
+    const html =
+      pls.map((p) => row(linkOf(p), p.name, t("Playlist"))).join("") +
+      sc.map((x) => row(`#/scenes?sf=${encodeURIComponent(x.id)}`, x.name, t("Scenes"))).join("") +
+      im.map((x) => row(`#/images?sf=${encodeURIComponent(x.id)}`, x.name, t("Images"))).join("");
+    box.innerHTML = html;
+    box.hidden = !html || railClosed.has("Saved filters");
+    if (head) head.style.display = html ? "" : "none";
+  } catch (e) {
+    if (head) head.style.display = "none";
+  }
+}
+window.addEventListener("stash:playlists-changed", renderSaved);
 
 function markRail(r) {
   document.querySelectorAll(".kb-nav a[data-match]").forEach((a) => {

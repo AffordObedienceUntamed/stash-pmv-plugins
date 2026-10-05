@@ -208,6 +208,8 @@
 .kb-plc-btn:hover { background: var(--bg-3); }
 .kb-plc-btn.is-on { border-color: var(--pink); color: var(--pink); background: rgba(255, 62, 138, .12); }
 .kb-plc-btn .kb-ic { width: 16px; height: 16px; }
+.kb-plc-btn.is-danger:hover { border-color: #d22c4a; color: #ff6b83; background: rgba(210, 44, 74, .14); }
+html.kb-glass .kb-plc-btn.is-danger:hover { background: rgba(210, 44, 74, .22); border-color: rgba(255, 107, 131, .6); }
 .kb-plc-btn:not(.is-on) .kb-dotmini { background: var(--faint); }
 .kb-plc-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
 .kb-plc-tags { margin-top: 12px; }

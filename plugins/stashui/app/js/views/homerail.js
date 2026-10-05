@@ -11,8 +11,8 @@ export function mountRailEditor(root) {
   let focusKey = null;
 
   const listed = (e) => !!e && (!e.folders || folderMode() === "all");
-  const nameOf = (e) => (e.nav ? t(e.nav.label) : e.ext ? e.ext.name : t("Folders"));
-  const iconOf = (e) => (e.nav ? icon(e.nav.icon) : e.ext ? (e.ext.icon ? `<img class="kb-ext-ic" alt="" src="${esc(e.ext.icon)}">` : icon("plug")) : icon("folder"));
+  const nameOf = (e) => (e.nav ? t(e.nav.label) : e.ext ? e.ext.name : e.saved ? t("Saved filters") : t("Folders"));
+  const iconOf = (e) => (e.nav ? icon(e.nav.icon) : e.ext ? (e.ext.icon ? `<img class="kb-ext-ic" alt="" src="${esc(e.ext.icon)}">` : icon("plug")) : e.saved ? icon("slides") : icon("folder"));
   const gname = (g) => (g.key === "" ? t("Top of the menu") : g.name != null ? g.name : t(g.key));
 
   function render() {

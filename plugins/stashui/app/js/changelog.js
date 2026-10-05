@@ -4,6 +4,17 @@
 
 export const CHANGES = [
   {
+    v: "3.67.0",
+    date: "2026-10-06",
+    items: [
+      ["ui", "Delete button in the player's info bar: it asks first, and the next video of the list or queue keeps playing instead of going back to the list.", "播放器信息栏新增删除按钮：会先确认，删除后继续播放列表或队列中的下一个视频，而不是返回列表。"],
+      ["ui", "Saved filters in the menu: Stash's own saved filters (scenes, images) and your playlists are listed under the folder tree – one click opens the list with it. Can be hidden or moved in Home → Customize → Sidebar.", "菜单中的已保存筛选：文件夹树下方列出 Stash 自带的已保存筛选（场景、图片）和你的播放列表——点击即可用它打开列表。可在“主页 → 自定义 → 侧边栏”中隐藏或移动。"],
+      ["ui", "Fixed: the detailed rating (and other dialogs and drawers) did not open while the player was in fullscreen.", "已修复：播放器全屏时，详细评分（以及其他对话框和侧栏）无法打开。"],
+      ["ui", "Fixed: stepping to the next or previous image flashed the page underneath for a moment.", "已修复：切换到上一张或下一张图片时，下方页面会短暂闪现。"],
+      ["pmv", "PMV Generator 2.18.10: the shared files were updated.", "PMV 生成器 2.18.10：共享文件已更新。"],
+    ],
+  },
+  {
     v: "3.66.1",
     date: "2026-10-05",
     items: [

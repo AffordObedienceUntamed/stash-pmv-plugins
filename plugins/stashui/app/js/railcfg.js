@@ -43,6 +43,7 @@ export const NAV = [
 
 const KEY = "railLayout";
 const FOLDERS = "folders";
+const SAVED = "savedfilters"; // Stash's saved filters and the playlists, under the folder tree
 // Never hideable (you could lock yourself out of the way back): Start and Settings
 export const LOCKED = new Set(["p:", "p:settings"]);
 export const navId = (it) => (it.action ? "a:" + it.action : "p:" + it.href);
@@ -54,7 +55,7 @@ function defaults() {
   for (const g of NAV) {
     const key = g.group || "";
     const ids = g.items.map(navId);
-    if (key === "Library") ids.push(FOLDERS);
+    if (key === "Library") ids.push(FOLDERS, SAVED);
     groups.push({ key, items: ids });
     ids.forEach((id) => items.set(id, key));
     if (key === "Watch") groups.push({ key: "Extensions", items: [] });
@@ -67,6 +68,7 @@ export function catalog() {
   const m = new Map();
   for (const g of NAV) for (const it of g.items) m.set(navId(it), { id: navId(it), nav: it });
   m.set(FOLDERS, { id: FOLDERS, folders: true });
+  m.set(SAVED, { id: SAVED, saved: true });
   const mode = store.get("extMode", "show");
   const off = new Set(store.get("extHidden", []));
   if (mode !== "hide") {
