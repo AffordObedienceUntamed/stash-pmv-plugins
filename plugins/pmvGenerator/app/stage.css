@@ -505,6 +505,9 @@ button.kb-fpick-caret:hover { color: var(--text); }
 .kb-pmvg-lookdot.is-vivid { background: conic-gradient(#ff3e8a, #ffd166, #5ee0a0, #5aa0ff, #ff3e8a); }
 .kb-pmvg-lookdot.is-bw { background: linear-gradient(90deg, #fff 50%, #111 50%); }
 .kb-pmvg-lookdot.is-noir { background: radial-gradient(#777, #000); }
+.kb-pmvg-lookdot.is-custom { background: conic-gradient(#ff3e8a, #b86bff, #5aa0ff, #5ee0a0, #ffd166, #ff3e8a); }
+.kb-pmvg-color { width: 44px; height: 28px; padding: 0; border: 1px solid var(--line); border-radius: 8px; background: none; cursor: pointer; }
+html.kb-glass .kb-pmvg-color { border-color: var(--glass-edge); border-radius: 10px; }
 .kb-pmvg-no { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 4px; color: var(--ink); font: 700 18px/1 var(--f-display); background: var(--pink); box-shadow: 2px 2px 0 var(--paper); }
 .kb-pmvg-drop {
   display: flex;

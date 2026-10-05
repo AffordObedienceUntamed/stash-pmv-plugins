@@ -48,15 +48,22 @@ export const aspectOfGroup = (slots, g) => {
   return s.w / s.h;
 };
 
-// Color looks: a filter on each clip + a tint over the whole picture (soft-light)
+// Color looks: a filter on each clip + a tint over the whole picture (soft-light). Both scale with the strength (a: 0…1)
+const f3 = (x) => x.toFixed(3);
 export const LOOKS = {
-  none: { filter: "", tint: null },
-  warm: { filter: "sepia(.22) saturate(1.2) contrast(1.04)", tint: "rgba(255, 140, 60, .22)" },
-  pink: { filter: "saturate(1.15) contrast(1.05)", tint: "rgba(255, 62, 138, .3)" },
-  cold: { filter: "saturate(.85) contrast(1.06)", tint: "rgba(60, 140, 255, .26)" },
-  vivid: { filter: "saturate(1.7) contrast(1.12)", tint: null },
-  bw: { filter: "grayscale(1) contrast(1.15)", tint: null },
-  noir: { filter: "grayscale(1) contrast(1.5) brightness(.88)", tint: null, vignette: true },
+  none: { filter: () => "", tint: null },
+  warm: { filter: (a) => `sepia(${f3(0.22 * a)}) saturate(${f3(1 + 0.2 * a)}) contrast(${f3(1 + 0.04 * a)})`, tint: [255, 140, 60, 0.22] },
+  pink: { filter: (a) => `saturate(${f3(1 + 0.15 * a)}) contrast(${f3(1 + 0.05 * a)})`, tint: [255, 62, 138, 0.3] },
+  cold: { filter: (a) => `saturate(${f3(1 - 0.15 * a)}) contrast(${f3(1 + 0.06 * a)})`, tint: [60, 140, 255, 0.26] },
+  vivid: { filter: (a) => `saturate(${f3(1 + 0.7 * a)}) contrast(${f3(1 + 0.12 * a)})`, tint: null },
+  bw: { filter: (a) => `grayscale(${f3(a)}) contrast(${f3(1 + 0.15 * a)})`, tint: null },
+  noir: { filter: (a) => `grayscale(${f3(a)}) contrast(${f3(1 + 0.5 * a)}) brightness(${f3(1 - 0.12 * a)})`, tint: null, vignette: true },
+  custom: { filter: () => "", tint: null }, // your own color (S.lookColor)
+};
+const hexRgb = (h) => {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(h || ""));
+  const n = m ? parseInt(m[1], 16) : 0xff4d94;
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 };
 
 export class Compositor {
@@ -70,6 +77,13 @@ export class Compositor {
     this.t = { flash: -9, flashA: 0, flashColor: "#fff", shake: -9, glitch: -9, rgb: -9, rgbAmt: 0, rgbDur: 0.1, invert: -9, tunnel: -9, tunnelDur: 0.5, strobe: -9, text: -9, word: "" };
     this.words = String(S.words || "").split(/[,;\n]+/).map((w) => w.trim()).filter(Boolean);
     this.look = LOOKS[S.look] || LOOKS.none;
+    // The look at its strength: the filter for each clip, the tint over everything
+    const la = Math.max(0, Math.min(1, (S.lookAmt ?? 100) / 100));
+    this.lookFilter = this.look.filter(la);
+    const tint = S.look === "custom" ? [...hexRgb(S.lookColor), 0.34] : this.look.tint;
+    this.lookTint = tint ? `rgba(${tint[0]}, ${tint[1]}, ${tint[2]}, ${f3(tint[3] * la)})` : null;
+    this.bright = Math.max(0, Math.min(1, (S.bright || 0) / 100));
+    this.pulseAmt = Math.max(0, Math.min(1.5, (S.pulseAmt ?? 100) / 100));
     this.title = ""; // intro/outro – set by the generator
     this.duration = 0;
     this.credits = () => "";
@@ -79,6 +93,7 @@ export class Compositor {
       c.height = h;
       return c;
     };
+    this.off = off;
     this.prev = off(this.W, this.H); // for echo
     this.red = off(this.W, this.H); // for RGB split
     this.cyan = off(this.W, this.H);
@@ -95,6 +110,7 @@ export class Compositor {
       this[k].width = W;
       this[k].height = H;
     }
+    this.eo = this.es = null; // (the edge buffers are made again)
   }
 
   // ---------- Triggers (from the generator) ----------
@@ -144,6 +160,8 @@ export class Compositor {
     g.save();
     g.fillStyle = "#000";
     g.fillRect(0, 0, W, H);
+    g.imageSmoothingEnabled = true;
+    g.imageSmoothingQuality = this.S.smooth === false ? "low" : "high"; // clips scaled smoothly, less pixelated
 
     let dx = 0;
     let dy = 0;
@@ -153,7 +171,15 @@ export class Compositor {
       dy = (Math.random() - 0.5) * a;
     }
     const hue = fx.hue ? `hue-rotate(${Math.round((t * (30 + 110 * e)) % 360)}deg) saturate(1.3)` : "";
-    const pulse = fx.zoom ? (st.beatAmt || 0) * Math.exp(-(t - st.beatT) * 9) : 0;
+    // Zoom pulse: eases in just BEFORE the beat (the next beat is known) so the peak lands exactly on it, then fades out softly
+    let pulse = 0;
+    if (fx.zoom && this.pulseAmt > 0) {
+      const after = (st.beatAmt || 0) * Math.exp(-Math.max(0, t - st.beatT) * 5.5);
+      const d = st.nextT != null ? st.nextT - t : 9;
+      const x = d >= 0 && d < 0.11 ? 1 - d / 0.11 : 0;
+      const before = (st.nextAmt || 0) * x * x * (3 - 2 * x);
+      pulse = Math.max(after, before) * this.pulseAmt;
+    }
 
     // Reveal opening: the clip sits in the middle as a small rounded window and slowly grows until the drop
     const rv = st.reveal;
@@ -207,7 +233,8 @@ export class Compositor {
       let ox = dx;
       let oy = dy;
       let filter = hue;
-      if (this.look.filter) filter += " " + this.look.filter;
+      if (this.lookFilter) filter += " " + this.lookFilter;
+      if (this.bright) filter += ` brightness(${f3(1 + 0.1 * this.bright)})`;
       // Even out brightness: every clip towards a medium brightness
       if (this.S.lookEven && m.sig && m.sig.lum != null) filter += ` brightness(${Math.max(0.8, Math.min(1.4, 118 / Math.max(20, m.sig.lum))).toFixed(2)})`;
       // Transition: the new clip whips into the field with motion blur
@@ -258,13 +285,22 @@ export class Compositor {
     }
 
     // Color look: tint over everything, noir with dark corners
-    if (this.look.tint) {
+    if (this.lookTint) {
       g.globalCompositeOperation = "soft-light";
-      g.fillStyle = this.look.tint;
+      g.fillStyle = this.lookTint;
+      g.fillRect(0, 0, W, H);
+      g.globalCompositeOperation = "source-over";
+    }
+    // Brighter, smoothly: white in soft-light lifts the mid-tones without burning out the highlights
+    if (this.bright) {
+      g.globalCompositeOperation = "soft-light";
+      g.fillStyle = `rgba(255, 255, 255, ${f3(0.4 * this.bright)})`;
       g.fillRect(0, 0, W, H);
       g.globalCompositeOperation = "source-over";
     }
     if (this.look.vignette) vignette(g, W, H, 0.6);
+    // Only the rim of the picture is softened / smeared / bent – the middle stays sharp
+    if (this.S.edge && this.S.edge !== "off") this.edgeSoft(this.S.edge, Math.max(0, Math.min(1, (this.S.edgeAmt ?? 50) / 100)));
 
     // Dividers between fields, glowing to the beat
     if (st.slots.length > 1) {
@@ -376,6 +412,80 @@ export class Compositor {
       const p = this.prev.getContext("2d");
       p.clearRect(0, 0, W, H);
       p.drawImage(this.c, 0, 0);
+    }
+  }
+
+  // Rim effect on the finished picture: a blurred copy (cheap: the picture shrunk and scaled back up) that only shows
+  // towards the edges. blur = soft, motion = streaks sideways (left/right) and up/down (top/bottom), lens = bent outwards
+  edgeSoft(kind, a) {
+    if (a <= 0) return;
+    const { g, W, H } = this;
+    const f = 1 / (2 + 7 * a);
+    const sw = Math.max(8, Math.round(W * f));
+    const sh = Math.max(8, Math.round(H * f));
+    if (!this.es) this.es = this.off(sw, sh);
+    if (!this.eo) this.eo = this.off(W, H);
+    if (this.es.width !== sw || this.es.height !== sh) {
+      this.es.width = sw;
+      this.es.height = sh;
+    }
+    const sx = this.es.getContext("2d");
+    sx.imageSmoothingQuality = "high";
+    sx.drawImage(this.c, 0, 0, sw, sh);
+    const o = this.eo.getContext("2d");
+    const mask = (shape) => {
+      o.globalCompositeOperation = "destination-in";
+      const k = 0.5 + 0.5 * a; // how far in the effect reaches: stronger = more of the rim
+      let gr;
+      if (shape === "x") {
+        gr = o.createLinearGradient(0, 0, W, 0);
+        gr.addColorStop(0, "rgba(0,0,0,1)");
+        gr.addColorStop(Math.max(0.02, 0.5 - 0.5 * (1 - k) - 0.12), "rgba(0,0,0,0)");
+        gr.addColorStop(Math.min(0.98, 0.5 + 0.5 * (1 - k) + 0.12), "rgba(0,0,0,0)");
+        gr.addColorStop(1, "rgba(0,0,0,1)");
+      } else if (shape === "y") {
+        gr = o.createLinearGradient(0, 0, 0, H);
+        gr.addColorStop(0, "rgba(0,0,0,1)");
+        gr.addColorStop(Math.max(0.02, 0.5 - 0.5 * (1 - k) - 0.12), "rgba(0,0,0,0)");
+        gr.addColorStop(Math.min(0.98, 0.5 + 0.5 * (1 - k) + 0.12), "rgba(0,0,0,0)");
+        gr.addColorStop(1, "rgba(0,0,0,1)");
+      } else {
+        gr = o.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.3, W / 2, H / 2, Math.hypot(W, H) * 0.5);
+        gr.addColorStop(0, "rgba(0,0,0,0)");
+        gr.addColorStop(0.35, "rgba(0,0,0,0)");
+        gr.addColorStop(1, `rgba(0,0,0,${f3(0.55 + 0.4 * a)})`);
+      }
+      o.fillStyle = gr;
+      o.fillRect(0, 0, W, H);
+      o.globalCompositeOperation = "source-over";
+    };
+    const pass = (draw, shape) => {
+      o.clearRect(0, 0, W, H);
+      draw();
+      mask(shape);
+      g.drawImage(this.eo, 0, 0);
+    };
+    o.imageSmoothingEnabled = true;
+    o.imageSmoothingQuality = "high";
+    if (kind === "motion") {
+      const n = 6;
+      const reach = W * 0.03 * (0.4 + a);
+      pass(() => {
+        o.globalAlpha = 1 / 3;
+        for (let i = 0; i < n; i++) o.drawImage(this.es, ((i / (n - 1)) - 0.5) * reach * 2, 0, W, H);
+        o.globalAlpha = 1;
+      }, "x");
+      const reachY = H * 0.03 * (0.4 + a);
+      pass(() => {
+        o.globalAlpha = 1 / 3;
+        for (let i = 0; i < n; i++) o.drawImage(this.es, 0, ((i / (n - 1)) - 0.5) * reachY * 2, W, H);
+        o.globalAlpha = 1;
+      }, "y");
+    } else if (kind === "lens") {
+      const z = 1 + 0.05 * a + 0.02;
+      pass(() => o.drawImage(this.es, (W - W * z) / 2, (H - H * z) / 2, W * z, H * z), "r");
+    } else {
+      pass(() => o.drawImage(this.es, 0, 0, W, H), "r");
     }
   }
 

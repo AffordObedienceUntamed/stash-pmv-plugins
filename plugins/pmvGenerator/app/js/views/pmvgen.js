@@ -66,7 +66,16 @@ const DEFAULTS = {
   // Effects: a calm start – zoom-in entry, flash, zoom pulse and RGB split; the rest is opt-in
   fx: { flash: true, zoom: true, shake: false, glitch: false, stutter: false, hue: false, rgb: true, echo: false, tunnel: false, invert: false, whip: false, zoomin: true, speed: false, voice: true, vhs: false, strobe: false, text: false, kenburns: true, lines: true },
   words: "",
-  look: "none", // color look: none | warm | pink | cold | bw | noir | vivid
+  look: "none", // color look: none | warm | pink | cold | bw | noir | vivid | custom
+  lookAmt: 100, // strength of the look (%)
+  lookColor: "#ff4d94", // the tint of the "custom" look
+  bright: 0, // smooth extra brightness (%)
+  edge: "off", // rim of the picture: off | blur | motion | lens
+  edgeAmt: 50, // how strong / how far in (%)
+  smooth: true, // clips scaled smoothly (less pixelated)
+  pulseAmt: 100, // zoom pulse strength (%)
+  pulseOn: "beat", // zoom pulse on: beat | 2 (every other beat) | bar
+  pace: "normal", // automatic cuts: slow | normal | fast
   lookEven: true, // even out clip brightness
   songVol: 100, // song volume (%)
   clipVol: 50, // clip audio volume (%)
@@ -126,6 +135,7 @@ const LOOKS = [
   ["vivid", "Vivid"],
   ["bw", "Black & white"],
   ["noir", "Noir"],
+  ["custom", "Own color"],
 ];
 // Moods: set layouts, cutting and effects in one go
 const PRESETS = {
@@ -386,6 +396,10 @@ export function render(main) {
           <div class="kb-pmvg-pane" id="pmvg-pane-cut" data-pane="cut">
             <span class="kb-lab-t">When to cut</span>
             <div class="kb-seg" data-seg="cut">${CUTS.map(([v, l, t]) => `<button type="button" data-v="${v}" title="${esc(t)}">${l}</button>`).join("")}</div>
+            <div data-pacebox>
+              <span class="kb-lab-t">Pace <small>– how fast “Automatic” cuts</small></span>
+              <div class="kb-seg" data-seg="pace"><button type="button" data-v="slow" title="Calm: every 8 beats · medium: every 4 · loud: every 2">Slow</button><button type="button" data-v="normal" title="Calm: every 4 beats · medium: every 2 · loud: every beat">Normal</button><button type="button" data-v="fast" title="Calm: every 2 beats · medium and loud: every beat">Fast</button></div>
+            </div>
             <div class="kb-pmvg-opts">
               ${sw("reveal", "Reveal opening", "The first clip sits small in the middle with rounded corners and slowly grows – at the first drop the picture opens up into the layouts (songs with a known length; not with templates)")}
               ${sw("scroll", "Scrolling sides", "In 3-way layouts the middle clip stays longer while the clips at the sides scroll up or down, like swiping through a feed (needs the 3-way layouts)")}
@@ -402,6 +416,13 @@ export function render(main) {
         <div class="kb-pmvg-sec" data-sec="fx">
           ${secHead("fx")}
           <div class="kb-pmvg-pane" id="pmvg-pane-fx" data-pane="fx">
+            <div class="kb-pmvg-group" data-pulsebox>
+              <div class="kb-pmvg-grouphead"><b>Zoom pulse</b><small>How strong and on which beats the picture pumps</small></div>
+              <div class="kb-pmvg-sound">
+                <label class="kb-pmvg-range"><span>${icon("sliders")}Strength</span><input type="range" min="0" max="100" step="5" data-r="pulseAmt" aria-label="Zoom pulse strength"><output data-ro="pulseAmt"></output></label>
+              </div>
+              <div class="kb-seg" data-seg="pulseOn"><button type="button" data-v="beat" title="On every beat">Every beat</button><button type="button" data-v="2" title="On every other beat">Every 2nd</button><button type="button" data-v="bar" title="Only on the first beat of each bar">Each bar</button></div>
+            </div>
             ${FX_GROUPS.map(([name, sub, keys]) => `
               <div class="kb-pmvg-group">
                 <div class="kb-pmvg-grouphead"><b>${name}</b>${sub ? `<small>${sub}</small>` : ""}<span class="kb-spacer"></span>
@@ -417,7 +438,21 @@ export function render(main) {
           <div class="kb-pmvg-pane" id="pmvg-pane-look" data-pane="look">
             <span class="kb-lab-t">Color look <small>– all clips in the same color mood</small></span>
             <div class="kb-seg kb-pmvg-looks" data-seg="look">${LOOKS.map(([v, l]) => `<button type="button" data-v="${v}"><i class="kb-pmvg-lookdot is-${v}"></i>${l}</button>`).join("")}</div>
+            <div class="kb-pmvg-sound" data-lookbox>
+              <label class="kb-pmvg-range"><span>${icon("sliders")}Strength</span><input type="range" min="0" max="100" step="5" data-r="lookAmt" aria-label="Strength of the color look"><output data-ro="lookAmt"></output></label>
+              <label class="kb-pmvg-range" data-colorrow><span>${icon("image")}Color</span><input type="color" class="kb-pmvg-color" data-sel="lookColor" aria-label="Color of your own look"></label>
+            </div>
+            <span class="kb-lab-t">Brighter <small>– lifts the mid-tones smoothly, without burning out the highlights</small></span>
+            <div class="kb-pmvg-sound">
+              <label class="kb-pmvg-range"><span>${icon("eye")}Brightness</span><input type="range" min="0" max="100" step="5" data-r="bright" aria-label="Brightness"><output data-ro="bright"></output></label>
+            </div>
+            <span class="kb-lab-t">Rim of the picture <small>– only the edges, the middle stays sharp</small></span>
+            <div class="kb-seg" data-seg="edge"><button type="button" data-v="off">Off</button><button type="button" data-v="blur" title="Soft blur towards the edges">Blur</button><button type="button" data-v="motion" title="Light motion blur: streaks sideways at the left and right edge, up and down at the top and bottom">Motion</button><button type="button" data-v="lens" title="The edges look bent outwards, like through a lens">Lens</button></div>
+            <div class="kb-pmvg-sound" data-edgebox>
+              <label class="kb-pmvg-range"><span>${icon("sliders")}Strength</span><input type="range" min="0" max="100" step="5" data-r="edgeAmt" aria-label="Strength of the rim effect"><output data-ro="edgeAmt"></output></label>
+            </div>
             <div class="kb-pmvg-opts">
+              ${sw("smooth", "Smooth scaling", "Clips are scaled with the best quality – less pixelated and jagged, a bit more work for the computer")}
               ${sw("lookEven", "Even out brightness", "Clips that are too dark get brightened, too bright ones toned down – looks all of a piece")}
               ${LOOK_FX.map(fxSw).join("")}
             </div>
@@ -496,6 +531,11 @@ export function render(main) {
       seg.querySelectorAll("[data-v]").forEach((b) => b.classList.toggle("is-on", String(S[seg.dataset.seg]) === b.dataset.v));
     });
     main.querySelectorAll("[data-layouts] [data-l]").forEach((b) => b.classList.toggle("is-on", !!S.layouts[b.dataset.l]));
+    $("[data-pacebox]").hidden = S.cut !== "auto";
+    $("[data-colorrow]").hidden = S.look !== "custom";
+    $("[data-lookbox]").hidden = S.look === "none";
+    $("[data-edgebox]").hidden = S.edge === "off";
+    $("[data-pulsebox]").hidden = !S.fx.zoom;
     $("[data-seg=tagMode]").hidden = (S.stagesOn ? S.stages.length : S.tags.length) < 2;
     $("[data-markerwrap]").hidden = S.source !== "marker";
     $("[data-tags]").hidden = !!S.stagesOn;
@@ -3166,6 +3206,13 @@ class Generator {
     }
   }
 
+  // How hard beat k pumps the picture: louder = more; "every 2nd" / "each bar" leave out the others
+  pulseFor(k, e, bar, drop) {
+    const on = this.S.pulseOn;
+    if (!drop && ((on === "2" && k % 2) || (on === "bar" && !bar))) return 0;
+    return 0.03 + 0.07 * e + (drop ? 0.1 : 0);
+  }
+
   // Direction: decide what happens on each beat
   onBeat(k, t) {
     const S = this.S;
@@ -3189,8 +3236,12 @@ class Generator {
     this.updateStage(beats[k], drop, len);
     const comp = this.comp;
     this.st.energy = e;
-    this.st.beatT = t;
-    this.st.beatAmt = 0.03 + 0.07 * e + (drop ? 0.1 : 0);
+    // The zoom pulse sits exactly on the beat (its time from the song, not from when it was noticed); the next beat is
+    // known too, so the pulse can ease in just before it
+    this.st.beatT = beats[k] != null ? beats[k] + (this.vOff || 0) : t;
+    this.st.beatAmt = this.pulseFor(k, e, bar, drop);
+    this.st.nextT = beats[k + 1] != null ? beats[k + 1] + (this.vOff || 0) : null;
+    this.st.nextAmt = beats[k + 1] != null ? this.pulseFor(k + 1, this.song.energy[k + 1] || 0, B ? !!B.downbeat[k + 1] : (k + 1) % 4 === 0, false) : 0;
 
     // Change layout: on drops right away; otherwise every 2 bars if the mood has changed
     // or – in loud parts – for variety. Calm parts stay calm.
@@ -3215,7 +3266,8 @@ class Generator {
     } else {
       // Within the layout: re-cut the fields in turn
       if (revealEnds && this.layouts.length < 2) comp.flash(t, 0.9, "#ff3e8a"); // (a single layout: the window just opens up)
-      let every = S.cut === "auto" ? (e > 0.72 ? 1 : e > 0.4 ? 2 : 4) : Number(S.cut);
+      const PACE = { slow: [8, 4, 2], normal: [4, 2, 1], fast: [2, 1, 1] }[S.pace] || [4, 2, 1]; // calm · medium · loud
+      let every = S.cut === "auto" ? (e > 0.72 ? PACE[2] : e > 0.4 ? PACE[1] : PACE[0]) : Number(S.cut);
       if (this.scrollDir) every = Math.max(2, every); // scrolling is slower than cutting
       // With bars the cuts sit on the bar's grid: every beat, beats 1 and 3, or only the "one" – not "N beats after the last cut"
       const onGrid = B && 4 % every === 0 ? B.pos[k] % every === 0 && k - this.lastCut >= Math.min(every, 2) : k - this.lastCut >= every;

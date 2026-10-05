@@ -4,6 +4,15 @@
 
 export const CHANGES = [
   {
+    v: "3.70.0",
+    date: "2026-10-06",
+    items: [
+      ["pmv", "PMV Generator 2.21.0: the color look has a strength and a color of your own (a light pink or blue breath over everything); new Brightness (smooth, no burnt highlights); new Rim of the picture (blur, motion or lens – only the edges, the middle stays sharp); Smooth scaling for less pixelated clips.", "PMV 生成器 2.21.0：色调现在可调强度，并支持自定义颜色（给整个画面轻轻罩上一层粉色或蓝色）；新增亮度（平滑，不会过曝）；新增画面边缘效果（模糊、动态或镜头——只作用于边缘，中间保持清晰）；新增平滑缩放，减少像素块。"],
+      ["pmv", "The zoom pulse is smoother and sits exactly on the beat (it eases in just before it and fades out softly). New: its strength, and pumping on every beat, every 2nd beat or each bar only.", "缩放脉冲更平滑，并且精确落在拍点上（在拍点前缓缓进入，之后柔和消退）。新增：脉冲强度，以及每一拍、每隔一拍或仅每小节脉动。"],
+      ["pmv", "New Pace for Automatic cuts: Slow, Normal or Fast – is the PMV slow or fast paced.", "自动剪切新增节奏设置：慢、正常或快——决定 PMV 是慢节奏还是快节奏。"],
+    ],
+  },
+  {
     v: "3.69.7",
     date: "2026-10-06",
     items: [
