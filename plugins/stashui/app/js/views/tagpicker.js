@@ -7,7 +7,11 @@ import { findTags, createTag } from "../api.js";
 
 let allTags = null;
 export function tagsCache(force) {
-  if (!allTags || force) allTags = findTags("", -1).then((r) => r.tags);
+  if (!allTags || force) {
+    const p = findTags("", -1).then((r) => r.tags);
+    allTags = p;
+    p.catch(() => allTags === p && (allTags = null));
+  }
   return allTags;
 }
 
@@ -28,6 +32,10 @@ export function tagPicker(host, opts) {
   let tags = [];
   let active = -1;
   let shown = [];
+  let state = "loading"; // loading | ok | remote (the whole list couldn't be loaded: ask Stash for matches while typing)
+  let loadErr = "";
+  let remoteTimer = 0;
+  const known = new Map(); // id → name, so chips keep their names in "remote" mode
 
   host.innerHTML = `<div class="kb-chips" data-chips></div>
     <input class="kb-field" type="text" placeholder="${esc(opts.placeholder || t("Add tag …"))}" autocomplete="off" spellcheck="false" aria-label="${t("Add tag")}">
@@ -36,7 +44,8 @@ export function tagPicker(host, opts) {
   const input = host.querySelector("input");
   const sugg = host.querySelector(".kb-sugg");
 
-  const name = (id) => (tags.find((tg) => tg.id === id) || { name: "#" + id }).name;
+  const learn = (list) => list.forEach((tg) => known.set(tg.id, tg.name));
+  const name = (id) => known.get(id) || (tags.find((tg) => tg.id === id) || { name: "#" + id }).name;
   function renderChips() {
     chips.innerHTML =
       inc.map((id) => `<span class="kb-chip is-on" data-id="${id}" title="${opts.allowExclude ? t("Right-click: exclude") : ""}">${esc(name(id))}<button type="button" data-rm="${id}" aria-label="${t("Remove")}">×</button></span>`).join("") +
@@ -46,9 +55,23 @@ export function tagPicker(host, opts) {
   const emit = () => opts.onChange && opts.onChange([...inc], [...exc]);
 
   function showSugg() {
+    try {
+      paintSugg();
+    } catch (e) {
+      console.error("tag picker", e);
+      sugg.innerHTML = `<button type="button" disabled>${esc(t("Couldn't show the tags: {msg}", { msg: e.message }))}</button>`;
+      sugg.hidden = false;
+    }
+  }
+  function paintSugg() {
     const q = input.value.trim().toLowerCase();
     if (!q && document.activeElement !== input) {
       sugg.hidden = true;
+      return;
+    }
+    if (state === "loading") {
+      sugg.innerHTML = `<button type="button" disabled>${t("Loading tags …")}</button>`;
+      sugg.hidden = false;
       return;
     }
     shown = tags
@@ -61,7 +84,7 @@ export function tagPicker(host, opts) {
     sugg.innerHTML =
       shown.map((tg, i) => `<button type="button" role="option" data-i="${i}" class="${i === active ? "is-active" : ""}">${esc(tg.name)}<small>${fmtNum(tg.scene_count + tg.image_count + tg.gallery_count)}</small></button>`).join("") +
       (create ? `<button type="button" data-create class="${active === shown.length ? "is-active" : ""}">${esc(t("New tag “{name}”", { name: input.value.trim() }))}</button>` : "") +
-      (!shown.length && !create ? `<button type="button" disabled>${t("No matching tag")}</button>` : "");
+      (!shown.length && !create ? `<button type="button" disabled>${loadErr ? esc(t("Couldn't search the tags: {msg}", { msg: loadErr })) : t("No matching tag")}</button>` : "");
     sugg.hidden = false;
   }
 
@@ -87,6 +110,21 @@ export function tagPicker(host, opts) {
   input.addEventListener("input", () => {
     // Nothing is picked for you: click a suggestion, or ↑/↓ + Enter. Only a name typed exactly (or an alias) is highlighted, so Enter takes that one
     active = -1;
+    if (state === "remote" && input.value.trim()) {
+      clearTimeout(remoteTimer);
+      remoteTimer = setTimeout(async () => {
+        try {
+          const r = await findTags(input.value.trim(), 40);
+          tags = r.tags;
+          learn(tags);
+          loadErr = "";
+        } catch (e) {
+          tags = [];
+          loadErr = e.message;
+        }
+        showSugg();
+      }, 250);
+    }
     showSugg();
     const qq = input.value.trim().toLowerCase();
     if (qq && shown.length && matchRank(shown[0].name, shown[0].aliases, qq) <= 1) {
@@ -142,10 +180,20 @@ export function tagPicker(host, opts) {
     emit();
   });
 
-  tagsCache().then((tg) => {
-    tags = tg;
-    renderChips();
-  });
+  tagsCache()
+    .then((tg) => {
+      tags = tg;
+      learn(tags);
+      state = "ok";
+      renderChips();
+      if (document.activeElement === input) showSugg(); // typed while it was loading
+    })
+    .catch((e) => {
+      state = "remote";
+      loadErr = e.message;
+      console.error("tag list", e);
+      if (document.activeElement === input && input.value.trim()) input.dispatchEvent(new Event("input"));
+    });
   renderChips();
 
   return {
@@ -155,6 +203,7 @@ export function tagPicker(host, opts) {
     set(ids, extra = []) {
       // (extra: tags just made, which the list doesn't know yet)
       extra.forEach((tg) => !tags.some((x) => x.id === tg.id) && tags.push(Object.assign({ scene_count: 0, image_count: 0, gallery_count: 0 }, tg)));
+      learn(extra);
       inc = [...ids];
       renderChips();
     },

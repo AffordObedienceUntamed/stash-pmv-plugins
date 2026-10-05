@@ -4,6 +4,14 @@
 
 export const CHANGES = [
   {
+    v: "3.64.1",
+    date: "2026-10-05",
+    items: [
+      ["ui", "Stash UI 3.64.1: the tag search is more robust. While the tag list is still loading it says “Loading tags …” and the suggestions appear by themselves as soon as it is there (before: nothing, until you typed another letter). If the whole list can't be loaded (very large libraries, a slow Stash), it asks Stash for matches while you type instead. An error shows up in the list instead of leaving it empty. This is also the tag search of the PMV Generator.", "Stash UI 3.64.1：标签搜索更稳健。标签列表仍在加载时会显示“正在加载标签 …”，加载完成后建议会自动出现（以前：在你再输入一个字母之前什么都不显示）。如果无法加载整个列表（非常大的库、Stash 较慢），则会在你输入时向 Stash 请求匹配项。出错时会在列表中显示错误，而不是留空。PMV 生成器的标签搜索也是同一个。"],
+      ["pmv", "PMV Generator 2.18.5: the tag search is more robust (see Stash UI 3.64.1).", "PMV 生成器 2.18.5：标签搜索更稳健（见 Stash UI 3.64.1）。"],
+    ],
+  },
+  {
     v: "3.64.0",
     date: "2026-10-05",
     items: [
