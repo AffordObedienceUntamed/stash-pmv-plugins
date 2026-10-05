@@ -1,10 +1,42 @@
 // Folder picker: chosen folders as chips (click a chip to remove it), below a searchable folder tree
 // (collapsible, with the number of videos/images). Subfolders are always included.
-// Each row: tick = take this folder, ⊘ = leave this folder out. Picking a subfolder of a picked folder narrows
-// the choice to that subfolder; picking a folder above picked ones takes over from them.
+// Each row: tick = take this folder, ⊘ = leave this folder out. Every mark stands on its own and the deepest one wins:
+// take a folder and leave one of its subfolders out, leave a folder out and take one of its subfolders back, or take
+// just a subfolder.
 
 import { esc, fmtNum } from "../ui.js";
 import { loadFolders } from "../api.js";
+
+const norm = (p) => String(p).replace(/\\/g, "/").replace(/\/+$/, "");
+const isUnder = (child, anc) => norm(child.path).startsWith(norm(anc.path) + "/");
+
+// The marks → what Stash is asked for: regions [{ value: [folder ids], excludes: [folder ids] }] – one means a single
+// condition, several mean "this OR that" (a subfolder taken back inside a folder that is left out needs that).
+// Nothing taken at the top → everything except the left-out folders.
+export function folderRegions(inc, exc) {
+  const marks = [...(inc || []).map((f) => ({ id: f.id, path: f.path, t: "i" })), ...(exc || []).map((f) => ({ id: f.id, path: f.path, t: "x" }))];
+  if (!marks.length) return [];
+  const nearest = (m) => marks.filter((o) => o !== m && isUnder(m, o)).sort((a, b) => norm(b.path).length - norm(a.path).length)[0] || null;
+  const rootOf = (m) => {
+    const n = nearest(m);
+    return !n || n.t === "x" ? m : rootOf(n);
+  };
+  const roots = marks.filter((m) => m.t === "i" && rootOf(m) === m);
+  const backIn = roots.filter((m) => nearest(m)); // taken back inside a folder that is left out (or inside a taken one's left-out part)
+  const topTaken = roots.filter((m) => !nearest(m));
+  const owned = new Map(); // region root id (or "all") → left-out folders
+  marks.filter((m) => m.t === "x").forEach((m) => {
+    const n = nearest(m);
+    if (n && n.t === "x") return; // (inside a folder that is left out anyway)
+    const key = n ? rootOf(n).id : "all";
+    owned.set(key, [...(owned.get(key) || []), m.id]);
+  });
+  const all = !topTaken.length; // nothing taken at the top: everything else is in
+  if (!backIn.length) return [{ value: topTaken.map((m) => m.id), excludes: [...(all ? owned.get("all") || [] : []), ...topTaken.flatMap((m) => owned.get(m.id) || [])] }];
+  const regions = roots.map((m) => ({ value: [m.id], excludes: owned.get(m.id) || [] }));
+  if (all) regions.unshift({ value: [], excludes: owned.get("all") || [] });
+  return regions;
+}
 
 const opened = new Set(); // folders whose subfolders are shown (kept while the page is open)
 
@@ -21,12 +53,6 @@ export function folderPicker(host, opts) {
   const list = host.querySelector(".kb-fpick");
   const baseName = (p) => String(p).split(/[\\/]/).filter(Boolean).pop() || p;
   const byId = (id) => rows.find((x) => x.id === id);
-  // Is `id` inside (or the same as) the folder `anc`?
-  const inside = (id, anc) => {
-    for (let r = byId(id); r; r = r.parent ? byId(r.parent) : null) if (r.id === anc) return true;
-    return false;
-  };
-
   function renderChips() {
     chips.innerHTML =
       sel.map((f) => `<button type="button" class="kb-chip is-on" data-rm="${esc(f.id)}" title="${esc(f.path)} – click to remove">${esc(baseName(f.path))}<b aria-hidden="true">×</b></button>`).join("") +
@@ -78,20 +104,21 @@ export function folderPicker(host, opts) {
   function take(id) {
     const r = byId(id);
     if (!r) return;
-    if (sel.some((f) => f.id === id)) return (sel = sel.filter((f) => f.id !== id)), refresh();
-    exc = exc.filter((f) => f.id !== id);
-    // narrow to a subfolder of a picked folder / take over from picked folders below
-    sel = sel.filter((f) => !inside(id, f.id) && !inside(f.id, id));
-    sel.push({ id: r.id, path: r.path });
+    if (sel.some((f) => f.id === id)) sel = sel.filter((f) => f.id !== id);
+    else {
+      exc = exc.filter((f) => f.id !== id);
+      sel.push({ id: r.id, path: r.path });
+    }
     refresh();
   }
   function leaveOut(id) {
     const r = byId(id);
     if (!r) return;
-    if (exc.some((f) => f.id === id)) return (exc = exc.filter((f) => f.id !== id)), refresh();
-    sel = sel.filter((f) => f.id !== id);
-    exc = exc.filter((f) => !inside(f.id, id)); // (a left-out folder inside another left-out one is redundant)
-    if (!exc.some((f) => inside(id, f.id))) exc.push({ id: r.id, path: r.path });
+    if (exc.some((f) => f.id === id)) exc = exc.filter((f) => f.id !== id);
+    else {
+      sel = sel.filter((f) => f.id !== id);
+      exc.push({ id: r.id, path: r.path });
+    }
     refresh();
   }
 

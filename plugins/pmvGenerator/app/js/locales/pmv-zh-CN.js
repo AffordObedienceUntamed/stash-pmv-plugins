@@ -62,7 +62,7 @@ export default {
     "Tags for this stage – right-click excludes": "此阶段的标签——右键点击可排除",
     "– an empty stage borrows clips from the others": "——没有片段的阶段会借用其他阶段的片段",
     Folders: "文件夹",
-    "– including subfolders · ⊘ leaves one out · pick a subfolder to narrow down": "——包含子文件夹 · ⊘ 排除某个文件夹 · 选择子文件夹可缩小范围",
+    "– including subfolders · ⊘ leaves one out · a subfolder can be taken or left out again on its own": "——包含子文件夹 · ⊘ 排除某个文件夹 · 子文件夹可单独选入或再次排除",
     "Leave this folder out": "排除此文件夹",
     "Open subfolders": "展开子文件夹",
     "Close subfolders": "收起子文件夹",

@@ -11,7 +11,7 @@ import { extractAudio, parseTime, fmtTime } from "../audiox.js";
 import { scanPmv } from "../pmvscan.js";
 import { analyzeAsync, analyzeTiles, spotScore, matchDist } from "../pmvsmart.js";
 import { tagPicker } from "./tagpicker.js";
-import { folderPicker } from "./folderpick.js";
+import { folderPicker, folderRegions } from "./folderpick.js";
 import { perfPicker, hasPerformers } from "./perfpicker.js";
 import { LAYOUTS, slotsFor, aspectOfGroup, Compositor } from "../pmvfx.js";
 import { Playlist, fileTrack, filesFromDrop, isSongFile } from "../music.js";
@@ -324,7 +324,7 @@ export function render(main) {
             ${sw("fav", "Favorites only", "")}
           </div>
           <div class="kb-pmvg-block">
-            <span class="kb-lab-t">Folders <small>– including subfolders · ⊘ leaves one out · pick a subfolder to narrow down</small></span>
+            <span class="kb-lab-t">Folders <small>– including subfolders · ⊘ leaves one out · a subfolder can be taken or left out again on its own</small></span>
             <div class="kb-pmvg-folders" data-folders></div>
             <span class="kb-lab-t">Rating at least</span>
             <div class="kb-seg kb-pmvg-small" data-seg="minRating"><button type="button" data-v="0">Any</button><button type="button" data-v="20">★1</button><button type="button" data-v="40">★2</button><button type="button" data-v="60">★3</button><button type="button" data-v="80">★4</button><button type="button" data-v="100">★5</button></div>
@@ -1874,12 +1874,25 @@ function buildFilter(kind, S, favId) {
   if (rating > 0) f.rating100 = { value: rating - 1, modifier: "GREATER_THAN" };
   if (MAX_RES[S.maxRes]) f.resolution = { value: MAX_RES[S.maxRes], modifier: "LESS_THAN" };
   if (S.shape === "portrait" || S.shape === "landscape") f.orientation = { value: [S.shape.toUpperCase()] };
-  if ((S.folders && S.folders.length) || (S.xfolders && S.xfolders.length)) {
-    const pf = { value: (S.folders || []).map((x) => x.id), modifier: "INCLUDES", depth: -1 };
-    if (S.xfolders && S.xfolders.length) pf.excludes = S.xfolders.map((x) => x.id);
-    f.files_filter = { parent_folder: pf };
-  }
+  const regions = folderRegions(S.folders, S.xfolders);
+  // One region = one condition. Several (a subfolder taken back inside a folder that is left out) = "this OR that",
+  // each with all the other criteria of this filter (added at the end, when they are all there)
+  const cond = (r) => {
+    const pf = { value: r.value, modifier: "INCLUDES", depth: -1 };
+    if (r.excludes.length) pf.excludes = r.excludes;
+    return { parent_folder: pf };
+  };
+  if (regions.length) f.files_filter = cond(regions[0]);
   if (kind === "scene") f.duration = { value: Math.max(4, Number(S.minLen) || 0), modifier: "GREATER_THAN" };
+  if (regions.length > 1) {
+    const base = Object.assign({}, f);
+    delete base.files_filter;
+    let tail = f;
+    for (const r of regions.slice(1)) {
+      tail.OR = Object.assign({}, base, { files_filter: cond(r) });
+      tail = tail.OR;
+    }
+  }
   return f;
 }
 

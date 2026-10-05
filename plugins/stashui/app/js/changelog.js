@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.60.2",
+    date: "2026-10-05",
+    items: [
+      ["pmv", "PMV Generator 2.17.1: every folder mark now stands on its own (the deepest one wins) instead of replacing the others. Leave a folder out and take one of its subfolders back, take a folder and leave a subfolder out, take a subfolder and the main folder as well – all work, and subfolders of a taken or left-out folder can be clicked again.", "PMV 生成器 2.17.1：每个文件夹标记现在各自独立（以最深一层为准），不再互相替换。可以排除某个文件夹但把其中一个子文件夹加回来，也可以选入某个文件夹但排除其中的子文件夹，或同时选子文件夹和主文件夹——都可以，被选入或被排除的文件夹下的子文件夹也能再次点击。"],
+    ],
+  },
+  {
     v: "3.60.1",
     date: "2026-10-05",
     items: [
