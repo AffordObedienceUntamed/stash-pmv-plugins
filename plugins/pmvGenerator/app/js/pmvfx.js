@@ -306,19 +306,21 @@ export class Compositor {
     // Only the rim of the picture is softened / smeared / bent – the middle stays sharp
     if (this.S.edge && this.S.edge !== "off") this.edgeSoft(this.S.edge, Math.max(0, Math.min(1, (this.S.edgeAmt ?? 50) / 100)));
 
-    // Dividers between fields, glowing to the beat
+    // Dividers between fields, glowing to the beat – thin (2 px at 720p, 3 px at 1080p)
     if (st.slots.length > 1) {
+      const dw = Math.max(2, Math.round(W / 640));
+      const h2 = dw / 2;
       const glow = Math.exp(-(t - st.beatT) * 7);
       g.fillStyle = "#0a0309";
       st.slots.forEach((s) => {
-        if (s.x > 0) g.fillRect(s.x - 2, s.y, 4, s.h);
-        if (s.y > 0) g.fillRect(s.x, s.y - 2, s.w, 4);
+        if (s.x > 0) g.fillRect(s.x - h2, s.y, dw, s.h);
+        if (s.y > 0) g.fillRect(s.x, s.y - h2, s.w, dw);
       });
       if (fx.lines && glow > 0.05) {
         g.fillStyle = `rgba(255, 62, 138, ${0.9 * glow})`;
         st.slots.forEach((s) => {
-          if (s.x > 0) g.fillRect(s.x - 1, s.y, 2, s.h);
-          if (s.y > 0) g.fillRect(s.x, s.y - 1, s.w, 2);
+          if (s.x > 0) g.fillRect(s.x - h2, s.y, dw, s.h);
+          if (s.y > 0) g.fillRect(s.x, s.y - h2, s.w, dw);
         });
       }
     }

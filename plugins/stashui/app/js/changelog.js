@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.70.3",
+    date: "2026-10-06",
+    items: [
+      ["pmv", "PMV Generator 2.21.3: the lines between the fields of a split screen are thinner now (2 px at 720p, 3 px at 1080p instead of 4 px), so the clips sit closer together.", "PMV 生成器 2.21.3：分屏中各区域之间的分隔线更细了（720p 为 2 像素，1080p 为 3 像素，原来是 4 像素），片段之间更紧凑。"],
+    ],
+  },
+  {
     v: "3.70.2",
     date: "2026-10-06",
     items: [
