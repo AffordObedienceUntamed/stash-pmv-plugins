@@ -4,6 +4,14 @@
 
 export const CHANGES = [
   {
+    v: "3.68.1",
+    date: "2026-10-06",
+    items: [
+      ["ui", "Stash UI 3.68.1: fixed – closing the detailed rating (or another drawer or dialog) with the × in fullscreen closed the whole player.", "Stash UI 3.68.1：已修复——全屏时点击 × 关闭详细评分（或其他侧栏、对话框）会把整个播放器一起关闭。"],
+      ["pmv", "PMV Generator 2.18.12: the shared files were updated.", "PMV 生成器 2.18.12：共享文件已更新。"],
+    ],
+  },
+  {
     v: "3.68.0",
     date: "2026-10-06",
     items: [
