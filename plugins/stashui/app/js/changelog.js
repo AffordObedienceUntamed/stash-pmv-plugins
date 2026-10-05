@@ -4,6 +4,14 @@
 
 export const CHANGES = [
   {
+    v: "3.62.1",
+    date: "2026-10-05",
+    items: [
+      ["pmv", "PMV Generator 2.18.0: two new options. Clip selection → Clean cuts (with best moments): a clip starts where its scene runs on for the next few seconds, so it doesn't jump to another scene by itself in the middle of a cut (and a cut inside a clip no longer counts as “lots of motion”). Style → Cutting → Bars and phrases: finds the “one” of each bar and where a 4-bar phrase starts – cuts land on the bar's strong beats and split screens change at the start of a phrase instead of “every 4th beat from the first beat”. Both can be switched off.", "PMV 生成器 2.18.0：两个新选项。片段选择 → 干净剪切（配合最佳时刻）：片段从其场景在接下来几秒内持续不断的位置开始，不会在一次剪切中途自行跳到另一个场景（片段内部的剪切也不再被当作“大量运动”）。样式 → 剪切 → 小节与乐句：找出每个小节的“第一拍”和 4 小节乐句的开头——剪切落在小节的强拍上，分屏在乐句开头切换，而不是“从第一拍起每 4 拍”。两者都可以关闭。"],
+      ["ui", "Stash UI 3.62.1: nothing to see – a shared file for the PMV Generator was extended.", "Stash UI 3.62.1：无可见变化——为 PMV 生成器扩展了一个共享文件。"],
+    ],
+  },
+  {
     v: "3.62.0",
     date: "2026-10-05",
     items: [
