@@ -1038,7 +1038,7 @@ html.kb-glass section.kb-pe-scrape { border-color: var(--glass-edge); background
 .kb-cut-box i { position: absolute; right: -7px; bottom: -7px; width: 14px; height: 14px; border-radius: 50%; background: var(--pink); cursor: nwse-resize; }
 .kb-cut-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
 .kb-cut-bar .kb-btn { display: inline-flex; align-items: center; gap: 6px; }
-.kb-cut-bar .kb-btn.is-on { border-color: var(--pink); color: var(--pink); }
+.kb-cut-bar .kb-btn.is-sel { background: transparent; box-shadow: inset 0 0 0 2px var(--pink); color: var(--pink); }
 .kb-cut-zoom { display: flex; align-items: center; gap: 8px; color: var(--text-2); font: 500 13px/1 var(--f-label); }
 .kb-cut-zoom input { width: 120px; accent-color: var(--pink); }
 .kb-cut-ratios { display: inline-flex; gap: 4px; }
