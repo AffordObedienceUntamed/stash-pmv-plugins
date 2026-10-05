@@ -4,6 +4,14 @@
 
 export const CHANGES = [
   {
+    v: "3.66.0",
+    date: "2026-10-05",
+    items: [
+      ["ui", "Stash UI 3.66.0: effects and animations. Buttons shine when you point at them and send out a ripple when pressed, cards lean towards the mouse with a light that follows it, pages rise in under a hatched wipe, dialogs and messages pop in, the menu icons wiggle and a soft glow follows the mouse. Same look, in normal and liquid glass. Switch off: Settings → This interface → Effects and animations (also off when your system asks for less motion). Also: the home page now has the same selection bar as Scenes (favorite, edit, add to queue, delete – also for scenes and images mixed), and the bar is liquid glass in the glass look.", "Stash UI 3.66.0：特效和动画。鼠标指向按钮时会闪过光泽，按下时扩散涟漪；卡片朝鼠标倾斜并有跟随的光线；切换页面时出现斜线擦除并让页面升起；对话框和消息弹出；菜单图标摆动；柔和的光晕跟随鼠标。外观不变，普通和液态玻璃模式均适用。关闭：设置 → 此界面 → 特效和动画（系统要求减少动态效果时也会自动关闭）。另外：主页现在也有与“场景”页相同的选择栏（收藏、编辑、加入队列、删除，场景和图片混选也可以），并且选择栏在玻璃模式下是液态玻璃。"],
+      ["pmv", "PMV Generator 2.18.8: the shared files were updated.", "PMV 生成器 2.18.8：共享文件已更新。"],
+    ],
+  },
+  {
     v: "3.65.0",
     date: "2026-10-05",
     items: [

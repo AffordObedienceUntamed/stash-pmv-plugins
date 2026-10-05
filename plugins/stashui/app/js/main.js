@@ -10,6 +10,7 @@ import { visibleRail } from "./railcfg.js";
 
 applyTheme(); // chosen colors before anything is drawn
 initAmbient();
+import("./fx.js").then((m) => m.applyFx()); // effects layer (Settings → This interface → Effects)
 
 // Install as an app: the worker only exists so browsers offer "Install" (needs https or localhost).
 // The install prompt comes early, Settings → General picks it up later.

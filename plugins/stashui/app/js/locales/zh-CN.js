@@ -1767,4 +1767,6 @@ export default {
   "Create studios, performers and tags that don't exist yet": "创建尚不存在的工作室、演员和标签",
   "No scene scraper or StashDB set up yet. Add them in classic Stash → Settings → Metadata Providers.": "尚未设置场景爬取器或 StashDB。请在经典版 Stash → 设置 → 元数据提供者 中添加。",
   "Title or link – empty = look the file up": "标题或链接——留空 = 按文件本身查找",
+  "Effects and animations": "特效和动画",
+  "Button shine and ripples, tilting cards with a moving light, a wipe on page changes and a glow behind the mouse. Off by itself when your system asks for less motion.": "按钮光泽和涟漪、带移动光线的倾斜卡片、切换页面时的擦除动画以及跟随鼠标的光晕。系统要求减少动态效果时会自动关闭。",
 };
