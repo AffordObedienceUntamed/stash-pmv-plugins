@@ -4,6 +4,14 @@
 
 export const CHANGES = [
   {
+    v: "3.64.2",
+    date: "2026-10-05",
+    items: [
+      ["pmv", "PMV Generator 2.18.6: fixed the suggestion lists of the Tags and Performers fields – they were drawn far below the field, out of sight, so typing a tag showed nothing. They appear right under the field again (normal and Liquid glass).", "PMV 生成器 2.18.6：修复了“标签”和“演员”输入框的建议列表——它们被绘制在输入框下方很远的位置，看不到，所以输入标签时什么都不显示。现在它们再次出现在输入框正下方（普通和液态玻璃外观）。"],
+      ["ui", "Stash UI 3.64.2: a shared stylesheet was extended (for the PMV Generator).", "Stash UI 3.64.2：扩展了一个共享样式表（用于 PMV 生成器）。"],
+    ],
+  },
+  {
     v: "3.64.1",
     date: "2026-10-05",
     items: [

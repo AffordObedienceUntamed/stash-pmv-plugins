@@ -531,6 +531,8 @@ button.kb-fpick-caret:hover { color: var(--text); }
 .kb-pmvg-songhead span { color: var(--pink); font: 600 14px/1 var(--f-label); font-variant-numeric: tabular-nums; }
 .kb-pmvg-wave { display: block; width: 100%; height: 96px; border-radius: 4px; background: var(--base); }
 .kb-pmvg-tags { display: flex; flex-direction: column; gap: 8px; }
+/* The suggestion lists (position: absolute) hang below their field – they need a positioned parent, else they appear far down the page */
+.kb-pmvg-tags, .kb-pmvg-perfs { position: relative; }
 .kb-pmvg-row { display: flex; flex-wrap: wrap; gap: 8px; }
 .kb-pmvg-stages { display: flex; flex-direction: column; gap: 8px; align-self: stretch; }
 .kb-pmvg-stages[hidden], [data-markerwrap][hidden] { display: none !important; }
