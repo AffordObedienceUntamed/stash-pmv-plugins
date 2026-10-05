@@ -1670,4 +1670,8 @@ export default {
   "Take this frame": "截取此画面",
   "The video isn't ready yet": "视频尚未就绪",
   "Use as photo": "用作照片",
+  "Search all (empty = those with {name})": "搜索全部（留空 = 包含 {name} 的项目）",
+  "No images with {name} yet – search for one above.": "还没有包含 {name} 的图片——请在上方搜索。",
+  "This picture can't be loaded": "无法加载此图片",
+  "Other picture": "换一张图片",
 };

@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.56.0",
+    date: "2026-10-05",
+    items: [
+      ["ui", "Performer photos: “Cut from a scene” now also takes images – switch between Scenes and Images at the top (the performer's own first, or search all), pick a picture and cut the portrait frame straight out of it.", "演员照片：“从场景截取”现在也支持图片——在顶部切换“场景”和“图片”（先显示该演员自己的，也可搜索全部），选一张图片后直接裁剪出竖版框。"],
+    ],
+  },
+  {
     v: "3.55.0",
     date: "2026-10-05",
     items: [
