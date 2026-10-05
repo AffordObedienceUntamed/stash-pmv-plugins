@@ -1054,6 +1054,23 @@ html.kb-glass .kb-cut-stage { border-radius: 12px; background: rgba(0, 0, 0, .55
 html.kb-glass .kb-cut-box { border-radius: 4px; }
 html.kb-glass .kb-cut-prev { background: rgba(255, 255, 255, .12); }
 @media (max-width: 560px) { .kb-cut-prev { margin-left: 0; } .kb-cut-zoom input { width: 90px; } }
+/* Add scenes and images to a performer */
+.kb-dialog.kb-add { width: min(920px, calc(100vw - 24px)); max-height: calc(100vh - 24px); overflow-y: auto; }
+.kb-add [hidden] { display: none !important; }
+.kb-cut-kinds em { color: var(--pink); font-style: normal; }
+.kb-add-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; min-height: 120px; max-height: 50vh; overflow-y: auto; padding: 2px; }
+.kb-add-grid > .kb-hint { grid-column: 1 / -1; padding: 20px 0; text-align: center; }
+.kb-add-item { position: relative; padding: 0; border: 2px solid transparent; border-radius: 6px; overflow: hidden; background: var(--bg-2); color: var(--text-2); text-align: left; cursor: pointer; }
+.kb-add-item img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: var(--bg-3); }
+.kb-add-item.is-image img { aspect-ratio: 1; }
+.kb-add-item span { display: block; padding: 3px 6px; overflow: hidden; font: 500 11px/1.3 var(--f-label); white-space: nowrap; text-overflow: ellipsis; }
+.kb-add-item i { position: absolute; right: 6px; top: 6px; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: rgba(0, 0, 0, .5); color: transparent; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .7); }
+.kb-add-item i .kb-ic { width: 14px; height: 14px; }
+.kb-add-item.is-on { border-color: var(--pink); }
+.kb-add-item.is-on i { background: var(--pink); color: #fff; box-shadow: none; }
+html.kb-glass .kb-add-item { border-radius: 10px; background: rgba(255, 255, 255, .1); }
+html.kb-glass .kb-add-item.is-on { border-color: var(--pink); }
+html.kb-glass .kb-add-grid { border-radius: 12px; }
 .kb-taglink { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; margin: 0 0 18px; padding: 12px 14px; border: 1px solid color-mix(in srgb, var(--pink) 45%, transparent); border-radius: 8px; background: color-mix(in srgb, var(--pink) 9%, var(--bg-2)); }
 .kb-taglink > .kb-ic { flex: none; width: 18px; height: 18px; color: var(--pink); }
 .kb-taglink > span { flex: 1 1 280px; min-width: 0; color: var(--text); font: 500 14px/1.4 var(--f-text); }

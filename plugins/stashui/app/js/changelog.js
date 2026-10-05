@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.57.0",
+    date: "2026-10-05",
+    items: [
+      ["ui", "Performer page: a new “Add scenes and images” button next to Edit. Browse or search the scenes, images and galleries that aren't linked to the performer yet, tick as many as you like (or all shown) and link them in one go.", "演员页面：编辑按钮旁新增“添加场景和图片”按钮。浏览或搜索尚未关联到该演员的场景、图片和图库，随意勾选（或勾选当前显示的全部），一次性完成关联。"],
+    ],
+  },
+  {
     v: "3.56.0",
     date: "2026-10-05",
     items: [

@@ -62,6 +62,7 @@ export async function render(main, params, query) {
           <button class="kb-plc-btn" data-advrate title="${t("Rate by several criteria – Stash's rating follows")}">★+ ${t("Detailed")}</button>
           ${p.o_counter ? `<span class="kb-plc-btn is-static" title="${t("O counter")}">${icon("drop")}${p.o_counter}</span>` : ""}
           <button class="kb-plc-btn" data-edit>${icon("edit")}${t("Edit")}</button>
+          <button class="kb-plc-btn" data-addmedia title="${t("Link scenes, images and galleries to this performer")}">${icon("plus")}${t("Add scenes and images")}</button>
         </div>
         ${facts.length ? `<dl class="kb-facts">${facts.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join("")}</dl>` : ""}
         ${critOf("performer", p) ? `<div class="kb-critlist" title="${t("Detailed rating")}">${critOf("performer", p).map((c) => `<span class="kb-critchip"><b>${esc(c.name)}</b><i style="--v:${c.score * 20}%"></i><em>${c.score}</em></span>`).join("")}</div>` : ""}
@@ -204,6 +205,10 @@ export async function render(main, params, query) {
   const edit = (scrape) => openPerformerEditor(p.id, { scrape, onSaved: () => go("performer/" + p.id, true), onDeleted: () => go("performers", true) });
   main.querySelector("[data-edit]").onclick = () => edit(false);
   main.querySelector("[data-photo]").onclick = () => edit(false);
+  main.querySelector("[data-addmedia]").onclick = async () => {
+    const { openAddMedia } = await import("./perfadd.js");
+    openAddMedia({ id: p.id, name: p.name }, () => go("performer/" + p.id, true));
+  };
   if (query.edit === "1") {
     setQuery({ edit: "" });
     edit(true);

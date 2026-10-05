@@ -1674,4 +1674,13 @@ export default {
   "No images with {name} yet – search for one above.": "还没有包含 {name} 的图片——请在上方搜索。",
   "This picture can't be loaded": "无法加载此图片",
   "Other picture": "换一张图片",
+  "Add scenes and images": "添加场景和图片",
+  "Link scenes, images and galleries to this performer": "将场景、图片和图库关联到此演员",
+  "Everything you tick is linked to {name}. Items already linked aren't shown.": "勾选的所有项目都会关联到 {name}。已关联的项目不会显示。",
+  "Search by title, path or tag": "按标题、路径或标签搜索",
+  "Tick all shown": "勾选当前显示的全部",
+  "Clear ticks": "清除勾选",
+  "Add {n}": "添加 {n} 项",
+  "Show more ({n} left)": "显示更多（还有 {n} 项）",
+  "Nothing left to add here.": "这里没有可添加的项目了。",
 };
