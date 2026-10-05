@@ -9,6 +9,7 @@ import { t, locale, LANGS, chosen, choose } from "../i18n.js";
 import { gql, setPluginConfig } from "../api.js";
 import { typeInfo, selection, fieldHtml, readFields, unwrap, labelOf, LABELS } from "../forms.js";
 import { go } from "../main.js";
+import { exportBackup, importBackup } from "../backup.js";
 import { pokeJobs } from "../jobs.js";
 import { themeHtml, bindTheme } from "../theme.js";
 import { interactiveConfig, saveInteractiveConfig, testHandy } from "../interactive.js";
@@ -50,7 +51,7 @@ SECTIONS.splice(SECTIONS.findIndex((x) => x.id === "classic-ui"), 0, Object.assi
 const CUSTOM_ENTRIES = {
   look: ["Colors", "Liquid glass"],
   "player-ui": ["At the end of a video", "Start at a random spot", "Info panel in fullscreen", "Sound in previews", "The Handy", "Connection key", "Script offset"],
-  "this-ui": ["Language", "Folder loading", "This interface as home page", "Install as app", "Studio on scenes", "Other plugins in the menu", "Rating system", "Thumbnail size", "Favorites", "Reset interface settings"],
+  "this-ui": ["Language", "Folder loading", "This interface as home page", "Install as app", "Studio on scenes", "Other plugins in the menu", "Rating system", "Thumbnail size", "Favorites", "Backup and restore", "Reset interface settings"],
   database: ["Back up database", "Optimize database", "Clean up generated files"],
   login: ["API key"],
 };
@@ -472,6 +473,8 @@ async function renderApp(body) {
       <label class="kb-set"><span class="kb-set-label"><b>${t("Thumbnail size")}</b><small>${t("How tall a row in the lists is.")}</small></span>
         <input type="range" min="130" max="480" step="10" data-rowh value="${store.get("rowHeight", 250)}"></label>
       <div class="kb-set"><div class="kb-set-label"><b>${t("Favorites")}</b><small>${t("The heart is the Stash tag “Favorite”. You'll find it in classic Stash too.")}</small></div></div>
+      <div class="kb-set"><div class="kb-set-label"><b>${t("Backup and restore")}</b><small>${t("Saves everything this interface remembers – settings of this browser, home page and menu, ratings, playlists, Versus, funscript variants – in one file, and puts it back (also in another browser). It may contain your Handy connection key, so keep the file private.")}</small></div>
+        <span class="kb-set-btns"><button type="button" class="kb-btn" data-bkexport>${t("Save backup")}</button><button type="button" class="kb-btn" data-bkimport>${t("Restore backup")}</button><input type="file" accept=".json,application/json" data-bkfile hidden></span></div>
       <div class="kb-set"><div class="kb-set-label"><b>${t("Reset interface settings")}</b><small>${t("Everything this interface remembers in this browser – player and viewer settings, thumbnail size, expanded folders, the home page and more. Not the queue, the colors or the glass look.")}</small></div>
         <button type="button" class="kb-btn" data-resetlocal>${t("Reset")}</button></div>
     </form>`;
@@ -583,6 +586,13 @@ async function renderApp(body) {
     store.set("folderMode", e.target.value);
     sessionStorage.removeItem("stashui.foldersOnce");
     location.reload(); // the navigation is built once – rebuild it with or without folders
+  };
+  body.querySelector("[data-bkexport]").onclick = () => exportBackup().catch((e) => errorToast(e, "Backup"));
+  body.querySelector("[data-bkimport]").onclick = () => body.querySelector("[data-bkfile]").click();
+  body.querySelector("[data-bkfile]").onchange = (e) => {
+    const f = e.target.files[0];
+    e.target.value = "";
+    if (f) importBackup(f);
   };
   body.querySelector("[data-rowh]").onchange = (e) => store.set("rowHeight", Number(e.target.value));
   body.querySelector("[data-resetlocal]").onclick = async () => {

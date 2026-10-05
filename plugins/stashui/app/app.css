@@ -1613,3 +1613,5 @@ html.kb-glass .kb-mk-art { border: 1px solid var(--glass-edge); border-radius: 1
 .kb-sfnote { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 0 0 10px; padding: 7px 10px; border-left: 3px solid var(--pink); border-radius: 4px; background: var(--base); color: var(--text); font: 400 13.5px/1.35 var(--f-text); }
 .kb-sfnote[hidden] { display: none !important; }
 html.kb-glass .kb-sfnote { border: 1px solid var(--glass-edge); border-left: 3px solid var(--pink); border-radius: 14px; background: var(--glass-shine), var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); }
+
+.kb-set-btns { display: flex; flex-wrap: wrap; gap: 8px; }

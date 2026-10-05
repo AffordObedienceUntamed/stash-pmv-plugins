@@ -4,6 +4,14 @@
 
 export const CHANGES = [
   {
+    v: "3.62.0",
+    date: "2026-10-05",
+    items: [
+      ["ui", "Settings → This interface → General: Backup and restore. One file holds everything this interface remembers – the settings of this browser (home page, menu, display, queue …) and the shared ones kept in Stash (ratings, playlists, Versus, funscript variants, PMV presets). Restoring writes the file's values over the current ones, also in another browser. The file may contain your Handy connection key – keep it private.", "设置 → 此界面 → 常规：新增「备份与恢复」。一个文件包含此界面记住的所有内容——此浏览器的设置（首页、菜单、显示、队列等）和保存在 Stash 中的共享设置（评分、播放列表、Versus、funscript 变体、PMV 预设）。恢复时文件中的值会覆盖当前值，也可在另一个浏览器中使用。文件可能包含你的 Handy 连接密钥，请妥善保管。"],
+      ["pmv", "PMV Generator 2.17.3: the shared files were updated.", "PMV 生成器 2.17.3：共享文件已更新。"],
+    ],
+  },
+  {
     v: "3.61.0",
     date: "2026-10-05",
     items: [
