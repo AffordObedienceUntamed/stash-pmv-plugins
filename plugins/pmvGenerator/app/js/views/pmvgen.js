@@ -56,6 +56,7 @@ const DEFAULTS = {
   cleanCuts: true, // a clip's start has no scene change in the first seconds (it would cut by itself)
   smartCrop: true, // crop follows what matters
   variety: true, // same scene / performer not shortly after each other
+  sequenced: false, // clips come from the part of their scene that matches how far the song is (start → start, end → end)
   matchCut: true, // pick the best-matching clip at each cut
   cut: "auto",
   bars: true, // cuts on the bar's beats, layouts change where a phrase starts (not just "every 4th beat")
@@ -344,6 +345,7 @@ export function render(main) {
           ${sw("cleanCuts", "Clean cuts", "With best moments: a clip starts where its scene runs on for the next few seconds – no hidden cut inside the clip that jumps to another scene by itself")}
           ${sw("smartCrop", "Smart crop", "The crop follows what matters in the clip instead of sticking to the center")}
           ${sw("matchCut", "Match cuts", "At each cut, the clip that best matches the previous one in color, brightness and composition comes next")}
+          ${sw("sequenced", "Follow the scenes' timeline", "A clip comes from the part of its scene that matches how far the song is: the start of the song uses the beginnings of the scenes, the end of the song their endings (a song of known length only)")}
           ${sw("variety", "Variety", "The same scene or performer doesn't come up again shortly after")}
         </div>
         <span class="kb-lab-t">RedGifs <small>– mix in clips from RedGifs (needs internet)</small></span>
@@ -452,7 +454,7 @@ export function render(main) {
             </div>
             <input class="kb-field" data-title placeholder="Title for intro/outro – empty = song name" value="${esc(S.title)}">
             <div class="kb-pmvg-opts">
-              ${sw("record", "Record", "Saves the result as a video – then download it or save it straight to Stash as a scene")}
+              ${sw("record", "Record", "Saves the result as a video, recorded while the show plays – so let it run to the end (stopping early ends the video there). Then download it or save it straight to Stash as a scene")}
             </div>
             <span class="kb-lab-t">Recording quality</span>
             <div class="kb-seg" data-seg="quality"><button type="button" data-v="720">720p</button><button type="button" data-v="1080">1080p</button></div>
@@ -542,7 +544,7 @@ export function render(main) {
       out: [S.intro && "Intro", S.outro && "Outro", S.record && "Recording"].filter(Boolean).join(" · ") || "live only",
     };
     main.querySelectorAll("[data-tabsum]").forEach((s) => (s.textContent = tabSum[s.dataset.tabsum]));
-    const clipOpts = [S.bestSpots && "best moments", S.cleanCuts && "clean cuts", S.smartCrop && "smart crop", S.matchCut && "match cuts", S.variety && "variety"].filter(Boolean);
+    const clipOpts = [S.bestSpots && "best moments", S.cleanCuts && "clean cuts", S.smartCrop && "smart crop", S.matchCut && "match cuts", S.sequenced && "scene timeline", S.variety && "variety"].filter(Boolean);
     const src = { scene: "Scenes", image: "Images", both: "Scenes + images", marker: "Markers" }[S.source];
     const where = (S.folders.length ? `from ${S.folders.length === 1 ? "1 folder" : S.folders.length + " folders"}` : "from all folders") + (S.xfolders.length ? `, without ${S.xfolders.length === 1 ? "1 folder" : S.xfolders.length + " folders"}` : "");
     const plName = S.clipFrom === "playlist" ? (pls.find((p) => p.id === S.clipList) || {}).name : null;
@@ -2007,7 +2009,7 @@ class Generator {
         <canvas class="kb-pmvg-canvas" width="${this.W}" height="${this.H}"></canvas>
         <div class="kb-pmvg-pool" aria-hidden="true"></div>
         <div class="kb-pmvg-hud">
-          ${this.S.record ? '<span class="kb-pmvg-rec" title="Recording">REC</span>' : ""}
+          ${this.S.record ? '<span class="kb-pmvg-rec" title="Recording in real time – let the show run to the end, stopping early ends the video there">REC</span>' : ""}
           ${this.music && this.music.type === "follow" ? '<span class="kb-pmvg-plex" title="Follows what plays on Plex">Plex</span>' : ""}
           ${this.music && this.music.type === "live" ? `<span class="kb-pmvg-live" title="Listens to ${esc(this.music.live.app)} on this PC">${esc(this.music.live.app)}</span>` : ""}
           <b data-h="name">${esc(this.song.name)}</b>${this.music && this.music.type === "list" ? `<span data-h="track"></span>` : ""}<span data-h="bpm">${Math.round(this.song.bpm)} BPM</span><span data-h="time">${this.song.live ? "live" : `0:00 / ${fmtDuration(this.song.duration)}`}</span><span data-h="cuts">0 cuts</span>
@@ -2285,7 +2287,7 @@ class Generator {
     console.error("[PMV Generator]", e);
     this.say("");
     this.stopEverything();
-    this.showEnd(null, e.message || String(e));
+    this.showEnd(null, e.message || String(e), false, e.details, e.slow);
   }
 
   // ---------- Clips ----------
@@ -2500,7 +2502,17 @@ class Generator {
       // Opens but no picture (e.g. a codec the browser can't decode): skip it – else it's a black field
       if (!v.videoWidth || !v.videoHeight) throw Object.assign(new Error("no picture"), { why: "no picture – the browser can't decode this video (codec?)" });
       const dur = isFinite(v.duration) && v.duration > 0 ? v.duration : s.dur;
-      const rand = () => (dur > 10 ? dur * 0.08 + Math.random() * Math.max(0, dur * 0.84 - 4) : 0);
+      // Follow the scenes' timeline: how far the song is = where in the scene the clip is taken from (± a window)
+      let seq = null;
+      if (this.S.sequenced && dur > 10 && this.song && this.song.duration > 0) {
+        const prog = Math.min(1, Math.max(0, this.now() / this.song.duration));
+        const half = Math.max(6, dur * 0.12);
+        const lo = Math.max(0, Math.min(prog * dur - half, dur - 6));
+        const hi = Math.min(dur - 3, Math.max(lo, prog * dur + half));
+        seq = { lo, hi };
+      }
+      const inSeq = (t) => !seq || (t >= seq.lo && t <= seq.hi);
+      const rand = () => (seq ? seq.lo + Math.random() * Math.max(0, seq.hi - seq.lo) : dur > 10 ? dur * 0.08 + Math.random() * Math.max(0, dur * 0.84 - 4) : 0);
       const seek = async (t) => {
         v.currentTime = t;
         await withTimeout(once(v, "seeked"), 8000);
@@ -2510,7 +2522,7 @@ class Generator {
       let info = null;
       // Your best moments (Versus): most of the time straight there – no need to look around
       const best = this.S.bestSpots && s.markers && s.markers.length ? await bestMarkers().catch(() => null) : null;
-      const bestHere = best ? s.markers.filter((mk) => best.has(mk.id) && mk.seconds < dur - 2) : [];
+      const bestHere = best ? s.markers.filter((mk) => best.has(mk.id) && mk.seconds < dur - 2 && inSeq(mk.seconds)) : [];
       if (s.at != null) {
         start = Math.max(0, Math.min(s.at, dur - 1.5)); // a marker clip starts at its marker
       } else if (bestHere.length && Math.random() < 0.8) {
@@ -2521,9 +2533,9 @@ class Generator {
         // each for motion; big videos (above 1440p) and a low supply skip that – every seek costs.
         const big = v.videoWidth * v.videoHeight > 2560 * 1440;
         const n = this.ready.length < 2 || big ? 1 : 2;
-        const marks = (s.marks || []).filter((t) => t > 0 && t < dur - 3).sort(() => Math.random() - 0.5).slice(0, 2);
+        const marks = (s.marks || []).filter((t) => t > 0 && t < dur - 3 && inSeq(t)).sort(() => Math.random() - 0.5).slice(0, 2);
         const allSpots = await spriteSpots(s, dur).catch(() => null);
-        let cands = allSpots;
+        let cands = seq && allSpots ? allSpots.filter((c) => inSeq(c.t)) : allSpots;
         if (cands && cands.length) cands = cands.slice(0, n);
         else {
           const m2 = this.ready.length < 2 || big ? 2 : 4;
@@ -2534,7 +2546,7 @@ class Generator {
         // jump to another scene by itself. Spots with one are passed over (up to a few more are tried).
         const clean = !!this.S.cleanCuts && n > 1; // (not while the first clips are still waited for, or with big videos)
         const span = clean ? Math.max(1.5, Math.min(4, (this.song && this.song.bpm ? (4 * 60) / this.song.bpm : 2.5))) : 0;
-        const extra = clean && allSpots ? allSpots.slice(n, n + 4) : [];
+        const extra = clean && allSpots ? allSpots.filter((c) => inSeq(c.t)).slice(n, n + 4) : [];
         let anyClean = false;
         for (let ci = 0; ci < cands.length + extra.length; ci++) {
           const c = ci < cands.length ? cands[ci] : extra[ci - cands.length];
@@ -2736,7 +2748,7 @@ class Generator {
     while (this.ready.length < 3 && !this.done) {
       if (this.bad >= 12 || performance.now() - t0 > 20000) {
         if (this.ready.length) break;
-        throw new Error("No clips could be played. Choose other filters – the browser may not play videos in exotic formats directly.");
+        throw Object.assign(new Error("No clips could be played."), { details: (this.failed || []).slice(-8).reverse(), slow: !(this.failed || []).length });
       }
       await sleep(100);
     }
@@ -3370,17 +3382,28 @@ class Generator {
     this.showEnd(blob, null, early);
   }
 
-  showEnd(blob, error, early) {
+  // The clips that were skipped (name, file, why) – so you can see which ones don't work
+  failListHtml(list) {
+    return `<ul class="kb-pmvg-faillist">${list.map((f) => `<li><b>${esc(f.name)}</b>${f.file && f.file !== f.name ? ` <small>${esc(f.file)}</small>` : ""} – ${esc(f.why)}${f.n > 1 ? ` <small>×${f.n}</small>` : ""}</li>`).join("")}</ul>`;
+  }
+
+  showEnd(blob, error, early, details, slow) {
     const end = this.h("end");
     this.blob = blob;
     const url = blob ? URL.createObjectURL(blob) : null;
     this.blobUrl = url;
     end.hidden = false;
     end.innerHTML = error
-      ? `<div class="kb-pmvg-endcard"><h2>That didn't work</h2><p>${esc(error)}</p><div class="kb-card-acts"><button class="kb-btn" data-end="close">Back</button></div></div>`
+      ? `<div class="kb-pmvg-endcard"><h2>That didn't work</h2><p>${esc(error)}</p>
+          ${details && details.length ? `<p class="kb-hint">These clips were tried and skipped:</p>${this.failListHtml(details)}` : ""}
+          ${slow ? `<p class="kb-hint">Nothing was ready within 20 seconds – the clips load too slowly. Try a lower resolution (“Resolution up to”) or fewer clips from a slow drive.</p>` : ""}
+          ${details && details.length ? `<p class="kb-hint">Often it is the video's codec (HEVC / H.265, AV1 …): the browser can't decode it, so the clip stays black or is skipped. Re-encoding such files to H.264 helps – and generating the previews and sprites in Stash (Tasks → Generate) speeds clips up.</p>` : `<p class="kb-hint">Choose other filters – the browser may not play videos in exotic formats directly.</p>`}
+          <div class="kb-card-acts"><button class="kb-btn" data-end="close">Back</button></div></div>`
       : `<div class="kb-pmvg-endcard">
           <h2>${early ? "Stopped" : "Done!"}</h2>
           <p>${fmtDuration(this.length || 0)} · ${this.cuts} cuts · ${Math.round(this.song.bpm)} BPM${blob ? ` · ${fmtBytes(blob.size)}` : ""}</p>
+          ${early && blob && this.song.duration > 0 && this.length < this.song.duration - 2 ? `<p class="kb-hint">Stopped early – the video ends at ${fmtDuration(this.length || 0)} of ${fmtDuration(this.song.duration)}. The recording runs in real time, so let the show play to the end for the whole track.</p>` : ""}
+          ${this.failed && this.failed.length ? `<details class="kb-pmvg-skipped"><summary>${this.failed.length} ${this.failed.length === 1 ? "clip was" : "clips were"} skipped</summary>${this.failListHtml(this.failed.slice().reverse())}</details>` : ""}
           ${url ? `<video class="kb-pmvg-result" src="${url}" controls playsinline></video>` : ""}
           <div class="kb-card-acts">
             ${blob ? `<button class="kb-btn is-primary" data-end="stash">${icon("download")}Save to Stash</button><a class="kb-btn" data-end="file" href="${url}" download="${esc(fileName(this.song.name))}.webm">Download</a>` : ""}

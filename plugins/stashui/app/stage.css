@@ -717,3 +717,10 @@ html.kb-glass .kb-pmvg-fromvid { border-color: var(--glass-edge); background: va
 html.kb-glass .kb-fpick-row:hover { background: rgba(255, 255, 255, .1); }
 html.kb-glass .kb-fpick-x:hover { background: rgba(255, 255, 255, .16); }
 html.kb-glass .kb-fpick-row.is-on.is-own .kb-fpick-box { background-color: var(--pink); }
+
+/* Skipped clips (PMV end card, "No clips" error) */
+.kb-pmvg-faillist { margin: 0 0 12px; padding: 0 0 0 18px; max-height: 180px; overflow-y: auto; color: var(--text-2); font-size: 13px; }
+.kb-pmvg-faillist li { margin: 3px 0; overflow-wrap: anywhere; }
+.kb-pmvg-faillist small { color: var(--faint); }
+.kb-pmvg-skipped { margin: 0 0 12px; color: var(--text-2); }
+.kb-pmvg-skipped summary { cursor: pointer; }

@@ -4,6 +4,15 @@
 
 export const CHANGES = [
   {
+    v: "3.69.3",
+    date: "2026-10-06",
+    items: [
+      ["pmv", "PMV Generator 2.19.0: new switch “Follow the scenes' timeline” – clips come from the part of their scene that matches how far the song is (song start = scene beginnings, song end = scene endings).", "PMV 生成器 2.19.0：新增开关“跟随场景的时间线”——片段取自其场景中与歌曲进度相对应的部分（歌曲开头 = 场景开头，歌曲结尾 = 场景结尾）。"],
+      ["pmv", "When no clip can be played, the error now lists which clips were tried and why (and hints at codec problems: HEVC / AV1 → H.264). After a show the end card lists skipped clips.", "没有片段可播放时，错误信息现在会列出尝试过的片段及原因（并提示编码问题：HEVC / AV1 → H.264）。节目结束后，结束卡片会列出被跳过的片段。"],
+      ["pmv", "It is now said clearly that the recording runs in real time: hints at the Record switch and the REC badge, and a stopped show tells how far the video got.", "现在明确说明录制是实时进行的：录制开关和 REC 标记处有提示，提前停止的节目会说明视频录到了哪里。"],
+    ],
+  },
+  {
     v: "3.69.2",
     date: "2026-10-06",
     items: [
