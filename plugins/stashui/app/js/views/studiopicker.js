@@ -127,7 +127,8 @@ export function studioPicker(host, opts) {
     get include() {
       return [...inc];
     },
-    set(ids) {
+    set(ids, names = {}) {
+      Object.assign(known, names); // (studios just made, which the list doesn't know yet)
       inc = [...ids];
       renderChips();
     },

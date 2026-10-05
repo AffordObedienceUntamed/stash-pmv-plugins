@@ -4,6 +4,14 @@
 
 export const CHANGES = [
   {
+    v: "3.60.0",
+    date: "2026-10-05",
+    items: [
+      ["ui", "Scene editor: a new “Fill in from the internet” section – search a StashDB-style box or an installed scene scraper by title (or paste a link; an empty search looks the file up by its fingerprint), pick the result and the title, date, description, links, studio, performers and tags are filled in (what already has a value stays unless you tick “replace”; missing studios, performers and tags can be created on the fly; the found picture can become the cover). Nothing is saved until you press Save. Written for Stash's scraper API – untested against a real Stash, only a mock.", "场景编辑：新增“从网络填写”区域——可通过 StashDB 类站点或已安装的场景爬取器按标题搜索（也可粘贴链接；留空搜索则按文件指纹查找），选择结果后会填入标题、日期、简介、链接、工作室、演员和标签（已有值的字段保持不变，除非勾选“替换”；不存在的工作室、演员和标签可以即时创建；找到的图片可用作封面）。点击保存之前不会写入任何内容。按 Stash 的爬取器 API 编写——只在模拟环境中测试过，未在真实 Stash 上测试。"],
+      ["pmv", "PMV Generator 2.16.2: the shared files were updated.", "PMV 生成器 2.16.2：共享文件已更新。"],
+    ],
+  },
+  {
     v: "3.59.0",
     date: "2026-10-05",
     items: [

@@ -128,5 +128,12 @@ export function perfPicker(host, { include = [], any = false, onChange, modes = 
       return [...ids];
     },
     focus: () => input.focus(),
+    // Replace the chosen performers (nameMap: id → name for ones not seen yet)
+    set(list, nameMap = {}) {
+      Object.entries(nameMap).forEach(([id, n]) => names.set(id, n));
+      ids = [...list];
+      paint();
+      onChange && onChange(ids, mode);
+    },
   };
 }

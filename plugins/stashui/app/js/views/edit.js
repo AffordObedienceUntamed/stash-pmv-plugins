@@ -2,11 +2,12 @@
 
 import { esc, icon, openDrawer, toast, errorToast, starsHtml, ratingClick, ratingFromInput, plural, confirmDialog } from "../ui.js";
 import { t } from "../i18n.js";
-import { getScene, getImage, getGallery, updateItem, bulkUpdate, destroyItems, favoriteTagId, setFavorite } from "../api.js";
+import { gql, getScene, getImage, getGallery, updateItem, bulkUpdate, destroyItems, favoriteTagId, setFavorite } from "../api.js";
 import { tagPicker } from "./tagpicker.js";
 import { perfPicker, knowPerformers } from "./perfpicker.js";
 import { studioPicker } from "./studiopicker.js";
 import { createStudio } from "./studioedit.js";
+import { mountSceneScrape } from "./scenescrape.js";
 import { app } from "../main.js";
 
 const UNITS = { scene: ["scene", "scenes"], image: ["image", "images"], gallery: ["gallery", "galleries"] };
@@ -72,6 +73,7 @@ async function editOne(kind, id, { onSaved, onDeleted }) {
   const d = openDrawer({
     title: t(TITLES[kind][0]),
     body: `
+      ${kind === "scene" ? '<section class="kb-pe-scrape" data-scrape></section>' : ""}
       <label class="kb-form-row"><span>${t("Title")}</span><input class="kb-field" data-e="title" value="${esc(x.title || "")}" placeholder="${esc(path ? path.split(/[\\/]/).pop() : "")}"></label>
       <div class="kb-form-row"><span>${t("Rating")}</span><div data-stars></div></div>
       <label class="kb-switch"><input type="checkbox" data-e="fav"${isFav ? " checked" : ""}><i></i><span>${t("Favorite (heart)")}</span></label>
@@ -86,12 +88,26 @@ async function editOne(kind, id, { onSaved, onDeleted }) {
     foot: `<button class="kb-btn is-danger" data-del>${t("Delete")}</button><span class="kb-spacer"></span><button class="kb-btn" data-cancel>${t("Cancel")}</button><button class="kb-btn is-primary" data-save>${t("Save")}</button>`,
   });
   const el = d.el;
+  let cover; // a picture found by the scraper (data: URL), saved as the cover
+  const stashAdds = []; // StashDB-style links found by the scraper: { endpoint, stash_id }
+  if (kind === "scene") el.classList.add("kb-pe");
   starInput(el.querySelector("[data-stars]"), state.rating100, (v) => (state.rating100 = v));
   const picker = tagPicker(el.querySelector("[data-tags]"), { include: tagIds, allowCreate: true, placeholder: t("Search or create a tag") });
   knowPerformers(x.performers);
   const perfs = perfPicker(el.querySelector("[data-perfs]"), { include: (x.performers || []).map((p) => p.id), modes: false, allowCreate: true, placeholder: t("Search or create a performer") });
   const studio = studioPicker(el.querySelector("[data-studio]"), { include: x.studio ? [x.studio.id] : [], names: x.studio ? { [x.studio.id]: x.studio.name } : {}, create: createStudio, placeholder: t("Search or create a studio") });
   el.querySelector("[data-cancel]").onclick = d.close;
+  if (kind === "scene")
+    mountSceneScrape(el.querySelector("[data-scrape]"), {
+      id,
+      title: x.title || ((x.files[0] || {}).basename || "").replace(/\.[^.]+$/, ""),
+      el,
+      picker,
+      perfs,
+      studio,
+      setCover: (v) => (cover = v),
+      addStashId: (endpoint, stash_id) => !stashAdds.some((a) => a.endpoint === endpoint) && stashAdds.push({ endpoint, stash_id }),
+    });
   // the calendar (a hidden date field opens its picker; what you pick is written out in the field)
   const dtxt = el.querySelector('[data-e="date"]');
   const dnat = el.querySelector("[data-datenative]");
@@ -132,6 +148,12 @@ async function editOne(kind, id, { onSaved, onDeleted }) {
     };
     try {
       el.querySelector("[data-save]").disabled = true;
+      if (cover) input.cover_image = cover;
+      if (stashAdds.length) {
+        // the links Stash already has stay, a new one for the same box replaces the old
+        const cur = ((await gql(`query($id: ID!) { findScene(id: $id) { stash_ids { endpoint stash_id } } }`, { id })).findScene || {}).stash_ids || [];
+        input.stash_ids = [...cur.filter((c) => !stashAdds.some((a) => a.endpoint === c.endpoint)).map((c) => ({ endpoint: c.endpoint, stash_id: c.stash_id })), ...stashAdds];
+      }
       await updateItem(kind, input);
       app.favId = favTag || app.favId;
       toast(t("Saved"), "ok");

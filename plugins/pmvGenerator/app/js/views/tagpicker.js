@@ -134,7 +134,9 @@ export function tagPicker(host, opts) {
     get include() {
       return [...inc];
     },
-    set(ids) {
+    set(ids, extra = []) {
+      // (extra: tags just made, which the list doesn't know yet)
+      extra.forEach((tg) => !tags.some((x) => x.id === tg.id) && tags.push(Object.assign({ scene_count: 0, image_count: 0, gallery_count: 0 }, tg)));
       inc = [...ids];
       renderChips();
     },

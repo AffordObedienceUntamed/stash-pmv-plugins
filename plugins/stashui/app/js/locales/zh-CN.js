@@ -1691,4 +1691,8 @@ export default {
   "A Stash filter can't be kept as a playlist – remove it first, or set the filters here.": "Stash 筛选无法保存为播放列表——请先移除它，或在这里设置筛选。",
   "That saved filter is gone from Stash.": "该已保存的筛选在 Stash 中已不存在。",
   "Saved filter": "已保存的筛选",
+  "Also use the found picture as the cover": "同时将找到的图片用作封面",
+  "Create studios, performers and tags that don't exist yet": "创建尚不存在的工作室、演员和标签",
+  "No scene scraper or StashDB set up yet. Add them in classic Stash → Settings → Metadata Providers.": "尚未设置场景爬取器或 StashDB。请在经典版 Stash → 设置 → 元数据提供者 中添加。",
+  "Title or link – empty = look the file up": "标题或链接——留空 = 按文件本身查找",
 };
