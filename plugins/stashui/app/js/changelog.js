@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.70.2",
+    date: "2026-10-06",
+    items: [
+      ["pmv", "PMV Generator 2.21.2: with “Fit”, a clip whose shape is only a little off the field's (up to about 16 %) now fills the field – a few percent are cropped – instead of showing thin blurred bars at the sides that the zoom pulse covered and uncovered again. Clips with a very different shape still get their bars.", "PMV 生成器 2.21.2：使用“适应”时，如果片段形状与画面区域只有轻微差异（约 16% 以内），现在会直接填满该区域（裁掉几个百分点），而不再露出两侧细窄的模糊边条（缩放脉冲会反复盖住又露出它们）。形状差异很大的片段仍保留边条。"],
+    ],
+  },
+  {
     v: "3.70.1",
     date: "2026-10-06",
     items: [

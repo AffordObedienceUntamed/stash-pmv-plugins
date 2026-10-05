@@ -225,6 +225,10 @@ export class Compositor {
       if (!m || !m.w || !m.h) return;
       const since = t - (st.cutT[s.g] || 0);
       // Scroll cut (like swiping a feed): the old clip slides out, the new one in from the other side
+      // "Fit" with a clip whose shape is only a little off the field's: fill the field (a few % cropped) instead of thin
+      // blurred bars at the sides – they stand out and the zoom pulse covers and uncovers them again
+      const fitFor = (c) => (fitM === "contain" && Math.max(s.w / s.h / (c.w / c.h), c.w / c.h / (s.w / s.h)) <= SNAP ? "cover" : fitM);
+      const fitHere = fitFor(m);
       const lv = st.leave && st.leave[s.g];
       const sp = lv ? (t - lv.t) / SCROLL : 1;
       const scrolling = !!lv && sp >= 0 && sp < 1;
@@ -262,16 +266,17 @@ export class Compositor {
           g.rect(s.x, s.y, s.w, s.h);
           g.clip();
           g.translate(0, off);
-          if (fitM === "contain") this.backdrop(i, clip, s);
-          drawIn(g, clip, s, fitM, zm, ox, oy, filter.trim(), fx.kenburns);
+          const ft = fitFor(clip);
+          if (ft === "contain") this.backdrop(i, clip, s);
+          drawIn(g, clip, s, ft, zm, ox, oy, filter.trim(), fx.kenburns);
           g.restore();
         };
         if (lv.m && lv.m.w && lv.m.h) strip(lv.m, lv.dir * s.h * ease, 1);
         strip(m, lv.dir * s.h * (ease - 1), zoom);
         return;
       }
-      if (fitM === "contain") this.backdrop(i, m, s);
-      drawIn(g, m, s, fitM, zoom, ox, oy, filter.trim(), fx.kenburns);
+      if (fitHere === "contain") this.backdrop(i, m, s);
+      drawIn(g, m, s, fitHere, zoom, ox, oy, filter.trim(), fx.kenburns);
     });
     if (this.revealWin) {
       g.restore(); // (the rounded window's clip)
@@ -627,6 +632,7 @@ export class Compositor {
 
 // Draw media into a field (fill or fit), with mirroring, zoom and offset
 const SCROLL = 0.34; // seconds a scroll cut takes
+const SNAP = 1.16; // "Fit": a clip this close to the field's shape (ratio of the two aspect ratios) fills it
 const INTRO = 3.2; // seconds
 const OUTRO = 4.5;
 
