@@ -518,6 +518,12 @@
 .kb-pmvg-wave { display: block; width: 100%; height: 96px; border-radius: 4px; background: var(--base); }
 .kb-pmvg-tags { display: flex; flex-direction: column; gap: 8px; }
 .kb-pmvg-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.kb-pmvg-stages { display: flex; flex-direction: column; gap: 8px; align-self: stretch; }
+.kb-pmvg-stages[hidden], [data-markerwrap][hidden] { display: none !important; }
+.kb-pmvg-stage-row { display: grid; grid-template-columns: 1fr auto; gap: 6px 8px; align-items: start; padding: 8px 10px; border: 1px solid var(--bg-3); border-radius: 8px; background: var(--base); }
+.kb-pmvg-stage-no { grid-column: 1 / -1; color: var(--pink); font: 600 11.5px/1.2 var(--f-label); text-transform: uppercase; letter-spacing: .05em; }
+.kb-pmvg-stage-row .kb-pmvg-tags { min-width: 0; }
+html.kb-glass .kb-pmvg-stage-row { border-color: var(--glass-edge); border-radius: 14px; background: var(--glass-shine), var(--glass); }
 .kb-pmvg .kb-hint.is-warn { color: var(--danger); }
 .kb-pmvg .kb-set { padding: 0; border: 0; }
 .kb-pmvg-start { height: auto; min-height: 52px; padding-block: 10px; justify-content: center; font-size: 17px; white-space: normal; text-align: center; }

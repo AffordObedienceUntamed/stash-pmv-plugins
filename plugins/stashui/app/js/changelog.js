@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.58.1",
+    date: "2026-10-05",
+    items: [
+      ["pmv", "PMV Generator 2.16.0: two new ways to pick clips. “Markers” (next to Scenes / Images / Both) uses the moments you marked – every clip starts at a marker, filtered by the tag on the marker, with sub-tags counted too (switch). “Tag stages that follow the song” lets you list tags in order (A → B → C …): the song is divided among the stages, the last stage plays on every drop and in the finale; the count shows how many clips each stage has, and an empty stage borrows from the others.", "PMV 生成器 2.16.0：两种新的选片方式。“标记”（在场景/图片/两者旁边）使用你标记的片刻——每个片段都从一个标记开始，按标记上的标签筛选，子标签也算在内（可开关）。“跟随歌曲的标签阶段”可以按顺序列出标签（A → B → C …）：歌曲被分配给各个阶段，最后一个阶段用于每次高潮（Drop）和结尾；计数会显示每个阶段有多少片段，没有片段的阶段会借用其他阶段的片段。"],
+    ],
+  },
+  {
     v: "3.58.0",
     date: "2026-10-05",
     items: [

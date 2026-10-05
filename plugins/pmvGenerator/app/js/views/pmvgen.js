@@ -35,11 +35,14 @@ const DEFAULTS = {
   liveApp: "Spotify", // live: the app the generator listens to
   clipFrom: "filter", // filter = the filters below | playlist = a smart playlist from Stash UI | versus = your Versus top | watched = most watched lately
   clipList: "", // its id
-  source: "scene",
+  source: "scene", // scene | image | both | marker (short moments you marked)
   folders: [], // [{ id, path }] – empty = all folders
   tags: [],
   xtags: [],
   tagMode: "all", // several tags: all of them | any of them
+  markerSub: true, // marker clips: tags below the picked tag count too
+  stagesOn: false, // tag stages that follow the song: A → B → C … the last one on drops and in the finale
+  stages: [{ tags: [], xtags: [] }, { tags: [], xtags: [] }, { tags: [], xtags: [] }],
   perfs: [], // performer ids
   perfMode: "all",
   minRating: "0", // rating100: 0 = any
@@ -164,6 +167,7 @@ export function render(main) {
   let pls = []; // Stash UI's playlists – declared up here: the first paintSegs() already reads it
   S.fx = Object.assign({}, DEFAULTS.fx, S.fx);
   S.layouts = Object.assign({}, DEFAULTS.layouts, S.layouts);
+  S.stages = JSON.parse(JSON.stringify(Array.isArray(S.stages) && S.stages.length >= 2 ? S.stages : DEFAULTS.stages));
   S.collapsed = Object.assign({}, S.collapsed);
   // Settings from before version 2 had "Fill" as default – people took the cropping for a bug
   if (!stored.v) S.fit = "contain";
@@ -304,12 +308,15 @@ export function render(main) {
         <div class="kb-pmvg-cols" data-filtercols>
           <div class="kb-pmvg-block">
             <span class="kb-lab-t">What</span>
-            <div class="kb-seg" data-seg="source"><button type="button" data-v="scene">Scenes</button><button type="button" data-v="image">Images</button><button type="button" data-v="both">Both</button></div>
+            <div class="kb-seg" data-seg="source"><button type="button" data-v="scene">Scenes</button><button type="button" data-v="image">Images</button><button type="button" data-v="both">Both</button><button type="button" data-v="marker" title="Short moments you marked in your scenes – each clip starts at a marker">Markers</button></div>
             <span class="kb-lab-t">Clip shape</span>
             <div class="kb-seg" data-seg="shape"><button type="button" data-v="all">All</button><button type="button" data-v="portrait">Portrait only</button><button type="button" data-v="landscape">Landscape only</button></div>
             <span class="kb-lab-t">Tags</span>
             <div class="kb-pmvg-tags" data-tags></div>
             <div class="kb-seg kb-pmvg-small" data-seg="tagMode" title="With several tags"><button type="button" data-v="all">All of the tags</button><button type="button" data-v="any">Any of the tags</button></div>
+            <div data-markerwrap hidden>${sw("markerSub", "Include sub-tags", "Markers with a tag below the picked one count too")}</div>
+            ${sw("stagesOn", "Tag stages that follow the song", "A → B → C: the clips change with the song – the last stage plays on drops and in the finale")}
+            <div class="kb-pmvg-stages" data-stages hidden></div>
             <span class="kb-lab-t" data-perfwrap>Performers</span>
             <div class="kb-pmvg-perfs" data-perfs data-perfwrap></div>
             ${sw("fav", "Favorites only", "")}
@@ -474,7 +481,10 @@ export function render(main) {
       seg.querySelectorAll("[data-v]").forEach((b) => b.classList.toggle("is-on", String(S[seg.dataset.seg]) === b.dataset.v));
     });
     main.querySelectorAll("[data-layouts] [data-l]").forEach((b) => b.classList.toggle("is-on", !!S.layouts[b.dataset.l]));
-    $("[data-seg=tagMode]").hidden = S.tags.length < 2;
+    $("[data-seg=tagMode]").hidden = (S.stagesOn ? S.stages.length : S.tags.length) < 2;
+    $("[data-markerwrap]").hidden = S.source !== "marker";
+    $("[data-tags]").hidden = !!S.stagesOn;
+    $("[data-stages]").hidden = !S.stagesOn;
     main.querySelectorAll("[data-t]").forEach((c) => (c.checked = !!getPath(S, c.dataset.t)));
     main.querySelectorAll("[data-all]").forEach((b) => {
       const on = b.dataset.all.split(",").every((k) => S.fx[k]);
@@ -524,12 +534,12 @@ export function render(main) {
     };
     main.querySelectorAll("[data-tabsum]").forEach((s) => (s.textContent = tabSum[s.dataset.tabsum]));
     const clipOpts = [S.bestSpots && "best moments", S.smartCrop && "smart crop", S.matchCut && "match cuts", S.variety && "variety"].filter(Boolean);
-    const src = { scene: "Scenes", image: "Images", both: "Scenes + images" }[S.source];
+    const src = { scene: "Scenes", image: "Images", both: "Scenes + images", marker: "Markers" }[S.source];
     const where = S.folders.length ? `from ${S.folders.length === 1 ? "1 folder" : S.folders.length + " folders"}` : "from all folders";
     const plName = S.clipFrom === "playlist" ? (pls.find((p) => p.id === S.clipList) || {}).name : null;
     const fromName = { versus: "Your Versus top scenes", watched: "Your most watched scenes" }[S.clipFrom];
     $("[data-sum]").innerHTML = [
-      `<li><b>Clips</b>${S.rgPct >= 100 ? "RedGifs only" : fromName ? fromName : plName ? `Playlist “${esc(plName)}”` : `${esc(src)} ${esc(where)}${S.tags.length ? ` · ${S.tags.length} Tags${S.tags.length > 1 && S.tagMode === "any" ? " (any)" : ""}` : ""}${S.perfs.length ? ` · ${S.perfs.length} ${S.perfs.length === 1 ? "performer" : "performers"}` : ""}${S.fav ? " · favorites only" : ""}${+S.minRating ? ` · ★${S.minRating / 20}+` : ""}${+S.minLen ? ` · ≥ ${S.minLen / 60} min` : ""}${S.maxRes !== "any" ? ` · ≤ ${S.maxRes}p` : ""}`}${S.rgPct > 0 && S.rgPct < 100 ? ` · RedGifs ${S.rgPct} %` : ""}${S.rgPct > 0 ? ` (${esc(S.rgPicks.length ? S.rgPicks.map(rg.pickLabel).join(", ") : "trending")})` : ""}</li>`,
+      `<li><b>Clips</b>${S.rgPct >= 100 ? "RedGifs only" : fromName ? fromName : plName ? `Playlist “${esc(plName)}”` : `${esc(src)} ${esc(where)}${S.stagesOn ? ` · ${S.stages.length} tag stages` : S.tags.length ? ` · ${S.tags.length} Tags${S.tags.length > 1 && S.tagMode === "any" ? " (any)" : ""}` : ""}${S.perfs.length ? ` · ${S.perfs.length} ${S.perfs.length === 1 ? "performer" : "performers"}` : ""}${S.fav ? " · favorites only" : ""}${+S.minRating ? ` · ★${S.minRating / 20}+` : ""}${+S.minLen ? ` · ≥ ${S.minLen / 60} min` : ""}${S.maxRes !== "any" ? ` · ≤ ${S.maxRes}p` : ""}`}${S.rgPct > 0 && S.rgPct < 100 ? ` · RedGifs ${S.rgPct} %` : ""}${S.rgPct > 0 ? ` (${esc(S.rgPicks.length ? S.rgPicks.map(rg.pickLabel).join(", ") : "trending")})` : ""}</li>`,
       `<li><b>Selection</b>${clipOpts.length ? esc(clipOpts.join(", ")) : "random"}</li>`,
       `<li><b>Cutting</b>${esc(tabSum.cut)}</li>`,
       `<li><b>Effects</b>${fxOn} on${S.look !== "none" ? " · look " + esc(look) : ""}</li>`,
@@ -630,7 +640,12 @@ export function render(main) {
     save();
     paintSegs();
     if (c.dataset.t === "fx.text" && S.fx.text) $("[data-words]").focus();
-    if (c.dataset.t === "fav") updateCount();
+    if (c.dataset.t === "fav" || c.dataset.t === "markerSub") updateCount();
+    if (c.dataset.t === "stagesOn") {
+      paintStages();
+      updateCount();
+      paintSummary();
+    }
   });
   const fresh = (q) => {
     const old = $(q);
@@ -673,7 +688,50 @@ export function render(main) {
       updateCount();
     },
   });
+  // Tag stages: one tag picker per stage; the last stage is for drops and the finale
+  function paintStages() {
+    const host = $("[data-stages]");
+    if (!S.stagesOn) return (host.innerHTML = "");
+    const n = S.stages.length;
+    host.innerHTML =
+      S.stages
+        .map((st, i) => `<div class="kb-pmvg-stage-row" data-stage="${i}"><span class="kb-pmvg-stage-no">${i === n - 1 ? "Drops & finale" : "Stage " + (i + 1)}</span><div class="kb-pmvg-tags" data-stagetags></div>${n > 2 ? `<button type="button" class="kb-btn is-ghost is-icon" data-stagerm="${i}" title="Remove this stage" aria-label="Remove this stage">×</button>` : ""}</div>`)
+        .join("") + `<div class="kb-pmvg-row">${n < 5 ? `<button type="button" class="kb-btn is-ghost" data-stageadd>${icon("plus")}Add a stage</button>` : ""}</div>`;
+    host.querySelectorAll("[data-stage]").forEach((row) => {
+      const st = S.stages[Number(row.dataset.stage)];
+      tagPicker(row.querySelector("[data-stagetags]"), {
+        include: st.tags,
+        exclude: st.xtags,
+        allowExclude: true,
+        placeholder: "Tags for this stage – right-click excludes",
+        onChange: (inc, exc) => {
+          st.tags = inc;
+          st.xtags = exc;
+          save();
+          paintSegs();
+          updateCount();
+        },
+      });
+    });
+  }
+  $("[data-stages]").addEventListener("click", (e) => {
+    const rm = e.target.closest("[data-stagerm]");
+    if (rm) S.stages.splice(Number(rm.dataset.stagerm), 1);
+    else if (e.target.closest("[data-stageadd]")) S.stages.splice(S.stages.length - 1, 0, { tags: [], xtags: [] }); // before the drop stage
+    else return;
+    save();
+    paintStages();
+    paintSegs();
+    updateCount();
+    paintSummary();
+  });
+  if (!Array.isArray(S.stages) || S.stages.length < 2) S.stages = JSON.parse(JSON.stringify(DEFAULTS.stages));
+  S.stages.forEach((st) => {
+    st.tags = st.tags || [];
+    st.xtags = st.xtags || [];
+  });
   mountTags();
+  paintStages();
   mountFolders();
   mountPerfs();
   hasPerformers().then((ok) => alive && main.querySelectorAll("[data-perfwrap]").forEach((el) => (el.hidden = !ok)));
@@ -762,16 +820,28 @@ export function render(main) {
 
   // How many clips match?
   let countSeq = 0;
+  const countMarkers = async (m) => (await gql(`query($m: SceneMarkerFilterType) { findSceneMarkers(filter: { per_page: 0 }, scene_marker_filter: $m) { count } }`, { m })).findSceneMarkers.count;
   async function updateCount() {
     const seq = ++countSeq;
     const el = $("[data-count]");
     try {
+      const count = async (spec) =>
+        spec.ids ? [spec.ids.length] : Promise.all(spec.kinds.map((k) => (k === "marker" ? countMarkers(spec.filter(k)) : countItems(k, spec.filter(k)))));
+      const word = (k) => (k === "scene" ? "scenes" : k === "marker" ? "markers" : "images");
+      if (stagesActive(S)) {
+        const per = await Promise.all(S.stages.map(async (_, i) => (await count(await clipSpec(stageSettings(S, i)))).reduce((a, b) => a + b, 0)));
+        if (seq !== countSeq || !alive) return;
+        const kind = S.source === "marker" ? "markers" : S.source === "image" ? "images" : "scenes";
+        el.textContent = `Per stage: ${per.join(" · ")} ${kind} match` + (per.some((x) => x === 0) ? " – an empty stage borrows clips from the others" : "");
+        el.classList.toggle("is-warn", per.every((x) => x === 0));
+        return;
+      }
       const spec = await clipSpec(S);
       const kinds = spec.kinds;
-      const n = spec.ids ? [spec.ids.length] : await Promise.all(kinds.map((k) => countItems(k, spec.filter(k))));
+      const n = await count(spec);
       if (seq !== countSeq || !alive) return;
       const total = n.reduce((a, b) => a + b, 0);
-      el.textContent = kinds.map((k, i) => `${n[i]} ${k === "scene" ? "scenes" : "images"}`).join(" + ") + " match" + (total < 8 ? " – rather few, clips will repeat" : "");
+      el.textContent = kinds.map((k, i) => `${n[i]} ${word(k)}`).join(" + ") + " match" + (total < 8 ? " – rather few, clips will repeat" : "");
       el.classList.toggle("is-warn", total === 0);
     } catch (err) {
       if (seq === countSeq) el.textContent = err.message || "";
@@ -1756,8 +1826,26 @@ async function clipSpec(S) {
     return { kinds: [pl.kind === "image" ? "image" : "scene"], filter: () => f };
   }
   const favId = S.fav ? await favoriteTagId(false) : null;
+  if (S.source === "marker") {
+    // Markers: the tags are asked on the marker (also the tags below them), everything else on its scene
+    const sceneF = buildFilter("scene", Object.assign({}, S, { tags: [], xtags: [] }), favId);
+    const m = { scene_filter: sceneF };
+    if (S.tags.length || S.xtags.length) {
+      m.tags = { value: [...S.tags], modifier: S.tagMode === "any" && S.tags.length > 1 ? "INCLUDES" : "INCLUDES_ALL", depth: S.markerSub === false ? 0 : -1 };
+      if (S.xtags.length) m.tags.excludes = S.xtags;
+    }
+    return { kinds: ["marker"], filter: () => m };
+  }
   return { kinds: S.source === "both" ? ["scene", "image"] : [S.source], filter: (k) => buildFilter(k, S, favId) };
 }
+
+// The settings of one tag stage: its own tags instead of the general ones
+export function stageSettings(S, i) {
+  const st = S.stages[i] || { tags: [], xtags: [] };
+  return Object.assign({}, S, { tags: st.tags || [], xtags: st.xtags || [] });
+}
+// Tag stages only work with the filters on the page
+const stagesActive = (S) => !!S.stagesOn && S.clipFrom === "filter" && Array.isArray(S.stages) && S.stages.length >= 2;
 
 const MAX_RES = { 720: "FULL_HD", 1080: "QUAD_HD", 1440: "VR_HD" }; // "up to …" = below the next size
 
@@ -1838,10 +1926,12 @@ class Generator {
     this.log = []; // sequence (cuts, layouts) – readable on the stage element for tests
     this.dir = S.split;
     [this.W, this.H] = this.sizeFor();
-    this.sources = [];
-    this.srcIdx = 0;
-    this.page = { scene: 1, image: 1 };
-    this.seed = Math.floor(Math.random() * 1e8);
+    // Tag stages (A → B → C, the last on drops and in the finale): their own supply each; needs a song with an end
+    this.nStages = stagesActive(S) && !this.tpl && !this.outside ? S.stages.length : 1;
+    this.stageNow = 0;
+    this.dropUntil = -1;
+    this.prepN = [];
+    this.sp = Array.from({ length: this.nStages }, () => ({ sources: [], srcIdx: 0, page: { scene: 1, image: 1, marker: 1 }, seed: Math.floor(Math.random() * 1e8), fetching: null, dead: false }));
     this.ready = [];
     this.preparing = 0;
     this.bad = 0;
@@ -2171,18 +2261,28 @@ class Generator {
 
   // ---------- Clips ----------
 
-  async fetchSources() {
-    const spec = await clipSpec(this.S);
+  async fetchSources(P, st) {
+    const spec = await clipSpec(this.nStages > 1 ? stageSettings(this.S, st) : this.S);
     const kinds = spec.kinds;
     const lists = await Promise.all(
       kinds.map(async (k) => {
-        const q = k === "scene"
+        const q = k === "marker"
+          ? `query($f: FindFilterType, $x: SceneMarkerFilterType) { r: findSceneMarkers(filter: $f, scene_marker_filter: $x) { count scene_markers { id title seconds primary_tag { name } scene { id title paths { stream sprite vtt } files { duration width height basename } performers { id } } } } }`
+          : k === "scene"
           ? `query($f: FindFilterType, $x: SceneFilterType, $ids: [ID!]) { r: findScenes(filter: $f, scene_filter: $x, ids: $ids) { count scenes { id title paths { stream sprite vtt } files { duration width height basename } scene_markers { id seconds } performers { id } } } }`
           : `query($f: FindFilterType, $x: ImageFilterType) { r: findImages(filter: $f, image_filter: $x) { count images { id title paths { image } visual_files { __typename ... on ImageFile { width height basename } } performers { id } } } }`;
-        const d = await gql(q, Object.assign({ f: { per_page: 60, page: this.page[k], sort: "random_" + this.seed }, x: spec.filter(k) }, spec.ids && k === "scene" ? { ids: spec.ids } : {}));
-        const items = k === "scene" ? d.r.scenes : d.r.images;
+        const d = await gql(q, Object.assign({ f: { per_page: 60, page: P.page[k], sort: "random_" + P.seed }, x: spec.filter(k) }, spec.ids && k === "scene" ? { ids: spec.ids } : {}));
+        const items = k === "marker" ? d.r.scene_markers : k === "scene" ? d.r.scenes : d.r.images;
         // Reached the end → start over with a new random order
-        this.page[k] = this.page[k] * 60 >= d.r.count ? 1 : this.page[k] + 1;
+        P.page[k] = P.page[k] * 60 >= d.r.count ? 1 : P.page[k] + 1;
+        if (k === "marker") {
+          // A marker clip: its scene, starting at the marker
+          return items
+            .filter((mk) => mk.scene && mk.scene.paths.stream)
+            .map((mk) => ({ kind: "video", id: mk.scene.id, key: "marker:" + mk.id, url: mk.scene.paths.stream, dur: (mk.scene.files[0] || {}).duration || 0, marks: [], markers: [], at: mk.seconds,
+              sprite: mk.scene.paths.sprite, vtt: mk.scene.paths.vtt, name: mk.title || (mk.primary_tag || {}).name || mk.scene.title || (mk.scene.files[0] || {}).basename || "Marker " + mk.id,
+              file: (mk.scene.files[0] || {}).basename || "", perf: (mk.scene.performers || []).map((pf) => pf.id) }));
+        }
         return items
           .map((x) =>
             k === "scene"
@@ -2200,12 +2300,12 @@ class Generator {
     const mixed = [];
     for (let i = 0; lists.some((l) => i < l.length); i++) lists.forEach((l) => i < l.length && mixed.push(l[i]));
     if (!mixed.length) throw new Error("No matching clips found – loosen the filters.");
-    this.seed = this.page.scene === 1 && this.page.image === 1 ? Math.floor(Math.random() * 1e8) : this.seed;
-    this.sources = mixed;
-    this.srcIdx = 0;
+    P.seed = P.page.scene === 1 && P.page.image === 1 && P.page.marker === 1 ? Math.floor(Math.random() * 1e8) : P.seed;
+    P.sources = mixed;
+    P.srcIdx = 0;
   }
 
-  async nextSource() {
+  async nextSource(st = 0) {
     // RedGifs share first; the rest comes from Stash – and each side fills in when the other runs dry
     if (this.rg && !this.rg.dead) {
       this.rgAcc += this.S.rgPct / 100;
@@ -2216,7 +2316,7 @@ class Generator {
       }
     }
     try {
-      return await this.nextStash();
+      return await this.nextStash(st);
     } catch (e) {
       const s = this.rg && !this.rg.dead ? ((this.stashDead = true), await this.nextRedgif()) : null;
       if (s) return s;
@@ -2239,17 +2339,32 @@ class Generator {
     toast("RedGifs – " + msg, "error");
   }
 
-  async nextStash() {
+  async nextStash(st = 0) {
+    // A stage without any matching clip borrows from the next one that has some
+    for (let k = 0; k < this.nStages; k++) {
+      const i = (st + k) % this.nStages;
+      if (this.sp[i].dead) continue;
+      try {
+        return await this.nextFrom(this.sp[i], i);
+      } catch (e) {
+        if (this.nStages < 2) throw e;
+        this.sp[i].dead = true;
+      }
+    }
+    throw new Error("No matching clips found – loosen the filters.");
+  }
+
+  async nextFrom(P, st) {
     // Several clips are prepared in parallel – fetch new ones only once
     for (let tries = 0; ; tries++) {
-      while (this.srcIdx >= this.sources.length) {
-        this.fetching = this.fetching || this.fetchSources().finally(() => (this.fetching = null));
-        await this.fetching;
+      while (P.srcIdx >= P.sources.length) {
+        P.fetching = P.fetching || this.fetchSources(P, st).finally(() => (P.fetching = null));
+        await P.fetching;
       }
-      const s = this.sources[this.srcIdx++];
-      if (this.badKeys && this.badKeys.has(s.key) && tries < this.sources.length) continue; // failed before
+      const s = P.sources[P.srcIdx++];
+      if (this.badKeys && this.badKeys.has(s.key) && tries < P.sources.length) continue; // failed before
       // Variety: skip what was just shown or is being prepared (with a small selection, take it eventually)
-      if (!this.S.variety || tries >= this.sources.length || !this.isRecent(s)) return s;
+      if (!this.S.variety || tries >= P.sources.length || !this.isRecent(s)) return s;
     }
   }
 
@@ -2276,24 +2391,53 @@ class Generator {
     // Enough supply for a layout change with four new fields
     // (match cuts need a bit more choice)
     // At most 3 at once: each one decodes and seeks its video – with 4K several at once choke the decoder
-    while (!this.done && this.ready.length + this.preparing < (this.S.matchCut ? 8 : 6) && this.preparing < 3) {
+    while (!this.done && this.preparing < 3) {
+      const st = this.stageToFill(this.S.matchCut ? 8 : 6);
+      if (st < 0) break;
       this.preparing++;
-      this.prepareOne()
+      this.prepN[st] = (this.prepN[st] || 0) + 1;
+      this.prepareOne(st)
         .then((m) => {
           if (this.done) return this.release(m);
+          m.stage = st;
           this.ready.push(m);
           this.bad = 0;
         })
         .catch(() => this.bad++)
         .finally(() => {
           this.preparing--;
+          this.prepN[st]--;
           if (!this.done && this.bad < 12) setTimeout(() => this.fillPool(), this.bad ? 200 : 0);
         });
     }
   }
 
-  async prepareOne() {
-    const s = await this.nextSource();
+  // Which stage needs clips next: the current one first, then a reserve for drops (the last) and the one coming up
+  stageToFill(cap) {
+    const n = this.nStages;
+    if (n < 2) return this.ready.length + this.preparing < cap ? 0 : -1;
+    const cur = this.stageNow;
+    const wants = [[cur, cap], [n - 1, 6], [Math.min(cur + 1, n - 2), 4]];
+    for (const [st, target] of wants) {
+      const have = this.ready.filter((m) => m.stage === st).length + (this.prepN[st] || 0);
+      if (have < target) return st;
+    }
+    return -1;
+  }
+
+  // Beat k at time t: which stage is playing. Stages 1…n-1 share the song up to the finale (the last tenth),
+  // the last stage plays on drops (two bars) and in the finale.
+  updateStage(t, drop, len) {
+    if (this.nStages < 2) return;
+    const n = this.nStages;
+    if (drop) this.dropUntil = t + len * 8;
+    const dur = this.song.duration || 0;
+    const prog = dur ? t / dur : 0;
+    this.stageNow = t < this.dropUntil || prog >= 0.9 ? n - 1 : Math.min(n - 2, Math.floor((prog / 0.9) * (n - 1)));
+  }
+
+  async prepareOne(st = 0) {
+    const s = await this.nextSource(st);
     try {
       return await this.prepareFrom(s);
     } catch (e) {
@@ -2338,7 +2482,9 @@ class Generator {
       // Your best moments (Versus): most of the time straight there – no need to look around
       const best = this.S.bestSpots && s.markers && s.markers.length ? await bestMarkers().catch(() => null) : null;
       const bestHere = best ? s.markers.filter((mk) => best.has(mk.id) && mk.seconds < dur - 2) : [];
-      if (bestHere.length && Math.random() < 0.8) {
+      if (s.at != null) {
+        start = Math.max(0, Math.min(s.at, dur - 1.5)); // a marker clip starts at its marker
+      } else if (bestHere.length && Math.random() < 0.8) {
         start = bestHere[Math.floor(Math.random() * bestHere.length)].seconds;
       } else if (this.S.bestSpots && dur > 10) {
         // Candidates: from Stash's sprite sheet (its ~80 small pictures along the scene, no seeking needed)
@@ -2409,7 +2555,14 @@ class Generator {
     if (this.S.matchCut && out) outSig = out.live || out.sig; // (measured in the background, see trackFocus)
     let best = 0;
     let score = Infinity;
-    this.ready.slice(0, this.S.matchCut ? 8 : 5).forEach((m, i) => {
+    // Tag stages: only clips of the stage that plays now (none ready → whatever there is)
+    let cand = this.ready.map((m, i) => i);
+    if (this.nStages > 1) {
+      const mine = cand.filter((i) => this.ready[i].stage === this.stageNow);
+      if (mine.length) cand = mine;
+    }
+    cand.slice(0, this.S.matchCut ? 8 : 5).forEach((i) => {
+      const m = this.ready[i];
       let s = Math.abs(Math.log(m.w / m.h / aspect));
       if (outSig) s += 1.5 * matchDist(outSig, m.sig);
       s += this.varietyPenalty(m);
@@ -2479,7 +2632,7 @@ class Generator {
     this.cutT[gi] = t;
     this.dropUnused([old]);
     this.cuts++;
-    this.log.push({ t, type: "cut", group: gi });
+    this.log.push({ t, type: "cut", group: gi, stage: this.stageNow, key: m.key });
     this.fillPool();
     this.syncVoices();
     return true;
@@ -2502,7 +2655,7 @@ class Generator {
     this.nextGroup = 0;
     this.dropUnused(old);
     this.cuts++;
-    this.log.push({ t, type: "layout", layout: id, dir: this.dir });
+    this.log.push({ t, type: "layout", layout: id, dir: this.dir, stage: this.stageNow, keys: this.groups.map((m) => m && m.key) });
     this.fillPool();
     this.syncVoices();
   }
@@ -2904,6 +3057,7 @@ class Generator {
     if (drop) this.lastDrop = k;
     const bar = k % 4 === 0;
     const len = (beats[k + 1] || beats[k] + (this.song.beatLen || 0.5)) - beats[k];
+    this.updateStage(beats[k], drop, len);
     const comp = this.comp;
     this.st.energy = e;
     this.st.beatT = t;
