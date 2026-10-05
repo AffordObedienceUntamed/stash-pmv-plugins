@@ -4,6 +4,14 @@
 
 export const CHANGES = [
   {
+    v: "3.68.2",
+    date: "2026-10-06",
+    items: [
+      ["ui", "Stash UI 3.68.2: some scrapers (e.g. the built-in auto tag) can only look up the file, not search by name. The source list now says “file only” / “name only”, and a search they can't do gives a clear message instead of Stash's error – in the Scene tagger and in the editor's “Fill in from the internet”.", "Stash UI 3.68.2：有些抓取器（例如内置的自动标签）只能按文件查找，不能按名称搜索。来源列表现在会标注“仅限文件”/“仅限名称”，做不到的搜索会给出清晰的提示，而不是 Stash 的错误信息——场景标记器和编辑器的“从网上填写”都适用。"],
+      ["pmv", "PMV Generator 2.18.13: the shared files were updated.", "PMV 生成器 2.18.13：共享文件已更新。"],
+    ],
+  },
+  {
     v: "3.68.1",
     date: "2026-10-06",
     items: [

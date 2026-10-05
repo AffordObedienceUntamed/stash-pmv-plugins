@@ -32,6 +32,10 @@ export async function loadSources() {
   return { list: [...boxes, ...scrapers], byUrl };
 }
 
+// What a source can do: a StashDB-style box both; a scraper maybe only a text search or only the file lookup
+export const sourceLabel = (s) => s.name + (s.box || (s.byName && s.byFragment) ? "" : s.byFragment ? " (" + t("file only") + ")" : " (" + t("name only") + ")");
+export const canByName = (s) => !!s && (!!s.box || !!s.byName);
+export const canByFile = (s) => !!s && (!!s.box || !!s.byFragment);
 export const day = (v) => (/^\d{4}-\d{2}-\d{2}/.test(String(v || "")) ? String(v).slice(0, 10) : "");
 export const linksOf = (x) => [...new Set([...(x.urls || []), x.url].filter(Boolean))];
 // the fields asked of a scraped scene (which exist depends on the Stash version)
@@ -57,7 +61,7 @@ export async function mountSceneScrape(host, ctx) {
   host.innerHTML = `
     <b>${t("Fill in from the internet")}</b>
     <div class="kb-pe-scrapebar">
-      ${sources.list.length ? `<select class="kb-field" data-src>${sources.list.map((s) => `<option value="${esc(s.id)}">${esc(s.name)}</option>`).join("")}</select>` : ""}
+      ${sources.list.length ? `<select class="kb-field" data-src>${sources.list.map((s) => `<option value="${esc(s.id)}">${esc(sourceLabel(s))}</option>`).join("")}</select>` : ""}
       <input class="kb-field" data-sq value="${esc(ctx.title || "")}" placeholder="${esc(t("Title or link – empty = look the file up"))}">
       <button type="button" class="kb-btn is-primary" data-sgo>${icon("search")}${t("Search")}</button>
     </div>
@@ -85,6 +89,8 @@ export async function mountSceneScrape(host, ctx) {
       const s = srcOf();
       if (!s) throw new Error(t("Choose a source, or paste a link"));
       // a name asks by text, an empty search by the scene itself (its fingerprints / what Stash knows about it)
+      if (q && !canByName(s)) throw new Error(t("This source can't search by name – it only looks up the file. Leave the search empty, or choose another source."));
+      if (!q && !canByFile(s)) throw new Error(t("This source can't look up a file – type a title or choose another source."));
       const input = q ? { query: q } : { scene_id: ctx.id };
       const r = await gql(`query($s: ScraperSourceInput!, $i: ScrapeSingleSceneInput!) { scrapeSingleScene(source: $s, input: $i) { ${SF} } }`, { s: sourceInput(s), i: input });
       results = r.scrapeSingleScene || [];

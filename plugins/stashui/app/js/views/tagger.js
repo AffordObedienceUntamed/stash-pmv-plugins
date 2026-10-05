@@ -5,7 +5,7 @@
 import { esc, icon, toast, errorToast, store, plural } from "../ui.js";
 import { t } from "../i18n.js";
 import { gql, createPerformer, createTag, updateItem, libraryChanged } from "../api.js";
-import { loadSchema, loadSources, scrapedFields, linksOf, day } from "./scenescrape.js";
+import { loadSchema, loadSources, scrapedFields, linksOf, day, sourceLabel, canByName, canByFile } from "./scenescrape.js";
 import { studiosCache } from "./studiopicker.js";
 import { createStudio } from "./studioedit.js";
 
@@ -39,7 +39,7 @@ export async function render(main) {
 
   main.innerHTML = `${head}
     <div class="kb-ptools kb-tg-tools">
-      <select class="kb-field" data-src aria-label="${t("Source")}">${sources.list.map((s) => `<option value="${esc(s.id)}"${s.id === opt.src ? " selected" : ""}>${esc(s.name)}</option>`).join("")}</select>
+      <select class="kb-field" data-src aria-label="${t("Source")}">${sources.list.map((s) => `<option value="${esc(s.id)}"${s.id === opt.src ? " selected" : ""}>${esc(sourceLabel(s))}</option>`).join("")}</select>
       <label class="kb-search">${icon("search")}<input class="kb-field" type="search" data-q placeholder="${t("Search the list")}"></label>
       <label class="kb-check"><input type="checkbox" data-o="only"${opt.only ? " checked" : ""}> ${t("Only scenes that aren't organized")}</label>
       <label class="kb-check"><input type="checkbox" data-o="make"${opt.make ? " checked" : ""}> ${t("Create studios, performers and tags that don't exist yet")}</label>
@@ -121,6 +121,8 @@ export async function render(main) {
         list = [r.scrapeSceneURL];
       } else {
         if (by === "name" && !text) throw new Error(t("Type a title first, or use “By file”."));
+        if (by === "name" && !canByName(s)) throw new Error(t("This source can't search by name – it only looks up the file. Use “By file”, or choose another source."));
+        if (by === "file" && !canByFile(s)) throw new Error(t("This source can't look up a file – use “Search” with a title, or choose another source."));
         const input = by === "file" ? { scene_id: id } : { query: text };
         const r = await gql(`query($s: ScraperSourceInput!, $i: ScrapeSingleSceneInput!) { scrapeSingleScene(source: $s, input: $i) { ${SF} } }`, { s: sourceInput(s), i: input });
         list = r.scrapeSingleScene || [];
@@ -290,6 +292,7 @@ export async function render(main) {
     }
     if (e.target.closest("[data-all]")) {
       const b = e.target.closest("[data-all]");
+      if (!canByFile(srcOf())) return toast(t("This source can't look up a file – use “Search” with a title, or choose another source."), "error");
       b.disabled = true;
       for (const s of scenes) {
         if (!rowEl(s.id) || rows.has(s.id)) continue;

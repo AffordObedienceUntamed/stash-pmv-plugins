@@ -1863,4 +1863,10 @@ export default {
   "missing: galleries": "缺少：图库",
   "missing: scenes": "缺少：场景",
   "Scene tagger": "场景标记器",
+  "file only": "仅限文件",
+  "name only": "仅限名称",
+  "This source can't search by name – it only looks up the file. Leave the search empty, or choose another source.": "此来源不能按名称搜索——它只能查找文件。请将搜索留空，或选择其他来源。",
+  "This source can't look up a file – type a title or choose another source.": "此来源不能按文件查找——请输入标题或选择其他来源。",
+  "This source can't search by name – it only looks up the file. Use “By file”, or choose another source.": "此来源不能按名称搜索——它只能查找文件。请使用“按文件”，或选择其他来源。",
+  "This source can't look up a file – use “Search” with a title, or choose another source.": "此来源不能按文件查找——请用标题“搜索”，或选择其他来源。",
 };
