@@ -155,10 +155,31 @@ export class Compositor {
     const hue = fx.hue ? `hue-rotate(${Math.round((t * (30 + 110 * e)) % 360)}deg) saturate(1.3)` : "";
     const pulse = fx.zoom ? (st.beatAmt || 0) * Math.exp(-(t - st.beatT) * 9) : 0;
 
-    st.slots.forEach((s, i) => {
+    // Reveal opening: the clip sits in the middle as a small rounded window and slowly grows until the drop
+    const rv = st.reveal;
+    let slots = st.slots;
+    if (rv && slots.length === 1) {
+      const m0 = st.groups[slots[0].g];
+      const k = 0.34 + 0.6 * ((1 - Math.cos(Math.PI * rv.p)) / 2);
+      const w = Math.round(W * k);
+      const h = Math.round(H * k);
+      const win = { x: Math.round((W - w) / 2), y: Math.round((H - h) / 2), w, h, g: slots[0].g, fx: false, fy: false };
+      if (m0 && m0.w && m0.h) this.backdrop(0, m0, { x: 0, y: 0, w: W, h: H });
+      g.save();
+      roundRect(g, win.x, win.y, win.w, win.h, Math.min(W, H) * 0.05 * (1 - 0.35 * rv.p));
+      g.clip();
+      slots = [win];
+      this.revealWin = win;
+    } else this.revealWin = null;
+
+    slots.forEach((s, i) => {
       const m = st.groups[s.g];
       if (!m || !m.w || !m.h) return;
       const since = t - (st.cutT[s.g] || 0);
+      // Scroll cut (like swiping a feed): the old clip slides out, the new one in from the other side
+      const lv = st.leave && st.leave[s.g];
+      const sp = lv ? (t - lv.t) / SCROLL : 1;
+      const scrolling = !!lv && sp >= 0 && sp < 1;
       let zoom = 1 + pulse;
       if (m.kind === "image" && fx.kenburns) zoom += 0.07 * Math.min(1, since / 4);
       let ox = dx;
@@ -168,7 +189,7 @@ export class Compositor {
       // Even out brightness: every clip towards a medium brightness
       if (this.S.lookEven && m.sig && m.sig.lum != null) filter += ` brightness(${Math.max(0.8, Math.min(1.4, 118 / Math.max(20, m.sig.lum))).toFixed(2)})`;
       // Transition: the new clip whips into the field with motion blur
-      if (fx.whip && since < 0.16) {
+      if (fx.whip && since < 0.16 && !scrolling) {
         const p = 1 - since / 0.16;
         const dir = (s.g + st.cutCount) % 2 ? 1 : -1;
         if (s.w >= s.h * 0.9) ox += dir * p * p * s.w * 0.6;
@@ -176,16 +197,33 @@ export class Compositor {
         filter += ` blur(${(p * 10).toFixed(1)}px)`;
       }
       // Zoom-in entry: the new clip shoots into the field – alternating from big (in) and from small (out)
-      if (fx.zoomin && since < 0.3) {
+      if (fx.zoomin && since < 0.3 && !scrolling) {
         const p = since / 0.3;
         const ease = 1 - Math.pow(1 - p, 3);
         const from = (m.zoomDir || 1) > 0 ? 1.75 : 0.45;
         zoom *= from + (1 - from) * ease;
         if (from < 1 && p < 0.35) filter += ` brightness(${(1 + 0.6 * (1 - p / 0.35)).toFixed(2)})`; // short flare when zooming out
       }
+      if (scrolling) {
+        const ease = 1 - Math.pow(1 - sp, 3);
+        if (lv.m && lv.m.w && lv.m.h) {
+          if (this.S.fit === "contain") this.backdrop(i, lv.m, s);
+          drawIn(g, lv.m, s, this.S.fit, 1, ox, oy + lv.dir * s.h * ease, filter.trim(), false);
+        }
+        oy += lv.dir * s.h * (ease - 1);
+      }
       if (this.S.fit === "contain") this.backdrop(i, m, s);
       drawIn(g, m, s, this.S.fit, zoom, ox, oy, filter.trim(), fx.kenburns);
     });
+    if (this.revealWin) {
+      g.restore(); // (the rounded window's clip)
+      g.save();
+      g.strokeStyle = "rgba(255, 255, 255, .22)";
+      g.lineWidth = 2;
+      roundRect(g, this.revealWin.x, this.revealWin.y, this.revealWin.w, this.revealWin.h, Math.min(W, H) * 0.05 * (1 - 0.35 * rv.p));
+      g.stroke();
+      g.restore();
+    }
 
     // Color look: tint over everything, noir with dark corners
     if (this.look.tint) {
@@ -447,8 +485,20 @@ export class Compositor {
 }
 
 // Draw media into a field (fill or fit), with mirroring, zoom and offset
+const SCROLL = 0.34; // seconds a scroll cut takes
 const INTRO = 3.2; // seconds
 const OUTRO = 4.5;
+
+function roundRect(g, x, y, w, h, r) {
+  r = Math.max(0, Math.min(r, w / 2, h / 2));
+  g.beginPath();
+  g.moveTo(x + r, y);
+  g.arcTo(x + w, y, x + w, y + h, r);
+  g.arcTo(x + w, y + h, x, y + h, r);
+  g.arcTo(x, y + h, x, y, r);
+  g.arcTo(x, y, x + w, y, r);
+  g.closePath();
+}
 
 function vignette(g, W, H, a) {
   const v = g.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.75);

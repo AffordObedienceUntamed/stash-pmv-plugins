@@ -4,6 +4,14 @@
 
 export const CHANGES = [
   {
+    v: "3.69.4",
+    date: "2026-10-06",
+    items: [
+      ["pmv", "PMV Generator 2.20.0: new switch “Reveal opening” – the first clip sits small in the middle with rounded corners and slowly grows; at the first drop the picture opens up into the layouts.", "PMV 生成器 2.20.0：新增开关“开场渐显”——第一个片段以圆角小窗口出现在中央并缓慢变大，第一次 drop 时画面展开为所选布局。"],
+      ["pmv", "New switch “Scrolling sides”: in 3-way layouts the middle clip stays longer while the clips at the sides scroll up or down like a feed (direction chosen per phase).", "新增开关“侧边滚动”：在三分屏布局中，中间的片段停留更久，两侧的片段像信息流一样向上或向下滚动（方向每个阶段随机）。"],
+    ],
+  },
+  {
     v: "3.69.3",
     date: "2026-10-06",
     items: [

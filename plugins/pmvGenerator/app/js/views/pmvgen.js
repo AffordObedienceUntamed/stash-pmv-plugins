@@ -60,6 +60,8 @@ const DEFAULTS = {
   matchCut: true, // pick the best-matching clip at each cut
   cut: "auto",
   bars: true, // cuts on the bar's beats, layouts change where a phrase starts (not just "every 4th beat")
+  reveal: false, // the opening: the clip sits small in the middle (rounded corners), grows until the first drop, then the layouts start
+  scroll: false, // in 3-way layouts the middle clip stays longer while the side clips scroll up or down like a feed
   layouts: { full: true, kaleido: true, duo: true, trim: true, tri: true, quad: true },
   // Effects: a calm start – zoom-in entry, flash, zoom pulse and RGB split; the rest is opt-in
   fx: { flash: true, zoom: true, shake: false, glitch: false, stutter: false, hue: false, rgb: true, echo: false, tunnel: false, invert: false, whip: false, zoomin: true, speed: false, voice: true, vhs: false, strobe: false, text: false, kenburns: true, lines: true },
@@ -385,6 +387,8 @@ export function render(main) {
             <span class="kb-lab-t">When to cut</span>
             <div class="kb-seg" data-seg="cut">${CUTS.map(([v, l, t]) => `<button type="button" data-v="${v}" title="${esc(t)}">${l}</button>`).join("")}</div>
             <div class="kb-pmvg-opts">
+              ${sw("reveal", "Reveal opening", "The first clip sits small in the middle with rounded corners and slowly grows – at the first drop the picture opens up into the layouts (songs with a known length; not with templates)")}
+              ${sw("scroll", "Scrolling sides", "In 3-way layouts the middle clip stays longer while the clips at the sides scroll up or down, like swiping through a feed (needs the 3-way layouts)")}
               ${sw("bars", "Bars and phrases", "Finds the \"one\" of each bar and where a phrase begins: cuts land on the strong beats, split screens change at the start of a phrase")}
             </div>
             <span class="kb-lab-t">Layouts <small>– change to the beat, the louder the more fields</small></span>
@@ -1976,6 +1980,11 @@ class Generator {
     this.layouts = Object.keys(LAYOUTS).filter((k) => S.layouts[k]);
     if (!this.layouts.length) this.layouts = ["full"];
     this.layout = null;
+    this.leave = {}; // scroll cuts: group → { m: the clip on its way out, t, dir }
+    this.scrollDir = 0; // -1 up, 1 down: the sides scroll in this layout phase (0 = no)
+    this.sideN = 0;
+    this.revealing = false;
+    this.reveal = S.reveal && !this.tpl && !this.music && this.song && !this.song.live && Array.isArray(this.song.energy) && this.song.beats && this.song.beats.length > 16 ? this.makeReveal() : null;
     this.slots = [];
     this.groups = []; // media per group (field or mirrored pair of fields)
     this.cutT = [];
@@ -2688,15 +2697,24 @@ class Generator {
     old.forEach((m) => m && !this.groups.includes(m) && this.release(m));
   }
 
-  cutGroup(gi, t) {
+  cutGroup(gi, t, opt) {
     const old = this.groups[gi];
     const m = this.takeMedia(aspectOfGroup(this.slots, gi), old);
     if (!m) return false; // nothing ready yet → the field keeps running
     this.groups[gi] = m;
     this.cutT[gi] = t;
-    this.dropUnused([old]);
+    if (opt && opt.scroll && old && old !== m) {
+      // the old clip scrolls out: it keeps playing a moment longer
+      const prev = this.leave[gi];
+      this.leave[gi] = { m: old, t, dir: opt.scroll };
+      if (prev && prev.m !== old) this.dropUnused([prev.m]);
+      setTimeout(() => !this.groups.includes(old) && this.release(old), 600);
+    } else {
+      delete this.leave[gi];
+      this.dropUnused([old]);
+    }
     this.cuts++;
-    this.log.push({ t, type: "cut", group: gi, stage: this.stageNow, key: m.key });
+    this.log.push({ t, type: "cut", group: gi, stage: this.stageNow, key: m.key, scroll: (opt && opt.scroll) || 0 });
     this.fillPool();
     this.syncVoices();
     return true;
@@ -2704,6 +2722,8 @@ class Generator {
 
   setLayout(id, t, dir) {
     if (dir) this.dir = dir;
+    Object.values(this.leave).forEach((lv) => lv.m && this.release(lv.m)); // (scrolling clips that are still on their way out)
+    this.leave = {};
     const old = this.groups.slice();
     this.layout = id;
     this.slots = slotsFor(id, this.W, this.H, this.dir);
@@ -2741,6 +2761,25 @@ class Generator {
     const pool = cands.filter((k) => dist(k) === min);
     return pool[Math.floor(Math.random() * pool.length)];
   }
+  // Reveal opening: where it ends – the first drop (not in the first 5 s, and within a minute), else after 32 beats
+  makeReveal() {
+    const { beats, energy } = this.song;
+    let last = -99;
+    let endK = Math.min(32, beats.length - 1);
+    for (let k = 0; k < beats.length && beats[k] < 75; k++) {
+      const e = energy[k] || 0;
+      const prev = energy[k - 4] || 0;
+      if (e - prev > 0.35 && e > 0.6 && k - last >= 16) {
+        last = k;
+        if (beats[k] >= 5) {
+          endK = k;
+          break;
+        }
+      }
+    }
+    return { endK, endT: Math.max(2, beats[endK]), done: false };
+  }
+
   async start() {
     this.fillPool();
     // Wait until the first clips are ready (max. 20 s)
@@ -2789,7 +2828,10 @@ class Generator {
     this.paintTrack();
     const first = this.tpl && this.tpl.events.find((ev) => ev.type === "layout");
     if (first) this.setLayout(first.layout, 0, first.dir);
-    else this.setLayout(this.layouts.includes("full") ? "full" : this.layouts[0], 0);
+    else if (this.reveal) {
+      this.revealing = true;
+      this.setLayout("full", 0);
+    } else this.setLayout(this.layouts.includes("full") ? "full" : this.layouts[0], 0);
     this.loop = this.loop.bind(this);
     this.raf = requestAnimationFrame(this.loop);
   }
@@ -3071,6 +3113,8 @@ class Generator {
       this.st.groups = this.groups;
       this.st.cutT = this.cutT;
       this.st.cutCount = this.cuts;
+      this.st.reveal = this.revealing ? { p: Math.max(0, Math.min(1, t / this.reveal.endT)) } : null;
+      this.st.leave = this.leave;
       this.comp.draw(this.st);
     }
     if (this.live && (!this.hudT || performance.now() - this.hudT > 250)) {
@@ -3129,7 +3173,15 @@ class Generator {
     const e = this.song.energy[k] || 0;
     const prev = this.song.energy[k - 4] || 0;
     // A drop counts once – otherwise the signal stays up for several beats in a row
-    const drop = e - prev > 0.35 && e > 0.6 && k - this.lastDrop >= 16;
+    let drop = e - prev > 0.35 && e > 0.6 && k - this.lastDrop >= 16;
+    // Reveal opening: ends at its beat – that counts as the drop (the picture opens up)
+    let revealEnds = false;
+    if (this.revealing && k >= this.reveal.endK) {
+      revealEnds = true;
+      this.revealing = false;
+      this.reveal.done = true;
+      drop = true;
+    }
     if (drop) this.lastDrop = k;
     const B = this.bars;
     const bar = B ? !!B.downbeat[k] : k % 4 === 0;
@@ -3150,18 +3202,35 @@ class Generator {
       : bar && k - this.layoutBeat >= this.layoutHold && (moodChanged || (want >= 3 && Math.random() < 0.6));
     if (this.tpl) {
       // Cuts and layouts come from the template (applyEvent)
-    } else if (this.layouts.length > 1 && (drop || due)) {
+    } else if (this.layouts.length > 1 && (drop || due) && !this.revealing) {
       this.setLayout(this.pickLayout(e, drop), t);
       this.layoutBeat = k;
+      this.centerK = k;
+      // Scrolling sides: in a 3-way layout (not on a drop, not in the loudest parts) the middle clip stays and the sides scroll
+      this.scrollDir = S.scroll && !drop && e <= 0.9 && (this.layout === "tri" || this.layout === "trim") && Math.random() < 0.75 ? (Math.random() < 0.5 ? -1 : 1) : 0;
+      this.sideN = 0;
       this.layoutHold = drop ? 4 : 8; // after a drop, move on after just one bar
       this.lastCut = k;
       comp.flash(t, drop ? 0.9 : 0.35, drop ? "#ff3e8a" : "#fff");
     } else {
       // Within the layout: re-cut the fields in turn
-      const every = S.cut === "auto" ? (e > 0.72 ? 1 : e > 0.4 ? 2 : 4) : Number(S.cut);
+      if (revealEnds && this.layouts.length < 2) comp.flash(t, 0.9, "#ff3e8a"); // (a single layout: the window just opens up)
+      let every = S.cut === "auto" ? (e > 0.72 ? 1 : e > 0.4 ? 2 : 4) : Number(S.cut);
+      if (this.scrollDir) every = Math.max(2, every); // scrolling is slower than cutting
       // With bars the cuts sit on the bar's grid: every beat, beats 1 and 3, or only the "one" – not "N beats after the last cut"
       const onGrid = B && 4 % every === 0 ? B.pos[k] % every === 0 && k - this.lastCut >= Math.min(every, 2) : k - this.lastCut >= every;
-      if (onGrid || (every === 4 && bar && k - this.lastCut >= 2)) {
+      if (this.scrollDir && (this.layout === "tri" || this.layout === "trim")) {
+        // The middle clip (group 1) runs for four bars; the sides (groups 0 and 2) scroll in turn
+        if (bar && k - (this.centerK ?? this.layoutBeat) >= 16) {
+          if (this.cutGroup(1, t)) {
+            this.centerK = k;
+            this.lastCut = k;
+          }
+        } else if (onGrid) {
+          const sides = this.layout === "tri" ? [0, 2] : [0];
+          if (this.cutGroup(sides[this.sideN++ % sides.length], t, { scroll: this.scrollDir })) this.lastCut = k;
+        }
+      } else if (onGrid || (every === 4 && bar && k - this.lastCut >= 2)) {
         const n = LAYOUTS[this.layout].groups;
         const gi = this.nextGroup % n;
         if (this.cutGroup(gi, t)) {

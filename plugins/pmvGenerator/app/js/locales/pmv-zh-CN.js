@@ -500,6 +500,10 @@ export default {
     "Choose other filters – the browser may not play videos in exotic formats directly.": "请选择其他筛选条件——浏览器可能无法直接播放冷门格式的视频。",
     "Saves the result as a video, recorded while the show plays – so let it run to the end (stopping early ends the video there). Then download it or save it straight to Stash as a scene": "把结果保存为视频，在节目播放时同步录制——请让它播放到结尾（提前停止会使视频在那里结束）。之后可以下载，或直接作为场景保存到 Stash",
     "Recording in real time – let the show run to the end, stopping early ends the video there": "正在实时录制——请让节目播放到结尾，提前停止会使视频在那里结束",
+    "Reveal opening": "开场渐显",
+    "The first clip sits small in the middle with rounded corners and slowly grows – at the first drop the picture opens up into the layouts (songs with a known length; not with templates)": "第一个片段以圆角小窗口出现在画面中央并缓慢变大——第一次 drop 时画面展开为所选布局（仅限已知长度的歌曲；模板不适用）",
+    "Scrolling sides": "侧边滚动",
+    "In 3-way layouts the middle clip stays longer while the clips at the sides scroll up or down, like swiping through a feed (needs the 3-way layouts)": "在三分屏布局中，中间的片段停留更久，两侧的片段像刷信息流一样向上或向下滚动（需要启用三分屏布局）",
   },
   patterns: [
     ["Stopped early – the video ends at (.+) of (.+)\. The recording runs in real time, so let the show play to the end for the whole track\.", "已提前停止——视频在 $1（共 $2）处结束。录制是实时进行的，请让节目播放到结尾以获得完整曲目。"],
