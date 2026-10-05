@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.53.2",
+    date: "2026-10-05",
+    items: [
+      ["pmv", "PMV Generator 2.15.7: fixes two start-up crashes – the page didn't open with “A playlist” as the clip source (“can't access lexical declaration 'pls' before initialization”), and a file of the big-library mode was missing since Stash UI 3.50.0, so the page stayed empty. Thanks to mistery for the exact report.", "PMV 生成器 2.15.7：修复两个启动崩溃——以“播放列表”作为片段来源时页面无法打开（“can't access lexical declaration 'pls' before initialization”），以及自 Stash UI 3.50.0 起缺少大型媒体库模式的一个文件导致页面空白。感谢 mistery 的详细报告。"],
+    ],
+  },
+  {
     v: "3.53.1",
     date: "2026-10-05",
     items: [

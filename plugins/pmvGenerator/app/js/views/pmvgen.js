@@ -161,6 +161,7 @@ function setPath(S, p, v) {
 export function render(main) {
   const stored = store.get("pmvgen", {});
   const S = Object.assign({}, DEFAULTS, stored);
+  let pls = []; // Stash UI's playlists – declared up here: the first paintSegs() already reads it
   S.fx = Object.assign({}, DEFAULTS.fx, S.fx);
   S.layouts = Object.assign({}, DEFAULTS.layouts, S.layouts);
   S.collapsed = Object.assign({}, S.collapsed);
@@ -525,7 +526,7 @@ export function render(main) {
     const clipOpts = [S.bestSpots && "best moments", S.smartCrop && "smart crop", S.matchCut && "match cuts", S.variety && "variety"].filter(Boolean);
     const src = { scene: "Scenes", image: "Images", both: "Scenes + images" }[S.source];
     const where = S.folders.length ? `from ${S.folders.length === 1 ? "1 folder" : S.folders.length + " folders"}` : "from all folders";
-    const plName = S.clipFrom === "playlist" ? ((typeof pls !== "undefined" && pls.find((p) => p.id === S.clipList)) || {}).name : null;
+    const plName = S.clipFrom === "playlist" ? (pls.find((p) => p.id === S.clipList) || {}).name : null;
     const fromName = { versus: "Your Versus top scenes", watched: "Your most watched scenes" }[S.clipFrom];
     $("[data-sum]").innerHTML = [
       `<li><b>Clips</b>${S.rgPct >= 100 ? "RedGifs only" : fromName ? fromName : plName ? `Playlist “${esc(plName)}”` : `${esc(src)} ${esc(where)}${S.tags.length ? ` · ${S.tags.length} Tags${S.tags.length > 1 && S.tagMode === "any" ? " (any)" : ""}` : ""}${S.perfs.length ? ` · ${S.perfs.length} ${S.perfs.length === 1 ? "performer" : "performers"}` : ""}${S.fav ? " · favorites only" : ""}${+S.minRating ? ` · ★${S.minRating / 20}+` : ""}${+S.minLen ? ` · ≥ ${S.minLen / 60} min` : ""}${S.maxRes !== "any" ? ` · ≤ ${S.maxRes}p` : ""}`}${S.rgPct > 0 && S.rgPct < 100 ? ` · RedGifs ${S.rgPct} %` : ""}${S.rgPct > 0 ? ` (${esc(S.rgPicks.length ? S.rgPicks.map(rg.pickLabel).join(", ") : "trending")})` : ""}</li>`,
@@ -779,7 +780,6 @@ export function render(main) {
   updateCount();
 
   // ---------- Clips from a playlist (Stash UI's smart playlists) ----------
-  let pls = [];
   function paintClipFrom() {
     const fromList = S.clipFrom === "playlist";
     const sel = $("[data-cliplist]");

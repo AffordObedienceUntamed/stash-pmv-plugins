@@ -36,6 +36,7 @@ SHARED = [
     "app/admin.css",
     "app/js/api.js",
     "app/js/ui.js",
+    "app/js/scale.js",
     "app/js/i18n.js",
     "app/js/locales/zh-CN.js",
     "app/js/pmvsmart.js",
