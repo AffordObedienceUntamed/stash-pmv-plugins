@@ -1,7 +1,7 @@
 // Groups (Stash's collections of scenes – formerly "movies"): all groups as poster cards, and one group with its
 // scenes (in the order of the group). Scrolling loads more.
 
-import { esc, icon, debounce, errorToast, plural, fmtDate, starsHtml } from "../ui.js";
+import { esc, icon, debounce, errorToast, toast, confirmDialog, plural, fmtDate, starsHtml } from "../ui.js";
 import { t } from "../i18n.js";
 import { gql, routeSignal } from "../api.js";
 import { setQuery } from "../main.js";
@@ -127,13 +127,29 @@ async function renderOne(main, id, query) {
         <nav class="kb-crumbs"><span><a href="#/groups">${t("Groups")}</a></span></nav>
         <h1 class="kb-h1">${esc(g.name)}</h1>
         <p class="kb-sub">${plural(g.scene_count || 0, "scene", "scenes")}</p>
-        ${g.rating100 ? `<div class="kb-plc-acts">${starsHtml(g.rating100)}</div>` : ""}
+        <div class="kb-plc-acts">${g.rating100 ? starsHtml(g.rating100) : ""}<button type="button" class="kb-btn is-ghost kb-pdanger" data-del>${icon("trash")}${t("Delete group")}</button></div>
         ${facts.length ? `<dl class="kb-facts">${facts.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`).join("")}</dl>` : ""}
         ${(g.tags || []).length ? `<div class="kb-chips">${g.tags.map((tg) => `<a class="kb-chip" href="#/tag/${esc(tg.id)}">${esc(tg.name)}</a>`).join("")}</div>` : ""}
         ${g.synopsis ? `<p class="kb-lead kb-perf-details">${esc(g.synopsis)}</p>` : ""}
       </div>
     </header>
     <section data-browser></section>`;
+  main.querySelector("[data-del]").onclick = async () => {
+    const r = await confirmDialog({
+      title: t("Delete group “{name}”?", { name: g.name }),
+      text: g.scene_count ? t("Only the group is deleted – its {n} scenes stay in your library.", { n: g.scene_count }) : t("The group is empty. It is deleted."),
+      ok: t("Delete"),
+      danger: true,
+    });
+    if (!r.ok) return;
+    try {
+      await gql(`mutation($i: GroupDestroyInput!) { groupDestroy(input: $i) }`, { i: { id: g.id } });
+      toast(t("Group deleted"), "ok");
+      location.hash = "#/groups";
+    } catch (e) {
+      errorToast(e, "Delete");
+    }
+  };
   const b = mediaBrowser(main.querySelector("[data-browser]"), {
     kinds: ["scene"],
     query,

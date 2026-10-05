@@ -4,6 +4,14 @@
 
 export const CHANGES = [
   {
+    v: "3.63.0",
+    date: "2026-10-05",
+    items: [
+      ["ui", "Stash UI 3.63.0: a group can be deleted – open the group, “Delete group” (only the group is deleted, its scenes stay in your library). Plugins page: every enabled plugin has an “All settings in classic Stash” button – settings that a plugin draws itself with its own code (not listed in its file) are only there, because the classic interface is where plugins can add to the page.", "Stash UI 3.63.0：现在可以删除群组——打开群组，点击“删除群组”（只删除群组，其中的场景保留在库中）。插件页面：每个已启用的插件都有“在经典 Stash 中查看全部设置”按钮——插件用自己的代码绘制的设置（未列在其文件中）只在那里，因为经典界面才是插件可以扩展页面的地方。"],
+      ["pmv", "PMV Generator 2.18.1: the shared files were updated.", "PMV 生成器 2.18.1：共享文件已更新。"],
+    ],
+  },
+  {
     v: "3.62.1",
     date: "2026-10-05",
     items: [
