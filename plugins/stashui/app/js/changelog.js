@@ -4,6 +4,14 @@
 
 export const CHANGES = [
   {
+    v: "3.63.2",
+    date: "2026-10-05",
+    items: [
+      ["ui", "Stash UI 3.63.2: tag and studio search no longer picks anything for you. The suggestions show while you type – click one, or use ↑/↓ and Enter. Only a name you typed exactly (or an alias) is highlighted, so Enter takes that one. Enter on a name that matches nothing still creates it (where that is allowed). Also the tag search of the PMV Generator.", "Stash UI 3.63.2：标签和工作室搜索不再替你自动选择。输入时会显示建议——点击其中一个，或用 ↑/↓ 加回车。只有你完整输入的名称（或别名）会高亮，回车就选它。输入没有任何匹配的名称并按回车，仍会创建它（在允许创建的地方）。PMV 生成器的标签搜索也是如此。"],
+      ["pmv", "PMV Generator 2.18.3: the tag search no longer auto-picks (see Stash UI 3.63.2).", "PMV 生成器 2.18.3：标签搜索不再自动选择（见 Stash UI 3.63.2）。"],
+    ],
+  },
+  {
     v: "3.63.1",
     date: "2026-10-05",
     items: [
