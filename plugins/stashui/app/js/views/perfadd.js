@@ -80,7 +80,7 @@ export function openAddMedia(perf, onDone) {
     } else page++;
     try {
       const d = await gql(`query AddMedia($f: FindFilterType, $s: ${kind.type}) { ${kind.find}(filter: $f, ${kind.arg}: $s) { count ${kind.list} { ${kind.fields} } } }`, {
-        f: { q, per_page: PER, page, sort: q ? "relevance" : "created_at", direction: "DESC" },
+        f: q ? { q, per_page: PER, page } : { per_page: PER, page, sort: "created_at", direction: "DESC" }, // (no sort when searching – Stash has no "relevance" sort key)
         s: { performers: { value: [perf.id], modifier: "EXCLUDES" } },
       });
       if (my !== seq) return; // a newer search is on its way

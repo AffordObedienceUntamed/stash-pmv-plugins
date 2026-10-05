@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.57.1",
+    date: "2026-10-05",
+    items: [
+      ["ui", "Fix: searching in “Add scenes and images” failed with “invalid sort: relevance”.", "修复：在“添加场景和图片”中搜索时出现“invalid sort: relevance”错误。"],
+    ],
+  },
+  {
     v: "3.57.0",
     date: "2026-10-05",
     items: [
