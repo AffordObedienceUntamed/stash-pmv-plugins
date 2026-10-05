@@ -33,6 +33,7 @@ export const NAV = [
     { href: "stats", label: "Statistics", icon: "chart", match: /^stats/ },
     { action: "log", label: "Log", icon: "logs" },
     { href: "duplicates", label: "Duplicates", icon: "copies", match: /^duplicates/ },
+    { href: "phone", label: "Phone upload", icon: "phone", match: /^phone/ },
     { href: "settings", label: "Settings", icon: "gear", match: /^settings/ },
     { href: "plugins", label: "Plugins", icon: "plug", match: /^plugins/ },
     { href: "whatsnew", label: "What's new", icon: "info", match: /^whatsnew/, count: "news" },

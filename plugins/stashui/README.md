@@ -55,6 +55,7 @@ Open it: just open Stash (e.g. `http://localhost:9999`) – the home page redire
 | Duplicates | Scenes that look the same (Stash's perceptual hashes), side by side with resolution, codec, bitrate and size – the best copy is marked. Delete single copies or “keep the best” in one click; deleting the files from disk is an extra checkbox. “Not duplicates” hides a group. Needs phashes (Tasks → Generate) |
 | Settings | All Stash settings in sections: library, previews, playback, paths, login, log (with viewer), classic interface, DLNA, scrapers, more options, database (back up, optimize, clean up), this interface |
 | Plugins | Installed: on/off, settings, run tasks, check for updates, update (one or all), uninstall. Browse: install plugins from your sources, with search. Sources: add, edit, remove plugin sources – no need to go to classic Stash Every enabled plugin has an “All settings in classic Stash” button – settings a plugin draws with its own code (not listed in its file) live there. |
+| Phone upload | Manage → Phone upload: send photos and videos from your phone's gallery to your library over your home Wi-Fi. **Start**, scan the QR code with the phone, pick the files – they are written into a folder of your library (default “Phone uploads”), and Stash scans it by itself. Runs only while you use it; only people with the link can send; only photo and video types are accepted. |
 | Classic Stash | The original Stash in the same look, embedded with quick picks: performers, studios, groups, markers, scene tagger, scrapers, tools, settings |
 
 ## Languages

@@ -1615,3 +1615,24 @@ html.kb-glass .kb-mk-art { border: 1px solid var(--glass-edge); border-radius: 1
 html.kb-glass .kb-sfnote { border: 1px solid var(--glass-edge); border-left: 3px solid var(--pink); border-radius: 14px; background: var(--glass-shine), var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); }
 
 .kb-set-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Phone upload */
+.kb-phone { display: flex; flex-direction: column; gap: 16px; max-width: 980px; }
+.kb-phone-card { padding: 18px 20px; border: 1px solid var(--bg-3); border-radius: 12px; background: var(--base); display: flex; flex-direction: column; gap: 10px; }
+.kb-phone-card h2 { margin: 0; font: 700 18px/1.2 var(--f-display); }
+.kb-phone-card h2 small { color: var(--text-2); font-weight: 400; }
+.kb-phone-run { flex-direction: row; flex-wrap: wrap; gap: 22px; align-items: flex-start; }
+.kb-phone-qr { flex: 0 0 240px; width: 240px; padding: 10px; border-radius: 12px; background: #fff; line-height: 0; }
+.kb-phone-qr svg { width: 100%; height: auto; display: block; }
+.kb-phone-side { flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.kb-phone-steps { margin: 0; padding-left: 20px; color: var(--text-2); display: flex; flex-direction: column; gap: 4px; }
+.kb-phone-url { display: flex; align-items: center; gap: 8px; }
+.kb-phone-url code { flex: 1; min-width: 0; padding: 8px 10px; border-radius: 8px; background: var(--bg-3); font-size: 13px; overflow-wrap: anywhere; user-select: all; }
+.kb-phone-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.kb-phone-files { display: flex; flex-direction: column; max-height: 320px; overflow-y: auto; }
+.kb-phone-file { display: flex; justify-content: space-between; gap: 12px; padding: 6px 2px; border-bottom: 1px solid var(--bg-3); overflow-wrap: anywhere; }
+.kb-phone-file small { flex: none; color: var(--text-2); }
+@media (max-width: 640px) { .kb-phone-qr { flex-basis: 100%; width: 100%; max-width: 260px; } }
+html.kb-glass .kb-phone-card { border-color: var(--glass-edge); border-radius: 18px; background: var(--glass-shine), var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); }
+html.kb-glass .kb-phone-url code { background: rgba(255, 255, 255, .1); }
+html.kb-glass .kb-phone-file { border-bottom-color: var(--glass-edge); }

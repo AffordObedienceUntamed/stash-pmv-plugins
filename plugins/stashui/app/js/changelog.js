@@ -4,6 +4,14 @@
 
 export const CHANGES = [
   {
+    v: "3.65.0",
+    date: "2026-10-05",
+    items: [
+      ["ui", "Stash UI 3.65.0: Phone upload (menu: Manage → Phone upload). Send photos and videos from your phone's gallery to your library over your home Wi-Fi: press Start, scan the QR code with the phone, pick the files – they are streamed straight into a folder of your library (default “Phone uploads”, you choose the library folder and the subfolder), keep the date they have on the phone, and Stash scans the folder by itself a few seconds after the last file. Big videos are fine (no size limit, written to disk as they arrive). Safety: it runs only while you use it (Stop, or by itself after three hours without use), only people with the link / QR code can send, only photo and video types are accepted, nothing is overwritten, and the folder has to be inside a library folder. Use it on a network you trust. Windows may ask once whether Python may use the private network – allow it. Only tested with simulated uploads on this PC, not with a real phone.", "Stash UI 3.65.0：手机上传（菜单：管理 → 手机上传）。通过家庭 Wi-Fi 把手机相册中的照片和视频发送到你的媒体库：点击“开始”，用手机扫描二维码，选择文件——它们会被直接流式写入媒体库中的一个文件夹（默认“Phone uploads”，媒体库文件夹和子文件夹可自选），保留手机上的原始日期，最后一个文件到达几秒后 Stash 会自动扫描该文件夹。大视频没有问题（无大小限制，边接收边写入磁盘）。安全：只在你使用时运行（点“停止”，或三小时无人使用后自动停止），只有拥有链接/二维码的人才能发送，只接受照片和视频类型，不会覆盖任何文件，且文件夹必须位于媒体库文件夹之内。请在你信任的网络中使用。Windows 可能会询问一次是否允许 Python 使用专用网络——请允许。仅在本机用模拟上传测试过，未用真实手机测试。"],
+      ["pmv", "PMV Generator 2.18.7: the shared files were updated.", "PMV 生成器 2.18.7：共享文件已更新。"],
+    ],
+  },
+  {
     v: "3.64.2",
     date: "2026-10-05",
     items: [
