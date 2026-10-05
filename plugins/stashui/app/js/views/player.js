@@ -1498,6 +1498,7 @@ export async function render(host, params, query = {}) {
     else if (k === "b") addMarker();
     else if (k === "e") host.querySelector("[data-edit]") && host.querySelector("[data-edit]").click(); // edit
     else if (k === "r") host.querySelector("[data-advrate]") && host.querySelector("[data-advrate]").click(); // the detailed rating
+    else if (k === "delete") host.querySelector("[data-delete]") && host.querySelector("[data-delete]").click(); // asks first
     else if (k === "n") next(1);
     else if (k === "p") next(-1);
     else if (k === "i") $("[data-panel]").click();

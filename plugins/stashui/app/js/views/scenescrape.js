@@ -9,7 +9,7 @@ import { studiosCache } from "./studiopicker.js";
 import { createStudio } from "./studioedit.js";
 
 let schema = null;
-async function loadSchema() {
+export async function loadSchema() {
   if (schema) return schema;
   const d = await gql(`query SceneScrapeSchema {
     u: __type(name: "SceneUpdateInput") { inputFields { name } }
@@ -20,7 +20,7 @@ async function loadSchema() {
   return schema;
 }
 
-async function loadSources() {
+export async function loadSources() {
   const d = await gql(`query SceneSources {
     listScrapers(types: [SCENE]) { id name scene { supported_scrapes } }
     configuration { general { stashBoxes { endpoint name } } }
@@ -32,7 +32,13 @@ async function loadSources() {
   return { list: [...boxes, ...scrapers], byUrl };
 }
 
-const day = (v) => (/^\d{4}-\d{2}-\d{2}/.test(String(v || "")) ? String(v).slice(0, 10) : "");
+export const day = (v) => (/^\d{4}-\d{2}-\d{2}/.test(String(v || "")) ? String(v).slice(0, 10) : "");
+export const linksOf = (x) => [...new Set([...(x.urls || []), x.url].filter(Boolean))];
+// the fields asked of a scraped scene (which exist depends on the Stash version)
+export function scrapedFields(sch) {
+  const SC = ["title", "details", "date", "urls", "url", "image", "remote_site_id", "code", "director"].filter((k) => sch.scraped.has(k)).join(" ");
+  return `${SC}${sch.scraped.has("studio") ? " studio { stored_id name }" : ""}${sch.scraped.has("tags") ? " tags { stored_id name }" : ""}${sch.scraped.has("performers") ? " performers { stored_id name }" : ""}`;
+}
 
 // host: the section to fill. ctx: { id, title, el (the drawer), picker (tags), perfs, studio, setCover(dataUrl), setStashIds(list), stashIds }
 export async function mountSceneScrape(host, ctx) {
@@ -60,11 +66,9 @@ export async function mountSceneScrape(host, ctx) {
     <label class="kb-check"><input type="checkbox" data-mk checked> ${t("Create studios, performers and tags that don't exist yet")}</label>
     <div class="kb-pe-results" data-sres></div>`;
   const $ = (s) => host.querySelector(s);
-  const SC = ["title", "details", "date", "urls", "url", "image", "remote_site_id", "code", "director"].filter((k) => sch.scraped.has(k)).join(" ");
-  const SF = `${SC}${sch.scraped.has("studio") ? " studio { stored_id name }" : ""}${sch.scraped.has("tags") ? " tags { stored_id name }" : ""}${sch.scraped.has("performers") ? " performers { stored_id name }" : ""}`;
+  const SF = scrapedFields(sch);
   const srcOf = () => sources.list.find((s) => s.id === ($("[data-src]") || {}).value);
   const sourceInput = (s) => (s.box ? { stash_box_endpoint: s.box } : { scraper_id: s.scraper });
-  const linksOf = (x) => [...new Set([...(x.urls || []), x.url].filter(Boolean))];
   let results = [];
 
   async function search() {

@@ -1638,3 +1638,36 @@ html.kb-glass .kb-sfnote { border: 1px solid var(--glass-edge); border-left: 3px
 html.kb-glass .kb-phone-card { border-color: var(--glass-edge); border-radius: 18px; background: var(--glass-shine), var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); }
 html.kb-glass .kb-phone-url code { background: rgba(255, 255, 255, .1); }
 html.kb-glass .kb-phone-file { border-bottom-color: var(--glass-edge); }
+
+/* Advanced filter drawer (advfilter.js) */
+.kb-advf-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.kb-advf-row > select { flex: 1 1 150px; min-width: 0; }
+.kb-advf-val { display: flex; flex: 2 1 220px; align-items: center; gap: 8px; min-width: 0; }
+.kb-advf-val > .kb-field { flex: 1 1 0; min-width: 0; }
+.kb-advf-pick { flex: 1 1 100%; }
+.kb-advf-and { color: var(--muted); font-size: 12px; }
+.kb-advf [data-add] { margin-top: 12px; }
+html.kb-glass .kb-advf-row { border-bottom-color: var(--glass-edge); }
+
+/* Scene tagger (views/tagger.js) */
+.kb-tg-tools { align-items: center; }
+.kb-tg-tools .kb-search { flex: 1 1 200px; }
+.kb-tg-row { display: flex; gap: 14px; padding: 12px; margin-bottom: 10px; border: 1px solid var(--line); border-radius: var(--r); background: var(--bg-2); transition: opacity .4s; }
+.kb-tg-row.is-done { opacity: 0; }
+.kb-tg-thumb { flex: none; display: grid; place-items: center; width: 160px; height: 90px; border-radius: 6px; overflow: hidden; background: var(--bg-3); color: var(--faint); }
+.kb-tg-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.kb-tg-main { display: flex; flex: 1; flex-direction: column; gap: 6px; min-width: 0; }
+.kb-tg-title { overflow-wrap: anywhere; }
+.kb-tg-path, .kb-tg-have { color: var(--muted); overflow-wrap: anywhere; }
+.kb-tg-res:empty { display: none; }
+.kb-tg-review { display: flex; flex-direction: column; gap: 6px; padding: 10px; border: 1px solid var(--pink); border-radius: var(--r); background: var(--base); }
+.kb-tg-found { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0; }
+.kb-tg-field { display: flex; gap: 8px; align-items: baseline; cursor: pointer; }
+.kb-tg-lab { flex: none; width: 90px; color: var(--muted); }
+.kb-tg-val { min-width: 0; overflow-wrap: anywhere; }
+.kb-tg-val s { color: var(--faint); }
+.kb-tg-act { display: flex; gap: 8px; margin-top: 4px; }
+.kb-pager { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 16px 0; }
+@media (max-width: 640px) { .kb-tg-row { flex-direction: column; } .kb-tg-thumb { width: 100%; height: 160px; } }
+html.kb-glass .kb-tg-row { border-color: var(--glass-edge); background: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); }
+html.kb-glass .kb-tg-review { background: color-mix(in srgb, var(--base) 45%, transparent); }

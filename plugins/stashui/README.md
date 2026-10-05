@@ -115,6 +115,7 @@ Stash UI works on its own. If you also install **Media Storm** or the **PMV Gene
 | J | Next highlight | – |
 | 0–9 | Jump to 0–90 % | – |
 | 1–5 | Rating | Rating |
+| Del | Delete (asks first) | Delete (asks first) |
 | H | Heart (favorite) | Heart (favorite) |
 | O | O counter +1 | O counter +1 |
 | F | Fullscreen | Fullscreen |
@@ -143,6 +144,8 @@ Settings → General → **Install as app**: Stash UI gets its own window and a 
 - **Player menu** (gear next to fullscreen): quality (original or Stash's transcodes), subtitles (Stash's captions – the section appears when a scene has some), VR and speed.
 - **VR**: 180°/360° videos, mono, side by side or top/bottom – drag to look around, wheel or two fingers to zoom. Guessed from the file name (e.g. `_180_LR`) or a "VR" tag, and remembered per scene. Shows one eye on a normal screen; headsets aren't supported yet.
 - **Fullscreen**: move the mouse near the right edge to slide in the info panel (Settings → This interface → “Info panel in fullscreen”).
+- **Advanced filter** (Filter → Advanced …): any number of criteria on top of the quick filters, like classic Stash's “Add filter” – text fields (contains, is, regex, empty), numbers and dates (is, between, greater / less), yes / no fields, resolution, format, tags / performers / studios (any, all, none), “is missing …”. It is kept in the address and in playlists.
+- **Scene tagger** (menu → Manage): the scenes that aren't organized with a StashDB / scraper lookup per scene – by file or by title – and a field-by-field check before saving. Same scrapers as “Fill in from the internet” in the editor.
 - **Delete in the player**: the info bar has a Delete button (it asks first, with the option to delete the file too). The next video of the list or queue keeps playing instead of going back to the list.
 - **Saved filters in the menu**: Stash's own saved filters (Scenes, Images) and your playlists sit under the folder tree – one click opens the list with it. Hide or move the section in Home → Customize → Sidebar.
 - The detailed rating, dialogs and drawers also open while the player is in fullscreen; stepping from one image or video to the next no longer flashes the page underneath.

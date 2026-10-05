@@ -4,6 +4,17 @@
 
 export const CHANGES = [
   {
+    v: "3.68.0",
+    date: "2026-10-06",
+    items: [
+      ["ui", "Advanced filter in Scenes, Images and Galleries (Filter → Advanced …): any number of criteria like in classic Stash – title, path, dates, durations, counts, codec, resolution, tags / performers / studios with “any / all / none”, “is missing …” and more, each with a condition (contains, is, between, is empty …). It sits on top of the quick filters, is kept in the address and in playlists.", "场景、图片和图库中的高级筛选（筛选 → 高级 …）：像经典 Stash 一样可添加任意多个条件——标题、路径、日期、时长、数量、编码、分辨率、标签/演员/工作室（任一/全部/没有）、“缺少 …” 等，每个条件都有判断方式（包含、等于、介于、为空 …）。它叠加在快速筛选之上，会保存在地址和播放列表中。"],
+      ["ui", "Scene tagger (menu → Manage): the scenes that aren't organized, one row each – look each one up by its file or by a title on StashDB or with a scraper, check what was found field by field, save (and mark it organized). “Look up this page” does the whole page by file.", "场景标记器（菜单 → 管理）：列出尚未整理的场景，每个一行——通过文件或标题在 StashDB 或抓取器中查找，逐项检查找到的内容后保存（并标记为已整理）。“查找本页”会按文件一次查找整页。"],
+      ["ui", "The folder tree in the menu: when it is off (a big library switches it off), the menu now says so and offers “Show the folder tree here” and a link to the Folders page – before it simply vanished.", "菜单中的文件夹树：关闭时（大型媒体库会自动关闭），菜单现在会说明原因，并提供“在此显示文件夹树”和“文件夹”页面的链接——以前它只是消失了。"],
+      ["ui", "The Delete key deletes the scene or image you are looking at (it asks first). The saved filter that is open is lit in the menu.", "按 Delete 键可删除当前查看的场景或图片（会先确认）。当前打开的已保存筛选会在菜单中高亮。"],
+      ["pmv", "PMV Generator 2.18.11: the shared files were updated.", "PMV 生成器 2.18.11：共享文件已更新。"],
+    ],
+  },
+  {
     v: "3.67.0",
     date: "2026-10-06",
     items: [

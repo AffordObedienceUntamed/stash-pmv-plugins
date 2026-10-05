@@ -2,7 +2,7 @@
 // Layout = ordered groups with item ids, plus hidden ids. Items that appear later (a new menu entry in an
 // update, a newly installed plugin) are put into their default group, so nothing is ever lost.
 
-import { store, folderMode } from "./ui.js";
+import { store } from "./ui.js";
 
 export const NAV = [
   { group: null, items: [
@@ -16,7 +16,7 @@ export const NAV = [
     { href: "studios", label: "Studios", icon: "studio", match: /^studio/ },
     { href: "groups", label: "Groups", icon: "layers", match: /^group/ },
     { href: "performers", label: "Performers", icon: "person", match: /^performer/, count: "performer_count" },
-    { href: "tags", label: "Tags", icon: "tag", match: /^tag/, count: "tag_count" },
+    { href: "tags", label: "Tags", icon: "tag", match: /^tags?(\/|$)/, count: "tag_count" },
   ] },
   { group: "Watch", items: [
     { href: "queue", label: "Queue", icon: "queue", match: /^queue/, count: "queue" },
@@ -33,6 +33,7 @@ export const NAV = [
     { href: "stats", label: "Statistics", icon: "chart", match: /^stats/ },
     { action: "log", label: "Log", icon: "logs" },
     { href: "duplicates", label: "Duplicates", icon: "copies", match: /^duplicates/ },
+    { href: "tagger", label: "Scene tagger", icon: "tag", match: /^tagger/ },
     { href: "phone", label: "Phone upload", icon: "phone", match: /^phone/ },
     { href: "settings", label: "Settings", icon: "gear", match: /^settings/ },
     { href: "plugins", label: "Plugins", icon: "plug", match: /^plugins/ },
@@ -134,13 +135,12 @@ export function visibleRail() {
   const layout = loadRail();
   const cat = catalog();
   const off = new Set(layout.hidden);
-  const mode = folderMode();
   return layout.groups
     .map((g) => ({
       key: g.key,
       name: g.name,
       custom: g.name != null,
-      items: g.items.filter((id) => cat.has(id) && !off.has(id) && (id !== FOLDERS || mode === "all")).map((id) => cat.get(id)),
+      items: g.items.filter((id) => cat.has(id) && !off.has(id)).map((id) => cat.get(id)),
     }))
     .filter((g) => g.items.length);
 }

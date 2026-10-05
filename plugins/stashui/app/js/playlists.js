@@ -4,10 +4,11 @@
 // A playlist: { id, name, kind: "scene" | "image", query: { q, sort, dir, tags, … as in the list's URL }, labels: { id: name } }
 
 import { ratingFilterMin } from "./ui.js";
+import { advToFilter, andInto } from "./advfilter.js";
 import { gql, pluginConfig, setPluginConfig } from "./api.js";
 
 // The list's URL parameters that make up a playlist
-export const QUERY_KEYS = ["q", "sort", "dir", "tags", "xtags", "perfs", "pany", "studios", "rating", "fav", "played", "ori", "res", "len", "ia", "tier", "crit"];
+export const QUERY_KEYS = ["q", "sort", "dir", "tags", "xtags", "perfs", "pany", "studios", "rating", "fav", "played", "ori", "res", "len", "ia", "tier", "crit", "adv"];
 
 // URL parameters → filter state (as the lists keep it)
 export function stateOf(q = {}) {
@@ -30,6 +31,7 @@ export function stateOf(q = {}) {
     ia: q.ia || "", // funscript: yes | no
     tier: list(q.tier), // only these tiers (S–F, from the Versus standings)
     crit: q.crit || "", // detailed rating: "Name:min,Name:min"
+    adv: q.adv || "", // advanced filter: JSON list of [field, modifier, value, value2] (advfilter.js)
     seed: q.seed || "",
   };
 }
@@ -64,6 +66,7 @@ export function filterOf(kind, st, favId, base) {
     if (st.ia) f.interactive = st.ia === "yes";
   }
   if (st.ori && kind !== "gallery") f.orientation = { value: [st.ori] };
+  if (st.adv) andInto(f, advToFilter(kind, st.adv));
   return f;
 }
 

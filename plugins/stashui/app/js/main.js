@@ -54,6 +54,7 @@ const ROUTES = [
   { re: /^versus$/, view: "versus" },
   { re: /^versus\/ranking$/, view: "versus", params: { tab: "ranking" } },
   { re: /^duplicates$/, view: "dupes" },
+  { re: /^tagger$/, view: "tagger" },
   { re: /^queue$/, view: "queue" },
   { re: /^tasks$/, view: "tasks" },
   { re: /^settings$/, view: "settings" },
@@ -132,6 +133,7 @@ const loaders = {
   funscripts: () => import("./views/funscripts.js"),
   whatsnew: () => import("./views/whatsnew.js"),
   dupes: () => import("./views/dupes.js"),
+  tagger: () => import("./views/tagger.js"),
   queue: () => import("./views/queue.js"),
   tasks: () => import("./views/tasks.js"),
   settings: () => import("./views/settings.js"),
@@ -282,6 +284,11 @@ window.addEventListener("stash:rail-changed", renderRail);
 
 function bindRail(rail) {
   rail.addEventListener("click", (e) => {
+    if (e.target.closest("[data-foldersall]")) {
+      store.set("folderMode", "all");
+      treeData = null;
+      return renderRail();
+    }
     const gh = e.target.closest("[data-railgrp]");
     if (gh) {
       const k = gh.dataset.railgrp;
@@ -457,7 +464,8 @@ async function renderTree() {
   if (!box) return;
   await isLarge(); // a big library: no folder counting on its own
   if (folderMode() !== "all") {
-    document.querySelectorAll('#rail [data-railgrp="Folders"], #rail [data-railbody="Folders"]').forEach((el) => (el.style.display = "none"));
+    // not drawn (a big library, or switched off): say so, and offer it – counting the folders reads the whole library
+    box.innerHTML = `<div class="kb-rail-foot">${store.get("folderMode") ? t("The folder tree is off in Settings.") : t("The folder tree is off – your library is big.")}</div><button type="button" class="kb-btn is-ghost" data-foldersall>${t("Show the folder tree here")}</button> <a class="kb-rail-foot" href="#/folders">${t("Open the Folders page")}</a>`;
     return;
   }
   try {
@@ -511,17 +519,29 @@ async function renderSaved() {
     box.innerHTML = html;
     box.hidden = !html || railClosed.has("Saved filters");
     if (head) head.style.display = html ? "" : "none";
+    markSaved(parseHash());
   } catch (e) {
     if (head) head.style.display = "none";
   }
 }
 window.addEventListener("stash:playlists-changed", renderSaved);
 
+// The saved filter that is open is lit in the menu (matched by its sf / pl parameter and the list it opens)
+function markSaved(r) {
+  document.querySelectorAll("#savedtree a").forEach((a) => {
+    const [p, qs = ""] = a.getAttribute("href").replace(/^#\//, "").split("?");
+    const q = new URLSearchParams(qs);
+    const key = q.has("sf") ? "sf" : "pl";
+    a.classList.toggle("is-active", p === r.path && !!r.query && r.query[key] === q.get(key));
+  });
+}
+
 function markRail(r) {
   document.querySelectorAll(".kb-nav a[data-match]").forEach((a) => {
     a.classList.toggle("is-active", new RegExp(a.dataset.match).test(r.path));
   });
   renderTree();
+  markSaved(r);
 }
 
 export async function refreshCounts() {
