@@ -4,6 +4,14 @@
 
 export const CHANGES = [
   {
+    v: "3.64.0",
+    date: "2026-10-05",
+    items: [
+      ["ui", "Stash UI 3.64.0: groups can be made and edited here now. Library → Groups: “New group” (cover picture by upload, link or paste, name, aliases, date, director, studio, links, synopsis, tags). On a group's page: “Add scenes” (browse or search your scenes, tick as many as you like, add them in one go), “Edit group” and “Delete group”. The scenes are added to the group; they stay in your library when a group is deleted.", "Stash UI 3.64.0：现在可以在这里创建和编辑群组。媒体库 → 群组：“新建群组”（可通过上传、链接或粘贴设置封面，以及名称、别名、日期、导演、工作室、链接、简介、标签）。在群组页面：“添加场景”（浏览或搜索场景，勾选任意多个后一次添加）、“编辑群组”和“删除群组”。场景会被加入群组；删除群组时场景仍保留在你的库中。"],
+      ["pmv", "PMV Generator 2.18.4: the shared files were updated.", "PMV 生成器 2.18.4：共享文件已更新。"],
+    ],
+  },
+  {
     v: "3.63.2",
     date: "2026-10-05",
     items: [
