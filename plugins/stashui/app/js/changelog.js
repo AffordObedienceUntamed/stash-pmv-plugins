@@ -4,6 +4,14 @@
 
 export const CHANGES = [
   {
+    v: "3.69.1",
+    date: "2026-10-06",
+    items: [
+      ["ui", "Stash UI 3.69.1: the two buttons at the top of the menu are a bit smaller and no longer overlap the Start entry.", "Stash UI 3.69.1：菜单顶部的两个按钮略微缩小，不再与“开始”项重叠。"],
+      ["pmv", "PMV Generator 2.18.15: the shared files were updated.", "PMV 生成器 2.18.15：共享文件已更新。"],
+    ],
+  },
+  {
     v: "3.69.0",
     date: "2026-10-06",
     items: [
