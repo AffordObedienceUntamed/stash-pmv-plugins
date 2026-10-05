@@ -17,13 +17,14 @@ const IMAGES_Q = `query CutImages($f: FindFilterType, $s: ImageFilterType) { fin
 const SCENES_Q = `query CutScenes($f: FindFilterType, $s: SceneFilterType) { findScenes(filter: $f, scene_filter: $s) { scenes { id title files { basename duration } paths { screenshot stream } } } }`;
 const nameOf = (s) => s.title || (s.files && s.files[0] && s.files[0].basename) || "#" + s.id;
 
-// perf: { id, name }; onUse(dataUrl) is called with the finished JPEG
-export function openPhotoCutter(perf, onUse) {
+// perf: { id, name }; onUse(dataUrl) is called with the finished JPEG.
+// opts.canvas: cut out of this picture right away (e.g. the frame of a live cam) – no scene or image to pick
+export function openPhotoCutter(perf, onUse, opts = {}) {
   const wrap = document.createElement("div");
   wrap.innerHTML = `
     <div class="kb-scrim kb-dialog-scrim"></div>
     <div class="kb-dialog kb-cut" role="dialog" aria-modal="true" aria-label="${esc(t("Cut a photo from a scene"))}">
-      <h2>${t("Cut a photo from a scene")}</h2>
+      <h2>${opts.canvas ? t("Cut a photo from the cam") : t("Cut a photo from a scene")}</h2>
       <div class="kb-cut-find">
         <span class="kb-cut-kinds" data-kinds><button type="button" class="kb-btn is-ghost is-sel" data-kind="scene">${t("Scenes")}</button><button type="button" class="kb-btn is-ghost" data-kind="image">${t("Images")}</button></span>
         <input class="kb-field" data-q placeholder="${esc(t("Search all (empty = those with {name})", { name: perf.name }))}">
@@ -106,7 +107,7 @@ export function openPhotoCutter(perf, onUse) {
     wrap.querySelectorAll("[data-kind]").forEach((x) => x.classList.toggle("is-sel", x === b));
     loadScenes();
   });
-  loadScenes();
+  if (!opts.canvas) loadScenes();
 
   // ---- Video
   let streams = [];
@@ -275,4 +276,15 @@ export function openPhotoCutter(perf, onUse) {
     onUse(out.toDataURL("image/jpeg", 0.92));
     close();
   };
+
+  if (opts.canvas) {
+    wrap.querySelector(".kb-cut-find").hidden = true;
+    $("[data-scenes]").hidden = true;
+    $("[data-empty]").hidden = true;
+    $("[data-back]").hidden = true;
+    canvas.width = opts.canvas.width;
+    canvas.height = opts.canvas.height;
+    canvas.getContext("2d").drawImage(opts.canvas, 0, 0);
+    startCut(false);
+  }
 }

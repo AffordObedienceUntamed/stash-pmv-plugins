@@ -1683,4 +1683,5 @@ export default {
   "Add {n}": "添加 {n} 项",
   "Show more ({n} left)": "显示更多（还有 {n} 项）",
   "Nothing left to add here.": "这里没有可添加的项目了。",
+  "Cut a photo from the cam": "从摄像头画面截取照片",
 };

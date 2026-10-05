@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.58.0",
+    date: "2026-10-05",
+    items: [
+      ["ui", "The photo cutter can now cut a portrait out of any picture handed to it – the Chaturbate plugin uses it to make a performer photo straight from a live cam (needs this version).", "照片裁剪器现在可以从任意传入的图片中裁剪竖版照片——Chaturbate 插件用它直接从直播画面制作演员照片（需要此版本）。"],
+    ],
+  },
+  {
     v: "3.57.1",
     date: "2026-10-05",
     items: [
