@@ -40,7 +40,7 @@ function start() {
   // a ripple where a button is pressed
   addEventListener("pointerdown", (e) => {
     if (!fxOn() || e.button !== 0) return;
-    const b = e.target.closest && e.target.closest(".kb-btn, .kb-chip, .kb-seg button, .kb-seg > a, .kb-nav a, .kb-nav button");
+    const b = e.target.closest && e.target.closest(".kb-btn, .kb-chip, .kb-seg button, .kb-seg > a, .kb-nav a, .kb-nav button, .kb-nsfw-btn, .kb-railmode-btn");
     if (!b || b.disabled) return;
     const r = b.getBoundingClientRect();
     const s = document.createElement("span");

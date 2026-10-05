@@ -146,6 +146,7 @@ Settings → General → **Install as app**: Stash UI gets its own window and a 
 - **Fullscreen**: move the mouse near the right edge to slide in the info panel (Settings → This interface → “Info panel in fullscreen”).
 - **Advanced filter** (Filter → Advanced …): any number of criteria on top of the quick filters, like classic Stash's “Add filter” – text fields (contains, is, regex, empty), numbers and dates (is, between, greater / less), yes / no fields, resolution, format, tags / performers / studios (any, all, none), “is missing …”. It is kept in the address and in playlists.
 - **Scene tagger** (menu → Manage): the scenes that aren't organized with a StashDB / scraper lookup per scene – by file or by title – and a field-by-field check before saving. Same scrapers as “Fill in from the internet” in the editor.
+- **Sound button in Scenes**: Sound on / Muted for the hover previews sits in the Scenes toolbar as well as on the home page.
 - **Delete in the player**: the info bar has a Delete button (it asks first, with the option to delete the file too). The next video of the list or queue keeps playing instead of going back to the list.
 - **Saved filters in the menu**: Stash's own saved filters (Scenes, Images) and your playlists sit under the folder tree – one click opens the list with it. Hide or move the section in Home → Customize → Sidebar.
 - The detailed rating, dialogs and drawers also open while the player is in fullscreen; stepping from one image or video to the next no longer flashes the page underneath.

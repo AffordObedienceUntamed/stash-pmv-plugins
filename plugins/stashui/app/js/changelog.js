@@ -4,6 +4,15 @@
 
 export const CHANGES = [
   {
+    v: "3.69.0",
+    date: "2026-10-06",
+    items: [
+      ["ui", "Sound on / Muted button in the Scenes toolbar too (the same switch as on the home page and in Settings → Player and previews).", "场景工具栏中也有了“声音开/已静音”按钮（与主页和“设置 → 播放器与预览”中的开关相同）。"],
+      ["ui", "The two buttons at the top of the menu (menu size, NSFW mode) are rounded squares now, sit on the right one above the other, and have the same effects as the other buttons (shimmer, ripple, icon bounce) – in normal and liquid glass.", "菜单顶部的两个按钮（菜单大小、NSFW 模式）现在是圆角方形，位于右侧上下排列，并拥有与其他按钮相同的效果（流光、涟漪、图标弹跳）——普通和液态玻璃样式均适用。"],
+      ["pmv", "PMV Generator 2.18.14: the shared files were updated.", "PMV 生成器 2.18.14：共享文件已更新。"],
+    ],
+  },
+  {
     v: "3.68.2",
     date: "2026-10-06",
     items: [

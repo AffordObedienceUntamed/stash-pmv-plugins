@@ -1547,24 +1547,24 @@ html.kb-glass .kb-hist i { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3); }
 html[data-studio-pos="br"] .kb-studio { left: auto; right: 32px; }
 html[data-studio-pos="tl"] .kb-studio { bottom: auto; top: 36px; }
 html[data-studio-pos="tr"] .kb-studio { left: auto; right: 8px; bottom: auto; top: 32px; }
-.kb-nsfw-btn { position: absolute; top: 18px; right: 14px; z-index: 2; display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 1px solid var(--line); border-radius: 8px; color: var(--text-2); background: none; cursor: pointer; }
+.kb-nsfw-btn { position: absolute; top: 56px; right: 12px; z-index: 2; display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 1px solid var(--line); border-radius: 10px; color: var(--text-2); background: none; cursor: pointer; }
 .kb-nsfw-btn:hover { color: var(--text); background: var(--bg-3); }
 .kb-nsfw-btn .kb-ic { width: 18px; height: 18px; }
 .kb-nsfw-btn.is-on { color: var(--ink); border-color: var(--pink); background: var(--pink); }
 html.kb-nsfw #app :is(img, video, canvas, .kb-pl-cover span, [style*="background-image"]):not(.kb-nsfw-keep) { filter: blur(var(--nsfw-blur, 18px)); transition: filter .15s; }
 html.kb-nsfw.kb-nsfw-all #overlay-root :is(img, video, canvas):not(.kb-nsfw-keep) { filter: blur(var(--nsfw-blur, 18px)); }
 html.kb-nsfw.kb-nsfw-hover #app :is(.kb-piece, .kb-perf, .kb-pl, .kb-room, .kb-card):hover :is(img, video, canvas, span[style*="background-image"]) { filter: none; }
-html.kb-glass .kb-nsfw-btn { border-color: var(--glass-edge); border-radius: 999px; background: var(--glass-shine), color-mix(in srgb, var(--bg-3) 38%, transparent); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16); }
+html.kb-glass .kb-nsfw-btn { border-color: var(--glass-edge); border-radius: 12px; background: var(--glass-shine), color-mix(in srgb, var(--bg-3) 38%, transparent); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16); }
 html.kb-glass .kb-nsfw-btn.is-on { background: var(--pink); }
 
 /* Menu on the left: icons only / hidden; the buttons at its top */
-.kb-railmode-btn { position: absolute; top: 18px; right: 52px; z-index: 2; display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 1px solid var(--line); border-radius: 8px; color: var(--text-2); background: none; cursor: pointer; }
+.kb-railmode-btn { position: absolute; top: 14px; right: 12px; z-index: 2; display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 1px solid var(--line); border-radius: 10px; color: var(--text-2); background: none; cursor: pointer; }
 .kb-railmode-btn:hover { color: var(--text); background: var(--bg-3); }
 .kb-railmode-btn .kb-ic { width: 18px; height: 18px; }
 html[data-rail="mini"] .kb-rail { padding-left: 0; padding-right: 0; overflow-x: hidden; }
 html[data-rail="mini"] .kb-mark { align-self: center; margin: 10px 0 12px; font-size: 14px; transform: none; }
 html[data-rail="mini"] .kb-mark::before { display: none; }
-html[data-rail="mini"] .kb-nsfw-btn, html[data-rail="mini"] .kb-railmode-btn { position: static; align-self: center; margin: 0 0 8px; }
+html[data-rail="mini"] .kb-nsfw-btn, html[data-rail="mini"] .kb-railmode-btn { position: relative; inset: auto; align-self: center; margin: 0 0 8px; }
 html[data-rail="mini"] .kb-nav { padding: 0 8px; }
 html[data-rail="mini"] .kb-nav :is(a, button) { justify-content: center; padding: 9px 0; }
 html[data-rail="mini"] .kb-nav :is(a, button) > span { display: none; }
@@ -1577,7 +1577,7 @@ html[data-rail="hidden"] .kb-rail-scrim { display: block; position: fixed; inset
 html[data-rail="hidden"] .kb-app.is-rail-open .kb-rail-scrim { opacity: 1; pointer-events: auto; }
 html[data-rail="hidden"] .kb-menu-btn { display: inline-flex; position: fixed; left: 12px; top: 12px; z-index: 45; }
 html[data-rail="hidden"] .kb-head { padding-top: 64px; }
-html.kb-glass .kb-railmode-btn { border-color: var(--glass-edge); border-radius: 999px; background: var(--glass-shine), color-mix(in srgb, var(--bg-3) 38%, transparent); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16); }
+html.kb-glass .kb-railmode-btn { border-color: var(--glass-edge); border-radius: 12px; background: var(--glass-shine), color-mix(in srgb, var(--bg-3) 38%, transparent); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16); }
 
 /* External player menu, date field with calendar */
 .kb-extmenu { position: fixed; z-index: 70; display: flex; flex-direction: column; gap: 2px; min-width: 190px; max-width: 280px; padding: 8px; border: 1px solid var(--bg-3); border-radius: 10px; color: var(--text); background: var(--bg-2); box-shadow: 0 18px 48px rgba(0, 0, 0, .5); }

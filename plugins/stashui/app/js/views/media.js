@@ -82,6 +82,7 @@ export function mediaBrowser(host, opts) {
         <button class="kb-btn is-icon" data-dir title="${t("Reverse direction")}" aria-label="${t("Reverse direction")}"></button>
         <button class="kb-btn" data-filter>${icon("filter")}<span>${t("Filter")}</span></button>
         <span class="kb-spacer"></span>
+        ${kinds.includes("scene") ? `<button type="button" class="kb-btn is-ghost" data-mute title="${t("Sound in hover previews")}"></button>` : ""}
         <label class="kb-range" title="${t("Thumbnail size")}">${icon("image")}<input type="range" min="130" max="480" step="10" data-rowh value="${rowH()}" aria-label="${t("Size")}"></label>
         ${opts.playlist ? `<select class="kb-field kb-plpick" data-plpick hidden title="${t("Your saved filters – the playlists made from this list")}" aria-label="${t("Saved filters")}"></select>` : ""}
         ${opts.playlist ? `<button class="kb-btn" data-plsave title="${t("Keep these filters as a playlist – it always shows what matches them now")}">${icon("queue")}<span>${opts.query.pl ? t("Save playlist") : t("Save as playlist")}</span></button>` : ""}
@@ -94,6 +95,16 @@ export function mediaBrowser(host, opts) {
       <div data-hang></div>
     </div>`;
   const $ = (s) => host.querySelector(s);
+
+  // Sound in the hover previews: the same switch as on the home page and in Settings → Player and previews
+  const paintMute = () => {
+    const b = $("[data-mute]");
+    if (!b) return;
+    const on = store.get("previewSound", true);
+    b.innerHTML = `${icon(on ? "volume" : "mute")}<span>${on ? t("Sound on") : t("Muted")}</span>`;
+    b.setAttribute("aria-pressed", !on);
+    b.hidden = kind !== "scene";
+  };
 
   function renderTools() {
     host.querySelectorAll("[data-kind]").forEach((b) => {
@@ -121,6 +132,7 @@ export function mediaBrowser(host, opts) {
     $("[data-dir]").hidden = st.sort === "random";
     $("[data-filter]").classList.toggle("is-on", filterOpen);
     $("[data-play]").hidden = kind === "gallery";
+    paintMute();
     if ($("[data-plsave]")) $("[data-plsave]").hidden = kind === "gallery";
     renderFilters();
   }
@@ -467,6 +479,10 @@ export function mediaBrowser(host, opts) {
       st = readState({}, kind, opts.defaults && opts.defaults[kind]);
       renderTools();
       return apply();
+    }
+    if (e.target.closest("[data-mute]")) {
+      store.set("previewSound", !store.get("previewSound", true));
+      return paintMute();
     }
     if (e.target.closest("[data-sfoff]")) {
       sf = null;
