@@ -4,6 +4,14 @@
 
 export const CHANGES = [
   {
+    v: "3.69.2",
+    date: "2026-10-06",
+    items: [
+      ["ui", "Stash UI 3.69.2: fixed – with the menu reduced to icons, the two buttons at the top were squeezed to thin lines. They are normal rounded squares again, one above the other.", "Stash UI 3.69.2：已修复——菜单缩为仅图标时，顶部的两个按钮被压成细线。现在它们恢复为正常的圆角方形，上下排列。"],
+      ["pmv", "PMV Generator 2.18.16: the shared files were updated.", "PMV 生成器 2.18.16：共享文件已更新。"],
+    ],
+  },
+  {
     v: "3.69.1",
     date: "2026-10-06",
     items: [

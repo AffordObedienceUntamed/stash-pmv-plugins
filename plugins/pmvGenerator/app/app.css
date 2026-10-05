@@ -1564,7 +1564,7 @@ html.kb-glass .kb-nsfw-btn.is-on { background: var(--pink); }
 html[data-rail="mini"] .kb-rail { padding-left: 0; padding-right: 0; overflow-x: hidden; }
 html[data-rail="mini"] .kb-mark { align-self: center; margin: 10px 0 12px; font-size: 14px; transform: none; }
 html[data-rail="mini"] .kb-mark::before { display: none; }
-html[data-rail="mini"] .kb-nsfw-btn, html[data-rail="mini"] .kb-railmode-btn { position: relative; inset: auto; align-self: center; margin: 0 0 8px; }
+html[data-rail="mini"] .kb-nsfw-btn, html[data-rail="mini"] .kb-railmode-btn { position: relative; inset: auto; flex: none; align-self: center; margin: 0 0 8px; } /* one above the other, centered; flex: none or the column squeezes them flat */
 html[data-rail="mini"] .kb-nav { padding: 0 8px; }
 html[data-rail="mini"] .kb-nav :is(a, button) { justify-content: center; padding: 9px 0; }
 html[data-rail="mini"] .kb-nav :is(a, button) > span { display: none; }
