@@ -227,12 +227,22 @@ export class Compositor {
         if (from < 1 && p < 0.35) filter += ` brightness(${(1 + 0.6 * (1 - p / 0.35)).toFixed(2)})`; // short flare when zooming out
       }
       if (scrolling) {
+        // Like swiping a feed: the two clips are one strip – the old one moves out, the new one follows right behind it.
+        // Each is drawn with its own blurred backdrop, shifted along (else the new backdrop would cover the old clip).
         const ease = 1 - Math.pow(1 - sp, 3);
-        if (lv.m && lv.m.w && lv.m.h) {
-          if (fitM === "contain") this.backdrop(i, lv.m, s);
-          drawIn(g, lv.m, s, fitM, 1, ox, oy + lv.dir * s.h * ease, filter.trim(), false);
-        }
-        oy += lv.dir * s.h * (ease - 1);
+        const strip = (clip, off, zm) => {
+          g.save();
+          g.beginPath();
+          g.rect(s.x, s.y, s.w, s.h);
+          g.clip();
+          g.translate(0, off);
+          if (fitM === "contain") this.backdrop(i, clip, s);
+          drawIn(g, clip, s, fitM, zm, ox, oy, filter.trim(), fx.kenburns);
+          g.restore();
+        };
+        if (lv.m && lv.m.w && lv.m.h) strip(lv.m, lv.dir * s.h * ease, 1);
+        strip(m, lv.dir * s.h * (ease - 1), zoom);
+        return;
       }
       if (fitM === "contain") this.backdrop(i, m, s);
       drawIn(g, m, s, fitM, zoom, ox, oy, filter.trim(), fx.kenburns);

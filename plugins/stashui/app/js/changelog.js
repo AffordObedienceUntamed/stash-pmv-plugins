@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.69.7",
+    date: "2026-10-06",
+    items: [
+      ["pmv", "PMV Generator 2.20.3: “Scrolling sides” now scrolls like a real feed – the old clip moves up (or down) and out, the new one follows right behind it from below (or above). Before, the new clip's blurred backdrop covered the old clip.", "PMV 生成器 2.20.3：“侧边滚动”现在像真正的信息流一样滚动——旧片段向上（或向下）移出，新片段紧随其后从下方（或上方）进入。此前新片段的模糊背景会盖住旧片段。"],
+    ],
+  },
+  {
     v: "3.69.6",
     date: "2026-10-06",
     items: [
