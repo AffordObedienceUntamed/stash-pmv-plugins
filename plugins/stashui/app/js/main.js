@@ -346,7 +346,7 @@ async function refreshPluginLinks() {
 // 4. only additions to classic Stash with a menu button there (e.g. an overlay) – classic Stash, where it runs
 // What was found is kept per plugin version.
 const OWN = new Set(["stashui", "mediastorm", "pmvgenerator"]);
-const EXT_KEY = "extPlugins5"; // v4: every plugin, routes also via variables
+const EXT_KEY = "extPlugins6"; // v4: every plugin, routes also via variables; v6: plugin icon
 
 // A real page – not a folder listing: Stash's file server answers ".../index.html" of a folder without
 // that file by listing the folder (a bare <pre> with links, no head, body or scripts)
@@ -360,6 +360,17 @@ async function pageExists(url) {
   } catch (e) {
     return false;
   }
+}
+
+// A plugin can bring its own symbol for the menu: icon.svg / icon.png / icon.webp next to its page
+async function findIcon(base) {
+  for (const f of ["icon.svg", "icon.png", "icon.webp"]) {
+    try {
+      const r = await fetch(base + f, { method: "GET", cache: "no-store" });
+      if (r.ok && /^image\//.test(r.headers.get("content-type") || "")) return base + f;
+    } catch (e) { /* none */ }
+  }
+  return "";
 }
 
 async function findPages(p) {
@@ -399,6 +410,10 @@ async function findPages(p) {
   // Only additions to classic Stash with a menu button of their own (e.g. an overlay you switch on there) –
   // not libraries, font loaders or themes
   else if (!pages.length && navButton && !/theme/i.test(p.name)) pages.push({ kind: "classic" });
+  if (pages.length) {
+    const ic = await findIcon(base);
+    if (ic) pages.forEach((pg) => (pg.icon = ic));
+  }
   return pages;
 }
 
@@ -429,7 +444,7 @@ async function paintExtensions(list) {
   const off = new Set(store.get("extHidden", []));
   const shown = found.filter((f) => !off.has(f.id));
   box.querySelector("[data-extlist]").innerHTML = shown
-    .map((f) => `<a href="${esc(href(f))}" data-ext="${esc(f.id)}" title="${esc(f.name)}">${icon("plug")}<span>${esc(f.name)}</span></a>`)
+    .map((f) => `<a href="${esc(href(f))}" data-ext="${esc(f.id)}" title="${esc(f.name)}">${f.icon ? `<img class="kb-ext-ic" alt="" src="${esc(f.icon)}">` : icon("plug")}<span>${esc(f.name)}</span></a>`)
     .join("");
   const n = box.querySelector("[data-extn]");
   if (n) n.textContent = shown.length;

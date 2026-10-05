@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.54.0",
+    date: "2026-10-05",
+    items: [
+      ["ui", "Plugins can bring their own symbol for the Extensions list in the menu: put an icon.svg, icon.png or icon.webp next to the plugin's page (its assets folder) and Stash UI shows it instead of the plug.", "插件可以为菜单中的“扩展”列表提供自己的图标：把 icon.svg、icon.png 或 icon.webp 放在插件页面旁（其 assets 文件夹），Stash UI 就会显示它，而不是插头图标。"],
+    ],
+  },
+  {
     v: "3.53.2",
     date: "2026-10-05",
     items: [

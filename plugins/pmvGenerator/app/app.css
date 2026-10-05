@@ -146,6 +146,7 @@ img, video { display: block; }
 }
 .kb-nav a:hover, .kb-nav button:hover { color: var(--text); background: var(--bg-2); }
 .kb-nav a .kb-ic, .kb-nav button .kb-ic { color: var(--faint); }
+.kb-nav a .kb-ext-ic { width: 18px; height: 18px; flex: none; display: block; object-fit: contain; }
 .kb-nav a:hover .kb-ic, .kb-nav button:hover .kb-ic { color: var(--pink); }
 .kb-nav a.is-active { color: var(--text); font-weight: 600; background: var(--bg-2); }
 .kb-nav a.is-active .kb-ic { color: var(--pink); }
