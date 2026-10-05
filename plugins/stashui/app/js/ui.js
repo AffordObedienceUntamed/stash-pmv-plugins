@@ -27,6 +27,7 @@ const ICONS = {
   plug: '<g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3.5v4M15 3.5v4M6.5 7.5h11V11a5.5 5.5 0 0 1-11 0zM12 16.5v4"/></g>',
   bolt: '<path d="M13 2.5 4.8 13.5H11L10 21.5l8.2-11H12z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>',
   download: '<path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19.5h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
+  crop: '<g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v14h14M3 7h14v14"/></g>',
   camera: '<g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M4 8.5h3l1.5-2.5h7L17 8.5h3v10H4z"/><circle cx="12" cy="13" r="3.2"/></g>',
   tv: '<g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><rect x="6.5" y="3.5" width="11" height="17" rx="2"/><path d="m11 10 3 2-3 2z" fill="currentColor"/></g>',
   feed: '<g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="5" y="3.5" width="14" height="7.5" rx="1.2"/><rect x="5" y="13" width="14" height="7.5" rx="1.2"/></g>',

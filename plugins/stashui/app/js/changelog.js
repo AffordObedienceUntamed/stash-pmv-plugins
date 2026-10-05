@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.55.0",
+    date: "2026-10-05",
+    items: [
+      ["ui", "Performer photos from a scene: in the performer editor, “Cut from a scene” opens a picker with the performer's scenes (or search all scenes). Find the frame in the video (frame-by-frame buttons), take it, drag and resize a 2:3, 3:4 or 1:1 frame over it – mouse wheel or slider zooms – and use the cut-out as the photo. Save as usual.", "从场景制作演员照片：在演员编辑器中，“从场景截取”会打开选择器，列出该演员的场景（或搜索所有场景）。在视频中找到画面（可逐帧），截取后在其上拖动并缩放 2:3、3:4 或 1:1 的裁剪框——滚轮或滑块可缩放——并将裁剪结果用作照片，然后照常保存。"],
+    ],
+  },
+  {
     v: "3.54.0",
     date: "2026-10-05",
     items: [

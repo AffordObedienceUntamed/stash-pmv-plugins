@@ -147,6 +147,7 @@ export async function openPerformerEditor(id, opts = {}) {
           <b>${t("Photo")}</b>
           <button type="button" class="kb-btn" data-upload>${icon("camera")}${t("Upload")}</button>
           <button type="button" class="kb-btn" data-imglink>${t("From a link")}</button>
+          <button type="button" class="kb-btn" data-cut>${icon("crop")}${t("Cut from a scene")}</button>
           <button type="button" class="kb-btn is-ghost kb-pdanger" data-imgdel${hasPhoto ? "" : " hidden"}>${icon("trash")}${t("Remove")}</button>
           <small class="kb-hint">${t("Or drop / paste a picture onto it.")}</small>
           <input type="file" accept="image/*" data-file hidden>
@@ -205,6 +206,10 @@ export async function openPerformerEditor(id, opts = {}) {
     if (u && /^https?:\/\//i.test(u.trim())) setImage(u.trim());
   };
   $("[data-imgdel]").onclick = () => setImage(null);
+  $("[data-cut]").onclick = async () => {
+    const { openPhotoCutter } = await import("../perfcut.js");
+    openPhotoCutter({ id: p.id, name: p.name }, (url) => setImage(url));
+  };
   const drop = $("[data-drop]");
   drop.addEventListener("dragover", (e) => {
     e.preventDefault();
