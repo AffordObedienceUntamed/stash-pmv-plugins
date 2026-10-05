@@ -1595,3 +1595,6 @@ html.kb-glass .kb-extmenu { border-color: var(--glass-edge); border-radius: 16px
 .kb-plpick { max-width: 190px; }
 html.kb-glass .kb-studiocard .kb-perf-img, html.kb-glass .kb-studio-img { background: rgba(255, 255, 255, .1); border: 1px solid var(--glass-edge); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); }
 html.kb-glass .kb-mk-art { border: 1px solid var(--glass-edge); border-radius: 14px; }
+.kb-sfnote { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 0 0 10px; padding: 7px 10px; border-left: 3px solid var(--pink); border-radius: 4px; background: var(--base); color: var(--text); font: 400 13.5px/1.35 var(--f-text); }
+.kb-sfnote[hidden] { display: none !important; }
+html.kb-glass .kb-sfnote { border: 1px solid var(--glass-edge); border-left: 3px solid var(--pink); border-radius: 14px; background: var(--glass-shine), var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); }

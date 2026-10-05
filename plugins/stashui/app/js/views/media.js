@@ -14,6 +14,7 @@ import { tagPicker } from "./tagpicker.js";
 import { perfPicker, hasPerformers } from "./perfpicker.js";
 import { studioPicker, studiosCache } from "./studiopicker.js";
 import { openEditor } from "./edit.js";
+import { loadStashFilters, stashFilter } from "../stashfilters.js";
 
 export const KIND_NAME = { scene: ["Scene", "Scenes"], image: ["Image", "Images"], gallery: ["Gallery", "Galleries"] };
 // Unit words for counts ("12 scenes") – separate from the titles above, other languages need that
@@ -59,6 +60,14 @@ export function mediaBrowser(host, opts) {
   let kind = kinds.includes(opts.query.kind) ? opts.query.kind : opts.initialKind || kinds[0];
   let st = readState(opts.query, kind, opts.defaults && opts.defaults[kind]);
   let hang = null;
+  let sf = null; // a saved filter from Stash, applied on top: { id, name, kind, filter, skipped }
+  let sfPending = null; // (being fetched)
+  // The Stash filter is an AND on top of the filters set here
+  const bf = (k, s, b) => {
+    const f = buildFilter(k, s, b);
+    if (sf && k === sf.kind && Object.keys(sf.filter).length) f.AND = f.AND ? { AND: [f.AND, sf.filter] } : sf.filter;
+    return f;
+  };
   let filterOpen = !!(st.tags.length || st.xtags.length || st.perfs.length || st.studios.length || st.rating || st.fav || st.played || st.ori || st.res || st.len || st.ia || st.tier.length || st.crit);
   const rowH = () => store.get("rowHeight", 250);
 
@@ -78,6 +87,7 @@ export function mediaBrowser(host, opts) {
         <button class="kb-btn is-icon" data-select title="${t("Select")}" aria-label="${t("Select")}">${icon("select")}</button>
       </div>
       <div class="kb-filters" data-filters hidden></div>
+      <p class="kb-hint kb-sfnote" data-sfnote hidden></p>
       <p class="kb-resultline" data-result></p>
       <div data-hang></div>
     </div>`;
@@ -213,30 +223,43 @@ export function mediaBrowser(host, opts) {
     tier: st.tier.join(","),
     crit: st.crit,
   });
-  // Saved filters: the playlists of this kind – one click applies it here
+  // Saved filters: the playlists of this kind and Stash's own saved filters – one click applies it here
+  function paintSfNote() {
+    const n = $("[data-sfnote]");
+    if (!n) return;
+    n.hidden = !sf;
+    if (!sf) return;
+    n.innerHTML = `${esc(t("Stash filter “{name}” is applied on top.", { name: sf.name }))}${sf.skipped.length ? " " + esc(t("Not supported, left out: {list}", { list: sf.skipped.join(", ") })) : ""} <button type="button" class="kb-btn is-ghost" data-sfoff>${t("Remove it")}</button>`;
+  }
   if (opts.playlist) {
-    loadPlaylists()
-      .then((list) => {
+    Promise.all([loadPlaylists().catch(() => []), loadStashFilters(kind).catch(() => [])])
+      .then(([list, stash]) => {
         const pick = $("[data-plpick]");
         const mine = list.filter((p) => (p.kind === "image" ? "image" : "scene") === kind);
-        if (!pick || !mine.length) return;
-        pick.innerHTML = `<option value="">${t("Saved filters")}</option>` + mine.map((p) => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join("");
-        pick.value = mine.some((p) => p.id === opts.query.pl) ? opts.query.pl : "";
+        if (!pick || (!mine.length && !stash.length)) return;
+        pick.innerHTML =
+          `<option value="">${t("Saved filters")}</option>` +
+          mine.map((p) => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join("") +
+          (stash.length ? `<optgroup label="${esc(t("Saved in Stash"))}">${stash.map((x) => `<option value="sf:${esc(x.id)}">${esc(x.name)}</option>`).join("")}</optgroup>` : "");
+        pick.value = opts.query.sf && stash.some((x) => String(x.id) === String(opts.query.sf)) ? "sf:" + opts.query.sf : mine.some((p) => p.id === opts.query.pl) ? opts.query.pl : "";
         pick.hidden = false;
         pick.onchange = () => {
+          if (pick.value.startsWith("sf:")) return go(`${kind === "image" ? "images" : "scenes"}?sf=${encodeURIComponent(pick.value.slice(3))}`);
           const pl = mine.find((p) => p.id === pick.value);
           if (pl) go(linkOf(pl).slice(2));
+          else if (sf) go(kind === "image" ? "images" : "scenes"); // "Saved filters" again: back to the plain list
         };
       })
       .catch(() => {});
   }
   let plId = opts.query.pl || ""; // opened from a playlist: "Save playlist" changes that one
   function persistQuery() {
-    setQuery(Object.assign({ kind: kinds.length > 1 ? kind : "" }, queryOf(), { seed: st.sort === "random" ? st.seed : "", pl: plId }));
+    setQuery(Object.assign({ kind: kinds.length > 1 ? kind : "" }, queryOf(), { seed: st.sort === "random" ? st.seed : "", pl: plId, sf: sf ? sf.id : "" }));
   }
 
   // ---------- Keep the filters as a playlist ----------
   async function savePlaylist() {
+    if (sf) return toast(t("A Stash filter can't be kept as a playlist – remove it first, or set the filters here."), "error");
     try {
       const list = await loadPlaylists();
       const cur = list.find((p) => p.id === plId);
@@ -267,11 +290,16 @@ export function mediaBrowser(host, opts) {
   }
 
   function load() {
+    if (sfPending) {
+      const p = sfPending;
+      sfPending = null;
+      return p.then(load);
+    }
     if (hang) hang.destroy();
     exitSelect();
     const base = opts.base ? opts.base(kind) : null;
     if (st.sort === "random" && !st.seed) st.seed = seed().replace("random_", "");
-    const filter = buildFilter(kind, st, base);
+    const filter = bf(kind, st, base);
     const sort = st.sort === "random" ? "random_" + st.seed : st.sort;
     $("[data-result]").textContent = "";
     const box = $("[data-hang]");
@@ -374,7 +402,7 @@ export function mediaBrowser(host, opts) {
           b.disabled = true;
           try {
             const base = opts.base ? opts.base(kind) : null;
-            const r = await findIds(kind, { q: st.q || undefined, per_page: -1 }, buildFilter(kind, st, base), await restrictIds(kind, st));
+            const r = await findIds(kind, { q: st.q || undefined, per_page: -1 }, bf(kind, st, base), await restrictIds(kind, st));
             hang.selectKeys(r.items.map((x) => kind + ":" + x.id));
             toast(t("{n} selected", { n: fmtNum(r.items.length) }), "ok");
           } finally {
@@ -430,8 +458,15 @@ export function mediaBrowser(host, opts) {
     const k = e.target.closest("[data-kind]");
     if (k && k.dataset.kind !== kind) {
       kind = k.dataset.kind;
+      sf = null;
+      paintSfNote();
       st = readState({}, kind, opts.defaults && opts.defaults[kind]);
       renderTools();
+      return apply();
+    }
+    if (e.target.closest("[data-sfoff]")) {
+      sf = null;
+      paintSfNote();
       return apply();
     }
     if (e.target.closest("[data-dir]")) {
@@ -511,7 +546,7 @@ export function mediaBrowser(host, opts) {
       const sort = st.sort === "random" ? "random_" + (st.seed || seed().replace("random_", "")) : st.sort;
       await ensureTiers();
       const crit = String(st.sort).startsWith("crit:");
-      const r = await findItems(kind, { q: st.q || undefined, per_page: crit ? -1 : 200, sort: crit ? "rating" : sort, direction: crit ? "DESC" : st.dir }, buildFilter(kind, st, base), await restrictIds(kind, st));
+      const r = await findItems(kind, { q: st.q || undefined, per_page: crit ? -1 : 200, sort: crit ? "rating" : sort, direction: crit ? "DESC" : st.dir }, bf(kind, st, base), await restrictIds(kind, st));
       if (crit) r.items = (await sortByCrit(kind, st.sort.slice(5), r.items, st.dir)).slice(0, 200);
       if (!r.items.length) return toast(t("Nothing to play"));
       const list = r.items.map((x) => toPiece(kind, x, app.favId));
@@ -526,6 +561,26 @@ export function mediaBrowser(host, opts) {
   }
 
   renderTools();
+  if (opts.query.sf && opts.playlist) {
+    sfPending = stashFilter(kind, opts.query.sf)
+      .then((r) => {
+        if (!r) return toast(t("That saved filter is gone from Stash."), "error");
+        sf = r;
+        // its search and sort count unless the link already says otherwise
+        if (!opts.query.q && r.q) {
+          st.q = r.q;
+          const qi = $("[data-q]");
+          if (qi) qi.value = r.q;
+        }
+        if (!opts.query.sort && r.sort) {
+          st.sort = r.sort;
+          st.dir = r.dir === "ASC" ? "ASC" : "DESC";
+        }
+        renderTools();
+        paintSfNote();
+      })
+      .catch((e) => errorToast(e, "Saved filter"));
+  }
   load();
 
   return {

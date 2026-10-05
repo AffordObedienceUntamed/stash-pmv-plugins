@@ -1684,4 +1684,11 @@ export default {
   "Show more ({n} left)": "显示更多（还有 {n} 项）",
   "Nothing left to add here.": "这里没有可添加的项目了。",
   "Cut a photo from the cam": "从摄像头画面截取照片",
+  "Saved in Stash": "保存在 Stash 中",
+  "Stash filter “{name}” is applied on top.": "已叠加应用 Stash 筛选“{name}”。",
+  "Not supported, left out: {list}": "不支持，已忽略：{list}",
+  "Remove it": "移除",
+  "A Stash filter can't be kept as a playlist – remove it first, or set the filters here.": "Stash 筛选无法保存为播放列表——请先移除它，或在这里设置筛选。",
+  "That saved filter is gone from Stash.": "该已保存的筛选在 Stash 中已不存在。",
+  "Saved filter": "已保存的筛选",
 };

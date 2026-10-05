@@ -4,6 +4,14 @@
 
 export const CHANGES = [
   {
+    v: "3.59.0",
+    date: "2026-10-05",
+    items: [
+      ["ui", "Scenes and Images: the “Saved filters” menu now also lists the filters you saved in Stash itself (classic interface) under “Saved in Stash”. Pick one and its criteria (tags, performers, studios, rating, duration, dates, organized, orientation …) are applied on top of the filters set here, with its search and sort; a note says what Stash UI can't read yet, and one click removes it. Written for Stash's saved-filter format – untested against a real Stash, only a mock.", "场景与图片：“已保存的筛选”菜单现在也会在“保存在 Stash 中”下列出你在 Stash 本身（经典界面）里保存的筛选。选择其中一个，它的条件（标签、演员、工作室、评分、时长、日期、已整理、方向 …）会叠加到这里设置的筛选上，并沿用它的搜索与排序；提示会说明 Stash UI 暂时无法读取的条件，点一下即可移除。按 Stash 的已保存筛选格式编写——只在模拟环境中测试过，未在真实 Stash 上测试。"],
+      ["pmv", "PMV Generator 2.16.1: the shared files were updated.", "PMV 生成器 2.16.1：共享文件已更新。"],
+    ],
+  },
+  {
     v: "3.58.1",
     date: "2026-10-05",
     items: [
