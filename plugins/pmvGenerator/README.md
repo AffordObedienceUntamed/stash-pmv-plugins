@@ -95,6 +95,8 @@ Needs a browser with `requestVideoFrameCallback` (Chrome, Edge, current Firefox)
 
 Picture analysis (smart crop, even brightness, match cuts, best moments) shrinks the picture on the graphics card and reads it back in a background thread, so even 4K60 clips don't stall the page; at most three clips are prepared at once. If it still stutters, **Resolution up to 1080p** is the biggest lever.
 
+**Browser and codecs**: the clips are decoded by your browser, so what it can decode in hardware decides how smooth it is. Plain H.264 (not HEVC/H.265) runs with very little CPU; HEVC, AV1 and 4K are decoded in software and are much heavier – especially with many clips open at once or files on a NAS. Chrome and Firefox are recommended; Safari on macOS has been seen to lag with 15–20 clips open while Chrome played the same setup smoothly.
+
 ## Requirements
 
 - A current Chrome, Edge or Firefox.

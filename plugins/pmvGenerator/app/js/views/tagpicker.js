@@ -11,6 +11,17 @@ export function tagsCache(force) {
   return allTags;
 }
 
+// Best match first: the exact name, then an alias, a name that starts with it, a word that starts with it, then the rest –
+// so Enter takes the tag that was typed, not the first one that merely contains it
+const matchRank = (name, aliases, q) => {
+  const n = name.toLowerCase();
+  if (n === q) return 0;
+  if ((aliases || []).some((a) => a.toLowerCase() === q)) return 1;
+  if (n.startsWith(q)) return 2;
+  if (n.split(/[ _.-]+/).some((w) => w.startsWith(q))) return 3;
+  return 4;
+};
+
 export function tagPicker(host, opts) {
   let inc = [...(opts.include || [])];
   let exc = [...(opts.exclude || [])];
@@ -42,8 +53,9 @@ export function tagPicker(host, opts) {
     }
     shown = tags
       .filter((tg) => !inc.includes(tg.id) && !exc.includes(tg.id))
-      .filter((tg) => !q || tg.name.toLowerCase().includes(q) || (tg.aliases || []).some((a) => a.toLowerCase().includes(q)))
-      .slice(0, 30);
+      .filter((tg) => !q || tg.name.toLowerCase().includes(q) || (tg.aliases || []).some((a) => a.toLowerCase().includes(q)));
+    if (q) shown = shown.map((tg) => [matchRank(tg.name, tg.aliases, q), tg]).sort((a, b) => a[0] - b[0]).map((x) => x[1]);
+    shown = shown.slice(0, 30);
     const exact = tags.some((tg) => tg.name.toLowerCase() === q);
     const create = opts.allowCreate && q && !exact;
     sugg.innerHTML =

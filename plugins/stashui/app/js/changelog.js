@@ -4,6 +4,14 @@
 
 export const CHANGES = [
   {
+    v: "3.63.1",
+    date: "2026-10-05",
+    items: [
+      ["ui", "Stash UI 3.63.1: tag and studio search now put the name you typed first – the exact name, then an alias, then names that start with it. Before, Enter could take another tag that merely contained the text (typing “anal” could pick a longer tag). This is also the tag search of the PMV Generator.", "Stash UI 3.63.1：标签和工作室搜索现在把你输入的名称排在最前——先是完全匹配，其次是别名，再是以它开头的名称。以前按回车可能选中仅包含该文字的其他标签（输入“anal”可能选到更长的标签）。PMV 生成器的标签搜索也是同一个。"],
+      ["pmv", "PMV Generator 2.18.2: the tag search picks the tag you typed (see Stash UI 3.63.1). README: a note on browsers and codecs (H.264 is light, HEVC/4K heavy; Safari can lag with many clips).", "PMV 生成器 2.18.2：标签搜索会选中你输入的标签（见 Stash UI 3.63.1）。README：新增关于浏览器和编码的说明（H.264 很轻，HEVC/4K 较重；片段很多时 Safari 可能卡顿）。"],
+    ],
+  },
+  {
     v: "3.63.0",
     date: "2026-10-05",
     items: [
