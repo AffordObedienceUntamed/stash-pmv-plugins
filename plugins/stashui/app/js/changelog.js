@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.69.5",
+    date: "2026-10-06",
+    items: [
+      ["pmv", "PMV Generator 2.20.1: the “Reveal opening” window now has the clip's own shape (a portrait clip stands upright), the clip fills it, everything around is black, the corners are rounded and a soft glow breathes with the beat.", "PMV 生成器 2.20.1：“开场渐显”的窗口现在采用片段自身的形状（竖屏片段竖着显示），片段铺满窗口，四周为黑色，边角圆润，并带有随节拍呼吸的柔和光晕。"],
+    ],
+  },
+  {
     v: "3.69.4",
     date: "2026-10-06",
     items: [

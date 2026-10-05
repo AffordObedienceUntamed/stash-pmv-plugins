@@ -158,19 +158,41 @@ export class Compositor {
     // Reveal opening: the clip sits in the middle as a small rounded window and slowly grows until the drop
     const rv = st.reveal;
     let slots = st.slots;
-    if (rv && slots.length === 1) {
+    // (the window has the clip's own shape – a portrait clip stands upright –, the clip fills it, black all around,
+    // a soft glow that breathes with the beat)
+    const reveal = !!rv && slots.length === 1;
+    if (reveal) {
       const m0 = st.groups[slots[0].g];
-      const k = 0.34 + 0.6 * ((1 - Math.cos(Math.PI * rv.p)) / 2);
-      const w = Math.round(W * k);
-      const h = Math.round(H * k);
+      const k = 0.34 + 0.56 * ((1 - Math.cos(Math.PI * rv.p)) / 2);
+      const want = m0 && m0.w && m0.h ? Math.max(0.4, Math.min(2.4, m0.w / m0.h)) : W / H;
+      this.rvAsp = this.rvAsp == null ? want : this.rvAsp + (want - this.rvAsp) * 0.2; // follows a changing clip smoothly
+      let w = W * k;
+      let h = H * k;
+      if (w / h > this.rvAsp) w = h * this.rvAsp;
+      else h = w / this.rvAsp;
+      w = Math.round(w);
+      h = Math.round(h);
       const win = { x: Math.round((W - w) / 2), y: Math.round((H - h) / 2), w, h, g: slots[0].g, fx: false, fy: false };
-      if (m0 && m0.w && m0.h) this.backdrop(0, m0, { x: 0, y: 0, w: W, h: H });
+      const rad = Math.min(w, h) * 0.07;
+      const beat = Math.exp(-(t - st.beatT) * 6);
       g.save();
-      roundRect(g, win.x, win.y, win.w, win.h, Math.min(W, H) * 0.05 * (1 - 0.35 * rv.p));
+      g.shadowColor = "rgba(255, 196, 224, .6)";
+      g.shadowBlur = Math.min(W, H) * (0.045 + 0.035 * beat);
+      g.fillStyle = "#000";
+      roundRect(g, win.x, win.y, win.w, win.h, rad);
+      g.fill();
+      g.restore();
+      g.save();
+      roundRect(g, win.x, win.y, win.w, win.h, rad);
       g.clip();
       slots = [win];
       this.revealWin = win;
-    } else this.revealWin = null;
+      this.revealRad = rad;
+    } else {
+      this.revealWin = null;
+      this.rvAsp = null;
+    }
+    const fitM = reveal ? "cover" : this.S.fit;
 
     slots.forEach((s, i) => {
       const m = st.groups[s.g];
@@ -207,20 +229,20 @@ export class Compositor {
       if (scrolling) {
         const ease = 1 - Math.pow(1 - sp, 3);
         if (lv.m && lv.m.w && lv.m.h) {
-          if (this.S.fit === "contain") this.backdrop(i, lv.m, s);
-          drawIn(g, lv.m, s, this.S.fit, 1, ox, oy + lv.dir * s.h * ease, filter.trim(), false);
+          if (fitM === "contain") this.backdrop(i, lv.m, s);
+          drawIn(g, lv.m, s, fitM, 1, ox, oy + lv.dir * s.h * ease, filter.trim(), false);
         }
         oy += lv.dir * s.h * (ease - 1);
       }
-      if (this.S.fit === "contain") this.backdrop(i, m, s);
-      drawIn(g, m, s, this.S.fit, zoom, ox, oy, filter.trim(), fx.kenburns);
+      if (fitM === "contain") this.backdrop(i, m, s);
+      drawIn(g, m, s, fitM, zoom, ox, oy, filter.trim(), fx.kenburns);
     });
     if (this.revealWin) {
       g.restore(); // (the rounded window's clip)
       g.save();
-      g.strokeStyle = "rgba(255, 255, 255, .22)";
+      g.strokeStyle = "rgba(255, 255, 255, .2)";
       g.lineWidth = 2;
-      roundRect(g, this.revealWin.x, this.revealWin.y, this.revealWin.w, this.revealWin.h, Math.min(W, H) * 0.05 * (1 - 0.35 * rv.p));
+      roundRect(g, this.revealWin.x, this.revealWin.y, this.revealWin.w, this.revealWin.h, this.revealRad);
       g.stroke();
       g.restore();
     }
