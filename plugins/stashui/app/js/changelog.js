@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.69.6",
+    date: "2026-10-06",
+    items: [
+      ["pmv", "PMV Generator 2.20.2: in the “Reveal opening” it is one single clip that grows – no cuts to other clips until the drop.", "PMV 生成器 2.20.2：“开场渐显”期间只有一个片段在变大——在 drop 之前不会切换到其他片段。"],
+    ],
+  },
+  {
     v: "3.69.5",
     date: "2026-10-06",
     items: [

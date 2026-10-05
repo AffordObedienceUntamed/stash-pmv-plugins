@@ -3219,7 +3219,9 @@ class Generator {
       if (this.scrollDir) every = Math.max(2, every); // scrolling is slower than cutting
       // With bars the cuts sit on the bar's grid: every beat, beats 1 and 3, or only the "one" – not "N beats after the last cut"
       const onGrid = B && 4 % every === 0 ? B.pos[k] % every === 0 && k - this.lastCut >= Math.min(every, 2) : k - this.lastCut >= every;
-      if (this.scrollDir && (this.layout === "tri" || this.layout === "trim")) {
+      if (this.revealing) {
+        // Reveal opening: one clip only, it just grows – no cuts until the drop
+      } else if (this.scrollDir && (this.layout === "tri" || this.layout === "trim")) {
         // The middle clip (group 1) runs for four bars; the sides (groups 0 and 2) scroll in turn
         if (bar && k - (this.centerK ?? this.layoutBeat) >= 16) {
           if (this.cutGroup(1, t)) {
