@@ -69,7 +69,8 @@ html.kb-fx .kb-main { animation: kb-fx-page .3s ease; }
 html.kb-fx.kb-fx-moved #kb-glow { opacity: .55; }
 
 /* ---------- Buttons: shine sweeps over on hover, ripple on press ---------- */
-html.kb-fx :is(.kb-btn, .kb-chip, .kb-seg button, .kb-seg > a, .kb-nav a, .kb-nav button) { position: relative; overflow: hidden; }
+:where(html.kb-fx) :where(.kb-btn, .kb-chip, .kb-seg button, .kb-seg > a, .kb-nav a, .kb-nav button) { position: relative; } /* zero specificity: buttons that are fixed or absolute (menu button) keep their own position */
+html.kb-fx :is(.kb-btn, .kb-chip, .kb-seg button, .kb-seg > a, .kb-nav a, .kb-nav button) { overflow: hidden; }
 /* Shimmer along the edge: on hover a light runs slowly left to right along the top and bottom edge and the two meet at the right end (a pseudo-element, not a background – liquid glass paints its own) */
 html.kb-fx :is(.kb-btn, .kb-nav a, .kb-nav button)::before {
   content: "";

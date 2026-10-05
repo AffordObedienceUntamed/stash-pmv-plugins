@@ -4,6 +4,14 @@
 
 export const CHANGES = [
   {
+    v: "3.66.1",
+    date: "2026-10-05",
+    items: [
+      ["ui", "Stash UI 3.66.1: fixed the button that brings back a hidden menu – the new effects had moved it to the bottom of the page.", "Stash UI 3.66.1：修复了用于恢复已隐藏菜单的按钮——新特效把它移到了页面底部。"],
+      ["pmv", "PMV Generator 2.18.9: the shared files were updated.", "PMV 生成器 2.18.9：共享文件已更新。"],
+    ],
+  },
+  {
     v: "3.66.0",
     date: "2026-10-05",
     items: [
