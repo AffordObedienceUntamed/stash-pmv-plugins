@@ -245,13 +245,12 @@ export class Compositor {
         else oy += dir * p * p * s.h * 0.6;
         filter += ` blur(${(p * 10).toFixed(1)}px)`;
       }
-      // Zoom-in entry: the new clip shoots into the field – alternating from big (in) and from small (out)
+      // Zoom-in entry: the new clip shoots into the field – always from big (zooming out would show borders), alternating strong and soft
       if (fx.zoomin && since < 0.3 && !scrolling) {
         const p = since / 0.3;
         const ease = 1 - Math.pow(1 - p, 3);
-        const from = (m.zoomDir || 1) > 0 ? 1.75 : 0.45;
+        const from = (m.zoomDir || 1) > 0 ? 1.75 : 1.35;
         zoom *= from + (1 - from) * ease;
-        if (from < 1 && p < 0.35) filter += ` brightness(${(1 + 0.6 * (1 - p / 0.35)).toFixed(2)})`; // short flare when zooming out
       }
       if (scrolling) {
         // Like swiping a feed: the two clips are one strip – the old one moves out, the new one follows right behind it.

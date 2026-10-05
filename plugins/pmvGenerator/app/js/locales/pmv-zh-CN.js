@@ -141,7 +141,7 @@ export default {
     Flash: "闪光",
     "Bright flash on cuts and drops": "剪切和高潮时的明亮闪光",
     "Zoom-in entry": "放大进入",
-    "New clips zoom into the picture fast – alternating in and out": "新片段快速缩放进入画面——交替放大和缩小",
+    "New clips zoom into the picture fast – always zooming in, alternating strong and soft": "新片段快速缩放进入画面——始终是放大进入，强弱交替",
     "Whip pan": "甩镜",
     "New clips whip into the field with motion blur": "新片段带着动态模糊甩入画面",
     Glitch: "故障",

@@ -103,7 +103,7 @@ const FX = {
   flash: ["Flash", "Bright flash on cuts and drops"],
   zoom: ["Zoom pulse", "The picture pumps on every beat"],
   whip: ["Transitions", "New clips whip into the field with motion blur"],
-  zoomin: ["Zoom-in entry", "New clips zoom into the picture fast – alternating in and out"],
+  zoomin: ["Zoom-in entry", "New clips zoom into the picture fast – always zooming in, alternating strong and soft"],
   speed: ["Speed ramps", "Slow motion in calm parts, faster when it gets loud, a burst on drops"],
   voice: ["Clip audio", "Mix in the clips' original audio – only on drops or all the time"],
   rgb: ["RGB split", "Red and cyan tear apart – really hard on drops"],
@@ -2687,7 +2687,7 @@ class Generator {
     const m = this.ready.splice(best, 1)[0];
     this.remember(m);
     m.shownAt = performance.now();
-    m.zoomDir = (this.zoomFlip = !this.zoomFlip) ? 1 : -1; // zoom-in entry: alternating in/out
+    m.zoomDir = (this.zoomFlip = !this.zoomFlip) ? 1 : -1; // zoom-in entry: alternating strong/soft (always zooming in)
     if (m.kind === "video") {
       m.el.playbackRate = this.rate || 1;
       m.el.play().catch(() => {});

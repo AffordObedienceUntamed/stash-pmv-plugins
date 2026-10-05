@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.70.1",
+    date: "2026-10-06",
+    items: [
+      ["pmv", "PMV Generator 2.21.1: fixed – a new clip no longer zooms out into the field (that showed borders). The zoom-in entry now always zooms in, alternating a strong and a soft zoom. The zoom pulse itself only ever zooms in.", "PMV 生成器 2.21.1：已修复——新片段不再缩小进入画面（那样会露出边框）。“放大进入”现在始终是放大，强弱交替。缩放脉冲本身也只会放大。"],
+    ],
+  },
+  {
     v: "3.70.0",
     date: "2026-10-06",
     items: [
