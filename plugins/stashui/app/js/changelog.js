@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.60.1",
+    date: "2026-10-05",
+    items: [
+      ["pmv", "PMV Generator 2.17.0: the folder choice is easier. A chosen folder chip goes away with a click anywhere on it (the × is bigger, too) – and its text was unreadable (dark on dark) with Liquid glass, which also affected the other picked chips like tags. New: ⊘ on a folder leaves it out (with its subfolders), the folder list is a collapsible tree, and picking a subfolder of a picked folder narrows the choice to that subfolder.", "PMV 生成器 2.17.0：文件夹选择更方便。点击已选文件夹标签的任意位置即可移除（× 也变大了）；液态玻璃模式下标签文字原本是深色压在深底上、看不清，其他已选标签（如标签名）也有同样问题，现已修复。新增：文件夹上的 ⊘ 可排除该文件夹（含子文件夹）；文件夹列表改为可折叠的树；在已选文件夹中再选其子文件夹，会把范围缩小到该子文件夹。"],
+    ],
+  },
+  {
     v: "3.60.0",
     date: "2026-10-05",
     items: [

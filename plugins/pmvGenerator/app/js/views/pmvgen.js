@@ -37,6 +37,7 @@ const DEFAULTS = {
   clipList: "", // its id
   source: "scene", // scene | image | both | marker (short moments you marked)
   folders: [], // [{ id, path }] – empty = all folders
+  xfolders: [], // [{ id, path }] – folders (with their subfolders) left out
   tags: [],
   xtags: [],
   tagMode: "all", // several tags: all of them | any of them
@@ -172,6 +173,7 @@ export function render(main) {
   // Settings from before version 2 had "Fill" as default – people took the cropping for a bug
   if (!stored.v) S.fit = "contain";
   if (!Array.isArray(S.folders)) S.folders = [];
+  if (!Array.isArray(S.xfolders)) S.xfolders = [];
   if (!Array.isArray(S.rgPicks)) S.rgPicks = [];
   const save = () => store.set("pmvgen", S);
   let song = null; // beat detection result + name
@@ -322,7 +324,7 @@ export function render(main) {
             ${sw("fav", "Favorites only", "")}
           </div>
           <div class="kb-pmvg-block">
-            <span class="kb-lab-t">Folders <small>– including subfolders</small></span>
+            <span class="kb-lab-t">Folders <small>– including subfolders · ⊘ leaves one out · pick a subfolder to narrow down</small></span>
             <div class="kb-pmvg-folders" data-folders></div>
             <span class="kb-lab-t">Rating at least</span>
             <div class="kb-seg kb-pmvg-small" data-seg="minRating"><button type="button" data-v="0">Any</button><button type="button" data-v="20">★1</button><button type="button" data-v="40">★2</button><button type="button" data-v="60">★3</button><button type="button" data-v="80">★4</button><button type="button" data-v="100">★5</button></div>
@@ -535,7 +537,7 @@ export function render(main) {
     main.querySelectorAll("[data-tabsum]").forEach((s) => (s.textContent = tabSum[s.dataset.tabsum]));
     const clipOpts = [S.bestSpots && "best moments", S.smartCrop && "smart crop", S.matchCut && "match cuts", S.variety && "variety"].filter(Boolean);
     const src = { scene: "Scenes", image: "Images", both: "Scenes + images", marker: "Markers" }[S.source];
-    const where = S.folders.length ? `from ${S.folders.length === 1 ? "1 folder" : S.folders.length + " folders"}` : "from all folders";
+    const where = (S.folders.length ? `from ${S.folders.length === 1 ? "1 folder" : S.folders.length + " folders"}` : "from all folders") + (S.xfolders.length ? `, without ${S.xfolders.length === 1 ? "1 folder" : S.xfolders.length + " folders"}` : "");
     const plName = S.clipFrom === "playlist" ? (pls.find((p) => p.id === S.clipList) || {}).name : null;
     const fromName = { versus: "Your Versus top scenes", watched: "Your most watched scenes" }[S.clipFrom];
     $("[data-sum]").innerHTML = [
@@ -669,8 +671,10 @@ export function render(main) {
   });
   const mountFolders = () => folderPicker(fresh("[data-folders]"), {
     selected: S.folders,
-    onChange: (list) => {
+    excluded: S.xfolders,
+    onChange: (list, out) => {
       S.folders = list;
+      S.xfolders = out;
       save();
       paintSummary();
       updateCount();
@@ -1199,7 +1203,7 @@ export function render(main) {
     if (!CUTS.some(([v]) => v === S.cut)) S.cut = DEFAULTS.cut;
     if (!LOOKS.some(([v]) => v === S.look)) S.look = DEFAULTS.look;
     if (!Object.values(S.layouts).some(Boolean)) S.layouts = Object.assign({}, DEFAULTS.layouts);
-    ["tags", "xtags", "folders", "rgPicks", "perfs"].forEach((k) => Array.isArray(S[k]) || (S[k] = []));
+    ["tags", "xtags", "folders", "xfolders", "rgPicks", "perfs"].forEach((k) => Array.isArray(S[k]) || (S[k] = []));
     save();
     // Everything on the page from S again
     const words = $("[data-words]");
@@ -1870,7 +1874,11 @@ function buildFilter(kind, S, favId) {
   if (rating > 0) f.rating100 = { value: rating - 1, modifier: "GREATER_THAN" };
   if (MAX_RES[S.maxRes]) f.resolution = { value: MAX_RES[S.maxRes], modifier: "LESS_THAN" };
   if (S.shape === "portrait" || S.shape === "landscape") f.orientation = { value: [S.shape.toUpperCase()] };
-  if (S.folders && S.folders.length) f.files_filter = { parent_folder: { value: S.folders.map((x) => x.id), modifier: "INCLUDES", depth: -1 } };
+  if ((S.folders && S.folders.length) || (S.xfolders && S.xfolders.length)) {
+    const pf = { value: (S.folders || []).map((x) => x.id), modifier: "INCLUDES", depth: -1 };
+    if (S.xfolders && S.xfolders.length) pf.excludes = S.xfolders.map((x) => x.id);
+    f.files_filter = { parent_folder: pf };
+  }
   if (kind === "scene") f.duration = { value: Math.max(4, Number(S.minLen) || 0), modifier: "GREATER_THAN" };
   return f;
 }

@@ -863,6 +863,8 @@ html.kb-glass .kb-seg button, html.kb-glass .kb-seg > a { border-radius: 999px; 
 html.kb-glass .kb-btn:not(.is-primary):not(.is-ghost):not(.is-danger), html.kb-glass :is(.kb-chip, .kb-seg, .kb-theme-preset, .kb-theme-token, .kb-pupdate) {
   background: var(--glass-shine), color-mix(in srgb, var(--bg-3) 38%, transparent);
 }
+/* A picked chip (tag, folder …): the glass tint above had taken its pink and left the dark text on it */
+html.kb-glass .kb-chip.is-on { color: var(--text); background: var(--glass-shine), color-mix(in srgb, var(--pink) 45%, transparent); border-color: color-mix(in srgb, var(--pink) 70%, transparent); }
 html.kb-glass .kb-btn.is-primary { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), 0 6px 20px color-mix(in srgb, var(--pink) 40%, transparent); }
 html.kb-glass .kb-field { border-color: var(--glass-edge); border-radius: 10px; background-color: color-mix(in srgb, var(--base) 45%, transparent); }
 /* Messages: light text on the glass, no comic speech-bubble tail (it stayed a white corner) */
