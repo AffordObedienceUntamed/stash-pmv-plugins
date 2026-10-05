@@ -10,6 +10,7 @@ import { app, go } from "../main.js";
 import { roomsHtml, fillRoomCovers } from "./folder.js";
 import { tagPicker } from "./tagpicker.js";
 import { perfPicker, hasPerformers } from "./perfpicker.js";
+import { mountRailEditor } from "./homerail.js";
 
 function greeting() {
   const h = new Date().getHours();
@@ -151,6 +152,7 @@ function customLink(c) {
 export async function render(main) {
   let layout = loadLayout();
   let editing = false;
+  let editTab = "home"; // Customize: the home page or the menu on the left
   let hangs = [];
   let stopCovers = () => {};
   const cleanup = () => {
@@ -327,7 +329,12 @@ export async function render(main) {
   function renderEditor() {
     cleanup();
     box.className = "kb-home-edit";
-    box.innerHTML = `
+    const tabs = `<div class="kb-seg kb-home-tabs" role="tablist"><button type="button" role="tab" data-edtab="home" class="${editTab === "home" ? "is-on" : ""}" aria-selected="${editTab === "home"}">${t("Home page")}</button><button type="button" role="tab" data-edtab="rail" class="${editTab === "rail" ? "is-on" : ""}" aria-selected="${editTab === "rail"}">${t("Sidebar")}</button></div>`;
+    if (editTab === "rail") {
+      box.innerHTML = `${tabs}<div data-railed></div>`;
+      return mountRailEditor(box.querySelector("[data-railed]"));
+    }
+    box.innerHTML = `${tabs}
       <p class="kb-hint">${t("Show or hide sections, drag them (or use the arrows) into the order you like, and add your own. Saved in this browser.")}</p>
       <ol class="kb-home-list" data-list>${layout
         .map((s, i) => {
@@ -373,6 +380,11 @@ export async function render(main) {
 
   box.addEventListener("click", async (e) => {
     if (!editing) return;
+    const tab = e.target.closest("[data-edtab]");
+    if (tab) {
+      editTab = tab.dataset.edtab;
+      return renderEditor();
+    }
     if (e.target.closest("[data-donesec]")) return setEditing(false);
     if (e.target.closest("[data-addsec]")) return sectionForm(null);
     if (e.target.closest("[data-resetsec]")) {

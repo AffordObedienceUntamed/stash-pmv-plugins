@@ -4,6 +4,14 @@
 
 export const CHANGES = [
   {
+    v: "3.61.0",
+    date: "2026-10-05",
+    items: [
+      ["ui", "Home → Customize now has a Sidebar tab: hide entries of the menu on the left, move them (with the arrows or by dragging – also into another group, e.g. from Extensions to Library), and make your own groups. Start and Settings can't be hidden, so you can't lock yourself out. New menu entries and newly installed plugins show up in their usual group by themselves; “Back to the default” resets it. Saved in this browser.", "首页 → 自定义 现在有「侧边栏」标签页：可以隐藏左侧菜单中的条目、移动它们（用箭头或拖动，也可以移到其他分组，例如从「扩展」移到「资料库」），还可以创建自己的分组。「开始」和「设置」不能隐藏，因此不会把自己锁在外面。新增的菜单条目和新安装的插件会自动出现在它们通常所在的分组；「恢复默认」可重置。保存在此浏览器中。"],
+      ["pmv", "PMV Generator 2.17.2: the shared files were updated.", "PMV 生成器 2.17.2：共享文件已更新。"],
+    ],
+  },
+  {
     v: "3.60.2",
     date: "2026-10-05",
     items: [

@@ -6,6 +6,7 @@ import { gql, loadFolders, favoriteTagId, stats, abortRoute } from "./api.js";
 import { isLarge } from "./scale.js";
 import { applyTheme, initAmbient } from "./theme.js";
 import { LATEST } from "./changelog.js";
+import { visibleRail } from "./railcfg.js";
 
 applyTheme(); // chosen colors before anything is drawn
 initAmbient();
@@ -208,74 +209,70 @@ async function mountBase(r, main, seq) {
 
 // ---------- Navigation rail ----------
 
-const NAV = [
-  { group: null, items: [
-    { href: "", label: "Start", icon: "home", match: /^$/ },
-    { href: "search", label: "Search", icon: "search", match: /^search/ },
-  ] },
-  { group: "Library", items: [
-    { href: "scenes", label: "Scenes", icon: "film", match: /^scene/, count: "scene_count" },
-    { href: "images", label: "Images", icon: "image", match: /^image/, count: "image_count" },
-    { href: "galleries", label: "Galleries", icon: "book", match: /^galler/, count: "gallery_count" },
-    { href: "studios", label: "Studios", icon: "studio", match: /^studio/ },
-    { href: "groups", label: "Groups", icon: "layers", match: /^group/ },
-    { href: "performers", label: "Performers", icon: "person", match: /^performer/, count: "performer_count" },
-    { href: "tags", label: "Tags", icon: "tag", match: /^tag/, count: "tag_count" },
-  ] },
-  { group: "Watch", items: [
-    { href: "queue", label: "Queue", icon: "queue", match: /^queue/, count: "queue" },
-    { href: "playlists", label: "Playlists", icon: "slides", match: /^playlists/ },
-    { href: "interactive", label: "Interactive", icon: "plug", match: /^interactive/ },
-    { href: "markers", label: "Markers", icon: "play", match: /^markers/ },
-    { href: "history", label: "History", icon: "history", match: /^history/ },
-    { href: "versus", label: "Versus", icon: "trophy", match: /^versus/ },
-    { action: "storm", label: "Media Storm", icon: "bolt", plugin: "mediaStorm" },
-    { action: "pmv", label: "PMV Generator", icon: "music", plugin: "pmvGenerator" },
-  ] },
-  { group: "Manage", items: [
-    { href: "tasks", label: "Tasks", icon: "tasks", match: /^tasks/, count: "jobs" },
-    { href: "stats", label: "Statistics", icon: "chart", match: /^stats/ },
-    { action: "log", label: "Log", icon: "logs" },
-    { href: "duplicates", label: "Duplicates", icon: "copies", match: /^duplicates/ },
-    { href: "settings", label: "Settings", icon: "gear", match: /^settings/ },
-    { href: "plugins", label: "Plugins", icon: "plug", match: /^plugins/ },
-    { href: "whatsnew", label: "What's new", icon: "info", match: /^whatsnew/, count: "news" },
-    { href: "extern/classic", label: "Classic Stash", icon: "door", match: /^extern\/classic/ },
-  ] },
-];
-
 const folderOpen = new Set(store.get("folderOpen", []));
 
 // Group headings fold their group away (remembered) – handy with many plugins under Extensions
 const railClosed = new Set(store.get("railClosed", []));
-const groupHead = (key, extra = "") =>
-  `<button type="button" class="kb-rail-group${railClosed.has(key) ? " is-closed" : ""}" data-railgrp="${key}" aria-expanded="${!railClosed.has(key)}">${t(key)}${extra}<i class="kb-rail-caret"></i></button>`;
+const groupHead = (key, extra = "", label = null) =>
+  `<button type="button" class="kb-rail-group${railClosed.has(key) ? " is-closed" : ""}" data-railgrp="${esc(key)}" aria-expanded="${!railClosed.has(key)}">${label != null ? esc(label) : t(key)}${extra}<i class="kb-rail-caret"></i></button>`;
 function paintRailGroups() {
   document.querySelectorAll("#rail [data-railbody]").forEach((b) => (b.hidden = railClosed.has(b.dataset.railbody)));
 }
 
+const navHtml = (it) =>
+  it.action
+    ? `<button type="button" data-action="${it.action}"${it.plugin ? ` data-plugin="${it.plugin}"` : ""} title="${esc(t(it.label))}">${icon(it.icon)}<span>${t(it.label)}</span></button>`
+    : `<a href="#/${it.href}" data-match="${it.match.source}" title="${esc(t(it.label))}">${icon(it.icon)}<span>${t(it.label)}</span>${it.count ? `<span class="kb-count" data-count="${it.count}"></span>` : ""}</a>`;
+const extHtml = (f) =>
+  `<a href="${esc(f.href)}" data-ext="${esc(f.id)}" title="${esc(f.name)}">${f.icon ? `<img class="kb-ext-ic" alt="" src="${esc(f.icon)}">` : icon("plug")}<span>${esc(f.name)}</span></a>`;
+
+// One group of the menu: its entries in a row, the folder tree where it sits
+function groupHtml(g) {
+  let out = "";
+  let run = "";
+  const flush = () => {
+    if (run) out += `<nav class="kb-nav"${g.key ? ` data-railbody="${esc(g.key)}"` : ""}>${run}</nav>`;
+    run = "";
+  };
+  for (const e of g.items) {
+    if (e.folders) {
+      flush();
+      out += `${groupHead("Folders")}<div class="kb-tree" id="tree" data-railbody="Folders"><div class="kb-rail-foot">${t("Loading …")}</div></div>`;
+    } else run += e.nav ? navHtml(e.nav) : extHtml(e.ext);
+  }
+  flush();
+  const n = g.key === "Extensions" ? `<span class="kb-rail-n">${g.items.length}</span>` : "";
+  return (g.key ? groupHead(g.key, n, g.custom ? g.name : null) : "") + out;
+}
+
+let extSig = "";
+const extSigOf = () => JSON.stringify([store.get("extMode", "show"), store.get("extHidden", []), store.get("extFound", []).map((f) => [f.id, f.name, f.href, f.icon])]);
+let pluginsOn = null; // plugins (by normalized id) that are installed and on; null = not asked yet
+
 function renderRail() {
   const rail = document.getElementById("rail");
+  extSig = extSigOf();
   rail.innerHTML =
     `<a class="kb-mark" href="#/" aria-label="${t("Stash, home page")}"><span>Stash</span></a>` +
     `<button type="button" class="kb-railmode-btn" data-action="railmode" title="${t("Menu: full, icons only, hidden")}" aria-label="${t("Menu: full, icons only, hidden")}">${icon("menu")}</button>` +
     `<button type="button" class="kb-nsfw-btn" data-action="nsfw" data-nsfwbtn aria-pressed="false" title="${t("NSFW mode: blur all pictures and previews")}" aria-label="${t("NSFW mode: blur all pictures and previews")}">${icon("eye")}</button>` +
-    NAV.map((g) =>
-      (g.group ? groupHead(g.group) : "") +
-      `<nav class="kb-nav"${g.group ? ` data-railbody="${g.group}"` : ""}>` +
-      g.items.map((it) =>
-        it.action
-          ? `<button type="button" data-action="${it.action}"${it.plugin ? ` data-plugin="${it.plugin}"` : ""} title="${esc(t(it.label))}">${icon(it.icon)}<span>${t(it.label)}</span></button>`
-          : `<a href="#/${it.href}" data-match="${it.match.source}" title="${esc(t(it.label))}">${icon(it.icon)}<span>${t(it.label)}</span>${it.count ? `<span class="kb-count" data-count="${it.count}"></span>` : ""}</a>`
-      ).join("") +
-      `</nav>` +
-      (g.group === "Watch" ? `<div data-extplugins hidden>${groupHead("Extensions", '<span class="kb-rail-n" data-extn></span>')}<nav class="kb-nav" data-extlist data-railbody="Extensions"></nav></div>` : "") +
-      (g.group === "Library" && folderMode() === "all" ? `${groupHead("Folders")}<div class="kb-tree" id="tree" data-railbody="Folders"><div class="kb-rail-foot">${t("Loading …")}</div></div>` : "")
-    ).join("") +
+    visibleRail().map(groupHtml).join("") +
     `<div class="kb-rail-foot" id="rail-foot"></div>`;
 
   paintRailGroups();
   setNewsDot();
+  if (!rail._kbBound) {
+    rail._kbBound = true;
+    bindRail(rail);
+  }
+  refreshCounts();
+  markRail(parseHash());
+  pluginsOn ? applyPluginLinks() : refreshPluginLinks();
+  import("./display.js").then((m) => m.applyDisplay()); // (the NSFW button shows its state)
+}
+window.addEventListener("stash:rail-changed", renderRail);
+
+function bindRail(rail) {
   rail.addEventListener("click", (e) => {
     const gh = e.target.closest("[data-railgrp]");
     if (gh) {
@@ -310,18 +307,15 @@ function renderRail() {
     }
     if (a && a.dataset.action === "log") import("./eventlog.js").then((m) => m.toggleLog());
   });
-  renderTree();
-  refreshCounts();
-  refreshPluginLinks();
-  import("./display.js").then((m) => m.applyDisplay()); // (the NSFW button shows its state)
 }
 
 // Menu entries of companion plugins (Media Storm, PMV Generator) only show when they're installed and on
+// Matched by ID or name, ignoring case and separators – a copy installed under another folder
+// name (e.g. "MediaStorm", "media-storm") is still found
+const norm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+const applyPluginLinks = () => document.querySelectorAll("#rail [data-plugin]").forEach((b) => (b.hidden = !pluginsOn.has(norm(b.dataset.plugin))));
 export const PMV_PAGE = "/plugin/pmvGenerator/assets/index.html?from=stashui"; // so its links lead back here
 async function refreshPluginLinks() {
-  // Matched by ID or name, ignoring case and separators – a copy installed under another folder
-  // name (e.g. "MediaStorm", "media-storm") is still found
-  const norm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
   let on;
   let plugins;
   try {
@@ -334,7 +328,8 @@ async function refreshPluginLinks() {
   } catch (e) {
     return; // unknown – leave the entries visible
   }
-  document.querySelectorAll("#rail [data-plugin]").forEach((b) => (b.hidden = !on.has(norm(b.dataset.plugin))));
+  pluginsOn = on;
+  applyPluginLinks();
   paintExtensions(plugins.filter((p) => p.enabled && !OWN.has(norm(p.id))));
 }
 
@@ -418,8 +413,6 @@ async function findPages(p) {
 }
 
 async function paintExtensions(list) {
-  const box = document.querySelector("#rail [data-extplugins]");
-  if (!box) return;
   const cache = store.get(EXT_KEY, {});
   const found = [];
   for (const p of list) {
@@ -439,16 +432,9 @@ async function paintExtensions(list) {
     : f.kind === "route" ? "#/extern/classic?path=" + encodeURIComponent(f.route)
     : f.kind === "card" ? "#/plugins?focus=" + encodeURIComponent(f.id)
     : "#/extern/classic";
-  // Settings → This interface can hide the whole group or single plugins
-  store.set("extFound", found.map((f) => ({ id: f.id, name: f.name })));
-  const off = new Set(store.get("extHidden", []));
-  const shown = found.filter((f) => !off.has(f.id));
-  box.querySelector("[data-extlist]").innerHTML = shown
-    .map((f) => `<a href="${esc(href(f))}" data-ext="${esc(f.id)}" title="${esc(f.name)}">${f.icon ? `<img class="kb-ext-ic" alt="" src="${esc(f.icon)}">` : icon("plug")}<span>${esc(f.name)}</span></a>`)
-    .join("");
-  const n = box.querySelector("[data-extn]");
-  if (n) n.textContent = shown.length;
-  box.hidden = !shown.length || store.get("extMode", "show") === "hide";
+  // Settings → This interface can hide the whole group or single plugins; the menu draws them (railcfg.js)
+  store.set("extFound", found.map((f) => ({ id: f.id, name: f.name, href: href(f), icon: f.icon || "" })));
+  if (extSigOf() !== extSig) renderRail();
 }
 window.addEventListener("stash:plugins-changed", refreshPluginLinks);
 

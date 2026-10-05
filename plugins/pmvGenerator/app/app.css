@@ -1187,6 +1187,19 @@ button.kb-rail-group.is-closed .kb-rail-caret { transform: rotate(-45deg); }
 .kb-home-row .kb-switch { margin-left: 6px; }
 .kb-home-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 html.kb-glass .kb-home-row { border-color: var(--glass-edge); background: var(--glass-shine), var(--glass); }
+.kb-home-tabs { margin-top: 14px; }
+.kb-rail-ed { gap: 6px; }
+.kb-rail-ghead { margin-top: 10px; padding: 6px 12px; border-style: dashed; background: transparent; }
+.kb-rail-ghead:first-child { margin-top: 0; }
+.kb-rail-ghead .kb-home-name b { color: var(--faint); font: 600 12px/1.2 var(--f-label); letter-spacing: .12em; text-transform: uppercase; }
+.kb-rail-ghead .kb-field { flex: 1; min-width: 0; }
+.kb-rail-irow { padding: 7px 12px; margin-left: 14px; }
+.kb-rail-irow .kb-home-name b { font: 600 15px/1.2 var(--f-label); }
+.kb-rail-ic { display: grid; place-items: center; width: 22px; color: var(--text-2); }
+.kb-rail-ic .kb-ic, .kb-rail-ic .kb-ext-ic { width: 18px; height: 18px; }
+.kb-rail-ic .kb-ext-ic { object-fit: contain; }
+.kb-rail-ed .kb-switch input:disabled + i { opacity: .5; }
+html.kb-glass .kb-rail-ghead { border-color: var(--glass-edge); background: transparent; }
 
 /* Versus: two side by side – pick the better one */
 .kb-vs { display: grid; gap: 14px; }
