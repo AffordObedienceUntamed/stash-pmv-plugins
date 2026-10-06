@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.73.0",
+    date: "2026-10-06",
+    items: [
+      ["ui", "New: “Cut clips” in the player. Mark the parts you want while watching (“Here” takes the current position for start and end), collect any number of clips in a list and save them as new videos – each one on its own or all joined into one. Choose Exact (re-encoded, frame-accurate) or Fast (no re-encoding, the start snaps to the nearest keyframe), optionally into a “Clips” subfolder. The new videos are scanned into Stash right away and get the original's performers, tags and studio plus the tag “Clip”. The original is never touched.", "新功能：播放器里的“剪辑片段”。边看边标记想要的部分（“此处”取当前位置作为开始和结束），把任意数量的片段放进列表，保存为新视频——每个单独保存或全部合并成一个。可选“精确”（重新编码，精确到帧）或“快速”（不重新编码，起点对齐到最近的关键帧），也可放进“Clips”子文件夹。新视频会立即扫描进 Stash，并沿用原视频的演员、标签和工作室，再加上标签“Clip”。原视频不会被改动。"],
+    ],
+  },
+  {
     v: "3.72.3",
     date: "2026-10-06",
     items: [

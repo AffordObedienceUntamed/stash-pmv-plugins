@@ -1016,6 +1016,7 @@ export async function render(host, params, query = {}) {
     position: () => v.currentTime,
     goFolder: () => goToFolder(f.path),
     music: () => import("./music.js").then((m) => m.openMusic(x, v)),
+    cut: () => import("./clipcut.js").then((m) => m.openClipCut(x, v)),
     cover: () => frameAsCover(),
     funscript: () => addFunscript(),
   });

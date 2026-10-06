@@ -149,6 +149,7 @@ Settings → General → **Install as app**: Stash UI gets its own window and a 
 - **Scene tagger** (menu → Manage): the scenes that aren't organized with a StashDB / scraper lookup per scene – by file or by title – and a field-by-field check before saving. Same scrapers as “Fill in from the internet” in the editor.
 - **Sound button in Scenes**: Sound on / Muted for the hover previews sits in the Scenes toolbar as well as on the home page.
 - **Delete in the player**: the info bar has a Delete button (it asks first, with the option to delete the file too). The next video of the list or queue keeps playing instead of going back to the list.
+- **Cut clips** (player → “Cut clips”): mark start and end of the parts you want, collect them in a list and save them as new videos (separate or joined, Exact or Fast, optional “Clips” subfolder). They are scanned into Stash and take over the original's performers, tags and studio plus the tag “Clip”. Needs ffmpeg (Stash's own is used).
 - **Plugins page**: plugins with an update come first (after “Check for updates”), and the buttons on every card are left-aligned.
 - **Saved filters in the menu**: Stash's own saved filters (Scenes, Images) and your playlists sit under the folder tree – one click opens the list with it. Hide or move the section in Home → Customize → Sidebar.
 - The detailed rating, dialogs and drawers also open while the player is in fullscreen; stepping from one image or video to the next no longer flashes the page underneath.
