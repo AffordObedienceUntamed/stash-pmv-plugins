@@ -5,13 +5,13 @@
 
 export const LANGS = [
   ["en", "English"],
-  ["zh-CN", "简体中文"],
-  ["ja", "日本語"],
-  ["vi", "Tiếng Việt"],
-  ["fr", "Français"],
-  ["es", "Español"],
-  ["de", "Deutsch"],
-  ["pl", "Polski"],
+  ["zh-CN", "简体中文 (Chinese)"],
+  ["ja", "日本語 (Japanese)"],
+  ["vi", "Tiếng Việt (Vietnamese)"],
+  ["fr", "Français (French)"],
+  ["es", "Español (Spanish)"],
+  ["de", "Deutsch (German)"],
+  ["pl", "Polski (Polish)"],
 ];
 const FILES = {
   "zh-CN": () => import("./locales/zh-CN.js"),

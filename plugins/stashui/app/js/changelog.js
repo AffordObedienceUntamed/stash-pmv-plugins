@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.72.1",
+    date: "2026-10-06",
+    items: [
+      ["ui", "The language list now shows the English name behind each language, e.g. “Deutsch (German)”.", "语言列表中每种语言后面现在带有英文名称，例如“Deutsch (German)”。"],
+    ],
+  },
+  {
     v: "3.72.0",
     date: "2026-10-06",
     items: [
