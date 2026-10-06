@@ -1,7 +1,7 @@
 // Small helpers for display, formatting, messages and dialogs.
 
 import { largeNow } from "./scale.js";
-import { t, locale } from "./i18n.js";
+import { t, locale, few } from "./i18n.js";
 
 export const esc = (s) =>
   String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -126,7 +126,11 @@ export function fmtAgo(iso) {
 }
 export const fmtNum = (n) => Number(n || 0).toLocaleString(locale());
 // The unit words are translated too: plural(3, "scene", "scenes") → "3 scenes" / "3 个场景"
-export const plural = (n, one, many) => `${fmtNum(n)} ${t(n === 1 ? one : many)}`;
+export const plural = (n, one, many) => {
+  let word = t(n === 1 ? one : many);
+  if (n !== 1 && few(n) && t(many + "#few") !== many + "#few") word = t(many + "#few");
+  return `${fmtNum(n)} ${word}`;
+};
 
 // Inventory number like in a museum: S-12 (scene), I-40 (image), G-3 (gallery)
 export const invNo = (kind, id) => `${{ scene: "S", image: "I", gallery: "G" }[kind]}-${id}`;

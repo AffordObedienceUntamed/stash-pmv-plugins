@@ -61,7 +61,7 @@ Open it: just open Stash (e.g. `http://localhost:9999`) – the home page redire
 
 ## Languages
 
-Stash UI is available in **English** and **Simplified Chinese (简体中文)**. By default it follows the interface language set in Stash (classic Stash → Settings → Interface → Language); you can also pick one under **Settings → This interface → Language**.
+Stash UI is available in **English**, **Simplified Chinese (简体中文)**, **Japanese (日本語)**, **Vietnamese (Tiếng Việt)**, **French (Français)**, **Spanish (Español)**, **German (Deutsch)** and **Polish (Polski)**. By default it follows the interface language set in Stash (classic Stash → Settings → Interface → Language); you can also pick one under **Settings → This interface → Language**.
 
 ![Stash UI in Simplified Chinese](../../docs/screenshots/stashui-zh.png)
 
@@ -77,7 +77,8 @@ export default {
 ```
 
 - Anything missing simply shows in English, so partial translations work.
-- `python tools/i18n_keys.py zh-CN` lists the texts a language file is still missing.
+- `python tools/i18n_keys.py zh-CN` (or `ja`, `de` …) lists the texts a language file is still missing.
+- Polish counts 2–4 with its own form: besides `"scenes"` the file has `"scenes#few"` (see `pl.js`).
 - A new language: copy `zh-CN.js`, translate the values, and add it to `LANGS` and `FILES` in `app/js/i18n.js`.
 - Found an odd or too long wording? Open an issue or a pull request.
 

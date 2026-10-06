@@ -4,6 +4,15 @@
 
 export const CHANGES = [
   {
+    v: "3.71.0",
+    date: "2026-10-06",
+    items: [
+      ["ui", "Six new languages: Japanese (日本語), Vietnamese (Tiếng Việt), French (Français), Spanish (Español), German (Deutsch) and Polish (Polski). Pick one under Settings → This interface → Language – or leave it on Automatic, then it follows the language set in Stash. Polish even counts correctly (1 scena, 2 sceny, 5 scen). The patch notes on this page stay in English and Chinese for now.", "新增六种语言：日语（日本語）、越南语（Tiếng Việt）、法语（Français）、西班牙语（Español）、德语（Deutsch）和波兰语（Polski）。在“设置 → 此界面 → 语言”中选择，或保持“自动”，此时会跟随 Stash 中设置的语言。波兰语的数量词也能正确变化（1 scena、2 sceny、5 scen）。本页的更新说明暂时仍只有英文和中文。"],
+      ["pmv", "PMV Generator 2.22.0: translated into the same six languages.", "PMV 生成器 2.22.0：已翻译成同样的六种语言。"],
+      ["storm", "Media Storm 2.7.0: translated into the same six languages.", "媒体风暴 2.7.0：已翻译成同样的六种语言。"],
+    ],
+  },
+  {
     v: "3.70.3",
     date: "2026-10-06",
     items: [
