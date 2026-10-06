@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.73.2",
+    date: "2026-10-06",
+    items: [
+      ["ui", "The Handy no longer gives up after “device timeout” or “The Handy isn't online”: a failed command is tried once more right away, and if that fails too, Stash UI connects again by itself (every few seconds, up to about a minute), loads the script again and carries on from where the video is. A short stall of the picture (buffering) no longer stops the device right away. Also applies to the funscript of the PMV Generator.", "The Handy 在出现“设备超时”或“The Handy 不在线”后不再放弃：失败的命令会立即再试一次，若仍失败，Stash UI 会自动重新连接（每隔几秒，最多约一分钟），重新加载脚本并从视频当前位置继续。画面短暂卡顿（缓冲）不再立刻让设备停下。PMV 生成器的 funscript 同样适用。"],
+    ],
+  },
+  {
     v: "3.73.1",
     date: "2026-10-06",
     items: [
