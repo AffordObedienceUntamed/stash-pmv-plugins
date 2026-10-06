@@ -727,3 +727,9 @@ html.kb-glass .kb-fpick-row.is-on.is-own .kb-fpick-box { background-color: var(-
 .kb-pmvg-faillist small { color: var(--faint); }
 .kb-pmvg-skipped { margin: 0 0 12px; color: var(--text-2); }
 .kb-pmvg-skipped summary { cursor: pointer; }
+.kb-pmvg-lshape { display: grid; gap: 6px; margin-top: 6px; }
+.kb-pmvg-lsrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.kb-pmvg-lsrow[hidden] { display: none; }
+.kb-pmvg-lsrow > span { display: inline-flex; align-items: center; gap: 8px; }
+.kb-pmvg-lsrow select { width: auto; min-width: 150px; }
+html.kb-glass .kb-pmvg-lsrow select { background: rgba(255, 255, 255, .08); border-color: rgba(255, 255, 255, .25); }

@@ -4,6 +4,14 @@
 
 export const CHANGES = [
   {
+    v: "3.72.0",
+    date: "2026-10-06",
+    items: [
+      ["ui", "Plugins page: plugins that have an update are listed first (press “Check for updates”), and the buttons on every plugin card are now aligned to the left instead of jumping between left, centre and right.", "插件页面：有更新的插件排在最前面（点击“检查更新”），每张插件卡片上的按钮现在统一左对齐，不再忽左忽右。"],
+      ["pmv", "PMV Generator 2.23.0: new “Clip shape per layout” (Show → Layouts): choose for every layout whether it uses all clips, only landscape or only portrait – e.g. landscape in full screen, portrait in 3-way, both in 2-way. Set “Clip shape” in What to “All” so both kinds are loaded; if no clip of the wanted shape is ready, another one is used so the show never stalls.", "PMV 生成器 2.23.0：新增“每种布局的片段形状”（显示 → 布局）：可为每种布局选择使用全部片段、仅横屏或仅竖屏——例如全屏用横屏、三分屏用竖屏、双分屏两种都用。请把“内容”里的“片段形状”设为“全部”以加载两种片段；如果没有符合形状的片段就绪，会改用其他片段，不会卡住。"],
+    ],
+  },
+  {
     v: "3.71.0",
     date: "2026-10-06",
     items: [

@@ -184,7 +184,8 @@
 .kb-plugin-link { display: inline-block; margin-top: 10px; color: var(--faint); font: 400 13px/1 var(--f-label); text-decoration: underline; }
 .kb-plugin-link:hover { color: var(--pink); }
 .kb-pfoot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
-.kb-pfoot .kb-plugin-link { margin-top: 0; }
+.kb-pfoot .kb-plugin-link { margin-top: 0; flex-basis: 100%; }
+.kb-pfoot .kb-spacer { display: none; }
 .kb-pdanger:hover { color: var(--danger); }
 .kb-ptabs { margin: 0 0 16px; }
 .kb-ptools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 16px; }

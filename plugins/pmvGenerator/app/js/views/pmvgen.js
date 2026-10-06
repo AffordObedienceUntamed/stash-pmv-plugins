@@ -52,6 +52,7 @@ const DEFAULTS = {
   maxRes: "any", // any | 720 | 1080 | 1440 – lower runs smoother
   fav: false,
   shape: "all", // clip shape: all | portrait | landscape
+  layoutShape: {}, // clip shape per layout (layout id → all | portrait | landscape), missing = all
   bestSpots: true, // best moments instead of random
   cleanCuts: true, // a clip's start has no scene change in the first seconds (it would cut by itself)
   smartCrop: true, // crop follows what matters
@@ -407,6 +408,8 @@ export function render(main) {
             </div>
             <span class="kb-lab-t">Layouts <small>– change to the beat, the louder the more fields</small></span>
             <div class="kb-chips kb-pmvg-layouts" data-layouts>${Object.entries(LAYOUTS).map(([k, l]) => `<button type="button" class="kb-chip" data-l="${k}" title="${esc(l.hint)}">${layoutIcon(k)}${l.name}</button>`).join("")}</div>
+            <span class="kb-lab-t">Clip shape per layout <small>– e.g. landscape clips only in full screen, portrait only in 3-way (set “Clip shape” in What to “All”)</small></span>
+            <div class="kb-pmvg-lshape" data-lshape>${Object.entries(LAYOUTS).map(([k, l]) => `<label class="kb-pmvg-lsrow" data-lsrow="${k}"><span>${layoutIcon(k)}${l.name}</span><select class="kb-field" data-ls="${k}"><option value="all">All</option><option value="landscape">Landscape only</option><option value="portrait">Portrait only</option></select></label>`).join("")}</div>
             <span class="kb-lab-t">Fields in 2-/3-way layouts</span>
             <div class="kb-seg" data-seg="split"><button type="button" data-v="cols" title="Columns – also in portrait format">side by side</button><button type="button" data-v="rows" title="Rows">stacked</button></div>
             <p class="kb-hint kb-pmvg-tip" data-tip hidden></p>
@@ -531,6 +534,10 @@ export function render(main) {
       seg.querySelectorAll("[data-v]").forEach((b) => b.classList.toggle("is-on", String(S[seg.dataset.seg]) === b.dataset.v));
     });
     main.querySelectorAll("[data-layouts] [data-l]").forEach((b) => b.classList.toggle("is-on", !!S.layouts[b.dataset.l]));
+    main.querySelectorAll("[data-lsrow]").forEach((r) => {
+      r.hidden = !S.layouts[r.dataset.lsrow];
+      r.querySelector("select").value = (S.layoutShape || {})[r.dataset.lsrow] || "all";
+    });
     $("[data-pacebox]").hidden = S.cut !== "auto";
     $("[data-colorrow]").hidden = S.look !== "custom";
     $("[data-lookbox]").hidden = S.look === "none";
@@ -665,6 +672,14 @@ export function render(main) {
       paintSegs();
       toast(`Mood “${P.name}”`, "ok");
     }
+  });
+  main.addEventListener("change", (e) => {
+    const sel = e.target.closest("[data-ls]");
+    if (!sel) return;
+    S.layoutShape = Object.assign({}, S.layoutShape);
+    if (sel.value === "all") delete S.layoutShape[sel.dataset.ls];
+    else S.layoutShape[sel.dataset.ls] = sel.value;
+    save();
   });
   $("[data-words]").addEventListener("input", (e) => {
     S.words = e.target.value;
@@ -2673,6 +2688,12 @@ class Generator {
     if (this.nStages > 1) {
       const mine = cand.filter((i) => this.ready[i].stage === this.stageNow);
       if (mine.length) cand = mine;
+    }
+    // Shape per layout: only landscape / portrait clips in this layout (none ready → whatever there is)
+    const want = (this.S.layoutShape || {})[this.layout];
+    if (want === "landscape" || want === "portrait") {
+      const fit = cand.filter((i) => (want === "portrait" ? this.ready[i].h > this.ready[i].w : this.ready[i].w >= this.ready[i].h));
+      if (fit.length) cand = fit;
     }
     cand.slice(0, this.S.matchCut ? 8 : 5).forEach((i) => {
       const m = this.ready[i];

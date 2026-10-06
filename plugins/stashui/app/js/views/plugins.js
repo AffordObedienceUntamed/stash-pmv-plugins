@@ -106,7 +106,9 @@ export async function render(main, params, query) {
         <button class="kb-btn" data-check${busy ? " disabled" : ""}>${icon("repeat")}${t("Check for updates")}</button>
         ${state.updates ? (n ? `<button class="kb-btn is-primary" data-updateall${busy ? " disabled" : ""}>${icon("download")}${t("Update all ({n})", { n })}</button>` : `<span class="kb-hint">${t("Everything is up to date.")}</span>`) : ""}
       </div>`;
-    const cards = state.plugins.map((p) => pluginCard(p)).join("");
+    // Plugins with an update come first
+    const hasUp = (p) => { const pk = pkgOf(p); return Boolean(pk && state.updates && state.updates.some((u) => u.package_id === pk.package_id)); };
+    const cards = state.plugins.slice().sort((a, b) => Number(hasUp(b)) - Number(hasUp(a))).map((p) => pluginCard(p)).join("");
     // Packages that are installed but didn't load as a plugin (broken or incompatible)
     const loose = state.packages.filter((pk) => !state.plugins.some((p) => p.id === pk.package_id || p.name === pk.name));
     pane.innerHTML =

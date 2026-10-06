@@ -503,6 +503,8 @@ export default {
     "Reveal opening": "开场渐显",
     "The first clip sits small in the middle with rounded corners and slowly grows – at the first drop the picture opens up into the layouts (songs with a known length; not with templates)": "第一个片段以圆角小窗口出现在画面中央并缓慢变大——第一次 drop 时画面展开为所选布局（仅限已知长度的歌曲；模板不适用）",
     "Scrolling sides": "侧边滚动",
+    "Clip shape per layout": "每种布局的片段形状",
+    " – e.g. landscape clips only in full screen, portrait only in 3-way (set “Clip shape” in What to “All”)": " – 例如全屏只用横屏、三分屏只用竖屏（请把“内容”里的“片段形状”设为“全部”）",
     "In 3-way layouts the middle clip stays longer while the clips at the sides scroll up or down, like swiping through a feed (needs the 3-way layouts)": "在三分屏布局中，中间的片段停留更久，两侧的片段像刷信息流一样向上或向下滚动（需要启用三分屏布局）",
     "Strength": "强度",
     "Color": "颜色",
