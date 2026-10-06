@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.72.2",
+    date: "2026-10-06",
+    items: [
+      ["pmv", "PMV Generator 2.23.2: “Clip shape per layout” now really sticks to the rule. The generator keeps clips of each wanted shape ready (landscape for full screen, portrait for 3-way …), picks them from your selection even if they were shown recently, and a single field that is re-cut never takes a clip of the wrong shape. Only when a layout opens and none of the right shape is ready yet, the old clip keeps running for a moment.", "PMV 生成器 2.23.2：“每种布局的片段形状”现在真正遵守规则。生成器会为每种所需形状（全屏用横屏、三分屏用竖屏……）预备足够的片段，即使近期播放过也会从你的选择中挑选；单个画面重新切换时不会再取到形状不对的片段。仅当某个布局刚打开而还没有合适形状的片段就绪时，旧片段会再播放片刻。"],
+    ],
+  },
+  {
     v: "3.72.1",
     date: "2026-10-06",
     items: [

@@ -2021,6 +2021,7 @@ class Generator {
     this.stageNow = 0;
     this.dropUntil = -1;
     this.prepN = [];
+    this.prepShape = { landscape: 0, portrait: 0 };
     this.sp = Array.from({ length: this.nStages }, () => ({ sources: [], srcIdx: 0, page: { scene: 1, image: 1, marker: 1 }, seed: Math.floor(Math.random() * 1e8), fetching: null, dead: false }));
     this.ready = [];
     this.preparing = 0;
@@ -2374,16 +2375,16 @@ class Generator {
           // A marker clip: its scene, starting at the marker
           return items
             .filter((mk) => mk.scene && mk.scene.paths.stream)
-            .map((mk) => ({ kind: "video", id: mk.scene.id, key: "marker:" + mk.id, url: mk.scene.paths.stream, dur: (mk.scene.files[0] || {}).duration || 0, marks: [], markers: [], at: mk.seconds,
+            .map((mk) => ({ kind: "video", id: mk.scene.id, key: "marker:" + mk.id, url: mk.scene.paths.stream, dur: (mk.scene.files[0] || {}).duration || 0, w: (mk.scene.files[0] || {}).width || 0, h: (mk.scene.files[0] || {}).height || 0, marks: [], markers: [], at: mk.seconds,
               sprite: mk.scene.paths.sprite, vtt: mk.scene.paths.vtt, name: mk.title || (mk.primary_tag || {}).name || mk.scene.title || (mk.scene.files[0] || {}).basename || "Marker " + mk.id,
               file: (mk.scene.files[0] || {}).basename || "", perf: (mk.scene.performers || []).map((pf) => pf.id) }));
         }
         return items
           .map((x) =>
             k === "scene"
-              ? x.paths.stream && { kind: "video", id: x.id, url: x.paths.stream, dur: (x.files[0] || {}).duration || 0, marks: (x.scene_markers || []).map((mk) => mk.seconds), markers: x.scene_markers || [],
+              ? x.paths.stream && { kind: "video", id: x.id, url: x.paths.stream, dur: (x.files[0] || {}).duration || 0, w: (x.files[0] || {}).width || 0, h: (x.files[0] || {}).height || 0, marks: (x.scene_markers || []).map((mk) => mk.seconds), markers: x.scene_markers || [],
                   sprite: x.paths.sprite, vtt: x.paths.vtt, name: x.title || (x.files[0] || {}).basename || "Scene " + x.id, file: (x.files[0] || {}).basename || "" }
-              : x.paths.image && (x.visual_files[0] || {}).__typename === "ImageFile" && { kind: "image", id: x.id, url: x.paths.image,
+              : x.paths.image && (x.visual_files[0] || {}).__typename === "ImageFile" && { kind: "image", id: x.id, url: x.paths.image, w: x.visual_files[0].width || 0, h: x.visual_files[0].height || 0,
                   name: x.title || x.visual_files[0].basename || "Image " + x.id, file: x.visual_files[0].basename || "" }
           )
           .filter(Boolean)
@@ -2400,7 +2401,7 @@ class Generator {
     P.srcIdx = 0;
   }
 
-  async nextSource(st = 0) {
+  async nextSource(st = 0, want = null) {
     // RedGifs share first; the rest comes from Stash – and each side fills in when the other runs dry
     if (this.rg && !this.rg.dead) {
       this.rgAcc += this.S.rgPct / 100;
@@ -2411,7 +2412,7 @@ class Generator {
       }
     }
     try {
-      return await this.nextStash(st);
+      return await this.nextStash(st, want);
     } catch (e) {
       const s = this.rg && !this.rg.dead ? ((this.stashDead = true), await this.nextRedgif()) : null;
       if (s) return s;
@@ -2434,13 +2435,13 @@ class Generator {
     toast("RedGifs – " + msg, "error");
   }
 
-  async nextStash(st = 0) {
+  async nextStash(st = 0, want = null) {
     // A stage without any matching clip borrows from the next one that has some
     for (let k = 0; k < this.nStages; k++) {
       const i = (st + k) % this.nStages;
       if (this.sp[i].dead) continue;
       try {
-        return await this.nextFrom(this.sp[i], i);
+        return await this.nextFrom(this.sp[i], i, want);
       } catch (e) {
         if (this.nStages < 2) throw e;
         this.sp[i].dead = true;
@@ -2449,12 +2450,21 @@ class Generator {
     throw new Error("No matching clips found – loosen the filters.");
   }
 
-  async nextFrom(P, st) {
+  async nextFrom(P, st, want = null) {
     // Several clips are prepared in parallel – fetch new ones only once
     for (let tries = 0; ; tries++) {
       while (P.srcIdx >= P.sources.length) {
         P.fetching = P.fetching || this.fetchSources(P, st).finally(() => (P.fetching = null));
         await P.fetching;
+      }
+      // A shape is short (per-layout clip shape): take a source of that shape that is already known
+      if (want) {
+        const fits = (x) => x.w && x.h && (want === "portrait" ? x.h > x.w : x.w >= x.h) && !(this.badKeys && this.badKeys.has(x.key));
+        // (new ones first, then not shown recently; with a small selection a repeat is better than the wrong shape)
+        let k = P.sources.findIndex((x, n) => n >= P.srcIdx && fits(x) && !this.isRecent(x));
+        if (k < 0) k = P.sources.findIndex((x) => fits(x) && !this.isRecent(x));
+        if (k < 0) k = P.sources.findIndex(fits);
+        if (k >= 0) return P.sources[k];
       }
       const s = P.sources[P.srcIdx++];
       if (this.badKeys && this.badKeys.has(s.key) && tries < P.sources.length) continue; // failed before
@@ -2487,11 +2497,14 @@ class Generator {
     // (match cuts need a bit more choice)
     // At most 3 at once: each one decodes and seeks its video – with 4K several at once choke the decoder
     while (!this.done && this.preparing < 3) {
-      const st = this.stageToFill(this.S.matchCut ? 8 : 6);
+      const want = this.shapeShort();
+      let st = this.stageToFill(this.S.matchCut ? 8 : 6);
+      if (st < 0 && want) st = this.stageToFill(this.S.matchCut ? 14 : 12);
       if (st < 0) break;
       this.preparing++;
       this.prepN[st] = (this.prepN[st] || 0) + 1;
-      this.prepareOne(st)
+      if (want) this.prepShape[want]++;
+      this.prepareOne(st, want)
         .then((m) => {
           if (this.done) return this.release(m);
           m.stage = st;
@@ -2502,9 +2515,20 @@ class Generator {
         .finally(() => {
           this.preparing--;
           this.prepN[st]--;
+          if (want) this.prepShape[want]--;
           if (!this.done && this.bad < 12) setTimeout(() => this.fillPool(), this.bad ? 200 : 0);
         });
     }
+  }
+
+  // Per-layout clip shape: which shape (landscape / portrait) the ready clips are short of (null = none)
+  shapeShort() {
+    const rules = this.S.layoutShape || {};
+    const need = [...new Set(this.layouts.map((k) => rules[k]).filter((v) => v === "landscape" || v === "portrait"))];
+    if (!need.length) return null;
+    const have = (sh) => this.ready.filter((m) => (sh === "portrait" ? m.h > m.w : m.w >= m.h)).length + this.prepShape[sh];
+    need.sort((a, b) => have(a) - have(b));
+    return have(need[0]) < 3 ? need[0] : null;
   }
 
   // Which stage needs clips next: the current one first, then a reserve for drops (the last) and the one coming up
@@ -2531,8 +2555,8 @@ class Generator {
     this.stageNow = t < this.dropUntil || prog >= 0.9 ? n - 1 : Math.min(n - 2, Math.floor((prog / 0.9) * (n - 1)));
   }
 
-  async prepareOne(st = 0) {
-    const s = await this.nextSource(st);
+  async prepareOne(st = 0, want = null) {
+    const s = await this.nextSource(st, want);
     try {
       return await this.prepareFrom(s);
     } catch (e) {
@@ -2677,7 +2701,7 @@ class Generator {
 
   // Take the best of the ready clips: shape fits the field (portrait into a narrow field etc.),
   // match cut: looks like the clip that is leaving (out), variety: not the same scene/performer
-  takeMedia(aspect, out) {
+  takeMedia(aspect, out, strict = false) {
     if (!this.ready.length) return null;
     let outSig = null;
     if (this.S.matchCut && out) outSig = out.live || out.sig; // (measured in the background, see trackFocus)
@@ -2694,6 +2718,7 @@ class Generator {
     if (want === "landscape" || want === "portrait") {
       const fit = cand.filter((i) => (want === "portrait" ? this.ready[i].h > this.ready[i].w : this.ready[i].w >= this.ready[i].h));
       if (fit.length) cand = fit;
+      else if (strict) return null; // (a single field: better keep the clip than show the wrong shape)
     }
     cand.slice(0, this.S.matchCut ? 8 : 5).forEach((i) => {
       const m = this.ready[i];
@@ -2760,7 +2785,7 @@ class Generator {
 
   cutGroup(gi, t, opt) {
     const old = this.groups[gi];
-    const m = this.takeMedia(aspectOfGroup(this.slots, gi), old);
+    const m = this.takeMedia(aspectOfGroup(this.slots, gi), old, true);
     if (!m) return false; // nothing ready yet → the field keeps running
     this.groups[gi] = m;
     this.cutT[gi] = t;
