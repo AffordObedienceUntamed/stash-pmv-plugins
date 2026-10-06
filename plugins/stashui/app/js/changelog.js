@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.73.1",
+    date: "2026-10-06",
+    items: [
+      ["pmv", "PMV Generator 2.24.0: new section “Funscript”. The PMV builds a funscript from your song – the beats become strokes, the energy decides how fast and how big – and plays it on The Handy together with the show (pause and resume follow, a playlist gets one script per song). Options: pace (follow the song, slow, normal, fast), stroke size (follow the song, small, medium, large, full), where on the stroke (low, middle, high), style (sharp or smooth), gentle strokes in calm parts, accents on the first beat of each bar and on drops, and a top speed that makes too-fast strokes smaller. When the show is over, “Save funscript” downloads the script. The connection key is the one from Stash UI → Settings → Interactive; it works with your own song files (not with Plex or a live app).", "PMV 生成器 2.24.0：新增“Funscript 脚本”部分。PMV 会根据你的歌曲生成 funscript——节拍变成冲程，能量决定快慢和大小——并与演出同步在 The Handy 上播放（暂停和继续会跟随，播放列表每首歌一个脚本）。选项：节奏（跟随歌曲、慢、正常、快）、冲程大小（跟随歌曲、小、中、大、全程）、冲程位置（低、中间、高）、风格（利落或平滑）、平静部分温和、每小节第一拍和高潮处加重音，以及最高速度（过快的冲程会变小）。演出结束后点“保存 funscript”即可下载脚本。连接密钥使用 Stash UI → 设置 → 互动里的那一个；适用于你自己的歌曲文件（不适用于 Plex 或实时应用）。"],
+    ],
+  },
+  {
     v: "3.73.0",
     date: "2026-10-06",
     items: [

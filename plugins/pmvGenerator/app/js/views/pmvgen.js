@@ -7,6 +7,8 @@ import { esc, icon, toast, errorToast, fmtDuration, fmtBytes, fmtNum, store, pro
 import * as rg from "../redgifs.js";
 import { gql, favoriteTagId, countItems, pluginConfig, setPluginConfig } from "../api.js";
 import { analyzeBars } from "../bars.js";
+import { buildFunscript, FS_DEFAULTS } from "../funscriptgen.js";
+import { attachHandy, getHandy } from "../interactive.js";
 import { analyzeFile, analyzeBuffer, sliceBuffer, songFromFrames, rescale, shift } from "../beats.js";
 import { extractAudio, parseTime, fmtTime } from "../audiox.js";
 import { scanPmv } from "../pmvscan.js";
@@ -26,6 +28,7 @@ const BACKEND = window.PMVGEN_PLUGIN || "pmvGenerator"; // plugin whose backend 
 const SCENE_LINK = window.PMVGEN_SCENE_LINK || ((id) => "/scenes/" + id);
 
 const DEFAULTS = {
+  ...FS_DEFAULTS, // the funscript for The Handy (fsOn, fsPace, fsSize, fsWhere, fsStyle, fsRests, fsAccent, fsSpeed)
   glass: true, // liquid glass look (own switch, independent of Stash UI's)
   mode: "song", // song = your own song(s), plex = music from Plex, tpl = use a PMV as template
   shuffle: false, // several songs: shuffled
@@ -156,6 +159,7 @@ const SECTIONS = [
   ["fx", "Effects", "What happens on cuts, beats and drops"],
   ["look", "Look & picture", "Colors, format and how clips fill the frame"],
   ["sound", "Sound", "Song and clip volume"],
+  ["fs", "Funscript", "A script for The Handy that follows the song"],
   ["out", "Output", "Intro, outro and recording"],
 ];
 const CHEVRON = `<svg class="kb-pmvg-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -487,6 +491,26 @@ export function render(main) {
           </div>
         </div>
 
+        <div class="kb-pmvg-sec" data-sec="fs">
+          ${secHead("fs")}
+          <div class="kb-pmvg-pane" id="pmvg-pane-fs" data-pane="fs">
+            <div class="kb-pmvg-opts">${sw("fsOn", "Play a funscript with the song", "Built from the song's beats and energy and played on The Handy together with the PMV (connection key: Stash UI → Settings → Interactive). Not with Plex or a live app – only with your own song files. After the show you can save it as a .funscript")}</div>
+            <div data-fsbox>
+              <span class="kb-lab-t">Pace <small>– strokes per beat</small></span>
+              <div class="kb-seg" data-seg="fsPace"><button type="button" data-v="auto" title="Calm parts slow, loud parts and drops fast">Follow the song</button><button type="button" data-v="slow" title="One stroke every 2 beats">Slow</button><button type="button" data-v="normal" title="One stroke per beat">Normal</button><button type="button" data-v="fast" title="Two strokes per beat">Fast</button></div>
+              <span class="kb-lab-t">Stroke size</span>
+              <div class="kb-seg" data-seg="fsSize"><button type="button" data-v="auto" title="Louder = bigger strokes">Follow the song</button><button type="button" data-v="small">Small</button><button type="button" data-v="medium">Medium</button><button type="button" data-v="large">Large</button><button type="button" data-v="full" title="The whole length, 0–100">Full</button></div>
+              <span class="kb-lab-t">Where on the stroke</span>
+              <div class="kb-seg" data-seg="fsWhere"><button type="button" data-v="low" title="Strokes in the lower part">Low</button><button type="button" data-v="mid">Middle</button><button type="button" data-v="high" title="Strokes in the upper part">High</button></div>
+              <span class="kb-lab-t">Style</span>
+              <div class="kb-seg" data-seg="fsStyle"><button type="button" data-v="sharp" title="Straight lines from beat to beat">Sharp</button><button type="button" data-v="smooth" title="Rounded, flowing strokes">Smooth</button></div>
+              <div class="kb-pmvg-opts">${sw("fsRests", "Gentle in calm parts", "Quiet passages get slow, small strokes")}${sw("fsAccent", "Accents", "A bigger stroke on the first beat of each bar and on drops")}</div>
+              <div class="kb-pmvg-sound"><label class="kb-pmvg-range"><span>${icon("sliders")}Top speed</span><input type="range" min="100" max="600" step="25" data-r="fsSpeed" aria-label="Top speed of the script"><output data-ro="fsSpeed"></output></label></div>
+              <p class="kb-hint">Top speed limits how fast the device is asked to move (units per second) – fast strokes get smaller instead. The script starts with the song; if it runs early or late, Stash UI's sync offset (Settings → Interactive) applies.</p>
+            </div>
+          </div>
+        </div>
+
         <div class="kb-pmvg-sec" data-sec="out">
           ${secHead("out")}
           <div class="kb-pmvg-pane" id="pmvg-pane-out" data-pane="out">
@@ -543,6 +567,7 @@ export function render(main) {
     $("[data-lookbox]").hidden = S.look === "none";
     $("[data-edgebox]").hidden = S.edge === "off";
     $("[data-pulsebox]").hidden = !S.fx.zoom;
+    $("[data-fsbox]").hidden = !S.fsOn;
     $("[data-seg=tagMode]").hidden = (S.stagesOn ? S.stages.length : S.tags.length) < 2;
     $("[data-markerwrap]").hidden = S.source !== "marker";
     $("[data-tags]").hidden = !!S.stagesOn;
@@ -592,6 +617,7 @@ export function render(main) {
       fx: `${fxOn} on`,
       look: `${look} · ${S.format === "window" ? "window shape" : S.format}`,
       sound: `Song ${S.songVol} · Clips ${S.fx.voice ? S.clipVol : "off"}`,
+      fs: S.fsOn ? `${S.fsPace === "auto" ? "follows the song" : S.fsPace} · ${S.fsSize === "auto" ? "auto size" : S.fsSize}` : "off",
       out: [S.intro && "Intro", S.outro && "Outro", S.record && "Recording"].filter(Boolean).join(" · ") || "live only",
     };
     main.querySelectorAll("[data-tabsum]").forEach((s) => (s.textContent = tabSum[s.dataset.tabsum]));
@@ -606,6 +632,7 @@ export function render(main) {
       `<li><b>Cutting</b>${esc(tabSum.cut)}</li>`,
       `<li><b>Effects</b>${fxOn} on${S.look !== "none" ? " · look " + esc(look) : ""}</li>`,
       `<li><b>Sound</b>Song ${S.songVol} % · clips ${S.fx.voice ? `${S.clipVol} %, ${S.voiceMode === "always" ? "always" : "only on drops"}` : "off"}</li>`,
+      S.fsOn ? `<li><b>Funscript</b>${esc(tabSum.fs)}</li>` : "",
       `<li><b>Output</b>${esc(S.format === "window" ? "window shape" : S.format)} · ${esc(tabSum.out)}${S.record ? " · " + S.quality + "p" : ""}</li>`,
     ].join("");
   }
@@ -2919,6 +2946,7 @@ class Generator {
     } else {
       this.playSource(0);
       this.rebase();
+      this.fsStart();
     }
     this.paintTrack();
     const first = this.tpl && this.tpl.events.find((ev) => ev.type === "layout");
@@ -2929,6 +2957,57 @@ class Generator {
     } else this.setLayout(this.layouts.includes("full") ? "full" : this.layouts[0], 0);
     this.loop = this.loop.bind(this);
     this.raf = requestAnimationFrame(this.loop);
+  }
+
+  // ---------- Funscript: built from the song, played on The Handy together with the show ----------
+
+  // A funscript for the current song (null when it can't be made); also kept for "Save funscript" at the end
+  fsBuild() {
+    this.fs = null;
+    if (!this.S.fsOn || !this.song || !this.song.beats || this.song.live) return null;
+    try {
+      this.fs = buildFunscript(this.song, this.bars, this.S);
+    } catch (e) {
+      console.warn("[PMV Generator] funscript", e);
+    }
+    return this.fs;
+  }
+  async fsStart() {
+    if (!this.S.fsOn || this.tpl || this.live || (this.music && this.music.type === "follow")) return;
+    const fs = this.fsBuild();
+    if (!fs) return;
+    this.fsClock = Object.assign(new EventTarget(), {
+      show: this,
+      get currentTime() {
+        return Math.max(0, this.show.pos());
+      },
+      get paused() {
+        return !!(this.show.paused || this.show.done);
+      },
+    });
+    let told = "";
+    this.fsHandy = attachHandy(this.fsClock, { paths: { funscript: "pmv" } }, {
+      getVariant: async () => this.fs,
+      onState: (h) => {
+        if (!h) return;
+        const st = h.state + (h.error || "");
+        if (st === told) return;
+        told = st;
+        if (h.state === "ready") toast("The Handy is ready – the funscript plays with the song", "ok");
+        else if (h.state === "error") toast("The Handy: " + h.error, "error");
+      },
+    });
+    getHandy().then((h) => h || toast("No Handy connection key – set it in Stash UI → Settings → Interactive", "error")).catch(() => {});
+  }
+  fsEvent(type) {
+    if (this.fsClock) this.fsClock.dispatchEvent(new Event(type));
+  }
+  saveFunscript() {
+    if (!this.fs) return;
+    const blob = new Blob([JSON.stringify(this.fs)], { type: "application/json" });
+    const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: `${fileName(this.song.name)}.funscript` });
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
   }
 
   startRecorder(gain) {
@@ -3027,6 +3106,7 @@ class Generator {
   setSong(song) {
     this.song = song;
     this.setBars();
+    if (this.fsHandy && this.fsBuild()) this.fsHandy.setVariant(this.fs); // playlist: the new song gets its own script
     this.lastDrop = -99;
     this.h("name").textContent = song.name;
     this.h("bpm").textContent = `${Math.round(song.bpm)} BPM`;
@@ -3513,12 +3593,14 @@ class Generator {
     b.innerHTML = icon(this.paused ? "play" : "pause");
     if (this.paused) {
       this.ac.suspend();
+      this.fsEvent("pause");
       if (this.mediaEl && this.song.media) this.mediaEl.pause();
       this.videos().forEach((m) => m.el.pause());
       if (this.rec && this.rec.state === "recording") this.rec.pause();
       this.say("Paused – Space continues");
     } else {
       this.ac.resume();
+      this.fsEvent("playing");
       if (this.mediaEl && this.song.media) this.mediaEl.play().catch(() => {});
       this.videos().forEach((m) => m.el.play().catch(() => {}));
       if (this.rec && this.rec.state === "paused") this.rec.resume();
@@ -3528,6 +3610,10 @@ class Generator {
 
   stopEverything() {
     this.done = true;
+    if (this.fsHandy) {
+      this.fsHandy.stop();
+      this.fsHandy = null;
+    }
     if (this.music && this.music.follow) this.music.follow.detach();
     cancelAnimationFrame(this.raf);
     try {
@@ -3587,6 +3673,7 @@ class Generator {
           <div class="kb-card-acts">
             ${blob ? `<button class="kb-btn is-primary" data-end="stash">${icon("download")}Save to Stash</button><a class="kb-btn" data-end="file" href="${url}" download="${esc(fileName(this.song.name))}.webm">Download</a>` : ""}
             ${this.rgUsed.size ? `<button class="kb-btn" data-end="rgall" title="Download them into your library, scanned and tagged “RedGifs”">${icon("download")}Save the ${this.rgUsed.size} RedGifs ${this.rgUsed.size === 1 ? "clip" : "clips"}</button>` : ""}
+            ${this.fs ? `<button class="kb-btn" data-end="fs" title="The funscript that played with this song">${icon("download")}Save funscript</button>` : ""}
             <button class="kb-btn" data-end="again">${icon("shuffle")}Again, reshuffled</button>
             <button class="kb-btn is-ghost" data-end="close">Close</button>
           </div>
@@ -3602,6 +3689,7 @@ class Generator {
         this.close();
         onClose(new Generator(song, S, onClose, tpl, music));
       }
+      if (a === "fs") this.saveFunscript();
       if (a === "stash") this.saveToStash(b);
       if (a === "rgall") this.saveAllUsed(b);
     };
