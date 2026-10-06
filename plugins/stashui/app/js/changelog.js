@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.72.3",
+    date: "2026-10-06",
+    items: [
+      ["pmv", "PMV Generator 2.23.3: “Clip shape per layout” is now strict. A layout with a rule (e.g. 3-way = landscape only) only opens once enough clips of that shape are ready – until then the show stays in the current layout – so no wrong-shaped clip slips in when the layout changes.", "PMV 生成器 2.23.3：“每种布局的片段形状”现在是严格的。带规则的布局（例如三分屏仅横屏）只有在有足够该形状的片段就绪后才会打开，在此之前保持当前布局，因此切换布局时不会再混入形状不对的片段。"],
+    ],
+  },
+  {
     v: "3.72.2",
     date: "2026-10-06",
     items: [

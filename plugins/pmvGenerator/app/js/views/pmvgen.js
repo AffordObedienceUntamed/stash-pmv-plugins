@@ -2528,7 +2528,7 @@ class Generator {
     if (!need.length) return null;
     const have = (sh) => this.ready.filter((m) => (sh === "portrait" ? m.h > m.w : m.w >= m.h)).length + this.prepShape[sh];
     need.sort((a, b) => have(a) - have(b));
-    return have(need[0]) < 3 ? need[0] : null;
+    return have(need[0]) < 5 ? need[0] : null;
   }
 
   // Which stage needs clips next: the current one first, then a reserve for drops (the last) and the one coming up
@@ -2818,7 +2818,7 @@ class Generator {
     for (let gi = 0; gi < n; gi++) {
       // New clips for all fields; if some are missing, old ones keep running
       const prev = old[gi % Math.max(1, old.length)] || null;
-      this.groups[gi] = this.takeMedia(aspectOfGroup(this.slots, gi), prev) || prev;
+      this.groups[gi] = this.takeMedia(aspectOfGroup(this.slots, gi), prev, !!prev) || prev;
       this.cutT[gi] = t;
     }
     this.cutT.length = n;
@@ -2837,12 +2837,21 @@ class Generator {
     return e > 0.6 ? 3 : e > 0.35 ? 2 : 1;
   }
 
+  layoutReady(id) {
+    const rule = (this.S.layoutShape || {})[id];
+    if (rule !== "landscape" && rule !== "portrait") return true;
+    const fit = this.ready.filter((m) => (rule === "portrait" ? m.h > m.w : m.w >= m.h)).length;
+    return fit >= LAYOUTS[id].groups;
+  }
+
   pickLayout(e, drop) {
     let want = this.levelFor(e, drop);
     if (want === 3 && e > 0.8 && Math.random() < 0.2) want = 4; // a 4-way now and then
     const dist = (k) => Math.abs(LAYOUTS[k].level - want);
     // Never the same layout again – otherwise the next best match (e.g. 4-way ↔ mirrored 3-way)
-    const cands = this.layouts.filter((k) => k !== this.layout || this.layouts.length === 1);
+    // (a layout with a clip-shape rule only opens when enough clips of that shape are ready)
+    const cands = this.layouts.filter((k) => (k !== this.layout || this.layouts.length === 1) && this.layoutReady(k));
+    if (!cands.length) return null;
     const min = Math.min(...cands.map(dist));
     const pool = cands.filter((k) => dist(k) === min);
     return pool[Math.floor(Math.random() * pool.length)];
@@ -3297,10 +3306,11 @@ class Generator {
     const due = B
       ? ((B.phrase[k] && k - this.layoutBeat >= this.layoutHold && (moodChanged || (want >= 3 && Math.random() < 0.6))) || (bar && moodChanged && k - this.layoutBeat >= 24))
       : bar && k - this.layoutBeat >= this.layoutHold && (moodChanged || (want >= 3 && Math.random() < 0.6));
+    let nextLayout = null;
     if (this.tpl) {
       // Cuts and layouts come from the template (applyEvent)
-    } else if (this.layouts.length > 1 && (drop || due) && !this.revealing) {
-      this.setLayout(this.pickLayout(e, drop), t);
+    } else if (this.layouts.length > 1 && (drop || due) && !this.revealing && (nextLayout = this.pickLayout(e, drop))) {
+      this.setLayout(nextLayout, t);
       this.layoutBeat = k;
       this.centerK = k;
       // Scrolling sides: in a 3-way layout (not on a drop, not in the loudest parts) the middle clip stays and the sides scroll
