@@ -114,7 +114,7 @@ async function topTagsOfWeek() {
   const d = await gql(`query($f: FindFilterType, $s: SceneFilterType) { findScenes(filter: $f, scene_filter: $s) { scenes { play_history tags { id name } } } }`, {
     f: { per_page: -1 },
     s: { last_played_at: { value: new Date(since).toISOString(), modifier: "GREATER_THAN" } },
-  });
+  }, { heavy: true });
   const m = new Map();
   for (const sc of d.findScenes.scenes) {
     const n = (sc.play_history || []).filter((x) => Date.parse(x) >= since).length || 1;

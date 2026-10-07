@@ -142,7 +142,7 @@ export async function render(main, params, query) {
     try {
       let total = 0;
       for (const [, find, arg, list, bulk, type] of KINDS) {
-        const r = await gql(`query PerfTagIds { ${find}(${arg}: ${src.filter}, filter: { per_page: -1 }) { ${list} { id } } }`);
+        const r = await gql(`query PerfTagIds { ${find}(${arg}: ${src.filter}, filter: { per_page: -1 }) { ${list} { id } } }`, undefined, { heavy: true });
         const ids = r[find][list].map((x) => x.id);
         if (!ids.length) continue;
         await gql(`mutation($i: ${type}!) { ${bulk}(input: $i) { id } }`, { i: { ids, performer_ids: { ids: [p.id], mode: "ADD" } } });

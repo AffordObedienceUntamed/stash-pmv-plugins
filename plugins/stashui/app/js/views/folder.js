@@ -104,8 +104,8 @@ export async function render(main, params, query) {
   for (let n = node; n; n = n.parent && tree.nodes.get(n.parent)) chain.unshift(n);
   const deep = query.deep === "1";
   const kinds = [];
-  if (node.tvid) kinds.push("scene");
-  if (node.timg) kinds.push("image");
+  if (node.tvid || tree.unc) kinds.push("scene"); // (a big library isn't counted: both kinds are offered)
+  if (node.timg || tree.unc) kinds.push("image");
   kinds.push("gallery");
   const initial = (deep ? node.tvid >= node.timg : node.vid >= node.img) && node.tvid ? "scene" : node.timg ? "image" : "scene";
 

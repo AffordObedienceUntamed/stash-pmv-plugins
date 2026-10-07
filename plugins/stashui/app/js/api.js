@@ -1,7 +1,7 @@
 // Stash GraphQL – all queries and mutations in one place.
 
 import { t, locale } from "./i18n.js";
-import { LARGE_SCENES, LARGE_IMAGES } from "./scale.js";
+import { LARGE_SCENES, LARGE_IMAGES, largeNow } from "./scale.js";
 
 // Requests of the page you're on stop when you leave it (a long query for a page nobody looks at any more
 // only keeps Stash busy): routeSignal() is the signal of the current page, abortRoute() ends it (main.js, on navigating).
@@ -226,6 +226,9 @@ let folderCache = null;
 // Scenes and images are counted, not files: Stash keeps folder and file entries even after
 // deleting (without "delete file" the file stays, with it the folder stays) – such folders should disappear.
 //
+// On a big library (large library mode) nothing is counted at all: counting means reading every scene and image,
+// which ran for minutes there. The tree then shows all folders without numbers (data.unc).
+//
 // Counting needs every scene and image once – heavy on big libraries. So the counted result is kept in
 // the browser and reused as long as the number of scenes and images hasn't changed; scans, cleans and
 // deletions (libraryChanged) throw it away.
@@ -234,10 +237,20 @@ async function folderData(opts) {
   let key = null;
   try {
     const s = await stats();
-    key = s.scene_count + "/" + s.image_count;
+    key = s.scene_count + "/" + s.image_count + (largeNow() ? "u" : "");
     const cached = JSON.parse(localStorage.getItem(TREE_KEY) || "null");
     if (cached && cached.v === 1 && cached.key === key) return cached;
   } catch (e) { /* no stats or no stored tree – count below */ }
+  if (largeNow()) {
+    const f = await gql(`query { findFolders(filter: { per_page: -1 }) { folders { id path basename parent_folder { id } } } }`, undefined, { signal: opts && opts.signal, heavy: true });
+    const data = { v: 1, unc: true, key, folders: f.findFolders.folders.map((x) => [x.id, x.path, x.basename || x.path, x.parent_folder ? x.parent_folder.id : null]), counts: {} };
+    if (key) {
+      try {
+        localStorage.setItem(TREE_KEY, JSON.stringify(data));
+      } catch (e) { /* too big or blocked */ }
+    }
+    return data;
+  }
   const d = await gql(`query {
     findFolders(filter: { per_page: -1 }) { folders { id path basename parent_folder { id } } }
     findScenes(filter: { per_page: -1 }) { scenes { files { parent_folder { id } } } }
@@ -290,7 +303,7 @@ export function loadFolders(force, opts = {}) {
     };
     let roots = [...nodes.values()].filter((n) => !n.parent || !nodes.has(n.parent));
     roots.forEach(total);
-    const keep = (list) => list.filter((n) => n.timg + n.tvid > 0);
+    const keep = (list) => (data.unc ? list : list.filter((n) => n.timg + n.tvid > 0)); // (uncounted: every folder stays)
     roots = keep(roots);
     // Skip empty intermediate levels like a bare drive root
     while (roots.length === 1 && !roots[0].img && !roots[0].vid && keep(roots[0].kids).length === 1) roots = keep(roots[0].kids);
@@ -301,7 +314,7 @@ export function loadFolders(force, opts = {}) {
     roots.forEach(sortRec);
     roots.sort((a, b) => a.name.localeCompare(b.name, locale(), { numeric: true }));
     sessionStorage.removeItem(FAIL_KEY);
-    return { nodes, roots };
+    return { nodes, roots, unc: !!data.unc };
   })().catch((e) => {
     folderCache = null;
     sessionStorage.setItem(FAIL_KEY, String(Date.now()));

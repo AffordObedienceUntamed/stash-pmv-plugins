@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.74.1",
+    date: "2026-10-07",
+    items: [
+      ["ui", "Big libraries: the folder tree is no longer counted (that read every scene and image and ran for minutes) – folders show without numbers and both Scenes and Images tabs are offered; the other queries that read everything (detailed ratings, tags of the week, performer tags, recalculating ratings) join the queue of at most two heavy queries.", "大型媒体库：文件夹树不再统计数量（那会读取每个场景和图片，要运行数分钟）——文件夹不显示数字，并同时提供“场景”和“图片”标签页；其他会读取全部内容的查询（详细评分、本周标签、演员标签、重新计算评分）也加入了最多同时两个的繁重查询队列。"],
+    ],
+  },
+  {
     v: "3.74.0",
     date: "2026-10-07",
     items: [
