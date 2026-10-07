@@ -89,6 +89,24 @@ Other people's plugins show up in the menu under **Extensions**, each pointing t
 
 Stash UI works on its own. If you also install **Media Storm** or the **PMV Generator** (same plugin source), they show up in the menu under **Watch** – entries of plugins that aren't installed or are turned off are hidden. The PMV Generator opens as its own page; its back link and saved scenes lead back into Stash UI.
 
+## For plugin authors: extension modules
+
+A plugin can add cards to Stash UI's lists (for example scenes from an external source that are not in the library yet). Nothing changes for people without such a plugin. Put `assets/stashui.js` into the plugin; Stash UI imports it once per plugin version and calls its default export:
+
+```js
+export default function setup(stashui) {
+  stashui.addListSource({
+    id: "myPlugin",
+    match: ({ page, kind }) => kind === "scene" && ["performer", "studio"].includes(page), // omitted = every list
+    async extend(ctx) {
+      return [{ before: ctx.items[0]?.id ?? null, piece: { key: "x1", title: "…", thumb: "…", w: 16, h: 9, href: "https://…" } }];
+    },
+  });
+}
+```
+
+`ctx` = `page` (`scenes`, `images`, `galleries`, `performer`, `studio`, `tag`, `folder`, `gallery`, `group`, `history`, `funscripts`, `search`), `params` (e.g. `{ id }`), `kind`, `sort`, `dir`, `q`, `filter` (the Stash filter incl. the page's own), `pageNumber`, `perPage`, `count` (library items), `items` (this page's raw items), `prev` (last raw item of the previous page or `null`). Each entry is `{ before, piece }`: `before` = id of an item of this page to insert in front of (`null` = after the page); `piece` = `key` (unique), `title`, `thumb`, `w`/`h`, optional `meta`, `stamp`, `href` (opens in a new tab), `className` (e.g. `is-dim`), `badges: [{ text, title }]`, `mount(cardEl)` (may return a cleanup function, called when the list is left). These cards are not selectable, have no favourites, tiers, previews or bulk actions and are not counted. Each `extend` has 3 seconds; errors and timeouts are ignored for that page.
+
 ## Player
 
 - Custom controls, timeline with thumbnails on hover, speed, volume, fullscreen.

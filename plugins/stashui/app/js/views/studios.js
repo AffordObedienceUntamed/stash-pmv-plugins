@@ -152,6 +152,8 @@ async function renderOne(main, id, query) {
   const b = mediaBrowser(main.querySelector("[data-browser]"), {
     kinds: kinds.length ? kinds : ["scene"],
     query,
+    page: "studio",
+    params: { id },
     // the studio and all studios below it
     base: () => ({ filter: { studios: { value: [id], modifier: "INCLUDES", depth: -1 } } }),
     playlist: false,

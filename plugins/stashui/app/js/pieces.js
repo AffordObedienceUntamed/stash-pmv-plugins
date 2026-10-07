@@ -73,7 +73,22 @@ function studioBadge(p) {
   return `<span class="kb-studio${logo ? "" : " is-name"}" title="${esc(p.studio.name)}">${logo ? `<img alt="${esc(p.studio.name)}" loading="lazy" src="${esc(p.studio.image_path)}">` : esc(p.studio.name)}</span>`;
 }
 
+// A card from an extension (see ext.js): own link in a new tab, no selection, favourites, tiers or previews
+function foreignHtml(p) {
+  const badges = (p.badges || []).map((b) => `<span class="kb-xbadge"${b.title ? ` title="${esc(b.title)}"` : ""}>${esc(b.text)}</span>`).join("");
+  const tag = p.href ? "a" : "div";
+  return (
+    `<${tag} class="kb-piece kb-xpiece${p.className ? " " + esc(p.className) : ""}" data-key="${esc(p.kind + ":" + p.id)}"${p.href ? ` href="${esc(p.href)}" target="_blank" rel="noopener"` : ""} aria-label="${esc(p.title || "")}">` +
+    (p.thumb ? `<img alt="" loading="lazy" decoding="async" src="${esc(p.thumb)}">` : "") +
+    (p.stamp ? `<span class="kb-stamp">${esc(p.stamp)}</span>` : "") +
+    (badges ? `<span class="kb-xbadges">${badges}</span>` : "") +
+    `<span class="kb-placard"><b>${esc(p.title || "")}</b><small>${esc(p.meta || "")}</small></span>` +
+    `</${tag}>`
+  );
+}
+
 function pieceHtml(p) {
+  if (p.foreign) return foreignHtml(p);
   const tag = p.kind === "image" ? "button" : "a";
   const href = p.kind === "scene" ? `#/scene/${p.id}` : p.kind === "gallery" ? `#/gallery/${p.id}` : "";
   return (
@@ -99,6 +114,8 @@ export class Hang {
     this.el = el;
     this.opts = opts; // { fetchPage(page) → {count, pieces}, onOpen(piece, index, list), onSelect(set), rowHeight }
     this.pieces = [];
+    this.extras = []; // cards of extensions: { before: key | null, last: key of the page's last item, piece } - not part of this.pieces
+    this.cleanups = [];
     this.nodes = new Map();
     this.page = 0;
     this.count = null;
@@ -131,6 +148,11 @@ export class Hang {
     this.io.disconnect();
     this.ro.disconnect();
     this.stopPreview();
+    this.cleanups.splice(0).forEach((f) => {
+      try {
+        f();
+      } catch (e) { /* the extension's own cleanup */ }
+    });
   }
 
   setRowHeight(h) {
@@ -143,8 +165,10 @@ export class Hang {
     this.busy = true;
     this.loadingEl.hidden = false;
     try {
-      const { count, pieces } = await this.opts.fetchPage(++this.page);
+      const { count, pieces, extras } = await this.opts.fetchPage(++this.page);
       this.count = count;
+      const last = pieces.length ? pieces[pieces.length - 1].kind + ":" + pieces[pieces.length - 1].id : null;
+      (extras || []).forEach((x) => this.extras.push({ before: x.before == null ? null : x.before, last, piece: x.piece }));
       this.pieces.push(...pieces);
       if (!pieces.length || this.pieces.length >= count) this.done = true;
       this.layout();
@@ -175,6 +199,14 @@ export class Hang {
       }
       n._piece = p;
       this.nodes.set(key, n);
+      if (p.foreign && typeof p.mount === "function") {
+        try {
+          const done = p.mount(n);
+          if (typeof done === "function") this.cleanups.push(done);
+        } catch (e) {
+          console.warn("[Stash UI] extension card", e);
+        }
+      }
     }
     n.classList.toggle("is-picked", this.selected.has(key));
     return n;
@@ -188,7 +220,28 @@ export class Hang {
     const rows = [];
     let row = [];
     let sum = 0;
+    // library items, with the extensions' cards in front of the item they asked for (or after the page's last item)
+    const keyOf = (p) => p.kind + ":" + p.id;
+    const placed = new Set();
+    const ahead = new Map();
+    const after = new Map();
+    const have = new Set(this.pieces.map(keyOf));
+    for (const x of this.extras) {
+      const dest = x.before != null && have.has(x.before) ? ahead : x.before == null && x.last && have.has(x.last) ? after : null;
+      if (!dest) continue;
+      const k = dest === ahead ? x.before : x.last;
+      (dest.get(k) || dest.set(k, []).get(k)).push(x.piece);
+      placed.add(x);
+    }
+    const seq = [];
     for (const p of this.pieces) {
+      (ahead.get(keyOf(p)) || []).forEach((f) => seq.push(f));
+      seq.push(p);
+      (after.get(keyOf(p)) || []).forEach((f) => seq.push(f));
+    }
+    // (an anchor that is gone, or a page without items: at the end)
+    this.extras.forEach((x) => placed.has(x) || seq.push(x.piece));
+    for (const p of seq) {
       const ar = cardAspect() || Math.min(3, Math.max(0.42, p.w / p.h || 1)); // (posters / scenes: every thumbnail the same shape)
       row.push([p, ar]);
       sum += ar;
@@ -294,6 +347,7 @@ export class Hang {
     this.el.addEventListener("click", (e) => {
       const n = e.target.closest(".kb-piece");
       if (!n || !this.el.contains(n)) return;
+      if (n._piece && n._piece.foreign) return; // an extension's card: its link opens in a new tab
       const key = n.dataset.key;
       if (e.target.closest(".kb-pick") || this.selected.size || e.shiftKey || e.ctrlKey || e.metaKey) {
         e.preventDefault();

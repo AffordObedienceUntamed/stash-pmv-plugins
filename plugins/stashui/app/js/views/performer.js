@@ -73,7 +73,7 @@ export async function render(main, params, query) {
     </header>
     <div data-taglink></div>
     <section data-browser></section>`;
-  const b = mediaBrowser(main.querySelector("[data-browser]"), { kinds, initialKind, query, base: () => ({ filter: { performers: { value: [p.id], modifier: "INCLUDES" } } }) });
+  const b = mediaBrowser(main.querySelector("[data-browser]"), { kinds, initialKind, query, page: "performer", params: { id: p.id }, base: () => ({ filter: { performers: { value: [p.id], modifier: "INCLUDES" } } }) });
 
   // A tag on a performer only describes them – it doesn't link anything. Items that carry one of the
   // performer's tags (e.g. a creator tag from a downloader), or lie in a folder named like the

@@ -12,8 +12,47 @@ export function abortRoute() {
   routeCtl = new AbortController();
 }
 
-// opts.signal: an AbortSignal that cancels the request
+// Heavy queries (everything with per_page: -1, the folder counting) run at most two at a time: on a big library
+// Stash answers them slowly, and a pile of them at once keeps its disks busy for minutes. A cancelled one leaves the queue.
+const HEAVY_MAX = 2;
+let heavyRun = 0;
+const heavyWait = [];
+function heavySlot(signal) {
+  if (heavyRun < HEAVY_MAX) {
+    heavyRun++;
+    return Promise.resolve();
+  }
+  return new Promise((resolve, reject) => {
+    const w = { resolve };
+    const gone = () => {
+      const i = heavyWait.indexOf(w);
+      if (i >= 0) heavyWait.splice(i, 1);
+      reject(new DOMException("Aborted", "AbortError"));
+    };
+    if (signal) signal.addEventListener("abort", gone, { once: true });
+    w.resolve = () => {
+      if (signal) signal.removeEventListener("abort", gone);
+      resolve();
+    };
+    heavyWait.push(w);
+  });
+}
+function heavyDone() {
+  const next = heavyWait.shift();
+  if (next) next.resolve();
+  else heavyRun--;
+}
+
+// opts.signal: an AbortSignal that cancels the request; opts.heavy: goes through the queue above
 export async function gql(query, variables, opts) {
+  if (opts && opts.heavy) {
+    await heavySlot(opts.signal);
+    try {
+      return await gql(query, variables, { signal: opts.signal });
+    } finally {
+      heavyDone();
+    }
+  }
   const res = await fetch("/graphql", {
     method: "POST",
     credentials: "same-origin",
@@ -80,7 +119,7 @@ export async function findItems(kind, find, filter, ids, opts) {
 const IDKIND = { scene: ["findScenes", "scene_filter", "SceneFilterType", "scenes"], image: ["findImages", "image_filter", "ImageFilterType", "images"], performer: ["findPerformers", "performer_filter", "PerformerFilterType", "performers"] };
 export async function findIds(kind, find, filter, ids) {
   const [fn, arg, type, list] = IDKIND[kind];
-  const d = await gql(`query($f: FindFilterType, $x: ${type}, $ids: [ID!]) { r: ${fn}(filter: $f, ${arg}: $x, ids: $ids) { count ${list} { id rating100 } } }`, { f: find, x: filter || {}, ids: ids || null }, { signal: routeSignal() });
+  const d = await gql(`query($f: FindFilterType, $x: ${type}, $ids: [ID!]) { r: ${fn}(filter: $f, ${arg}: $x, ids: $ids) { count ${list} { id rating100 } } }`, { f: find, x: filter || {}, ids: ids || null }, { signal: routeSignal(), heavy: find && find.per_page === -1 });
   return { count: d.r.count, items: d.r[list] };
 }
 
@@ -203,7 +242,7 @@ async function folderData(opts) {
     findFolders(filter: { per_page: -1 }) { folders { id path basename parent_folder { id } } }
     findScenes(filter: { per_page: -1 }) { scenes { files { parent_folder { id } } } }
     findImages(filter: { per_page: -1 }) { images { visual_files { ... on ImageFile { parent_folder { id } } ... on VideoFile { parent_folder { id } } } } }
-  }`, undefined, { signal: opts && opts.signal });
+  }`, undefined, { signal: opts && opts.signal, heavy: true });
   const counts = {}; // folder id → [videos, images]
   const add = (file, i) => {
     const id = file && file.parent_folder && file.parent_folder.id;

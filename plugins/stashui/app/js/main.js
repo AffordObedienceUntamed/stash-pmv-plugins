@@ -2,6 +2,7 @@
 
 import { esc, icon, store, errorToast, fmtNum, $, folderMode, setRatingSystem } from "./ui.js";
 import { t, initLang } from "./i18n.js";
+import { loadExtensions } from "./ext.js";
 import { gql, loadFolders, favoriteTagId, stats, abortRoute } from "./api.js";
 import { isLarge } from "./scale.js";
 import { applyTheme, initAmbient } from "./theme.js";
@@ -346,6 +347,7 @@ async function refreshPluginLinks() {
   pluginsOn = on;
   applyPluginLinks();
   paintExtensions(plugins.filter((p) => p.enabled && !OWN.has(norm(p.id))));
+  loadExtensions(plugins.filter((p) => p.enabled && !OWN.has(norm(p.id)))).catch(() => {});
 }
 
 // ---------- Other people's plugins ----------

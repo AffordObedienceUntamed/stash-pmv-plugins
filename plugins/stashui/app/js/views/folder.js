@@ -132,6 +132,8 @@ export async function render(main, params, query) {
     kinds,
     initialKind: initial,
     query,
+    page: "folder",
+    params: { id: node.id },
     defaults: { scene: { sort: "path", dir: "ASC" }, image: { sort: "path", dir: "ASC" }, gallery: { sort: "path", dir: "ASC" } },
     base: (k) => ({
       filter:

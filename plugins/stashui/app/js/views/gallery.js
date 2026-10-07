@@ -35,6 +35,8 @@ export async function render(main, params, query) {
   const b = mediaBrowser(main.querySelector("[data-browser]"), {
     kinds: ["image"],
     query,
+    page: "gallery",
+    params: { id: g.id },
     search: false,
     defaults: { image: { sort: "path", dir: "ASC" } },
     base: () => ({ filter: { galleries: { value: [g.id], modifier: "INCLUDES" } } }),

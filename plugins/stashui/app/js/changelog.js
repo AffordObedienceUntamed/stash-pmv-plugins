@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.74.0",
+    date: "2026-10-07",
+    items: [
+      ["ui", "Extension hook for plugin authors: a plugin with assets/stashui.js can add its own cards to the lists (scenes, performer, studio, tag, folder pages …) – shown with their own link, badges and controls, not selectable and not counted (see the README). Also: big libraries – heavy queries (everything with “all items”, the folder counting) now run at most two at a time and drop out when you leave the page.", "为插件作者提供的扩展接口：带有 assets/stashui.js 的插件可以向列表（场景、演员、工作室、标签、文件夹页面等）添加自己的卡片——带有自己的链接、角标和控件，不可选中，也不计入数量（见 README）。另外：大型媒体库——繁重的查询（所有“全部项目”的查询、文件夹统计）现在最多同时运行两个，离开页面时会自动退出队列。"],
+    ],
+  },
+  {
     v: "3.73.2",
     date: "2026-10-06",
     items: [

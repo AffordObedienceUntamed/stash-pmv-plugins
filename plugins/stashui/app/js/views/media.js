@@ -15,6 +15,7 @@ import { perfPicker, hasPerformers } from "./perfpicker.js";
 import { studioPicker, studiosCache } from "./studiopicker.js";
 import { openEditor } from "./edit.js";
 import { loadStashFilters, stashFilter } from "../stashfilters.js";
+import { hasSources, extendPage } from "../ext.js";
 import { openAdvFilter, parseAdv, advStr, advCount, andInto } from "../advfilter.js";
 
 export const KIND_NAME = { scene: ["Scene", "Scenes"], image: ["Image", "Images"], gallery: ["Gallery", "Galleries"] };
@@ -320,6 +321,15 @@ export function mediaBrowser(host, opts) {
     $("[data-result]").textContent = "";
     const box = $("[data-hang]");
     let critAll = null;
+    let prevRaw = null; // the last raw item of the previous page (for extensions)
+    // Cards of extension plugins for this page (ext.js) – none when no plugin has registered a source
+    const extras = async (page, count, items) => {
+      const prev = prevRaw;
+      prevRaw = items.length ? items[items.length - 1] : prev;
+      if (!hasSources()) return undefined;
+      const list = await extendPage({ page: opts.page || "", params: opts.params || {}, kind, sort, dir: st.dir, q: st.q, filter, pageNumber: page, perPage: 60, count, items, prev });
+      return list.map((x) => ({ before: x.before == null ? null : kind + ":" + x.before, piece: x.piece })); // (the card list keys items as kind:id)
+    };
     hang = new Hang(box, {
       rowHeight: rowH(),
       fetchPage: async (page) => {
@@ -333,10 +343,11 @@ export function mediaBrowser(host, opts) {
           const pageIds = order.slice((page - 1) * 60, page * 60);
           const got = pageIds.length ? await findItems(kind, { per_page: pageIds.length }, {}, pageIds) : { items: [] };
           const byId = new Map(got.items.map((x) => [x.id, x]));
-          return { count: order.length, pieces: pageIds.map((id) => byId.get(id)).filter(Boolean).map((x) => toPiece(kind, x, app.favId)) };
+          const raws = pageIds.map((id) => byId.get(id)).filter(Boolean);
+          return { count: order.length, pieces: raws.map((x) => toPiece(kind, x, app.favId)), extras: await extras(page, order.length, raws) };
         }
         const r = await findItems(kind, { q: st.q || undefined, page, per_page: 60, sort, direction: st.dir }, filter, ids);
-        return { count: r.count, pieces: r.items.map((x) => toPiece(kind, x, app.favId)) };
+        return { count: r.count, pieces: r.items.map((x) => toPiece(kind, x, app.favId)), extras: await extras(page, r.count, r.items) };
       },
       onLoaded: (h) => {
         $("[data-result]").textContent = h.count ? plural(h.count, KIND_UNIT[kind][0], KIND_UNIT[kind][1]) : "";

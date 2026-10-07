@@ -177,6 +177,8 @@ async function drawOne(main, id, query, redraw) {
   const b = mediaBrowser(main.querySelector("[data-browser]"), {
     kinds: ["scene"],
     query,
+    page: "group",
+    params: { id },
     base: () => ({ filter: { groups: { value: [id], modifier: "INCLUDES" } } }),
     defaults: { scene: { sort: "group_scene_number", dir: "ASC" } },
     extraSorts: { scene: [["group_scene_number", "Order in the group"]] },

@@ -74,7 +74,7 @@ export async function render(main, params, query) {
     <section class="kb-tagperfs" data-tperfs hidden></section>
     <section data-browser></section>`;
   tagPerformers(main.querySelector("[data-tperfs]"), tag);
-  const b = mediaBrowser(main.querySelector("[data-browser]"), { kinds, initialKind, query, base: () => ({ tagId: tag.id }) });
+  const b = mediaBrowser(main.querySelector("[data-browser]"), { kinds, initialKind, query, page: "tag", params: { id: tag.id }, base: () => ({ tagId: tag.id }) });
 
   main.querySelector("[data-edit]").onclick = () => {
     const d = openDrawer({

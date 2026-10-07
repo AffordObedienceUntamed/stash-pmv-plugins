@@ -1514,6 +1514,14 @@ html.kb-glass .kb-log-list li:hover, html.kb-glass .kb-log-btn:hover, html.kb-gl
 .kb-tierchips button[data-tier].is-on { color: var(--ink); background: var(--tc); }
 html.kb-glass .kb-tierpos .kb-tier { backdrop-filter: blur(6px); }
 
+/* Cards from extension plugins (ext.js): not part of the library - no selection, hearts or previews */
+.kb-xpiece { cursor: pointer; }
+.kb-xpiece.is-dim { opacity: .55; }
+.kb-xbadges { position: absolute; left: 8px; top: 8px; z-index: 2; display: flex; flex-wrap: wrap; gap: 4px; max-width: calc(100% - 70px); pointer-events: auto; }
+.kb-xbadge { padding: 2px 7px; border-radius: 3px; color: var(--paper); font: 600 11px/1.4 var(--f-label); background: color-mix(in srgb, var(--base) 82%, transparent); box-shadow: 0 2px 8px rgba(0, 0, 0, .35); }
+html.kb-glass .kb-xbadge { backdrop-filter: blur(6px); background: color-mix(in srgb, var(--base) 55%, transparent); border: 1px solid rgba(255, 255, 255, .16); }
+html.kb-glass .kb-xpiece { border: 1px solid rgba(255, 255, 255, .12); }
+
 /* Detailed rating in lists: bars on cards, chips in the panel, the filter */
 .kb-critbars { position: absolute; left: 8px; bottom: 44px; z-index: 2; display: flex; flex-direction: column; gap: 3px; width: 52px; opacity: 0; transition: opacity .18s; pointer-events: none; }
 .kb-piece:hover .kb-critbars { opacity: 1; }
