@@ -4,6 +4,16 @@
 
 export const CHANGES = [
   {
+    v: "3.75.0",
+    date: "2026-10-08",
+    items: [
+      ["ui", "Parts of a scene with their own tags: in the player's marker list, “Add a part …” (or the edit button of a marker) opens an editor with a name, a start and an end (“Here” takes the spot you are watching), a main tag and more tags. The list shows the range and the tags of every part, and the part is a normal Stash scene marker (with end time and tags), so it also shows in Markers and in classic Stash.", "场景中带有自己标签的片段：在播放器的标记列表里点“添加片段 …”（或标记的编辑按钮），打开编辑器，可设置名称、开始和结束（“此处”取你正在观看的位置）、主标签和更多标签。列表会显示每个片段的时间范围和标签；片段本身就是普通的 Stash 场景标记（带结束时间和标签），所以也会出现在“标记”页和经典 Stash 中。"],
+      ["ui", "Big libraries: the folder numbers come back, counted per level – only the folders on screen are counted (two cheap count queries each, including their subfolders), so the Folders page, a folder page and the Start page show videos and images again without reading the whole library.", "大型媒体库：文件夹数量回来了，按层级统计——只统计屏幕上显示的文件夹（每个文件夹两个很轻的计数查询，包含其子文件夹），因此“文件夹”页、文件夹页面和起始页重新显示视频和图片数量，而无需读取整个媒体库。"],
+      ["pmv", "PMV Generator 2.26.0: two settings. Cutting → Timing → “Cut ahead of the beat” (0–80 ms, off by default): the picture changes a little before the beat (2 frames are about 33 ms) so it is already there when the beat hits – the zoom pulse still sits on the beat. Picture & frame → Seams and edges → “Divider width” (1–8 px at 1280 wide, 2 px as before; scales with the picture).", "PMV 生成器 2.26.0：两项新设置。剪辑 → 节奏 →“在节拍之前切换”（0–80 毫秒，默认关闭）：画面比节拍稍早一点切换（2 帧约 33 毫秒），节拍到来时画面已经就位——缩放脉冲仍然落在节拍上。画面与边框 → 接缝与边缘 →“分隔线宽度”（1280 宽时 1–8 像素，默认 2 像素与之前相同；随画面缩放）。"],
+      ["ui", "The new texts of the last releases (Cut clips, Funscript section, clip shape per layout, the regrouped PMV settings, parts of a scene) are now also in Japanese, Vietnamese, French, Spanish and Polish (and German where it was missing).", "最近几个版本的新文字（切割片段、Funscript 部分、按布局设置片段形状、重新分组的 PMV 设置、场景片段）现在也有日语、越南语、法语、西班牙语和波兰语版本（德语缺失的部分也已补齐）。"],
+    ],
+  },
+  {
     v: "3.74.1",
     date: "2026-10-07",
     items: [

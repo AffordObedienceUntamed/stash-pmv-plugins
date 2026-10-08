@@ -130,7 +130,7 @@ export async function countItems(kind, filter) {
 }
 
 export async function getScene(id) {
-  const d = await gql(`query($id: ID!) { findScene(id: $id) { ${F_SCENE} scene_markers { id title seconds primary_tag { id name } } sceneStreams { url mime_type label } captions { language_code caption_type } paths { caption } } }`, { id });
+  const d = await gql(`query($id: ID!) { findScene(id: $id) { ${F_SCENE} scene_markers { id title seconds end_seconds primary_tag { id name } tags { id name } } sceneStreams { url mime_type label } captions { language_code caption_type } paths { caption } } }`, { id });
   return d.findScene;
 }
 export async function getImage(id) {
@@ -270,6 +270,28 @@ async function folderData(opts) {
     } catch (e) { /* too big or blocked – counted again next time */ }
   }
   return data;
+}
+
+// Big library (nothing counted up front): the numbers of just the folders on screen, counted per level with two cheap
+// `per_page: 0` queries per folder (video and image count including subfolders) instead of reading every scene and image.
+// Returns a Map id → [videos, images]; kept until the library changes.
+const levelCounts = new Map();
+window.addEventListener("stash:library-changed", () => levelCounts.clear());
+export async function folderLevelCounts(ids, opts = {}) {
+  const todo = [...new Set(ids)].filter((id) => !levelCounts.has(id));
+  for (let i = 0; i < todo.length; i += 6) {
+    if (opts.signal && opts.signal.aborted) break;
+    const part = todo.slice(i, i + 6);
+    const q = part
+      .map((id, n) => {
+        const ff = `{ files_filter: { parent_folder: { value: [${JSON.stringify(String(id))}], modifier: INCLUDES, depth: -1 } } }`;
+        return `v${n}: findScenes(filter: { per_page: 0 }, scene_filter: ${ff}) { count } i${n}: findImages(filter: { per_page: 0 }, image_filter: ${ff}) { count }`;
+      })
+      .join(" ");
+    const d = await gql(`query FolderLevel { ${q} }`, undefined, { signal: opts.signal });
+    part.forEach((id, n) => levelCounts.set(id, [d["v" + n].count, d["i" + n].count]));
+  }
+  return levelCounts;
 }
 
 // opts.user: asked for by the person (the Folders page, "Folder" in the player) – otherwise a try that failed or was

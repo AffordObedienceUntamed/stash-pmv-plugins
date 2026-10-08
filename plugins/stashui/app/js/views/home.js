@@ -7,7 +7,7 @@ import { t } from "../i18n.js";
 import { gql, stats, findItems, loadFolders } from "../api.js";
 import { toPiece, Hang } from "../pieces.js";
 import { app, go } from "../main.js";
-import { roomsHtml, fillRoomCovers } from "./folder.js";
+import { roomsHtml, fillRoomCovers, fillRoomCounts } from "./folder.js";
 import { tagPicker } from "./tagpicker.js";
 import { perfPicker, hasPerformers } from "./perfpicker.js";
 import { mountRailEditor } from "./homerail.js";
@@ -303,7 +303,12 @@ export async function render(main) {
         const top = (tree.roots.length === 1 && tree.roots[0].kids.length ? tree.roots[0].kids : tree.roots).slice().sort((a, b) => b.timg + b.tvid - (a.timg + a.tvid)).slice(0, 8);
         const el = sec.querySelector("[data-rooms]");
         el.innerHTML = roomsHtml(top);
-        stopCovers = fillRoomCovers(el);
+        const stopCov = fillRoomCovers(el);
+        const stopCnt = fillRoomCounts(el, tree);
+        stopCovers = () => {
+          stopCov();
+          stopCnt();
+        };
       })
       .catch(() => (sec.hidden = true));
   }

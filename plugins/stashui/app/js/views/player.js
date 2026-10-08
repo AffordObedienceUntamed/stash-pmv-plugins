@@ -16,6 +16,7 @@ import { logEvent } from "../eventlog.js";
 import { tierNow, ensureTiers } from "../tiers.js";
 import { tierBadge } from "../versusx.js";
 import { createVR, guessVR } from "../vr.js";
+import { openMarkerEdit } from "../markeredit.js";
 import { videoGlow } from "../theme.js";
 import { BINS, watchRecorder, watchBins, motionBins, combine, peaks } from "../heat.js";
 
@@ -820,6 +821,13 @@ export async function render(host, params, query = {}) {
   }
   // the best moments arrive a moment later (standings from Stash) – then the marks again
   if ((x.scene_markers || []).length && !bestMarkersNow()) bestMarkers().then(() => host.isConnected && paintMarkers()).catch(() => {});
+  // the tags of a part (besides the main tag) as small chips under its name
+  const partTags = (m) => {
+    const extra = (m.tags || []).filter((x) => !m.primary_tag || x.id !== m.primary_tag.id);
+    const main = m.title && m.primary_tag ? [m.primary_tag] : [];
+    const all = main.concat(extra);
+    return all.length ? `<em class="kb-mktags">${all.map((x) => `<i>${esc(x.name)}</i>`).join("")}</em>` : "";
+  };
   function paintMarkers() {
     const box = $("[data-markers]");
     if (!box) return;
@@ -829,9 +837,9 @@ export async function render(host, params, query = {}) {
       `${t("Markers")}<small class="kb-upsec-n">${list.length || ""}</small>`,
       list
         .map(
-          (m) => `<div class="kb-mkrow${(bestMarkersNow() || new Map()).has(m.id) ? " is-best" : ""}"><button type="button" class="kb-mkgo" data-mkgo="${m.seconds}"><b>${fmtDuration(m.seconds)}</b><span>${esc(m.title || (m.primary_tag || {}).name || t("Marker"))}</span></button><button type="button" class="kb-btn is-icon is-ghost" data-mkren="${m.id}" title="${t("Rename")}">${icon("edit")}</button><button type="button" class="kb-btn is-icon is-ghost kb-qdel" data-mkdel="${m.id}" title="${t("Delete marker")}">${icon("close")}</button></div>`
+          (m) => `<div class="kb-mkrow${(bestMarkersNow() || new Map()).has(m.id) ? " is-best" : ""}"><button type="button" class="kb-mkgo" data-mkgo="${m.seconds}"><b>${fmtDuration(m.seconds)}${m.end_seconds > m.seconds ? "–" + fmtDuration(m.end_seconds) : ""}</b><span>${esc(m.title || (m.primary_tag || {}).name || t("Marker"))}${partTags(m)}</span></button><button type="button" class="kb-btn is-icon is-ghost" data-mkren="${m.id}" title="${t("Edit the part (name, start, end, tags)")}">${icon("edit")}</button><button type="button" class="kb-btn is-icon is-ghost kb-qdel" data-mkdel="${m.id}" title="${t("Delete marker")}">${icon("close")}</button></div>`
         )
-        .join("") + `<button type="button" class="kb-btn is-ghost kb-mkadd" data-mkadd>${icon("plus")}${t("Add a marker here (B)")}</button>`
+        .join("") + `<div class="kb-mkadds"><button type="button" class="kb-btn is-ghost kb-mkadd" data-mkadd>${icon("plus")}${t("Add a marker here (B)")}</button><button type="button" class="kb-btn is-ghost kb-mkadd" data-mkpart title="${t("A part of the video with a start, an end and its own tags")}">${icon("tag")}${t("Add a part …")}</button></div>`
     );
     paintMarks();
   }
@@ -855,19 +863,17 @@ export async function render(host, params, query = {}) {
       return v.paused && v.play().catch(() => {});
     }
     if (e.target.closest("[data-mkadd]")) return addMarker();
+    const edited = (m, isNew, goneId) => {
+      if (goneId) x.scene_markers = x.scene_markers.filter((q) => q.id !== goneId);
+      else if (isNew) x.scene_markers = [...(x.scene_markers || []), m];
+      else x.scene_markers = x.scene_markers.map((q) => (q.id === m.id ? m : q));
+      paintMarkers();
+    };
+    if (e.target.closest("[data-mkpart]")) return openMarkerEdit({ scene: x, marker: null, video: v, defaultTag: markerTag, done: edited });
     const ren = e.target.closest("[data-mkren]");
     if (ren) {
       const m = x.scene_markers.find((q) => q.id === ren.dataset.mkren);
-      const title = await promptDialog({ title: t("Name of the marker"), label: t("Name"), value: m.title || "", ok: t("Save") });
-      if (title == null) return;
-      try {
-        await gql(`mutation($i: SceneMarkerUpdateInput!) { sceneMarkerUpdate(input: $i) { id } }`, { i: { id: m.id, title: title.trim(), scene_id: x.id, seconds: m.seconds, primary_tag_id: (m.primary_tag || {}).id || (await markerTag()) } });
-        m.title = title.trim();
-        paintMarkers();
-      } catch (err) {
-        errorToast(err, "Marker");
-      }
-      return;
+      return openMarkerEdit({ scene: x, marker: m, video: v, defaultTag: markerTag, done: edited });
     }
     const del = e.target.closest("[data-mkdel]");
     if (del) {
