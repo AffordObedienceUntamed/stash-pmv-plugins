@@ -1836,4 +1836,7 @@ export default {
   "Folders show up here as soon as they hold videos.": "Ordner erscheinen hier, sobald sie Videos enthalten.",
   "folder": "Ordner",
   "folders": "Ordner",
+  "Automatic backup in Stash": "Automatische Sicherung in Stash",
+  "Copies the settings of this browser to Stash a little after they change. A browser that forgot them (site data cleared, another address, a new device) gets them back by itself.": "Kopiert die Einstellungen dieses Browsers kurz nach einer Änderung nach Stash. Ein Browser, der sie vergessen hat (Websitedaten gelöscht, andere Adresse, neues Gerät), bekommt sie von selbst zurück.",
+  "This browser had forgotten its settings – {n} of them came back from Stash.": "Dieser Browser hatte seine Einstellungen vergessen – {n} davon kamen aus Stash zurück.",
 };

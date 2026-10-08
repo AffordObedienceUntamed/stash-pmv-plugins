@@ -1940,4 +1940,7 @@ export default {
   "Folders show up here as soon as they hold videos.": "文件夹一旦包含视频就会显示在这里。",
   "folder": "个文件夹",
   "folders": "个文件夹",
+  "Automatic backup in Stash": "在 Stash 中自动备份",
+  "Copies the settings of this browser to Stash a little after they change. A browser that forgot them (site data cleared, another address, a new device) gets them back by itself.": "在设置更改后不久，把此浏览器的设置复制到 Stash。忘记了设置的浏览器（清除了网站数据、换了地址、新设备）会自动取回它们。",
+  "This browser had forgotten its settings – {n} of them came back from Stash.": "此浏览器忘记了它的设置——其中 {n} 项已从 Stash 取回。",
 };

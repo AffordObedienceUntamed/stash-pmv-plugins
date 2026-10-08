@@ -1876,4 +1876,7 @@ export default {
   "Folders show up here as soon as they hold videos.": "Thư mục sẽ xuất hiện ở đây ngay khi có video.",
   "folder": "thư mục",
   "folders": "thư mục",
+  "Automatic backup in Stash": "Tự động sao lưu trong Stash",
+  "Copies the settings of this browser to Stash a little after they change. A browser that forgot them (site data cleared, another address, a new device) gets them back by itself.": "Sao chép cài đặt của trình duyệt này vào Stash ngay sau khi thay đổi. Trình duyệt đã quên cài đặt (xóa dữ liệu trang, địa chỉ khác, thiết bị mới) sẽ tự lấy lại.",
+  "This browser had forgotten its settings – {n} of them came back from Stash.": "Trình duyệt này đã quên cài đặt – {n} mục đã được lấy lại từ Stash.",
 };

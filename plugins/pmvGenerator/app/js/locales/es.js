@@ -1858,4 +1858,7 @@ export default {
   "Folders show up here as soon as they hold videos.": "Las carpetas aparecen aquí en cuanto contienen vídeos.",
   "folder": "carpeta",
   "folders": "carpetas",
+  "Automatic backup in Stash": "Copia de seguridad automática en Stash",
+  "Copies the settings of this browser to Stash a little after they change. A browser that forgot them (site data cleared, another address, a new device) gets them back by itself.": "Copia los ajustes de este navegador en Stash poco después de cambiarlos. Un navegador que los olvidó (datos del sitio borrados, otra dirección, un dispositivo nuevo) los recupera solo.",
+  "This browser had forgotten its settings – {n} of them came back from Stash.": "Este navegador había olvidado sus ajustes: {n} de ellos volvieron desde Stash.",
 };

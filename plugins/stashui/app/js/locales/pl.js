@@ -1881,4 +1881,7 @@ export default {
   "folder": "folder",
   "folders": "folderów",
   "folderów#few": "foldery",
+  "Automatic backup in Stash": "Automatyczna kopia zapasowa w Stash",
+  "Copies the settings of this browser to Stash a little after they change. A browser that forgot them (site data cleared, another address, a new device) gets them back by itself.": "Kopiuje ustawienia tej przeglądarki do Stash krótko po ich zmianie. Przeglądarka, która je zapomniała (wyczyszczone dane witryny, inny adres, nowe urządzenie), odzyska je sama.",
+  "This browser had forgotten its settings – {n} of them came back from Stash.": "Ta przeglądarka zapomniała swoje ustawienia – {n} z nich wróciło ze Stash.",
 };

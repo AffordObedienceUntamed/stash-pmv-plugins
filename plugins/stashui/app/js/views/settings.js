@@ -479,6 +479,7 @@ async function renderApp(body) {
       <label class="kb-set"><span class="kb-set-label"><b>${t("Thumbnail size")}</b><small>${t("How tall a row in the lists is.")}</small></span>
         <input type="range" min="130" max="480" step="10" data-rowh value="${store.get("rowHeight", 250)}"></label>
       <div class="kb-set"><div class="kb-set-label"><b>${t("Favorites")}</b><small>${t("The heart is the Stash tag “Favorite”. You'll find it in classic Stash too.")}</small></div></div>
+      <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("Automatic backup in Stash")}</b><small>${t("Copies the settings of this browser to Stash a little after they change. A browser that forgot them (site data cleared, another address, a new device) gets them back by itself.")}</small></span><span class="kb-switch"><input type="checkbox" data-autobk${store.get("autoBackup", true) !== false ? " checked" : ""}><i></i></span></label>
       <div class="kb-set"><div class="kb-set-label"><b>${t("Backup and restore")}</b><small>${t("Saves everything this interface remembers – settings of this browser, home page and menu, ratings, playlists, Versus, funscript variants – in one file, and puts it back (also in another browser). It may contain your Handy connection key, so keep the file private.")}</small></div>
         <span class="kb-set-btns"><button type="button" class="kb-btn" data-bkexport>${t("Save backup")}</button><button type="button" class="kb-btn" data-bkimport>${t("Restore backup")}</button><input type="file" accept=".json,application/json" data-bkfile hidden></span></div>
       <div class="kb-set"><div class="kb-set-label"><b>${t("Reset interface settings")}</b><small>${t("Everything this interface remembers in this browser – player and viewer settings, thumbnail size, expanded folders, the home page and more. Not the queue, the colors or the glass look.")}</small></div>
@@ -593,6 +594,7 @@ async function renderApp(body) {
     sessionStorage.removeItem("stashui.foldersOnce");
     location.reload(); // the navigation is built once – rebuild it with or without folders
   };
+  body.querySelector("[data-autobk]").onchange = (e) => store.set("autoBackup", e.target.checked);
   body.querySelector("[data-bkexport]").onclick = () => exportBackup().catch((e) => errorToast(e, "Backup"));
   body.querySelector("[data-bkimport]").onclick = () => body.querySelector("[data-bkfile]").click();
   body.querySelector("[data-bkfile]").onchange = (e) => {

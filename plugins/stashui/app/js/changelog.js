@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.79.0",
+    date: "2026-10-08",
+    items: [
+      ["ui", "Settings that don't get lost: (1) The settings of this browser are now copied to Stash a little after they change (Settings → General → “Automatic backup in Stash”, on by default). A browser that has forgotten them – site data cleared, another address like 127.0.0.1 / localhost / the Tailscale name, a new device – gets them back by itself at start. (2) Saving shared settings (ratings, playlists, Versus …) is safer: writes now run one after the other instead of overlapping, and a read that comes back empty by mistake is no longer written over everything.", "不再丢失的设置：（1）此浏览器的设置现在会在更改后不久复制到 Stash（设置 → 常规 →“在 Stash 中自动备份”，默认开启）。忘记了设置的浏览器——清除了网站数据、换了地址（如 127.0.0.1 / localhost / Tailscale 名称）、新设备——在启动时会自动取回。（2）保存共享设置（评分、播放列表、Versus 等）更安全：写入现在依次进行而不是互相重叠，错误地返回空内容的读取也不会再覆盖所有设置。"],
+    ],
+  },
+  {
     v: "3.78.0",
     date: "2026-10-08",
     items: [

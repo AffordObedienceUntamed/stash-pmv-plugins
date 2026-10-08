@@ -467,11 +467,31 @@ export async function addPlay(id) {
 // plugins (PMV presets, Versus standings) survive that way.
 export async function pluginConfig(id) {
   const d = await gql(`query($i: [ID!]) { configuration { plugins(include: $i) } }`, { i: [id] });
-  return (d.configuration.plugins || {})[id] || {};
+  const c = (d.configuration.plugins || {})[id] || {};
+  if (Object.keys(c).length) cfgSeen.set(id, true);
+  return c;
 }
-export async function setPluginConfig(id, patch) {
-  const next = Object.assign({}, await pluginConfig(id), patch);
+// Stash replaces the whole settings map of a plugin, so a write is "read everything, change a bit, write everything".
+// Two things went wrong with that: writes that overlapped (each read the old map, the later one wiped the other's change) –
+// they now run one after the other –, and a read that came back empty by mistake (Stash busy or just starting) –
+// writing on top of it would have wiped every shared setting; that is retried once and then refused.
+const cfgChain = new Map();
+const cfgSeen = new Map(); // plugin id → had values when last read
+export function setPluginConfig(id, patch) {
+  const run = (cfgChain.get(id) || Promise.resolve()).catch(() => {}).then(() => writePluginConfig(id, patch));
+  cfgChain.set(id, run);
+  return run;
+}
+async function writePluginConfig(id, patch) {
+  let cur = await pluginConfig(id);
+  if (!Object.keys(cur).length && cfgSeen.get(id)) {
+    await new Promise((r) => setTimeout(r, 1500));
+    cur = await pluginConfig(id);
+    if (!Object.keys(cur).length) throw new Error(`Stash answered with empty settings for “${id}” – nothing was saved, so the existing ones aren't overwritten. Try again in a moment.`);
+  }
+  const next = Object.assign({}, cur, patch);
   Object.keys(patch).forEach((k) => patch[k] === undefined && delete next[k]);
   await gql(`mutation($id: ID!, $i: Map!) { configurePlugin(plugin_id: $id, input: $i) }`, { id, i: next });
+  cfgSeen.set(id, Object.keys(next).length > 0);
   return next;
 }

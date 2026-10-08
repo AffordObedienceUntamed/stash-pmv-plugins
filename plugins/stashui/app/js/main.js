@@ -612,6 +612,8 @@ export function openStorm() {
 // ---------- Start ----------
 
 async function init() {
+  // a browser that has forgotten its settings gets them back from Stash first (then the page starts again)
+  if (await import("./autobackup.js").then((m) => m.restoreIfFresh()).catch(() => false)) return;
   import("./display.js").then((m) => m.applyDisplay()); // menu width, studio logo, NSFW blur … (Settings → This interface)
   // Language first: "auto" follows the interface language set in Stash
   let stashLang = "";
@@ -644,6 +646,7 @@ async function init() {
   window.addEventListener("hashchange", route);
   route();
   import("./jobs.js").then((m) => m.watchJobs()).catch(() => {});
+  import("./autobackup.js").then((m) => m.startAutoBackup()).catch(() => {}); // the settings of this browser are copied to Stash
 }
 
 init();

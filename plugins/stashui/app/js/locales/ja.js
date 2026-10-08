@@ -1883,4 +1883,7 @@ export default {
   "Folders show up here as soon as they hold videos.": "動画が入ったフォルダは、ここに表示されます。",
   "folder": "個のフォルダ",
   "folders": "個のフォルダ",
+  "Automatic backup in Stash": "Stash への自動バックアップ",
+  "Copies the settings of this browser to Stash a little after they change. A browser that forgot them (site data cleared, another address, a new device) gets them back by itself.": "設定が変更されてから少し後に、このブラウザの設定を Stash にコピーします。設定を忘れたブラウザ（サイトデータの消去、別のアドレス、新しいデバイス）は自動的に取り戻します。",
+  "This browser had forgotten its settings – {n} of them came back from Stash.": "このブラウザは設定を忘れていました – そのうち {n} 件が Stash から戻りました。",
 };
