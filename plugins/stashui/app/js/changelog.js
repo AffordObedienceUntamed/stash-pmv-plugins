@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.77.0",
+    date: "2026-10-08",
+    items: [
+      ["ui", "Performers: many more sort orders – youngest / oldest first, country, ethnicity, hair color and eye color (A–Z), tallest / shortest, heaviest / lightest, fewest scenes, most images, most tags, alphabetical Z–A, oldest additions and recently changed. Stash does most of the sorting itself (with the direction); text fields it can't sort by (country, ethnicity, hair and eye color) are read once and ordered in the browser, with empty values always last.", "演员：新增许多排序方式——年龄最小/最大优先、国家、种族、发色和眼睛颜色（A–Z）、最高/最矮、最重/最轻、场景最少、图片最多、标签最多、按字母倒序、最早添加和最近更改。大部分排序由 Stash 自己完成（带方向）；Stash 无法排序的文本字段（国家、种族、发色、眼睛颜色）会一次性读取并在浏览器中排序，空值始终排在最后。"],
+    ],
+  },
+  {
     v: "3.76.1",
     date: "2026-10-08",
     items: [
