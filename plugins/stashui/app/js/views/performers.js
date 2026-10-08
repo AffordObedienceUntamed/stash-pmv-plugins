@@ -215,12 +215,21 @@ export async function render(main, params, query) {
     } catch (e) {
       if (my === run) $("[data-list]").innerHTML = `<div class="kb-empty"><b>${t("Couldn't load the performers")}</b><p>${esc(e.message)}</p></div>`;
     } finally {
-      if (my === run) loading = false;
+      if (my === run) {
+        loading = false;
+        requestAnimationFrame(fillMore); // the end of the list may still be in view (big screen, small cards) – the observer only reports changes
+      }
     }
   }
 
   // More when the end of the grid comes into view
   const io = new IntersectionObserver((es) => es.some((e) => e.isIntersecting) && list.length < total && load(false), { rootMargin: "800px" });
+  // Still more and the end of the list already in view after a page came in? Then the next page right away (the observer
+  // above only fires when the end comes into view – with a tall screen the first page may never push it out again)
+  function fillMore() {
+    const el = $("[data-more]");
+    if (el && el.isConnected && !loading && list.length < total && el.getBoundingClientRect().top < innerHeight + 800) load(false);
+  }
   io.observe($("[data-more]"));
 
   const reload = () => {

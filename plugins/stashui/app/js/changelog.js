@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.76.1",
+    date: "2026-10-08",
+    items: [
+      ["ui", "Fix: the Performers list (and Studios, Groups, Markers) stopped after the first 60 entries when the screen was tall or zoomed out – the first page already reached past the bottom of the window, so the “load more” trigger never fired again and there was nothing to scroll. After every page the list now checks whether its end is still in view and loads the next page right away.", "修复：当屏幕很高或页面缩小时，演员列表（以及工作室、分组、标记）在前 60 项之后停止加载——第一页已经超出窗口底部，“加载更多”的触发器不再触发，也就没有可滚动的内容。现在每加载一页后，列表都会检查末尾是否仍在视野内，并立即加载下一页。"],
+    ],
+  },
+  {
     v: "3.76.0",
     date: "2026-10-08",
     items: [
