@@ -281,19 +281,8 @@ export class Compositor {
       if (fitHere === "contain") this.backdrop(i, m, s);
       drawIn(g, m, s, fitHere, zoom, ox, oy, filter.trim(), fx.kenburns);
     };
-    slots.forEach((s0, i) => {
-      const sg = softOn ? this.softGeom(s0, slots) : null;
-      if (!sg) return drawField(s0, i);
-      // the field's clip fills a rectangle a little bigger than the field (it reaches into the neighbours), into a buffer…
-      const base = g;
-      g = this.g = this.softCtx(i, sg.ew, sg.eh);
-      try {
-        drawField({ x: 0, y: 0, w: sg.ew, h: sg.eh, g: s0.g, fx: s0.fx, fy: s0.fy }, i);
-      } finally {
-        g = this.g = base;
-      }
-      this.softFinish(i, sg); // …whose left and top edge fade out, and which goes on top of the field before it
-    });
+    slots.forEach((s, i) => drawField(s, i));
+    if (softOn) this.softSeams(slots); // the sharp lines between the fields become soft
     if (this.revealWin) {
       g.restore(); // (the rounded window's clip)
       g.save();
@@ -437,59 +426,62 @@ export class Compositor {
     }
   }
 
-  // Soft seams: how far a field reaches into its neighbours (fl/fr/ft/fb) and the rectangle it is drawn in.
-  // The blend zone is centred on the seam; every field is expanded by half of it on the sides that have a neighbour,
-  // and only as much as the narrowest field allows (18 %), so a 3-way layout isn't one blur.
-  softGeom(s, all) {
+  // Soft seams: the line between two fields is not sharp but smeared softly. Nothing overlaps – each clip stays in its own
+  // field –, a band across the seam is smeared (the picture shrunk across the seam and scaled back up, cheap) and
+  // blended back in: strongest right at the seam, nothing at the ends of the band.
+  softSeams(slots) {
     const { W, H } = this;
     const a = Math.max(0, Math.min(1, (this.S.softAmt == null ? 50 : this.S.softAmt) / 100));
-    const k = 0.03 + 0.09 * a;
-    const minW = Math.min(...all.map((x) => x.w));
-    const minH = Math.min(...all.map((x) => x.h));
-    const fH = Math.round(Math.min(k * W, 0.18 * minW));
-    const fV = Math.round(Math.min(k * H, 0.18 * minH));
-    const fl = s.x > 1 ? fH : 0;
-    const fr = s.x + s.w < W - 1 ? fH : 0;
-    const ft = s.y > 1 ? fV : 0;
-    const fb = s.y + s.h < H - 1 ? fV : 0;
-    if (!fl && !fr && !ft && !fb) return null;
-    return { ex: s.x - fl, ey: s.y - ft, ew: s.w + fl + fr, eh: s.h + ft + fb, fl, fr, ft, fb };
-  }
-  softCtx(i, ew, eh) {
-    const bufs = this.sbuf || (this.sbuf = []);
-    const c = bufs[i] || (bufs[i] = document.createElement("canvas"));
-    if (c.width !== ew || c.height !== eh) {
-      c.width = ew;
-      c.height = eh;
-    }
-    const x = c.getContext("2d");
-    x.setTransform(1, 0, 0, 1, 0, 0);
-    x.globalCompositeOperation = "source-over";
-    x.globalAlpha = 1;
-    x.clearRect(0, 0, ew, eh);
-    x.imageSmoothingEnabled = true;
-    x.imageSmoothingQuality = this.S.smooth === false ? "low" : "high";
-    return x;
-  }
-  softFinish(i, sg) {
-    const c = this.sbuf[i];
-    const x = c.getContext("2d");
-    // alpha 0 → 1 across the blend zone (smoothstep), 1 afterwards; "destination-in" keeps the picture where the mask is opaque
-    const fade = (x0, y0, x1, y1, zone) => {
-      const gr = x.createLinearGradient(x0, y0, x1, y1);
-      for (let n = 0; n <= 4; n++) {
-        const p = n / 4;
-        gr.addColorStop(p * zone, `rgba(0,0,0,${(p * p * (3 - 2 * p)).toFixed(3)})`);
+    const k = 0.025 + 0.075 * a;
+    const minW = Math.min(...slots.map((x) => x.w));
+    const minH = Math.min(...slots.map((x) => x.h));
+    const fH = Math.round(Math.min(k * W, 0.16 * minW)); // half the width of the band across a vertical seam
+    const fV = Math.round(Math.min(k * H, 0.16 * minH));
+    const done = new Set();
+    for (const s of slots) {
+      if (s.x > 1 && fH >= 2 && !done.has("v" + s.x + ":" + s.y)) {
+        done.add("v" + s.x + ":" + s.y);
+        this.smear({ x: s.x - fH, y: s.y, w: 2 * fH, h: s.h }, "x");
       }
-      if (zone < 1) gr.addColorStop(1, "rgba(0,0,0,1)");
-      x.globalCompositeOperation = "destination-in";
-      x.fillStyle = gr;
-      x.fillRect(0, 0, sg.ew, sg.eh);
-    };
-    if (sg.fl) fade(0, 0, sg.ew, 0, Math.min(1, (2 * sg.fl) / sg.ew));
-    if (sg.ft) fade(0, 0, 0, sg.eh, Math.min(1, (2 * sg.ft) / sg.eh));
-    x.globalCompositeOperation = "source-over";
-    this.g.drawImage(c, sg.ex, sg.ey);
+      if (s.y > 1 && fV >= 2 && !done.has("h" + s.y + ":" + s.x)) {
+        done.add("h" + s.y + ":" + s.x);
+        this.smear({ x: s.x, y: s.y - fV, w: s.w, h: 2 * fV }, "y");
+      }
+    }
+  }
+  smear(r, axis) {
+    const { g } = this;
+    const along = axis === "x" ? r.w : r.h; // the length across the seam
+    const texel = Math.max(2, Math.round(along / 6));
+    const sw = axis === "x" ? Math.max(2, Math.ceil(r.w / texel)) : r.w;
+    const sh = axis === "y" ? Math.max(2, Math.ceil(r.h / texel)) : r.h;
+    const small = this.smallBuf || (this.smallBuf = document.createElement("canvas"));
+    const big = this.bigBuf || (this.bigBuf = document.createElement("canvas"));
+    small.width = sw;
+    small.height = sh;
+    big.width = r.w;
+    big.height = r.h;
+    const sx = small.getContext("2d");
+    const bx = big.getContext("2d");
+    sx.imageSmoothingEnabled = bx.imageSmoothingEnabled = true;
+    sx.imageSmoothingQuality = bx.imageSmoothingQuality = "high";
+    sx.clearRect(0, 0, sw, sh);
+    sx.drawImage(g.canvas, r.x, r.y, r.w, r.h, 0, 0, sw, sh); // shrunk across the seam
+    bx.globalCompositeOperation = "source-over";
+    bx.clearRect(0, 0, r.w, r.h);
+    bx.drawImage(small, 0, 0, sw, sh, 0, 0, r.w, r.h); // …and back: smeared
+    // the smear counts fully in the middle (the seam) and not at all at the ends of the band
+    const gr = axis === "x" ? bx.createLinearGradient(0, 0, r.w, 0) : bx.createLinearGradient(0, 0, 0, r.h);
+    for (let n = 0; n <= 8; n++) {
+      const p = n / 8;
+      const v = Math.sin(Math.PI * p); // 0 → 1 → 0
+      gr.addColorStop(p, `rgba(0,0,0,${(v * v).toFixed(3)})`);
+    }
+    bx.globalCompositeOperation = "destination-in";
+    bx.fillStyle = gr;
+    bx.fillRect(0, 0, r.w, r.h);
+    bx.globalCompositeOperation = "source-over";
+    g.drawImage(big, r.x, r.y);
   }
 
   // Rim effect on the finished picture: a blurred copy (cheap: the picture shrunk and scaled back up) that only shows

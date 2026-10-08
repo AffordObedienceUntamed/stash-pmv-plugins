@@ -455,12 +455,12 @@ export function render(main) {
             <div class="kb-pmvg-sound">
               <label class="kb-pmvg-range"><span>${icon("eye")}Brightness</span><input type="range" min="0" max="100" step="5" data-r="bright" aria-label="Brightness"><output data-ro="bright"></output></label>
             </div>
-            <span class="kb-lab-t">Soft seams <small>– the clips of a split screen blend into each other instead of meeting at a sharp line</small></span>
+            <span class="kb-lab-t">Soft seams <small>– the line between the clips of a split screen is soft instead of sharp</small></span>
             <div class="kb-pmvg-opts">
-              ${sw("soft", "Blend the fields", "No divider lines: where two fields meet, one clip fades into the other (a bit more work for the computer)")}
+              ${sw("soft", "Soften the seams", "No sharp lines between the fields: the seam is smeared softly (the clips don't overlap)")}
             </div>
             <div class="kb-pmvg-sound" data-softbox>
-              <label class="kb-pmvg-range"><span>${icon("sliders")}Blend width</span><input type="range" min="0" max="100" step="5" data-r="softAmt" aria-label="Width of the blend between the fields"><output data-ro="softAmt"></output></label>
+              <label class="kb-pmvg-range"><span>${icon("sliders")}Softness</span><input type="range" min="0" max="100" step="5" data-r="softAmt" aria-label="How soft the seams are"><output data-ro="softAmt"></output></label>
             </div>
             <span class="kb-lab-t">Rim of the picture <small>– only the edges, the middle stays sharp</small></span>
             <div class="kb-seg" data-seg="edge"><button type="button" data-v="off">Off</button><button type="button" data-v="blur" title="Soft blur towards the edges">Blur</button><button type="button" data-v="motion" title="Light motion blur: streaks sideways at the left and right edge, up and down at the top and bottom">Motion</button><button type="button" data-v="lens" title="The edges look bent outwards, like through a lens">Lens</button></div>
