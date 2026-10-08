@@ -1813,4 +1813,12 @@ export default {
   "Shortest first": "Les plus petits d'abord",
   "Tallest first": "Les plus grands d'abord",
   "Youngest first": "Les plus jeunes d'abord",
+  "Video folders": "Dossiers vidéo",
+  "Search folders": "Rechercher des dossiers",
+  "Most videos": "Plus de vidéos",
+  "Fewest videos": "Moins de vidéos",
+  "No folders with videos": "Aucun dossier ne contient de vidéos",
+  "Folders show up here as soon as they hold videos.": "Les dossiers apparaissent ici dès qu'ils contiennent des vidéos.",
+  "folder": "dossier",
+  "folders": "dossiers",
 };

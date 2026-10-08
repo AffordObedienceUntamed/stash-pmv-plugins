@@ -1850,4 +1850,12 @@ export default {
   "Shortest first": "Más bajos primero",
   "Tallest first": "Más altos primero",
   "Youngest first": "Más jóvenes primero",
+  "Video folders": "Carpetas de vídeo",
+  "Search folders": "Buscar carpetas",
+  "Most videos": "Más vídeos",
+  "Fewest videos": "Menos vídeos",
+  "No folders with videos": "Ninguna carpeta contiene vídeos",
+  "Folders show up here as soon as they hold videos.": "Las carpetas aparecen aquí en cuanto contienen vídeos.",
+  "folder": "carpeta",
+  "folders": "carpetas",
 };

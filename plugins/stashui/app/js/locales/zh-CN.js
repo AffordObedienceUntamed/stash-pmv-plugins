@@ -1932,4 +1932,12 @@ export default {
   "Shortest first": "最矮优先",
   "Tallest first": "最高优先",
   "Youngest first": "年龄最小优先",
+  "Video folders": "视频文件夹",
+  "Search folders": "搜索文件夹",
+  "Most videos": "视频最多",
+  "Fewest videos": "视频最少",
+  "No folders with videos": "没有包含视频的文件夹",
+  "Folders show up here as soon as they hold videos.": "文件夹一旦包含视频就会显示在这里。",
+  "folder": "个文件夹",
+  "folders": "个文件夹",
 };

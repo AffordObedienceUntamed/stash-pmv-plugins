@@ -1828,4 +1828,12 @@ export default {
   "Shortest first": "Kleinste zuerst",
   "Tallest first": "Größte zuerst",
   "Youngest first": "Jüngste zuerst",
+  "Video folders": "Video-Ordner",
+  "Search folders": "Ordner suchen",
+  "Most videos": "Meiste Videos",
+  "Fewest videos": "Wenigste Videos",
+  "No folders with videos": "Keine Ordner mit Videos",
+  "Folders show up here as soon as they hold videos.": "Ordner erscheinen hier, sobald sie Videos enthalten.",
+  "folder": "Ordner",
+  "folders": "Ordner",
 };

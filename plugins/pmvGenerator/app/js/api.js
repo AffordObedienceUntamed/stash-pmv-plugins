@@ -294,6 +294,23 @@ export async function folderLevelCounts(ids, opts = {}) {
   return levelCounts;
 }
 
+// Big library: the number of videos of some folders – direct (depth 0) or with everything below (depth -1) – one cheap
+// `per_page: 0` query per folder. Returns a Map "o<id>" / "d<id>" → count; kept until the library changes.
+const videoCounts = new Map();
+window.addEventListener("stash:library-changed", () => videoCounts.clear());
+export async function folderVideoCounts(ids, depth, opts = {}) {
+  const tag = depth === 0 ? "o" : "d";
+  const todo = [...new Set(ids)].filter((id) => !videoCounts.has(tag + id));
+  for (let i = 0; i < todo.length; i += 8) {
+    if (opts.signal && opts.signal.aborted) break;
+    const part = todo.slice(i, i + 8);
+    const q = part.map((id, n) => `v${n}: findScenes(filter: { per_page: 0 }, scene_filter: { files_filter: { parent_folder: { value: [${JSON.stringify(String(id))}], modifier: INCLUDES, depth: ${depth === 0 ? 0 : -1} } } }) { count }`).join(" ");
+    const d = await gql(`query FolderLevel { ${q} }`, undefined, { signal: opts.signal });
+    part.forEach((id, n) => videoCounts.set(tag + id, d["v" + n].count));
+  }
+  return videoCounts;
+}
+
 // opts.user: asked for by the person (the Folders page, "Folder" in the player) – otherwise a try that failed or was
 // cancelled isn't repeated for half an hour (it would hang on every page load); opts.signal cancels the counting.
 const FAIL_KEY = "stashui.folderFail";

@@ -1868,4 +1868,12 @@ export default {
   "Shortest first": "Thấp nhất trước",
   "Tallest first": "Cao nhất trước",
   "Youngest first": "Trẻ nhất trước",
+  "Video folders": "Thư mục video",
+  "Search folders": "Tìm thư mục",
+  "Most videos": "Nhiều video nhất",
+  "Fewest videos": "Ít video nhất",
+  "No folders with videos": "Không có thư mục nào chứa video",
+  "Folders show up here as soon as they hold videos.": "Thư mục sẽ xuất hiện ở đây ngay khi có video.",
+  "folder": "thư mục",
+  "folders": "thư mục",
 };

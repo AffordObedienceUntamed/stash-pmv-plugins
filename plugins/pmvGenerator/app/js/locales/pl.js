@@ -1872,4 +1872,13 @@ export default {
   "Shortest first": "Najniższe najpierw",
   "Tallest first": "Najwyższe najpierw",
   "Youngest first": "Najmłodsze najpierw",
+  "Video folders": "Foldery z filmami",
+  "Search folders": "Szukaj folderów",
+  "Most videos": "Najwięcej filmów",
+  "Fewest videos": "Najmniej filmów",
+  "No folders with videos": "Brak folderów z filmami",
+  "Folders show up here as soon as they hold videos.": "Foldery pojawią się tutaj, gdy będą zawierać filmy.",
+  "folder": "folder",
+  "folders": "folderów",
+  "folderów#few": "foldery",
 };

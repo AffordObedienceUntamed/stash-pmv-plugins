@@ -1875,4 +1875,12 @@ export default {
   "Shortest first": "身長が低い順",
   "Tallest first": "身長が高い順",
   "Youngest first": "年下の順",
+  "Video folders": "動画フォルダ",
+  "Search folders": "フォルダを検索",
+  "Most videos": "動画数が多い順",
+  "Fewest videos": "動画数が少ない順",
+  "No folders with videos": "動画のあるフォルダがありません",
+  "Folders show up here as soon as they hold videos.": "動画が入ったフォルダは、ここに表示されます。",
+  "folder": "個のフォルダ",
+  "folders": "個のフォルダ",
 };

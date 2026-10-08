@@ -13,6 +13,7 @@ export const NAV = [
     { href: "scenes", label: "Scenes", icon: "film", match: /^scene/, count: "scene_count" },
     { href: "images", label: "Images", icon: "image", match: /^image/, count: "image_count" },
     { href: "galleries", label: "Galleries", icon: "book", match: /^galler/, count: "gallery_count" },
+    { href: "video-folders", label: "Video folders", icon: "folder", match: /^video-folders/ },
     { href: "studios", label: "Studios", icon: "studio", match: /^studio/ },
     { href: "groups", label: "Groups", icon: "layers", match: /^group/ },
     { href: "performers", label: "Performers", icon: "person", match: /^performer/, count: "performer_count" },

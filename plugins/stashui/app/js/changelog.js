@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.78.0",
+    date: "2026-10-08",
+    items: [
+      ["ui", "Video folders (menu → Library, next to Galleries): the video counterpart of the Galleries page. Every folder that holds videos is a card with pictures from its scenes, its name, the number of videos and its parent folder; a click opens the folder at its videos. Search, sort (A–Z, Z–A, most / fewest videos, random) and “Include subfolders” (then folders that only hold subfolders with videos appear too). On a big library nothing is counted up front: the folders come in pieces, each piece is counted first (one cheap query per folder) and folders without videos drop out.", "视频文件夹（菜单 → 媒体库，位于“图库”旁边）：图库页面的视频版本。每个包含视频的文件夹都是一张卡片，显示来自其场景的图片、名称、视频数量和上级文件夹；点击后在其视频处打开该文件夹。支持搜索、排序（A–Z、Z–A、视频最多/最少、随机）和“包含子文件夹”（此时只包含带视频的子文件夹的文件夹也会显示）。大型媒体库不会预先统计：文件夹分批载入，每一批先统计数量（每个文件夹一次很轻的查询），没有视频的文件夹会被去掉。"],
+    ],
+  },
+  {
     v: "3.77.0",
     date: "2026-10-08",
     items: [
