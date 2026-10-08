@@ -1676,6 +1676,10 @@ html.kb-glass .kb-advf-row { border-bottom-color: var(--glass-edge); }
 .kb-tg-val s { color: var(--faint); }
 .kb-tg-act { display: flex; gap: 8px; margin-top: 4px; }
 .kb-pager { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 16px 0; }
+.kb-ptg-thumb { width: 90px; height: 120px; }
+.kb-ptg-found { width: 56px; height: 72px; border-radius: 6px; object-fit: cover; vertical-align: middle; }
+html.kb-glass .kb-ptg-thumb { border: 1px solid var(--glass-edge); background: var(--glass-shine), var(--glass); }
+@media (max-width: 640px) { .kb-ptg-thumb { width: 90px; } }
 @media (max-width: 640px) { .kb-tg-row { flex-direction: column; } .kb-tg-thumb { width: 100%; height: 160px; } }
 html.kb-glass .kb-tg-row { border-color: var(--glass-edge); background: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); }
 html.kb-glass .kb-tg-review { background: color-mix(in srgb, var(--base) 45%, transparent); }

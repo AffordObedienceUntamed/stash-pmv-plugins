@@ -34,6 +34,7 @@ export const NAV = [
     { action: "log", label: "Log", icon: "logs" },
     { href: "duplicates", label: "Duplicates", icon: "copies", match: /^duplicates/ },
     { href: "tagger", label: "Scene tagger", icon: "tag", match: /^tagger/ },
+    { href: "performer-tagger", label: "Performer tagger", icon: "person", match: /^performer-tagger/ },
     { href: "phone", label: "Phone upload", icon: "phone", match: /^phone/ },
     { href: "settings", label: "Settings", icon: "gear", match: /^settings/ },
     { href: "plugins", label: "Plugins", icon: "plug", match: /^plugins/ },

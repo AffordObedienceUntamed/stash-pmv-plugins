@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.76.0",
+    date: "2026-10-08",
+    items: [
+      ["ui", "Performer tagger (menu → Manage): the performers that are missing something – no photo, not linked to StashDB, no country or birthdate, or everyone – one row each. Look each one up by name in a StashDB-style box or a performer scraper, check what was found field by field (photo, birthdate, country, looks, links, tags …) and save. “Look up this page” searches everybody on the page and takes a result right away when it is the only one or the only one with exactly that name (nothing is saved until you press Save). Also: a scrape that Stash answers with a 401 or “too many requests” now says what that means (check the source's API key) instead of showing raw JSON – in the tagger, the scene tagger and the performer editor.", "演员标记器（菜单 → 管理）：列出缺少信息的演员——没有照片、未关联 StashDB、没有国家或生日，或所有演员——每人一行。通过名称在 StashDB 类站点或演员抓取器中查找，逐项检查找到的内容（照片、生日、国家、外貌、链接、标签……）后保存。“查找本页”会搜索页面上的所有人，当结果只有一个或只有一个名称完全相同时直接选中（在你点击保存之前不会保存任何内容）。另外：Stash 以 401 或“请求过多”回应的抓取，现在会说明含义（请检查来源的 API 密钥），而不是显示原始 JSON——在标记器、场景标记器和演员编辑器中都适用。"],
+    ],
+  },
+  {
     v: "3.75.1",
     date: "2026-10-08",
     items: [
