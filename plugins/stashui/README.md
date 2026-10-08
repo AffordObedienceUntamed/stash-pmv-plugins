@@ -34,6 +34,7 @@ Open it: just open Stash (e.g. `http://localhost:9999`) – the home page redire
 | Advanced rating | **★+ Detailed** next to the stars of a scene or performer: rate by several criteria (0–5 each, in weighted groups); Stash's own rating follows as the weighted result, snapped to your rating precision. The scores are tags – “<Name> ★” with children “<Name> ★: 0 … 5” under “Advanced Rating System” (scenes) / “Advanced Performer Rating” (performers) – so they work everywhere in Stash. **Customize …** edits groups, criteria, weights and tooltips, creates the tags and can recalculate every rating. Settings are kept in Stash UI's plugin settings (advRating). Idea and tag names after the Advanced Rating plugin on discourse.stashapp.cc |
 | Event log | **Manage → Log** (and the Log button in Versus) opens a floating panel – drag it by the header, resize it at the corner, fold it away – that stays open while you browse. It lists what Stash UI does: Versus picks (names link to the item, tiers colour-coded, wins green, losses red), funscript changes, ratings, tags, generate tasks; filter per area, clear, export as a text file (names left out unless you untick “Hide names in the export”). Kept in this browser (the last 300). Idea: the event log of the Ascension plugin |
 | Extensions | Every enabled plugin gets a menu entry under Extensions – with its own symbol when it ships an `icon.svg`, `icon.png` or `icon.webp` next to its page. |
+| Extension API v2 | Plugins can bring their own **pages** (`#/p/<plugin>/…`, also full-screen overlays), **menu entries** (movable in Customize → Sidebar), **slots** (list bar and toolbar, selection bar, scene info section and menu, performer / studio / tag / gallery headers, home sections, settings screens), list cards with buttons and late results, plus shared services (`ui`, `t`, `gql`, `store`, `on`). The Plugins page lists what each module registered and its errors, with a switch. See “For plugin authors”. |
 | Studios | **Make, edit, delete and scrape** studios (name, aliases, links, details, parent studio, tags, logo; “Fill in from the internet” uses StashDB-style boxes and studio scrapers) – also a new name typed into the Studio field of the editor. Every studio as a logo card (search, sort); a studio's page: scenes, images and galleries including sub-studios, links, aliases, parent studio. The edit drawer of scenes, images and galleries has a **Studio** field (and “Edit several” sets one for all); lists have a studio filter, which saved filters keep. |
 | Saved filters | Scenes and Images have a **Saved filters** menu: one click applies a saved one. Save the current filters with “Save as playlist” – Playlists are the saved filters. |
 | Markers, Groups | **Markers** (Watch): every marked moment as a grid – search, tag filter, sort, hover preview; a click opens the scene at that moment. **Groups** (Library): all groups as poster cards, a page per group with its scenes in the group's order (Stash 0.27+) Groups can be made and edited here (cover, name, date, director, studio, tags …); on a group's page: add scenes (browse or search, tick many), edit, delete (only the group – its scenes stay). |
@@ -93,23 +94,62 @@ Other people's plugins show up in the menu under **Extensions**, each pointing t
 
 Stash UI works on its own. If you also install **Media Storm** or the **PMV Generator** (same plugin source), they show up in the menu under **Watch** – entries of plugins that aren't installed or are turned off are hidden. The PMV Generator opens as its own page; its back link and saved scenes lead back into Stash UI.
 
-## For plugin authors: extension modules
+## For plugin authors: extension modules (API v2)
 
-A plugin can add cards to Stash UI's lists (for example scenes from an external source that are not in the library yet). Nothing changes for people without such a plugin. Put `assets/stashui.js` into the plugin; Stash UI imports it once per plugin version and calls its default export:
+A plugin can bring its own pages, menu entries, list cards and panels into Stash UI. Nothing changes for people without such a plugin, and nothing costs anything until a plugin registers something. Put `assets/stashui.js` into the plugin; Stash UI imports it once per plugin version and calls its default export:
 
 ```js
-export default function setup(stashui) {
-  stashui.addListSource({
-    id: "myPlugin",
-    match: ({ page, kind }) => kind === "scene" && ["performer", "studio"].includes(page), // omitted = every list
-    async extend(ctx) {
-      return [{ before: ctx.items[0]?.id ?? null, piece: { key: "x1", title: "…", thumb: "…", w: 16, h: 9, href: "https://…" } }];
-    },
-  });
+export default function setup(stashui) {                // stashui.version === 2
+  if (!stashui.has("slot:scene.info")) return;          // older Stash UI: check for a hook before you use it
+  stashui.addListSource({ id: "myPlugin", match: ({ page, kind }) => kind === "scene", async extend(ctx) { … } });
+  stashui.addRoute({ path: "library/*", title: "Audiobooks", render(el, { params, rest, query, signal }) { …; return () => {}; } });
+  stashui.addNavItem({ id: "library", label: "Audiobooks", icon: "book", route: "library", group: "Library", count: async () => 42 });
+  stashui.addSlot("scene.info", { id: "tool", title: "Audio tool", mount(el, ctx) { …; return () => {}; } });
 }
 ```
 
-`ctx` = `page` (`scenes`, `images`, `galleries`, `performer`, `studio`, `tag`, `folder`, `gallery`, `group`, `history`, `funscripts`, `search`), `params` (e.g. `{ id }`), `kind`, `sort`, `dir`, `q`, `filter` (the Stash filter incl. the page's own), `pageNumber`, `perPage`, `count` (library items), `items` (this page's raw items), `prev` (last raw item of the previous page or `null`). Each entry is `{ before, piece }`: `before` = id of an item of this page to insert in front of (`null` = after the page); `piece` = `key` (unique), `title`, `thumb`, `w`/`h`, optional `meta`, `stamp`, `href` (opens in a new tab), `className` (e.g. `is-dim`), `badges: [{ text, title }]`, `mount(cardEl)` (may return a cleanup function, called when the list is left). These cards are not selectable, have no favourites, tiers, previews or bulk actions and are not counted. Each `extend` has 3 seconds; errors and timeouts are ignored for that page.
+Everything a plugin draws is `mount(el, ctx) → cleanup`: Stash UI owns where it goes and how big it is, the plugin fills the element. Every call is isolated – errors are caught and listed on the **Plugins** page (each plugin with a module has a “Stash UI extension” block: what it registered, its last errors, and a switch to turn the module off), waits have timeouts, and `ctx.signal` (an `AbortSignal`) fires when what the plugin drew is removed.
+
+### List cards – `addListSource`
+
+`ctx` = `page` (`scenes`, `images`, `galleries`, `performer`, `studio`, `tag`, `folder`, `gallery`, `group`, `history`, `funscripts`, `search`), `params` (e.g. `{ id }`), `kind`, `sort`, `dir`, `q`, `filter` (the Stash filter incl. the page's own), **`restricted`** (`true` when tier / detailed-rating filters limit the list by ids – they are not in `filter`, so a source can step back), `pageNumber`, `perPage`, `count` (library items), `items` (this page's raw items), `prev` (last raw item of the previous page or `null`). Each entry is `{ before, piece }`: `before` = id of an item of this page to insert in front of (`null` = after the page); `piece` = `key` (unique), `title`, `thumb`, `w`/`h`, optional `meta`, `stamp`, `href` (opens in a new tab), `className`, **`dim: true`** (the standard “not in the library” look), `badges: [{ text, title }]`, **`actions: [{ icon, title, run(cardEl) }]`** (buttons drawn by Stash UI in the corner of the card; they don't open the link; `run` may return a menu `[{ label, detail, run }]`; `icon` is the name of one of Stash UI's icons or an inline `<svg>`), `mount(cardEl)` (may return a cleanup function). These cards are not selectable, have no favourites, tiers, previews or bulk actions and are not counted. Each `extend` has 3 seconds; errors and timeouts are ignored for that page.
+
+- **Late results**: `stashui.invalidate(sourceId)` runs `extend` again for the pages already loaded and puts the new cards in place – no rebuild, the scroll position stays. A source that registers after a list is open is asked for it too.
+- **Empty lists**: the extension cards stay; “Nothing found” sits above them instead of replacing them.
+
+### Pages – `addRoute`
+
+`path`: `"library"`, `"library/:id"` or `"library/*"` (`*` = the rest, as `rest`). The page lives at `#/p/<pluginId>/<path>`. `title` (shown as the page heading; the tab title too), `overlay: true` = full screen above the page with a close button, like the player (no menu – for readers and players). `render(el, { params, rest, query, signal }) → cleanup` is called on every visit and the cleanup when the page is left. `stashui.go("p/<pluginId>/library/123")` links inside the plugin's pages; Back works.
+
+### Menu entries – `addNavItem`
+
+`{ id, label, icon, route | href, group, count }`: `route` (a page of the plugin) or `href` (`#/…` or a URL); `group`: `Library`, `Watch`, `Manage` – default `Extensions`; `icon`: a name of one of Stash UI's icons, an inline `<svg>` or an image address; `count: async () => n` shows a number. The entry joins the menu like a built-in one – Home → Customize → Sidebar can move and hide it. A plugin that registers menu entries is left out of the automatic Extensions scan.
+
+### Slots – `addSlot(name, { id, title, match(ctx), mount(el, ctx) })`
+
+| Slot | Where | ctx (besides `signal`, `onChange(fn)`, `reload()`) |
+|---|---|---|
+| `list.bar` | a bar above every media list | `page`, `params`, `kind`, `filter`, `sort`, `dir`, `q`, `restricted`, `count` (live: `onChange` fires when kind, filters or count change) |
+| `list.toolbar` | in the list's toolbar, before the spacer | the same |
+| `bulk.actions` | the selection bar | `kind`, `ids()` (the selection as it is now), `pieces()` |
+| `scene.info` | a foldable section (`title`) in the player's info bar | `id`, `item` (the scene), `video`, `time()` |
+| `scene.menu` | the player's gear menu | the same |
+| `performer.header`, `studio.header`, `tag.header`, `gallery.header` | in the page header, below the facts | `page`, `id`, `item` |
+| `home.section` | a section on the home page (`title`), filled when it is scrolled to | `page` |
+| `settings.section` | a settings screen under Settings → **Plugins** (`title`) | `page` |
+
+`match(ctx)` decides whether a slot shows (checked again when the ctx changes); `ctx.reload()` reloads the list (or reloads the scene); `ctx.onChange(fn) → off` follows the live fields.
+
+### Shared services
+
+- `stashui.ui`: `esc`, `icon(name)`, `toast`, `errorToast`, `confirmDialog`, `promptDialog`, `openDrawer`, `fmtDuration`, `fmtDate`, `fmtAgo`, `fmtBytes`, `fmtNum`, `plural`, `debounce`, and `menu(anchor, [{ label, detail, run }])` (the small popup menu).
+- `stashui.t(text, vars)` and `stashui.addStrings(lang, { "English text": "Text" })` – the plugin follows the interface language (`"de"` also fits `de-DE`; Stash UI's own strings win).
+- `stashui.gql(query, vars, { heavy })`: the app's own `gql` (aborted when the page is left, `heavy` queues big queries).
+- `stashui.store.get(key, fallback)` / `.set(key, value)`: browser-local, namespaced per plugin (`stashui.ext.<pluginId>.*`) – part of Stash UI's backup and of the automatic backup in Stash.
+- `stashui.on(event, fn) → off`: `route` (`{ path, view, params, query }`), `library-changed`, `plugins-changed`, `rail-changed`, `playlists-changed`, `display-changed` (with or without the `stash:` prefix).
+- `stashui.has(feature)`: `list.source`, `list.invalidate`, `list.restricted`, `piece.actions`, `route`, `navItem`, `ui`, `strings`, `gql`, `store`, `on`, `slot:<name>` …
+
+The CSS variables (`--base`, `--bg`, `--bg-2`, `--bg-3`, `--text`, `--text-2`, `--faint`, `--line`, `--pink`, `--paper`, `--danger`, `--ok`) and the classes `kb-btn`, `kb-chip`, `kb-field`, `kb-upsec`, `kb-h2`, `kb-empty`, `kb-hint` are stable – use them and your pieces follow the theme and liquid glass.
 
 ## Player
 

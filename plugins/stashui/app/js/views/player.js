@@ -18,6 +18,7 @@ import { tierBadge } from "../versusx.js";
 import { createVR, guessVR } from "../vr.js";
 import { openMarkerEdit } from "../markeredit.js";
 import { videoGlow } from "../theme.js";
+import { mountSlots } from "../ext.js";
 import { BINS, watchRecorder, watchBins, motionBins, combine, peaks } from "../heat.js";
 
 // Read Stash's sprite VTT: time ranges → region in the sprite image
@@ -180,7 +181,7 @@ export async function render(host, params, query = {}) {
           </div>
         </div>
       </div>
-      <aside class="kb-side" data-side>${placardHtml("scene", x)}<div class="kb-upnext kb-markers" data-markers></div><div class="kb-upnext kb-queuebox" data-queuebox></div><div class="kb-upnext" data-upnext></div><div class="kb-upnext kb-similar" data-similar></div></aside>
+      <aside class="kb-side" data-side>${placardHtml("scene", x)}<div class="kb-upnext kb-markers" data-markers></div><div class="kb-upnext kb-queuebox" data-queuebox></div><div class="kb-upnext" data-upnext></div><div class="kb-upnext kb-similar" data-similar></div><div class="kb-upnext kb-xinfo" data-xinfo></div></aside>
     </div>`;
 
   const stage = host.querySelector(".kb-stage");
@@ -276,8 +277,18 @@ export async function render(host, params, query = {}) {
     }, 280);
   });
   wrap.addEventListener("pointerenter", () => clearTimeout(leaveTimer));
+  let menuSlots = null;
+  // The menu's own part is repainted after every choice; the part of extension plugins stays as it is
+  function paintMenu() {
+    if (!menu.querySelector("[data-mmain]")) {
+      menu.innerHTML = '<div data-mmain></div><div class="kb-pmenu-sec kb-xmenu-sec" data-xmenu></div>';
+      menuSlots = mountSlots("scene.menu", menu.querySelector("[data-xmenu]"), slotCtx());
+    }
+    menu.querySelector("[data-mmain]").innerHTML = menuHtml();
+  }
   menu.addEventListener("click", (e) => {
     e.stopPropagation();
+    if (e.target.closest("[data-xmenu]")) return;
     const b = e.target.closest("button");
     if (!b) return;
     menuPicked = true;
@@ -304,7 +315,7 @@ export async function render(host, params, query = {}) {
       closeMenu();
       return addMarker();
     } else if (b.dataset.rate) v.playbackRate = v.defaultPlaybackRate = Number(b.dataset.rate); // default: survives a quality switch
-    menu.innerHTML = menuHtml();
+    paintMenu();
   });
   v.addEventListener("error", () => {
     if (srcIdx < sources.length - 1) {
@@ -570,7 +581,7 @@ export async function render(host, params, query = {}) {
     if (el.closest("[data-mini]")) return toMini();
     if (el.closest("[data-menubtn]")) {
       if (menu.hidden) {
-        menu.innerHTML = menuHtml();
+        paintMenu();
         menuPicked = false;
       }
       menu.hidden = !menu.hidden;
@@ -1000,10 +1011,20 @@ export async function render(host, params, query = {}) {
     prefs.closed = Object.assign({}, prefs.closed, { [d.dataset.sec]: !d.open });
     savePrefs();
   }, true); // "toggle" doesn't bubble – caught on the way down
+  // Sections of extension plugins in the info bar (slot scene.info) and entries in the menu (scene.menu)
+  const slotCtx = () => ({ page: "scene", kind: "scene", id: x.id, item: x, video: v, time: () => v.currentTime });
+  let infoSlots = null;
+  function mountInfo() {
+    if (infoSlots) infoSlots.destroy();
+    infoSlots = mountSlots("scene.info", side.querySelector("[data-xinfo]"), slotCtx(), { wrap: true, reload: () => plc && plc.refresh && plc.refresh() });
+  }
+  mountInfo();
   const plc = bindPlacard(side, "scene", () => x, {
     refresh: async () => {
       x = await getScene(x.id);
-      side.innerHTML = placardHtml("scene", x) + '<div class="kb-upnext kb-markers" data-markers></div><div class="kb-upnext kb-queuebox" data-queuebox></div><div class="kb-upnext" data-upnext></div><div class="kb-upnext kb-similar" data-similar></div>';
+      side.innerHTML = placardHtml("scene", x) + '<div class="kb-upnext kb-markers" data-markers></div><div class="kb-upnext kb-queuebox" data-queuebox></div><div class="kb-upnext" data-upnext></div><div class="kb-upnext kb-similar" data-similar></div><div class="kb-upnext kb-xinfo" data-xinfo></div>';
+      mountInfo();
+      menuSlots && menuSlots.set({ item: x });
       paintMarkers();
       paintQueue();
       paintUpnext();
@@ -1544,6 +1565,8 @@ export async function render(host, params, query = {}) {
       cv.open = false;
       saveCover(x.id);
     }
+    if (infoSlots) infoSlots.destroy();
+    if (menuSlots) menuSlots.destroy();
     document.removeEventListener("keydown", onKey);
     window.removeEventListener("stash:queue-changed", onQueue);
     document.removeEventListener("fullscreenchange", onFsChange);

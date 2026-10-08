@@ -7,6 +7,8 @@ import { mediaBrowser } from "./media.js";
 import { openEditor } from "./edit.js";
 import { app, go } from "../main.js";
 
+import { mountSlots } from "../ext.js";
+
 export async function render(main, params, query) {
   const g = await getGallery(params.id);
   if (!g) {
@@ -23,6 +25,7 @@ export async function render(main, params, query) {
         <h1 class="kb-h1">${esc(name)}${fav ? ` <span class="kb-dot-inline" title="${t("Favorite")}"></span>` : ""}</h1>
         <p class="kb-sub">${[plural(g.image_count, "image", "images"), g.date ? fmtDate(g.date) : "", g.rating100 ? starsHtml(g.rating100) : ""].filter(Boolean).join(t(", "))}</p>
         ${g.details ? `<p class="kb-lead">${esc(g.details)}</p>` : ""}
+        <div class="kb-xhead" data-xhead></div>
         ${g.tags.filter((x) => x.id !== app.favId).length ? `<div class="kb-chips kb-head-chips">${g.tags.filter((x) => x.id !== app.favId).map((x) => `<a class="kb-chip" href="#/tag/${x.id}">${esc(x.name)}</a>`).join("")}</div>` : ""}
       </div>
       <div class="kb-head-tools">
@@ -32,6 +35,7 @@ export async function render(main, params, query) {
       </div>
     </header>
     <section data-browser></section>`;
+  const xhead = mountSlots("gallery.header", main.querySelector("[data-xhead]"), { page: "gallery", id: g.id, item: g });
   const b = mediaBrowser(main.querySelector("[data-browser]"), {
     kinds: ["image"],
     query,
@@ -58,5 +62,8 @@ export async function render(main, params, query) {
     app.context = { kind: "image", pieces: h.pieces, index: 0, hang: h, slideshow: true };
     go("image/" + h.pieces[0].id);
   };
-  return () => b.destroy();
+  return () => {
+    xhead.destroy();
+    b.destroy();
+  };
 }

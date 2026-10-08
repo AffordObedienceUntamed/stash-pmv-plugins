@@ -1,6 +1,6 @@
 // Common model for scenes, images and galleries ("pieces") and the salon hanging.
 
-import { esc, icon, fmtDuration, fmtRes, fmtDate, fmtBytes, invNo, plural, store } from "./ui.js";
+import { esc, icon, fmtDuration, fmtRes, fmtDate, fmtBytes, invNo, plural, store, menu, errorToast } from "./ui.js";
 import { t } from "./i18n.js";
 import { tierNow } from "./tiers.js";
 import { tierBadge } from "./versusx.js";
@@ -77,11 +77,14 @@ function studioBadge(p) {
 function foreignHtml(p) {
   const badges = (p.badges || []).map((b) => `<span class="kb-xbadge"${b.title ? ` title="${esc(b.title)}"` : ""}>${esc(b.text)}</span>`).join("");
   const tag = p.href ? "a" : "div";
+  // Buttons drawn by Stash UI (piece.actions): they don't open the link; an icon is one of ours by name, or an inline <svg>
+  const acts = (p.actions || []).slice(0, 4).map((a, i) => `<button type="button" class="kb-xact" data-xact="${i}" title="${esc(a.title || "")}" aria-label="${esc(a.title || "")}">${/^\s*<svg/i.test(a.icon || "") ? a.icon.replace(/<script[\s\S]*?<\/script>/gi, "") : icon(a.icon || "plug")}</button>`).join("");
   return (
-    `<${tag} class="kb-piece kb-xpiece${p.className ? " " + esc(p.className) : ""}" data-key="${esc(p.kind + ":" + p.id)}"${p.href ? ` href="${esc(p.href)}" target="_blank" rel="noopener"` : ""} aria-label="${esc(p.title || "")}">` +
+    `<${tag} class="kb-piece kb-xpiece${p.dim ? " is-dim" : ""}${p.className ? " " + esc(p.className) : ""}" data-key="${esc(p.kind + ":" + p.id)}"${p.href ? ` href="${esc(p.href)}" target="_blank" rel="noopener"` : ""} aria-label="${esc(p.title || "")}">` +
     (p.thumb ? `<img alt="" loading="lazy" decoding="async" src="${esc(p.thumb)}">` : "") +
     (p.stamp ? `<span class="kb-stamp">${esc(p.stamp)}</span>` : "") +
     (badges ? `<span class="kb-xbadges">${badges}</span>` : "") +
+    (acts ? `<span class="kb-xacts">${acts}</span>` : "") +
     `<span class="kb-placard"><b>${esc(p.title || "")}</b><small>${esc(p.meta || "")}</small></span>` +
     `</${tag}>`
   );
@@ -115,7 +118,8 @@ export class Hang {
     this.opts = opts; // { fetchPage(page) → {count, pieces}, onOpen(piece, index, list), onSelect(set), rowHeight }
     this.pieces = [];
     this.extras = []; // cards of extensions: { before: key | null, last: key of the page's last item, piece } - not part of this.pieces
-    this.cleanups = [];
+    this.cleanups = []; // (of the extensions' cards: key → function)
+    this.cleanupBy = new Map();
     this.nodes = new Map();
     this.page = 0;
     this.count = null;
@@ -148,11 +152,31 @@ export class Hang {
     this.io.disconnect();
     this.ro.disconnect();
     this.stopPreview();
-    this.cleanups.splice(0).forEach((f) => {
+    this.cleanupBy.forEach((f) => {
       try {
         f();
       } catch (e) { /* the extension's own cleanup */ }
     });
+    this.cleanupBy.clear();
+  }
+
+  // New cards of one extension source (keys start with prefix) in place of the old ones – the list isn't rebuilt
+  replaceExtras(prefix, entries) {
+    this.extras = this.extras.filter((x) => {
+      if (!String(x.piece.key).startsWith(prefix)) return true;
+      const k = x.piece.kind + ":" + x.piece.id;
+      const f = this.cleanupBy.get(k);
+      if (f) {
+        try {
+          f();
+        } catch (e) { /* the extension's own cleanup */ }
+        this.cleanupBy.delete(k);
+      }
+      this.nodes.delete(k);
+      return false;
+    });
+    entries.forEach((x) => this.extras.push({ before: x.before == null ? null : x.before, last: x.last, piece: x.piece }));
+    this.layout();
   }
 
   setRowHeight(h) {
@@ -202,7 +226,7 @@ export class Hang {
       if (p.foreign && typeof p.mount === "function") {
         try {
           const done = p.mount(n);
-          if (typeof done === "function") this.cleanups.push(done);
+          if (typeof done === "function") this.cleanupBy.set(key, done);
         } catch (e) {
           console.warn("[Stash UI] extension card", e);
         }
@@ -347,6 +371,19 @@ export class Hang {
     this.el.addEventListener("click", (e) => {
       const n = e.target.closest(".kb-piece");
       if (!n || !this.el.contains(n)) return;
+      const xa = e.target.closest("[data-xact]");
+      if (xa && n._piece && n._piece.foreign) {
+        // a button of an extension's card: it runs, the card's link doesn't open; it may answer with a menu
+        e.preventDefault();
+        e.stopPropagation();
+        const act = (n._piece.actions || [])[Number(xa.dataset.xact)];
+        if (!act || typeof act.run !== "function") return;
+        Promise.resolve()
+          .then(() => act.run(n))
+          .then((items) => Array.isArray(items) && items.length && menu(xa, items.map((it) => ({ label: it.label, detail: it.detail, disabled: it.disabled, run: it.run }))))
+          .catch((err) => errorToast(err, "Action failed"));
+        return;
+      }
       if (n._piece && n._piece.foreign) return; // an extension's card: its link opens in a new tab
       const key = n.dataset.key;
       if (e.target.closest(".kb-pick") || this.selected.size || e.shiftKey || e.ctrlKey || e.metaKey) {

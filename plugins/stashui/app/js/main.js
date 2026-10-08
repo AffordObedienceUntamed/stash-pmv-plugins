@@ -2,12 +2,12 @@
 
 import { esc, icon, store, errorToast, fmtNum, $, folderMode, setRatingSystem } from "./ui.js";
 import { t, initLang } from "./i18n.js";
-import { loadExtensions } from "./ext.js";
+import { loadExtensions, setHost, extensionsReady, routeInfo, hasNav } from "./ext.js";
 import { gql, loadFolders, favoriteTagId, stats, abortRoute } from "./api.js";
 import { isLarge } from "./scale.js";
 import { applyTheme, initAmbient } from "./theme.js";
 import { LATEST } from "./changelog.js";
-import { visibleRail } from "./railcfg.js";
+import { visibleRail, navIcon } from "./railcfg.js";
 
 applyTheme(); // chosen colors before anything is drawn
 initAmbient();
@@ -61,10 +61,11 @@ const ROUTES = [
   { re: /^queue$/, view: "queue" },
   { re: /^tasks$/, view: "tasks" },
   { re: /^settings$/, view: "settings" },
-  { re: /^settings\/([a-z-]+)$/, view: "settings", keys: ["section"] },
+  { re: /^settings\/([^/?]+)$/, view: "settings", keys: ["section"] },
   { re: /^plugins$/, view: "plugins" },
   { re: /^phone$/, view: "phone" },
   { re: /^extern\/([a-z-]+)$/, view: "embed", keys: ["name"] },
+  { re: /^p\/([^/?]+)(?:\/(.*))?$/, view: "xroute", keys: ["plugin", "rest"] }, // pages of extension plugins (ext.js addRoute)
   { re: /^scene\/(\d+)$/, view: "player", keys: ["id"], overlay: true },
   { re: /^image\/(\d+)$/, view: "viewer", keys: ["id"], overlay: true },
 ];
@@ -86,7 +87,9 @@ export function parseHash() {
     if (m) {
       const params = Object.assign({}, r.params);
       (r.keys || []).forEach((k, i) => (params[k] = m[i + 1]));
-      return { path, query, view: r.view, params, overlay: !!r.overlay };
+      // a page of an extension plugin can ask to be an overlay (full screen, no menu)
+      const ov = r.view === "xroute" ? !!((routeInfo(params.plugin, params.rest || "") || {}).route || {}).overlay : !!r.overlay;
+      return { path, query, view: r.view, params, overlay: ov };
     }
   }
   return { path, query, view: "home", params: {}, overlay: false };
@@ -145,6 +148,7 @@ const loaders = {
   plugins: () => import("./views/plugins.js"),
   phone: () => import("./views/phone.js"),
   embed: () => import("./views/embed.js"),
+  xroute: () => import("./views/xroute.js"),
   player: () => import("./views/player.js"),
   viewer: () => import("./views/viewer.js"),
 };
@@ -153,8 +157,15 @@ const hashNow = () => (location.hash && location.hash !== "#" ? location.hash : 
 
 let routeSeq = 0;
 async function route() {
-  const r = parseHash();
+  let r = parseHash();
   const seq = ++routeSeq;
+  // a page of an extension plugin can only be found once the modules are loaded
+  if (r.view === "xroute") {
+    await extensionsReady();
+    if (seq !== routeSeq) return;
+    r = parseHash();
+  }
+  window.dispatchEvent(new CustomEvent("stash:route", { detail: { path: r.path, view: r.view, params: r.params, query: r.query } }));
   const main = document.getElementById("main");
   const overlayRoot = document.getElementById("overlay-root");
 
@@ -231,7 +242,9 @@ function paintRailGroups() {
 }
 
 const navHtml = (it) =>
-  it.action
+  it.xnav
+    ? `<a href="${esc(it.xnav.href)}" data-match="${esc(it.match.source)}" data-xnav="${esc(it.xnav.key)}" title="${esc(it.label)}">${navIcon(it.icon)}<span>${esc(it.label)}</span>${it.xnav.count ? `<span class="kb-count" data-xcount="${esc(it.xnav.key)}"></span>` : ""}</a>`
+    : it.action
     ? `<button type="button" data-action="${it.action}"${it.plugin ? ` data-plugin="${it.plugin}"` : ""} title="${esc(t(it.label))}">${icon(it.icon)}<span>${t(it.label)}</span></button>`
     : `<a href="#/${it.href}" data-match="${it.match.source}" title="${esc(t(it.label))}">${icon(it.icon)}<span>${t(it.label)}</span>${it.count ? `<span class="kb-count" data-count="${it.count}"></span>` : ""}</a>`;
 const extHtml = (f) =>
@@ -275,6 +288,7 @@ function renderRail() {
 
   paintRailGroups();
   setNewsDot();
+  fillExtCounts();
   if (!rail._kbBound) {
     rail._kbBound = true;
     bindRail(rail);
@@ -346,12 +360,17 @@ async function refreshPluginLinks() {
     const pmv = plugins.find((p) => p.enabled && (norm(p.id) === "pmvgenerator" || norm(p.name) === "pmvgenerator"));
     app.pmvPlugin = pmv ? pmv.id : null;
   } catch (e) {
+    loadExtensions([]).catch(() => {}); // (pages of extension plugins stop waiting)
     return; // unknown – leave the entries visible
   }
   pluginsOn = on;
   applyPluginLinks();
-  paintExtensions(plugins.filter((p) => p.enabled && !OWN.has(norm(p.id))));
-  loadExtensions(plugins.filter((p) => p.enabled && !OWN.has(norm(p.id)))).catch(() => {});
+  const others = plugins.filter((p) => p.enabled && !OWN.has(norm(p.id)));
+  paintExtensions(others);
+  // Extension modules (ext.js); one that brings its own menu entries is left out of the automatic scan above
+  loadExtensions(plugins.filter((p) => p.enabled && norm(p.id) !== "stashui")).catch(() => {}).then(() => {
+    if (others.some((p) => hasNav(p.id))) renderRail();
+  });
 }
 
 // ---------- Other people's plugins ----------
@@ -564,6 +583,19 @@ export async function refreshCounts() {
   } catch (e) { /* counts are just extras */ }
 }
 
+// Menu entries of extension plugins can show a number (count: async () => n)
+async function fillExtCounts() {
+  const { navItems } = await import("./ext.js");
+  for (const n of navItems()) {
+    if (!n.count) continue;
+    try {
+      const v = await Promise.race([Promise.resolve(n.count()), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 4000))]);
+      document.querySelectorAll(`[data-xcount="${CSS.escape(n.plugin + ":" + n.id)}"]`).forEach((c) => (c.textContent = v != null && v !== "" ? Number.isFinite(Number(v)) ? fmtNum(Number(v)) : String(v) : ""));
+    } catch (e) { /* a number is just an extra */ }
+  }
+}
+window.addEventListener("stash:library-changed", () => fillExtCounts());
+
 export function setQueueCount() {
   const c = document.querySelector('[data-count="queue"]');
   if (c) c.textContent = (store.get("queue", []).length || "") + "";
@@ -610,6 +642,7 @@ export function openStorm() {
 }
 
 // ---------- Start ----------
+setHost({ go }); // (the extension API's go())
 
 async function init() {
   // a browser that has forgotten its settings gets them back from Stash first (then the page starts again)

@@ -33,6 +33,15 @@ export function t(text, params) {
   return out;
 }
 
+// Extension modules bring their own translations: addStrings("de", { "English text": "Text" }). Only the language in
+// use matters ("de" also fits "de-DE"); strings of Stash UI itself win over a plugin's.
+export function addStrings(code, strings) {
+  if (!strings || typeof strings !== "object") return;
+  if (String(code) !== lang && !String(lang).startsWith(String(code) + "-")) return;
+  if (!dict) dict = {};
+  for (const k of Object.keys(strings)) if (!(k in dict)) dict[k] = String(strings[k]);
+}
+
 // Polish counts 2–4 (but not 12–14) with its own form: plural(n, one, many) then looks up "<many>#few"
 export const few = (n) => lang === "pl" && n % 10 >= 2 && n % 10 <= 4 && !(n % 100 >= 12 && n % 100 <= 14);
 

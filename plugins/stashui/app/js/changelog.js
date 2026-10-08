@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.80.0",
+    date: "2026-10-08",
+    items: [
+      ["ui", "Extension API v2 for plugin authors (GitHub issue #3): plugins can now bring their own pages (#/p/<plugin>/…, also as full-screen overlays), menu entries (which Customize → Sidebar can move and hide), and slots – the list bar and toolbar, the selection bar, a section and a menu entry in the player, headers of performer, studio, tag and gallery pages, home page sections and settings screens. List cards got buttons drawn by Stash UI, a “not in the library” look, late results without rebuilding the list (invalidate) and stay on an empty list; sources can see when tier / detailed-rating filters limit a list. Shared helpers (ui, t, gql, store, on) make plugins look and behave like Stash UI. The Plugins page lists what each extension registered and its errors, with a switch to turn it off. Nothing changes for people without such a plugin. See the README, “For plugin authors”.", "面向插件作者的扩展 API v2（GitHub issue #3）：插件现在可以带来自己的页面（#/p/<插件>/…，也可作为全屏覆盖层）、菜单项（可在 自定义 → 侧边栏 中移动和隐藏）以及插槽——列表栏和工具栏、选择栏、播放器中的一个区块和一个菜单项、演员/工作室/标签/图库页面的页头、主页区块和设置页面。列表卡片新增由 Stash UI 绘制的按钮、“不在库中”的外观、无需重建列表的延迟结果（invalidate），并且在列表为空时仍会保留；来源可以得知等级/详细评分筛选限制了列表。共享的辅助功能（ui、t、gql、store、on）让插件的外观和行为与 Stash UI 一致。插件页面会列出每个扩展注册的内容及其错误，并带有关闭开关。没有此类插件的用户不受任何影响。详见 README 的“For plugin authors”。"],
+    ],
+  },
+  {
     v: "3.79.0",
     date: "2026-10-08",
     items: [

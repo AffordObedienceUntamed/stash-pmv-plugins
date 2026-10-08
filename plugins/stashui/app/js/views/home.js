@@ -12,6 +12,7 @@ import { tagPicker } from "./tagpicker.js";
 import { perfPicker, hasPerformers } from "./perfpicker.js";
 import { mountRailEditor } from "./homerail.js";
 import { track, forget, closeBar } from "../bulkbar.js";
+import { mountSlots, extensionsReady } from "../ext.js";
 
 function greeting() {
   const h = new Date().getHours();
@@ -158,7 +159,10 @@ export async function render(main) {
   let editTab = "home"; // Customize: the home page or the menu on the left
   let hangs = [];
   let stopCovers = () => {};
+  let xhome = null;
   const cleanup = () => {
+    if (xhome) xhome.destroy();
+    xhome = null;
     hangs.forEach((h) => h.destroy());
     hangs = [];
     closeBar();
@@ -227,6 +231,14 @@ export async function render(main) {
       if (s.id === "folders") return paintFolders(sec);
       if (s.id === "random") return paintRandom(sec, el);
       hangs.push(wall(el, fetcherFor(s), undefined, s.id));
+    });
+    // Sections of extension plugins (slot home.section), behind the others; each one is filled when it is scrolled to
+    const xbox = document.createElement("div");
+    xbox.className = "kb-xhome";
+    box.appendChild(xbox);
+    extensionsReady().then(() => {
+      if (!xbox.isConnected) return;
+      xhome = mountSlots("home.section", xbox, { page: "home" }, { wrap: "section", lazy: whenVisible });
     });
   }
 

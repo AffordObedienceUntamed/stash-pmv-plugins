@@ -2,7 +2,8 @@
 // Layout = ordered groups with item ids, plus hidden ids. Items that appear later (a new menu entry in an
 // update, a newly installed plugin) are put into their default group, so nothing is ever lost.
 
-import { store } from "./ui.js";
+import { store, esc, icon } from "./ui.js";
+import { navItems, hasNav } from "./ext.js";
 
 export const NAV = [
   { group: null, items: [
@@ -44,6 +45,25 @@ export const NAV = [
   ] },
 ];
 
+// A symbol: the name of one of ours, inline <svg>, or an image address (extension plugins)
+export const navIcon = (v) => (/^\s*<svg/i.test(v || "") ? v.replace(/<script[\s\S]*?<\/script>/gi, "") : /^(https?:)?\/|^data:image\//.test(v || "") ? `<img class="kb-ext-ic" alt="" src="${esc(v)}">` : icon(v || "plug"));
+// Menu entries of extension plugins (ext.js addNavItem): id → { entry, group }
+const GROUPS = new Set(["Library", "Watch", "Manage", "Extensions"]);
+const reEsc = (x) => String(x).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function extNav() {
+  const out = new Map();
+  for (const n of navItems()) {
+    const id = "n:" + n.plugin + ":" + n.id;
+    const route = n.route != null ? String(n.route).replace(/^\/+/, "") : null;
+    const href = route != null ? "#/p/" + encodeURIComponent(n.plugin) + "/" + route : /^(#|https?:|\/)/.test(n.href) ? n.href : "#/" + n.href;
+    const path = href.startsWith("#/") ? href.slice(2).split("?")[0] : "";
+    // lit while that page (or, for a route, anything below its first part) is open
+    const re = route != null ? new RegExp("^p/" + reEsc(encodeURIComponent(n.plugin)) + "/" + reEsc(route.split("/")[0])) : path ? new RegExp("^" + reEsc(path) + "$") : /$^/;
+    out.set(id, { id, group: GROUPS.has(n.group) ? n.group : "Extensions", nav: { label: n.label, icon: n.icon, match: re, xnav: { key: n.plugin + ":" + n.id, href, count: !!n.count } } });
+  }
+  return out;
+}
+
 const KEY = "railLayout";
 const FOLDERS = "folders";
 const SAVED = "savedfilters"; // Stash's saved filters and the playlists, under the folder tree
@@ -72,11 +92,12 @@ export function catalog() {
   for (const g of NAV) for (const it of g.items) m.set(navId(it), { id: navId(it), nav: it });
   m.set(FOLDERS, { id: FOLDERS, folders: true });
   m.set(SAVED, { id: SAVED, saved: true });
+  for (const [id, e] of extNav()) m.set(id, { id, nav: e.nav });
   const mode = store.get("extMode", "show");
   const off = new Set(store.get("extHidden", []));
   if (mode !== "hide") {
     for (const f of store.get("extFound", [])) {
-      if (!f.href || off.has(f.id)) continue;
+      if (!f.href || off.has(f.id) || hasNav(f.id)) continue; // (a plugin with menu entries of its own isn't scanned)
       m.set("x:" + f.id, { id: "x:" + f.id, ext: f });
     }
   }
@@ -108,7 +129,7 @@ export function loadRail() {
   for (const id of catalog().keys()) {
     if (seen.has(id)) continue;
     seen.add(id);
-    const key = d.items.get(id) ?? "Extensions";
+    const key = d.items.get(id) ?? (extNav().get(id) || {}).group ?? "Extensions";
     const g = groups.find((x) => x.key === key) || groups[groups.length - 1];
     const order = defOrder.get(key) || [];
     let at = g.items.length;

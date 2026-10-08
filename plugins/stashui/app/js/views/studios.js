@@ -110,6 +110,8 @@ async function renderList(main, query) {
   };
 }
 
+import { mountSlots } from "../ext.js";
+
 async function renderOne(main, id, query) {
   let s;
   try {
@@ -150,10 +152,12 @@ async function renderOne(main, id, query) {
         <div class="kb-plc-acts">${s.rating100 ? starsHtml(s.rating100) : ""}<button class="kb-plc-btn" data-edit>${icon("edit")}${t("Edit")}</button><button class="kb-plc-btn" data-scrape>${icon("search")}${t("Fill in from the internet")}</button></div>
         ${facts.length ? `<dl class="kb-facts">${facts.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`).join("")}</dl>` : ""}
         ${(s.tags || []).length ? `<div class="kb-chips">${s.tags.map((tg) => `<a class="kb-chip" href="#/tag/${esc(tg.id)}">${esc(tg.name)}</a>`).join("")}</div>` : ""}
+        <div class="kb-xhead" data-xhead></div>
         ${s.details ? `<p class="kb-lead kb-perf-details">${esc(s.details)}</p>` : ""}
       </div>
     </header>
     <section data-browser></section>`;
+  const xhead = mountSlots("studio.header", main.querySelector("[data-xhead]"), { page: "studio", id, item: s });
   const edit = (scrape) => openStudioEditor(id, { scrape, onSaved: () => go("studio/" + id, true), onDeleted: () => go("studios", true) });
   main.querySelector("[data-edit]").onclick = () => edit(false);
   main.querySelector("[data-scrape]").onclick = () => edit(true);
@@ -167,5 +171,8 @@ async function renderOne(main, id, query) {
     base: () => ({ filter: { studios: { value: [id], modifier: "INCLUDES", depth: -1 } } }),
     playlist: false,
   });
-  return () => b && b.destroy && b.destroy();
+  return () => {
+    xhead.destroy();
+    b && b.destroy && b.destroy();
+  };
 }

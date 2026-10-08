@@ -158,6 +158,47 @@ export const store = {
   },
 };
 
+// A small popup menu under an element: items = [{ label, detail, run }] – a click runs the item and closes the menu,
+// Esc or a click elsewhere closes it too. Returns close(). (Also offered to extension modules as stashui.ui.menu.)
+export function menu(anchor, items, opts = {}) {
+  document.querySelectorAll(".kb-xmenu").forEach((m) => m.remove());
+  const el = document.createElement("div");
+  el.className = "kb-pmenu kb-xmenu";
+  el.setAttribute("role", "menu");
+  el.innerHTML = (items || [])
+    .map((it, i) => `<button type="button" role="menuitem" class="kb-pmenu-opt" data-xi="${i}"${it.disabled ? " disabled" : ""}><span>${esc(it.label)}${it.detail ? `<small class="kb-xmenu-detail">${esc(it.detail)}</small>` : ""}</span></button>`)
+    .join("");
+  document.body.appendChild(el);
+  const r = anchor.getBoundingClientRect();
+  const w = el.offsetWidth;
+  const h = el.offsetHeight;
+  el.style.left = Math.max(8, Math.min(innerWidth - w - 8, opts.align === "right" ? r.right - w : r.left)) + "px";
+  el.style.top = (r.bottom + h + 12 > innerHeight && r.top > h + 12 ? r.top - h - 6 : r.bottom + 6) + "px";
+  const close = () => {
+    el.remove();
+    document.removeEventListener("pointerdown", away, true);
+    document.removeEventListener("keydown", key, true);
+  };
+  const away = (e) => !el.contains(e.target) && close();
+  const key = (e) => e.key === "Escape" && (e.stopPropagation(), close());
+  setTimeout(() => {
+    document.addEventListener("pointerdown", away, true);
+    document.addEventListener("keydown", key, true);
+  });
+  el.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-xi]");
+    if (!b) return;
+    const it = items[Number(b.dataset.xi)];
+    close();
+    try {
+      it && it.run && it.run();
+    } catch (err) {
+      errorToast(err, "Menu");
+    }
+  });
+  return close;
+}
+
 // ---------- Messages ----------
 
 // act = { label, run }: a button in the toast (e.g. Undo) – the toast then stays a little longer
