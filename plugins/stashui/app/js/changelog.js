@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.75.1",
+    date: "2026-10-08",
+    items: [
+      ["ui", "Fix: in fullscreen, the next scene (autoplay, Next, up next) no longer throws you out of fullscreen – the page's overlay layer goes fullscreen and stays, only the player inside it is replaced. Leaving the player any other way (back, closing, another page) still ends fullscreen.", "修复：全屏时，下一个场景（自动播放、下一个、接下来播放）不再把你踢出全屏——全屏的是页面的覆盖层，它会一直保留，只替换其中的播放器。以其他方式离开播放器（返回、关闭、其他页面）仍会退出全屏。"],
+    ],
+  },
+  {
     v: "3.75.0",
     date: "2026-10-08",
     items: [

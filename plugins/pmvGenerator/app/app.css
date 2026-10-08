@@ -836,7 +836,7 @@ html.kb-glass .kb-amb { position: absolute; inset: -12%; z-index: 0; width: 124%
 html.kb-glass .kb-stage.kb-player { overflow: hidden; }
 html.kb-glass .kb-stage.kb-player > .kb-screen { z-index: 1; }
 html.kb-glass .kb-stage.kb-player > .kb-side { position: relative; z-index: 1; }
-html.kb-glass .kb-stage.kb-player:fullscreen > .kb-side { position: absolute; z-index: 6; }
+html.kb-glass .kb-stage.kb-player:fullscreen > .kb-side, html.kb-glass .kb-stage.kb-player.is-full > .kb-side { position: absolute; z-index: 6; }
 html.kb-glass .kb-player .kb-video { background: transparent; }
 html.kb-glass .kb-stage.kb-player .kb-side { background: var(--glass-shine), color-mix(in srgb, var(--base) 45%, transparent); -webkit-backdrop-filter: none; backdrop-filter: none; } /* the glow behind is already soft – no blur per frame */
 html.kb-glass .kb-amb { will-change: contents; transform: translateZ(0); }

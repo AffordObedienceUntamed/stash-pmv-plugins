@@ -645,9 +645,12 @@ export async function render(host, params, query = {}) {
   // turns the screen to landscape. iPhones only allow fullscreen for the video itself → native player.
   async function fullscreen() {
     if (document.fullscreenElement) return document.exitFullscreen().catch(() => {});
-    if (stage.requestFullscreen) {
+    // The page's overlay root goes fullscreen, not the stage: the stage is replaced when the next scene opens (autoplay),
+    // and a removed fullscreen element would leave fullscreen – the root stays, so the next scene continues in fullscreen
+    const fsEl = stage.closest("#overlay-root") || stage;
+    if (fsEl.requestFullscreen) {
       try {
-        await stage.requestFullscreen({ navigationUI: "hide" });
+        await fsEl.requestFullscreen({ navigationUI: "hide" });
         if (v.videoWidth > v.videoHeight && screen.orientation && screen.orientation.lock) screen.orientation.lock("landscape").catch(() => {});
         return;
       } catch (e) { /* not allowed – try the video element below */ }
@@ -661,7 +664,7 @@ export async function render(host, params, query = {}) {
   }
   // Fullscreen: mouse at the right edge slides the info panel in (can be switched off in the settings)
   stage.addEventListener("pointermove", (e) => {
-    if (document.fullscreenElement !== stage || e.pointerType !== "mouse" || prefs.fsPanel === false || !menu.hidden) return;
+    if (!document.fullscreenElement || e.pointerType !== "mouse" || prefs.fsPanel === false || !menu.hidden) return;
     const side = $("[data-side]");
     // Not over the control bar or the top bar – their buttons (fullscreen, info …) sit in that corner too
     const bars = e.target.closest(".kb-controls, .kb-topbar") || e.clientY >= $(".kb-controls").getBoundingClientRect().top - 8 || e.clientY <= 64;
@@ -673,6 +676,7 @@ export async function render(host, params, query = {}) {
   });
   const onFsChange = () => {
     stage.classList.remove("is-peek");
+    stage.classList.toggle("is-full", !!document.fullscreenElement);
     if (!document.fullscreenElement && screen.orientation && screen.orientation.unlock) {
       try {
         screen.orientation.unlock();
@@ -680,6 +684,7 @@ export async function render(host, params, query = {}) {
     }
   };
   document.addEventListener("fullscreenchange", onFsChange);
+  stage.classList.toggle("is-full", !!document.fullscreenElement); // (opened while the previous scene was fullscreen)
 
   // ---------- Next / previous ----------
   // Order: queue > list it was opened from > random from the library
@@ -1554,7 +1559,8 @@ export async function render(host, params, query = {}) {
       v.load();
     }
     savePrefs();
-    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    // Fullscreen stays when the next scene opens (autoplay, Next, up next …) – any other way out leaves it
+    if (document.fullscreenElement && !/^#\/scene\//.test(location.hash)) document.exitFullscreen().catch(() => {});
     // Update progress in the grid
     if (ctx.hang) {
       const p = ctx.hang.pieces.find((q) => q.kind === "scene" && q.id === x.id);
