@@ -74,6 +74,8 @@ const DEFAULTS = {
   lookAmt: 100, // strength of the look (%)
   lookColor: "#ff4d94", // the tint of the "custom" look
   bright: 0, // smooth extra brightness (%)
+  soft: false, // soft seams: the fields of a split screen blend into each other
+  softAmt: 50, // how wide the blend is (%)
   edge: "off", // rim of the picture: off | blur | motion | lens
   edgeAmt: 50, // how strong / how far in (%)
   smooth: true, // clips scaled smoothly (less pixelated)
@@ -453,6 +455,13 @@ export function render(main) {
             <div class="kb-pmvg-sound">
               <label class="kb-pmvg-range"><span>${icon("eye")}Brightness</span><input type="range" min="0" max="100" step="5" data-r="bright" aria-label="Brightness"><output data-ro="bright"></output></label>
             </div>
+            <span class="kb-lab-t">Soft seams <small>– the clips of a split screen blend into each other instead of meeting at a sharp line</small></span>
+            <div class="kb-pmvg-opts">
+              ${sw("soft", "Blend the fields", "No divider lines: where two fields meet, one clip fades into the other (a bit more work for the computer)")}
+            </div>
+            <div class="kb-pmvg-sound" data-softbox>
+              <label class="kb-pmvg-range"><span>${icon("sliders")}Blend width</span><input type="range" min="0" max="100" step="5" data-r="softAmt" aria-label="Width of the blend between the fields"><output data-ro="softAmt"></output></label>
+            </div>
             <span class="kb-lab-t">Rim of the picture <small>– only the edges, the middle stays sharp</small></span>
             <div class="kb-seg" data-seg="edge"><button type="button" data-v="off">Off</button><button type="button" data-v="blur" title="Soft blur towards the edges">Blur</button><button type="button" data-v="motion" title="Light motion blur: streaks sideways at the left and right edge, up and down at the top and bottom">Motion</button><button type="button" data-v="lens" title="The edges look bent outwards, like through a lens">Lens</button></div>
             <div class="kb-pmvg-sound" data-edgebox>
@@ -566,6 +575,7 @@ export function render(main) {
     $("[data-colorrow]").hidden = S.look !== "custom";
     $("[data-lookbox]").hidden = S.look === "none";
     $("[data-edgebox]").hidden = S.edge === "off";
+    $("[data-softbox]").hidden = !S.soft;
     $("[data-pulsebox]").hidden = !S.fx.zoom;
     $("[data-fsbox]").hidden = !S.fsOn;
     $("[data-seg=tagMode]").hidden = (S.stagesOn ? S.stages.length : S.tags.length) < 2;

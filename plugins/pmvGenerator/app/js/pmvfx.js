@@ -154,7 +154,8 @@ export class Compositor {
   // st: { t, slots, groups (media per group), cutT (per group), energy, beatT, beatAmt, stutterT }
 
   draw(st) {
-    const { g, W, H, fx } = this;
+    let { g } = this; // (let: a field with soft seams is drawn into its own buffer first)
+    const { W, H, fx } = this;
     const t = st.t;
     const e = st.energy;
     g.save();
@@ -219,8 +220,10 @@ export class Compositor {
       this.rvAsp = null;
     }
     const fitM = reveal ? "cover" : this.S.fit;
+    // Soft seams: the fields of a split screen blend into each other (no sharp line between them)
+    const softOn = !!this.S.soft && !reveal && slots.length > 1;
 
-    slots.forEach((s, i) => {
+    const drawField = (s, i) => {
       const m = st.groups[s.g];
       if (!m || !m.w || !m.h) return;
       const since = t - (st.cutT[s.g] || 0);
@@ -277,6 +280,19 @@ export class Compositor {
       }
       if (fitHere === "contain") this.backdrop(i, m, s);
       drawIn(g, m, s, fitHere, zoom, ox, oy, filter.trim(), fx.kenburns);
+    };
+    slots.forEach((s0, i) => {
+      const sg = softOn ? this.softGeom(s0, slots) : null;
+      if (!sg) return drawField(s0, i);
+      // the field's clip fills a rectangle a little bigger than the field (it reaches into the neighbours), into a buffer…
+      const base = g;
+      g = this.g = this.softCtx(i, sg.ew, sg.eh);
+      try {
+        drawField({ x: 0, y: 0, w: sg.ew, h: sg.eh, g: s0.g, fx: s0.fx, fy: s0.fy }, i);
+      } finally {
+        g = this.g = base;
+      }
+      this.softFinish(i, sg); // …whose left and top edge fade out, and which goes on top of the field before it
     });
     if (this.revealWin) {
       g.restore(); // (the rounded window's clip)
@@ -306,8 +322,8 @@ export class Compositor {
     // Only the rim of the picture is softened / smeared / bent – the middle stays sharp
     if (this.S.edge && this.S.edge !== "off") this.edgeSoft(this.S.edge, Math.max(0, Math.min(1, (this.S.edgeAmt ?? 50) / 100)));
 
-    // Dividers between fields, glowing to the beat – thin (2 px at 720p, 3 px at 1080p)
-    if (st.slots.length > 1) {
+    // Dividers between fields, glowing to the beat – thin (2 px at 720p, 3 px at 1080p); none with soft seams
+    if (st.slots.length > 1 && !softOn) {
       const dw = Math.max(2, Math.round(W / 640));
       const h2 = dw / 2;
       const glow = Math.exp(-(t - st.beatT) * 7);
@@ -419,6 +435,61 @@ export class Compositor {
       p.clearRect(0, 0, W, H);
       p.drawImage(this.c, 0, 0);
     }
+  }
+
+  // Soft seams: how far a field reaches into its neighbours (fl/fr/ft/fb) and the rectangle it is drawn in.
+  // The blend zone is centred on the seam; every field is expanded by half of it on the sides that have a neighbour,
+  // and only as much as the narrowest field allows (18 %), so a 3-way layout isn't one blur.
+  softGeom(s, all) {
+    const { W, H } = this;
+    const a = Math.max(0, Math.min(1, (this.S.softAmt == null ? 50 : this.S.softAmt) / 100));
+    const k = 0.03 + 0.09 * a;
+    const minW = Math.min(...all.map((x) => x.w));
+    const minH = Math.min(...all.map((x) => x.h));
+    const fH = Math.round(Math.min(k * W, 0.18 * minW));
+    const fV = Math.round(Math.min(k * H, 0.18 * minH));
+    const fl = s.x > 1 ? fH : 0;
+    const fr = s.x + s.w < W - 1 ? fH : 0;
+    const ft = s.y > 1 ? fV : 0;
+    const fb = s.y + s.h < H - 1 ? fV : 0;
+    if (!fl && !fr && !ft && !fb) return null;
+    return { ex: s.x - fl, ey: s.y - ft, ew: s.w + fl + fr, eh: s.h + ft + fb, fl, fr, ft, fb };
+  }
+  softCtx(i, ew, eh) {
+    const bufs = this.sbuf || (this.sbuf = []);
+    const c = bufs[i] || (bufs[i] = document.createElement("canvas"));
+    if (c.width !== ew || c.height !== eh) {
+      c.width = ew;
+      c.height = eh;
+    }
+    const x = c.getContext("2d");
+    x.setTransform(1, 0, 0, 1, 0, 0);
+    x.globalCompositeOperation = "source-over";
+    x.globalAlpha = 1;
+    x.clearRect(0, 0, ew, eh);
+    x.imageSmoothingEnabled = true;
+    x.imageSmoothingQuality = this.S.smooth === false ? "low" : "high";
+    return x;
+  }
+  softFinish(i, sg) {
+    const c = this.sbuf[i];
+    const x = c.getContext("2d");
+    // alpha 0 → 1 across the blend zone (smoothstep), 1 afterwards; "destination-in" keeps the picture where the mask is opaque
+    const fade = (x0, y0, x1, y1, zone) => {
+      const gr = x.createLinearGradient(x0, y0, x1, y1);
+      for (let n = 0; n <= 4; n++) {
+        const p = n / 4;
+        gr.addColorStop(p * zone, `rgba(0,0,0,${(p * p * (3 - 2 * p)).toFixed(3)})`);
+      }
+      if (zone < 1) gr.addColorStop(1, "rgba(0,0,0,1)");
+      x.globalCompositeOperation = "destination-in";
+      x.fillStyle = gr;
+      x.fillRect(0, 0, sg.ew, sg.eh);
+    };
+    if (sg.fl) fade(0, 0, sg.ew, 0, Math.min(1, (2 * sg.fl) / sg.ew));
+    if (sg.ft) fade(0, 0, 0, sg.eh, Math.min(1, (2 * sg.ft) / sg.eh));
+    x.globalCompositeOperation = "source-over";
+    this.g.drawImage(c, sg.ex, sg.ey);
   }
 
   // Rim effect on the finished picture: a blurred copy (cheap: the picture shrunk and scaled back up) that only shows
