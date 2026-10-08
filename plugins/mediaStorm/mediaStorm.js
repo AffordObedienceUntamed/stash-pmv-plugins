@@ -620,7 +620,7 @@
   const LS_RG = "mediaStorm.redgifs.v1";
   const RG_PAGE = 80;
   const RG_MAX_PAGES = 50;
-  const rg = { pools: {}, seen: new Set(), tokenPromise: null };
+  const rg = { pools: {}, seen: new Set(), tokenPromise: null, viaBackend: false };
 
   function rgReset() {
     rg.pools = {};
@@ -645,7 +645,40 @@
     return rg.tokenPromise;
   }
 
+  // Detour through the Python backend: used when the browser can't reach the API itself
+  // (Stash opened via a network address/domain – the API only allows CORS from localhost –
+  // or an ad blocker/DNS filter in the way). Remembered for the rest of the page's life.
+  async function rgGetViaBackend(path) {
+    const d = await gql(`mutation($args: Map) { runPluginOperation(plugin_id: "mediaStorm", args: $args) }`, {
+      args: { mode: "api", path },
+    });
+    const out = d && d.runPluginOperation;
+    if (!out) throw new Error("no answer from the plugin backend (Reload plugins in Stash?)");
+    if (out.error && !out.status) throw new Error(out.error);
+    if (out.status) {
+      const err = new Error(out.error || "HTTP " + out.status);
+      err.status = out.status;
+      throw err;
+    }
+    return out.data;
+  }
+
   async function rgGet(path) {
+    if (rg.viaBackend) return rgGetViaBackend(path);
+    try {
+      return await rgGetDirect(path);
+    } catch (e) {
+      // fetch() itself failed ("Failed to fetch") – no HTTP status means no answer reached us
+      if (e && !e.status && (e instanceof TypeError || /Failed to fetch|NetworkError|Load failed/i.test(e.message))) {
+        console.warn("[MediaStorm] RedGifs not reachable from the browser, using the backend", e);
+        rg.viaBackend = true;
+        return rgGetViaBackend(path);
+      }
+      throw e;
+    }
+  }
+
+  async function rgGetDirect(path) {
     for (let attempt = 0; attempt < 2; attempt++) {
       const token = await rgToken(attempt > 0);
       const res = await fetch(RG_API + path, {
