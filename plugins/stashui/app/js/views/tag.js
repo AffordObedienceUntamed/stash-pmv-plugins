@@ -77,7 +77,7 @@ export async function render(main, params, query) {
     <section class="kb-tagperfs" data-tperfs hidden></section>
     <section data-browser></section>`;
   tagPerformers(main.querySelector("[data-tperfs]"), tag);
-  const xhead = mountSlots("tag.header", main.querySelector("[data-xhead]"), { page: "tag", id: tag.id, item: tag });
+  const xhead = mountSlots("tag.header", main.querySelector("[data-xhead]"), { page: "tag", id: tag.id, item: tag }, { reload: () => go(location.hash.replace(/^#\/?/, ""), true) });
   const b = mediaBrowser(main.querySelector("[data-browser]"), { kinds, initialKind, query, page: "tag", params: { id: tag.id }, base: () => ({ tagId: tag.id }) });
 
   main.querySelector("[data-edit]").onclick = () => {

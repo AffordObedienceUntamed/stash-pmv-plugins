@@ -78,6 +78,16 @@ const ICONS = {
   person: '<g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.8 20c.6-3.9 3.5-6.2 7.2-6.2s6.6 2.3 7.2 6.2"/></g>',
   phone: '<g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2" stroke-linecap="round"/></g>',
 };
+// An inline <svg> from an extension plugin: scripts removed, and the standard icon class added (without a size an
+// <svg> fills the whole row), so plugins don't have to know about "kb-ic"
+export function inlineSvg(v) {
+  return String(v || "")
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<svg\b([^>]*)>/i, (m, a) => {
+      if (/\bclass\s*=\s*["']/.test(a)) return /\bkb-ic\b/.test(a) ? m : `<svg${a.replace(/(\bclass\s*=\s*["'])/, "$1kb-ic ")}>`;
+      return `<svg class="kb-ic" aria-hidden="true"${a}>`;
+    });
+}
 export const icon = (name) => `<svg class="kb-ic" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ""}</svg>`;
 
 // ---------- Formatting ----------

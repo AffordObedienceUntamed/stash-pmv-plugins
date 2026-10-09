@@ -157,7 +157,7 @@ async function renderOne(main, id, query) {
       </div>
     </header>
     <section data-browser></section>`;
-  const xhead = mountSlots("studio.header", main.querySelector("[data-xhead]"), { page: "studio", id, item: s });
+  const xhead = mountSlots("studio.header", main.querySelector("[data-xhead]"), { page: "studio", id, item: s }, { reload: () => go(location.hash.replace(/^#\/?/, ""), true) });
   const edit = (scrape) => openStudioEditor(id, { scrape, onSaved: () => go("studio/" + id, true), onDeleted: () => go("studios", true) });
   main.querySelector("[data-edit]").onclick = () => edit(false);
   main.querySelector("[data-scrape]").onclick = () => edit(true);

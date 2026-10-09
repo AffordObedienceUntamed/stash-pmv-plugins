@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.81.0",
+    date: "2026-10-09",
+    items: [
+      ["ui", "Extension API: menu entries of plugins can say where they go (place: after / before a built-in entry, start or end) – without it, a plugin's entry now sits behind the last regular entry of its group instead of below the folder tree and saved filters. It only counts when the entry first appears; your own layout under Customize → Sidebar always wins. Inline SVG icons of plugins are sized like the others (menu and card buttons). Header slots can reload their page (ctx.reload()).", "扩展 API：插件的菜单项可以指定位置（place：放在某个内置项之前/之后，或最前/最后）——不指定时，插件的菜单项现在位于其分组最后一个常规项之后，而不再排在文件夹树和已保存筛选之下。它只在该菜单项首次出现时生效；你在 自定义 → 侧边栏 中的布局始终优先。插件的内联 SVG 图标与其他图标大小一致（菜单项和卡片按钮）。页头插槽可以重新加载其页面（ctx.reload()）。"],
+    ],
+  },
+  {
     v: "3.80.0",
     date: "2026-10-08",
     items: [

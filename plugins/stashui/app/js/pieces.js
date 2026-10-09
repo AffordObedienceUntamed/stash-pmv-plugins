@@ -1,6 +1,6 @@
 // Common model for scenes, images and galleries ("pieces") and the salon hanging.
 
-import { esc, icon, fmtDuration, fmtRes, fmtDate, fmtBytes, invNo, plural, store, menu, errorToast } from "./ui.js";
+import { esc, icon, fmtDuration, fmtRes, fmtDate, fmtBytes, invNo, plural, store, menu, errorToast, inlineSvg } from "./ui.js";
 import { t } from "./i18n.js";
 import { tierNow } from "./tiers.js";
 import { tierBadge } from "./versusx.js";
@@ -78,7 +78,7 @@ function foreignHtml(p) {
   const badges = (p.badges || []).map((b) => `<span class="kb-xbadge"${b.title ? ` title="${esc(b.title)}"` : ""}>${esc(b.text)}</span>`).join("");
   const tag = p.href ? "a" : "div";
   // Buttons drawn by Stash UI (piece.actions): they don't open the link; an icon is one of ours by name, or an inline <svg>
-  const acts = (p.actions || []).slice(0, 4).map((a, i) => `<button type="button" class="kb-xact" data-xact="${i}" title="${esc(a.title || "")}" aria-label="${esc(a.title || "")}">${/^\s*<svg/i.test(a.icon || "") ? a.icon.replace(/<script[\s\S]*?<\/script>/gi, "") : icon(a.icon || "plug")}</button>`).join("");
+  const acts = (p.actions || []).slice(0, 4).map((a, i) => `<button type="button" class="kb-xact" data-xact="${i}" title="${esc(a.title || "")}" aria-label="${esc(a.title || "")}">${/^\s*<svg/i.test(a.icon || "") ? inlineSvg(a.icon) : icon(a.icon || "plug")}</button>`).join("");
   return (
     `<${tag} class="kb-piece kb-xpiece${p.dim ? " is-dim" : ""}${p.className ? " " + esc(p.className) : ""}" data-key="${esc(p.kind + ":" + p.id)}"${p.href ? ` href="${esc(p.href)}" target="_blank" rel="noopener"` : ""} aria-label="${esc(p.title || "")}">` +
     (p.thumb ? `<img alt="" loading="lazy" decoding="async" src="${esc(p.thumb)}">` : "") +

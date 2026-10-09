@@ -35,7 +35,7 @@ export async function render(main, params, query) {
       </div>
     </header>
     <section data-browser></section>`;
-  const xhead = mountSlots("gallery.header", main.querySelector("[data-xhead]"), { page: "gallery", id: g.id, item: g });
+  const xhead = mountSlots("gallery.header", main.querySelector("[data-xhead]"), { page: "gallery", id: g.id, item: g }, { reload: () => go(location.hash.replace(/^#\/?/, ""), true) });
   const b = mediaBrowser(main.querySelector("[data-browser]"), {
     kinds: ["image"],
     query,

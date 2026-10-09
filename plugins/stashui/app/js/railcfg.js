@@ -2,7 +2,7 @@
 // Layout = ordered groups with item ids, plus hidden ids. Items that appear later (a new menu entry in an
 // update, a newly installed plugin) are put into their default group, so nothing is ever lost.
 
-import { store, esc, icon } from "./ui.js";
+import { store, esc, icon, inlineSvg } from "./ui.js";
 import { navItems, hasNav } from "./ext.js";
 
 export const NAV = [
@@ -46,7 +46,7 @@ export const NAV = [
 ];
 
 // A symbol: the name of one of ours, inline <svg>, or an image address (extension plugins)
-export const navIcon = (v) => (/^\s*<svg/i.test(v || "") ? v.replace(/<script[\s\S]*?<\/script>/gi, "") : /^(https?:)?\/|^data:image\//.test(v || "") ? `<img class="kb-ext-ic" alt="" src="${esc(v)}">` : icon(v || "plug"));
+export const navIcon = (v) => (/^\s*<svg/i.test(v || "") ? inlineSvg(v) : /^(https?:)?\/|^data:image\//.test(v || "") ? `<img class="kb-ext-ic" alt="" src="${esc(v)}">` : icon(v || "plug"));
 // Menu entries of extension plugins (ext.js addNavItem): id → { entry, group }
 const GROUPS = new Set(["Library", "Watch", "Manage", "Extensions"]);
 const reEsc = (x) => String(x).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -59,7 +59,7 @@ function extNav() {
     const path = href.startsWith("#/") ? href.slice(2).split("?")[0] : "";
     // lit while that page (or, for a route, anything below its first part) is open
     const re = route != null ? new RegExp("^p/" + reEsc(encodeURIComponent(n.plugin)) + "/" + reEsc(route.split("/")[0])) : path ? new RegExp("^" + reEsc(path) + "$") : /$^/;
-    out.set(id, { id, group: GROUPS.has(n.group) ? n.group : "Extensions", nav: { label: n.label, icon: n.icon, match: re, xnav: { key: n.plugin + ":" + n.id, href, count: !!n.count } } });
+    out.set(id, { id, group: GROUPS.has(n.group) ? n.group : "Extensions", place: n.place || null, nav: { label: n.label, icon: n.icon, match: re, xnav: { key: n.plugin + ":" + n.id, href, count: !!n.count } } });
   }
   return out;
 }
@@ -104,6 +104,25 @@ export function catalog() {
   return m;
 }
 
+// Where an extension's menu entry goes in its group: place = "start" | "end" | { after | before: anchor } | none.
+// An anchor is a built-in entry's href ("galleries", "queue" …), an action ("log"), "folders", "saved" or "<pluginId>:<id>";
+// one that isn't in the group (or doesn't exist) falls back to the default.
+function placeAt(items, place) {
+  const tail = new Set([FOLDERS, SAVED]);
+  let last = -1;
+  items.forEach((x, i) => !tail.has(x) && (last = i));
+  const def = last + 1;
+  if (place === "start") return 0;
+  if (place === "end") return items.length;
+  if (place && typeof place === "object") {
+    const a = String(place.after != null ? place.after : place.before != null ? place.before : "");
+    const ids = [a === "folders" ? FOLDERS : a === "saved" ? SAVED : "", "p:" + a, "a:" + a, "n:" + a].filter(Boolean);
+    const i = items.findIndex((x) => ids.includes(x));
+    if (i >= 0) return place.after != null ? i + 1 : i;
+  }
+  return def;
+}
+
 // Saved layout (or the default) + everything known that isn't in it yet
 export function loadRail() {
   const d = defaults();
@@ -137,6 +156,10 @@ export function loadRail() {
       const p = g.items.indexOf(order[i]);
       if (p >= 0) { at = p + 1; break; }
     }
+    // An entry of an extension plugin: where its `place` says, otherwise behind the group's last regular entry (so
+    // not below the folder tree and the saved filters). Only when it first appears – a saved layout always wins.
+    const xe = id.startsWith("n:") ? extNav().get(id) : null;
+    if (xe) at = placeAt(g.items, xe.place);
     g.items.splice(at, 0, id);
   }
   const hidden = (raw && Array.isArray(raw.hidden) ? raw.hidden : []).filter((id) => !LOCKED.has(id));

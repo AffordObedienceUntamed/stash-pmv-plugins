@@ -76,7 +76,7 @@ export async function render(main, params, query) {
     </header>
     <div data-taglink></div>
     <section data-browser></section>`;
-  const xhead = mountSlots("performer.header", main.querySelector("[data-xhead]"), { page: "performer", id: p.id, item: p });
+  const xhead = mountSlots("performer.header", main.querySelector("[data-xhead]"), { page: "performer", id: p.id, item: p }, { reload: () => go(location.hash.replace(/^#\/?/, ""), true) });
   const b = mediaBrowser(main.querySelector("[data-browser]"), { kinds, initialKind, query, page: "performer", params: { id: p.id }, base: () => ({ filter: { performers: { value: [p.id], modifier: "INCLUDES" } } }) });
 
   // A tag on a performer only describes them – it doesn't link anything. Items that carry one of the

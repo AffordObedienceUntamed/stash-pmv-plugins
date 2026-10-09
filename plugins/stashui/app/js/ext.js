@@ -5,7 +5,7 @@
 //     stashui.addListSource({ id, match({ page, kind }) → bool, async extend(ctx) → [{ before, piece }] });
 //     stashui.invalidate(sourceId);                      // run `extend` again for the pages already loaded
 //     stashui.addRoute({ path: "library/*", title, overlay, render(el, { params, rest, query, signal }) → cleanup });
-//     stashui.addNavItem({ id, label, icon, route | href, group, count });
+//     stashui.addNavItem({ id, label, icon, route | href, group, place, count });
 //     stashui.addSlot("scene.info", { id, title, match(ctx), mount(el, ctx) → cleanup });
 //     stashui.ui / t / addStrings / gql / store / on / go
 //   }
@@ -329,6 +329,7 @@ function makeApi(pluginId) {
         route: def.route != null ? String(def.route) : null,
         href: def.href ? String(def.href) : null,
         group: def.group || "Extensions",
+        place: def.place === "start" || def.place === "end" || (def.place && typeof def.place === "object") ? def.place : null,
         count: typeof def.count === "function" ? def.count : null,
       });
       changed();
