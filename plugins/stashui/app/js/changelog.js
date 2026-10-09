@@ -4,6 +4,14 @@
 
 export const CHANGES = [
   {
+    v: "3.82.0",
+    date: "2026-10-09",
+    items: [
+      ["pmv", "PMV Generator 2.27.0: more control over the cuts, and for shows with several songs. Cutting → Timing → “Shortest clip” and “Longest clip” (in beats, off by default): a clip stays on screen at least / at most that many beats – no more clips that come and go on the next beat. New clips without stopping the music: the new button in the bar (or the R key). With several songs or Plex: “New clips for every song” (Clip order), “Again for every song” – intro and outro come again for each song (Output → Title cards) – and “One video per song” (Output → Recording), which cuts the recording into one video per song, each one to download or save to Stash on its own. Marker clips with an end now stay inside their marker instead of playing on into the rest of the scene, and the clip info (I) shows each clip's tags and, with tag stages, its stage. “Follow the scenes' timeline” is hidden for Markers and Images, where it did nothing.", "PMV 生成器 2.27.0：对剪辑和多首歌的演出有更多控制。剪辑 → 节奏 →“最短片段”和“最长片段”（以拍为单位，默认关闭）：一个片段在画面上至少/至多停留这么多拍——不再有下一拍就来了又走的片段。换新片段而不停止音乐：栏中的新按钮（或 R 键）。多首歌或 Plex 时：“每首歌换新片段”（片段顺序）、“每首歌重新片头片尾”——每首歌再次出现片头和片尾（输出 → 标题卡）——以及“每首歌一个视频”（输出 → 录制），把录制按歌曲切成多个视频，每个都可以单独下载或保存到 Stash。带结束时间的标记片段现在停留在标记之内，而不是继续播放场景的其余部分；片段信息（I）会显示每个片段的标签，使用标签阶段时还会显示其阶段。“跟随场景的时间线”在标记和图片模式下已隐藏（那里它不起作用）。"],
+      ["storm", "Media Storm 2.8.0: one tag filter for everything. Under Source & filters, “Tags apply to” chooses whether the tag box edits the tags for scenes and images or for marker clips (the other kind keeps its own, a note says so). Exclude tags, “All tags must match” and “Including sub-tags (recursive)” now count for scenes, images and marker clips alike. With the recursive switch on, parent tags show up in the marker tag suggestions even when only their sub-tags have markers (off: only tags with markers of their own are offered). Marker clips also honor “Exclude tags” now.", "Media Storm 2.8.0：一个标签筛选适用于所有类型。在“来源与筛选”中，“标签应用于”决定标签框编辑的是场景和图片的标签还是标记片段的标签（另一类型保留自己的，并有提示说明）。排除标签、“必须匹配所有标签”和“包含子标签（递归）”现在对场景、图片和标记片段都有效。打开递归开关后，即使只有子标签有标记，父标签也会出现在标记标签的建议中（关闭时：只提供自身有标记的标签）。标记片段现在也遵守“排除标签”。"],
+    ],
+  },
+  {
     v: "3.81.0",
     date: "2026-10-09",
     items: [

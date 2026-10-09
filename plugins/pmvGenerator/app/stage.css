@@ -733,6 +733,12 @@ html.kb-glass .kb-fpick-row.is-on.is-own .kb-fpick-box { background-color: var(-
 .kb-pmvg-faillist small { color: var(--faint); }
 .kb-pmvg-skipped { margin: 0 0 12px; color: var(--text-2); }
 .kb-pmvg-skipped summary { cursor: pointer; }
+/* One video per song: the list of videos at the end */
+.kb-pmvg-takes { display: grid; gap: 8px; margin: 0 0 12px; max-height: 38vh; overflow-y: auto; }
+.kb-pmvg-take { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 8px 10px; border: 1px solid var(--bg-3); border-radius: 6px; background: var(--bg-2); }
+.kb-pmvg-take > span { flex: 1 1 180px; min-width: 0; display: grid; gap: 2px; overflow-wrap: anywhere; }
+.kb-pmvg-take > span small { color: var(--faint); }
+html.kb-glass .kb-pmvg-take { border-color: var(--glass-edge); border-radius: 14px; background: var(--glass-shine), var(--glass); }
 .kb-pmvg-lshape { display: grid; gap: 6px; margin-top: 6px; }
 .kb-pmvg-lsrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .kb-pmvg-lsrow[hidden] { display: none; }

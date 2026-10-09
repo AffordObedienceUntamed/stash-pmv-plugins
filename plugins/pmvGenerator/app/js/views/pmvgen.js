@@ -78,6 +78,11 @@ const DEFAULTS = {
   softAmt: 50, // how wide the blend is (%)
   divW: 2, // width of the dividers between the fields (px at 1280 wide, scales with the picture)
   cutLead: 0, // cuts land this many ms before the beat (the picture is a touch early, which feels tighter)
+  minBeats: 0, // a clip stays at least this many beats before its field is cut again (0 = off)
+  maxBeats: 0, // … and is replaced after at most this many beats (0 = off)
+  reshuffleEach: false, // several songs / Plex: new clips for every new song
+  introEach: false, // several songs / Plex: intro and outro come again for every song
+  recSplit: false, // several songs: one recording per song
   edge: "off", // rim of the picture: off | blur | motion | lens
   edgeAmt: 50, // how strong / how far in (%)
   smooth: true, // clips scaled smoothly (less pixelated)
@@ -370,8 +375,9 @@ export function render(main) {
         <span class="kb-lab-t">Clip order <small>– which clip follows which</small></span>
         <div class="kb-pmvg-opts">
           ${sw("matchCut", "Match cuts", "At each cut, the clip that best matches the previous one in color, brightness and composition comes next")}
-          ${sw("sequenced", "Follow the scenes' timeline", "A clip comes from the part of its scene that matches how far the song is: the start of the song uses the beginnings of the scenes, the end of the song their endings (a song of known length only)")}
+          <div class="kb-dc" data-seqwrap>${sw("sequenced", "Follow the scenes' timeline", "A clip comes from the part of its scene that matches how far the song is: the start of the song uses the beginnings of the scenes, the end of the song their endings (a song of known length only)")}</div>
           ${sw("variety", "Variety", "The same scene or performer doesn't come up again shortly after")}
+          ${sw("reshuffleEach", "New clips for every song", "With several songs or Plex: when the next song starts, all clips are replaced by new ones (R does that any time)")}
         </div>
         <span class="kb-lab-t">RedGifs <small>– mix in clips from RedGifs (needs internet)</small></span>
         <div class="kb-pmvg-rg">
@@ -417,6 +423,8 @@ export function render(main) {
             </div>
               <div class="kb-pmvg-opts">
               <label class="kb-pmvg-range" title="The cut happens a little before the beat, so the picture is already there when the beat hits (2 frames are about 33 ms)"><span>${icon("sliders")}Cut ahead of the beat</span><input type="range" min="0" max="80" step="5" data-r="cutLead" aria-label="Cut ahead of the beat"><output data-ro="cutLead" data-unit=" ms"></output></label>
+              <label class="kb-pmvg-range" title="A clip stays on screen for at least this many beats before its field changes – no more clips that come and go on the next beat (0 = off)"><span>${icon("sliders")}Shortest clip</span><input type="range" min="0" max="16" step="1" data-r="minBeats" aria-label="Shortest clip in beats"><output data-ro="minBeats" data-unit=" beats" data-zero="off"></output></label>
+              <label class="kb-pmvg-range" title="A clip is replaced after at most this many beats, even when the pace would keep it longer (0 = off)"><span>${icon("sliders")}Longest clip</span><input type="range" min="0" max="32" step="1" data-r="maxBeats" aria-label="Longest clip in beats"><output data-ro="maxBeats" data-unit=" beats" data-zero="off"></output></label>
               ${sw("bars", "Bars and phrases", "Finds the \"one\" of each bar and where a phrase begins: cuts land on the strong beats, split screens change at the start of a phrase")}
               </div>
             </div>
@@ -574,6 +582,7 @@ export function render(main) {
             <div class="kb-pmvg-opts">
               ${sw("intro", "Intro", "Title card at the start: your title slams in, comic-SFX style")}
               ${sw("outro", "Outro", "Credits at the end: the picture fades dark, title and number of clips")}
+              ${sw("introEach", "Again for every song", "With several songs or Plex: intro and outro come again for each song (the outro when a song plays to its end)")}
             </div>
             <input class="kb-field" data-title placeholder="Title for intro/outro – empty = song name" value="${esc(S.title)}">
             </div>
@@ -581,6 +590,7 @@ export function render(main) {
               <div class="kb-pmvg-grouphead"><b>Recording</b><small>Saves the result as a video</small></div>
             <div class="kb-pmvg-opts">
               ${sw("record", "Record", "Saves the result as a video, recorded while the show plays – so let it run to the end (stopping early ends the video there). Then download it or save it straight to Stash as a scene")}
+              ${sw("recSplit", "One video per song", "With several songs or Plex: the recording is cut into one video per song – each one can be downloaded or saved to Stash on its own")}
             </div>
             <span class="kb-lab-t">Recording quality</span>
             <div class="kb-seg" data-seg="quality"><button type="button" data-v="720">720p</button><button type="button" data-v="1080">1080p</button></div>
@@ -594,7 +604,7 @@ export function render(main) {
         <h2><span class="kb-pmvg-no">4</span>Go</h2>
         <ul class="kb-pmvg-sum" data-sum></ul>
         <button class="kb-btn is-primary kb-pmvg-start" data-start disabled>${icon("bolt")}Pick a song first</button>
-        <p class="kb-hint">Keys while it runs: Space pause · F fullscreen · H hide the bar · I clip info · Esc stop</p>
+        <p class="kb-hint">Keys while it runs: Space pause · R new clips · F fullscreen · H hide the bar · I clip info · Esc stop</p>
         <div class="kb-pmvg-presets">
           <span class="kb-lab-t">My settings</span>
           <div class="kb-pmvg-row">
@@ -633,6 +643,8 @@ export function render(main) {
     $("[data-fsbox]").hidden = !S.fsOn;
     $("[data-seg=tagMode]").hidden = (S.stagesOn ? S.stages.length : S.tags.length) < 2;
     $("[data-markerwrap]").hidden = S.source !== "marker";
+    // (markers start at their marker and images have no timeline – "Follow the scenes' timeline" would do nothing)
+    $("[data-seqwrap]").style.display = S.source === "marker" || S.source === "image" ? "none" : "";
     $("[data-tags]").hidden = !!S.stagesOn;
     $("[data-stages]").hidden = !S.stagesOn;
     main.querySelectorAll("[data-t]").forEach((c) => (c.checked = !!getPath(S, c.dataset.t)));
@@ -657,7 +669,10 @@ export function render(main) {
       const lo = Number(r.min || 0);
       r.style.setProperty("--p", ((S[r.dataset.r] - lo) / (Number(r.max || 100) - lo)) * 100 + "%");
     });
-    main.querySelectorAll("[data-ro]").forEach((o) => (o.textContent = S[o.dataset.ro] + (o.dataset.unit ?? " %")));
+    main.querySelectorAll("[data-ro]").forEach((o) => {
+      const v = S[o.dataset.ro];
+      o.textContent = !+v && o.dataset.zero != null ? o.dataset.zero : v + (o.dataset.unit ?? " %");
+    });
     $("[data-rgbox]").hidden = !(S.rgPct > 0);
     main.querySelectorAll("[data-sel]").forEach((x) => (x.value = S[x.dataset.sel]));
     paintRgChips();
@@ -2106,6 +2121,10 @@ class Generator {
     this.tpl = tpl || null;
     this.ti = 0;
     this.log = []; // sequence (cuts, layouts) – readable on the stage element for tests
+    this.takes = []; // one recording per song ("One video per song"): { name, song, length, blob }
+    this.curK = 0; // the beat being handled (onBeat)
+    this.cutK = []; // group → the beat its clip was put on screen (shortest / longest clip)
+    this.songShown0 = 0; // clips shown before this song (the outro counts per song)
     this.dir = S.split;
     [this.W, this.H] = this.sizeFor();
     // Tag stages (A → B → C, the last on drops and in the finale): their own supply each; needs a song with an end
@@ -2151,7 +2170,7 @@ class Generator {
     this.comp = new Compositor(this.canvas, S);
     this.comp.title = String(S.title || "").trim() || this.song.name;
     this.comp.duration = this.music ? 0 : this.song.duration;
-    this.comp.credits = () => `${this.shown.size} Clips · ${Math.round(this.song.bpm)} BPM`;
+    this.comp.credits = () => `${this.shown.size - this.songShown0} Clips · ${Math.round(this.song.bpm)} BPM`;
     this.start().catch((e) => this.fail(e));
   }
   // The sound plays elsewhere (Plex, or an app we listen to) – no pause/volume of our own, but sync
@@ -2185,6 +2204,7 @@ class Generator {
               ? `<span class="kb-pmvg-sync" title="If the cuts come too early or too late: shift them ([ / ])"><button class="kb-btn is-ghost" data-act="sync-">−</button><span data-h="sync"></span><button class="kb-btn is-ghost" data-act="sync+">+</button><button class="kb-btn is-ghost" data-act="tap" title="Tap along to the beat you hear (T) – the sync sets itself">Tap</button></span>`
               : `<button class="kb-btn is-icon is-ghost" data-act="pause" title="Pause (Space)">${icon("pause")}</button>`
           }
+          <button class="kb-btn is-icon is-ghost" data-act="reshuffle" title="New clips – the music keeps playing (R)">${icon("shuffle")}</button>
           <button class="kb-btn is-icon is-ghost" data-act="info" title="Which clips are on screen (I)">${icon("info")}</button>
           <button class="kb-btn is-icon is-ghost" data-act="hidebar" title="Hide this bar (H) – H brings it back">${icon("close")}</button>
           <button class="kb-btn is-icon is-ghost" data-act="full" title="Fullscreen (F)">${icon("expand")}</button>
@@ -2222,6 +2242,7 @@ class Generator {
       if (a === "tap") this.tap();
       if (a === "rgsave") this.saveOnScreen();
       if (a === "voicemode") this.cycleVoiceMode();
+      if (a === "reshuffle") this.reshuffle();
       if (a === "full") this.fullscreen();
       if (a === "info") this.toggleInfo();
       if (a === "hidebar") this.toggleBar();
@@ -2235,6 +2256,7 @@ class Generator {
       else if ((e.key === "t" || e.key === "T") && this.outside && !e.repeat) this.tap();
       else if ((e.key === "[" || e.key === "]") && this.outside) this.nudge(e.key === "]" ? 0.05 : -0.05);
       else if (e.key === "f" || e.key === "F") this.fullscreen();
+      else if ((e.key === "r" || e.key === "R") && !e.repeat && !e.ctrlKey && !e.metaKey && !this.done) this.reshuffle();
       else if (e.key === "i" || e.key === "I") this.toggleInfo();
       else if (e.key === "h" || e.key === "H") this.toggleBar();
       else if ((e.key === "d" || e.key === "D") && this.rg) this.saveOnScreen();
@@ -2306,7 +2328,9 @@ class Generator {
     const row = (m, i) => {
       const [st, bad] = state(m);
       const name = m.rg ? `RedGifs${m.rg.user ? " · " + m.rg.user : ""}` : m.name || m.key;
-      return `<div><b>${i + 1}</b> ${esc(name)}${m.file && m.file !== name ? ` <small>${esc(m.file)}</small>` : ""} <small>${m.w}×${m.h}</small> <span class="${bad ? "is-bad" : ""}">${esc(st)}</span></div>`;
+      const tags = m.tagNames && m.tagNames.length ? ` <small>tags: ${esc(m.tagNames.join(", "))}</small>` : "";
+      const stage = this.nStages > 1 && m.stage != null ? ` <small>stage ${m.stage + 1}</small>` : "";
+      return `<div><b>${i + 1}</b> ${esc(name)}${m.file && m.file !== name ? ` <small>${esc(m.file)}</small>` : ""} <small>${m.w}×${m.h}</small>${tags}${stage} <span class="${bad ? "is-bad" : ""}">${esc(st)}</span></div>`;
     };
     const fails = (this.failed || []).slice(-5).reverse();
     box.innerHTML =
@@ -2455,11 +2479,20 @@ class Generator {
     const lists = await Promise.all(
       kinds.map(async (k) => {
         const q = k === "marker"
-          ? `query($f: FindFilterType, $x: SceneMarkerFilterType) { r: findSceneMarkers(filter: $f, scene_marker_filter: $x) { count scene_markers { id title seconds primary_tag { name } scene { id title paths { stream sprite vtt } files { duration width height basename } performers { id } } } } }`
+          ? `query($f: FindFilterType, $x: SceneMarkerFilterType) { r: findSceneMarkers(filter: $f, scene_marker_filter: $x) { count scene_markers { id title seconds${Generator.noEnd ? "" : " end_seconds"} primary_tag { id name } tags { id name } scene { id title paths { stream sprite vtt } files { duration width height basename } performers { id } } } } }`
           : k === "scene"
           ? `query($f: FindFilterType, $x: SceneFilterType, $ids: [ID!]) { r: findScenes(filter: $f, scene_filter: $x, ids: $ids) { count scenes { id title paths { stream sprite vtt } files { duration width height basename } scene_markers { id seconds } performers { id } } } }`
           : `query($f: FindFilterType, $x: ImageFilterType) { r: findImages(filter: $f, image_filter: $x) { count images { id title paths { image } visual_files { __typename ... on ImageFile { width height basename } } performers { id } } } }`;
-        const d = await gql(q, Object.assign({ f: { per_page: 60, page: P.page[k], sort: "random_" + P.seed }, x: spec.filter(k) }, spec.ids && k === "scene" ? { ids: spec.ids } : {}));
+        const vars = Object.assign({ f: { per_page: 60, page: P.page[k], sort: "random_" + P.seed }, x: spec.filter(k) }, spec.ids && k === "scene" ? { ids: spec.ids } : {});
+        let d;
+        try {
+          d = await gql(q, vars);
+        } catch (err) {
+          // an older Stash has no end_seconds on markers: ask again without it (and don't ask for it again)
+          if (k !== "marker" || Generator.noEnd || !/end_seconds/.test(String(err && err.message))) throw err;
+          Generator.noEnd = true;
+          d = await gql(q.replace(" end_seconds", ""), vars);
+        }
         const items = k === "marker" ? d.r.scene_markers : k === "scene" ? d.r.scenes : d.r.images;
         // Reached the end → start over with a new random order
         P.page[k] = P.page[k] * 60 >= d.r.count ? 1 : P.page[k] + 1;
@@ -2467,7 +2500,7 @@ class Generator {
           // A marker clip: its scene, starting at the marker
           return items
             .filter((mk) => mk.scene && mk.scene.paths.stream)
-            .map((mk) => ({ kind: "video", id: mk.scene.id, key: "marker:" + mk.id, url: mk.scene.paths.stream, dur: (mk.scene.files[0] || {}).duration || 0, w: (mk.scene.files[0] || {}).width || 0, h: (mk.scene.files[0] || {}).height || 0, marks: [], markers: [], at: mk.seconds,
+            .map((mk) => ({ kind: "video", id: mk.scene.id, key: "marker:" + mk.id, end: mk.end_seconds || 0, tagNames: [(mk.primary_tag || {}).name, ...(mk.tags || []).map((x) => x.name)].filter(Boolean), url: mk.scene.paths.stream, dur: (mk.scene.files[0] || {}).duration || 0, w: (mk.scene.files[0] || {}).width || 0, h: (mk.scene.files[0] || {}).height || 0, marks: [], markers: [], at: mk.seconds,
               sprite: mk.scene.paths.sprite, vtt: mk.scene.paths.vtt, name: mk.title || (mk.primary_tag || {}).name || mk.scene.title || (mk.scene.files[0] || {}).basename || "Marker " + mk.id,
               file: (mk.scene.files[0] || {}).basename || "", perf: (mk.scene.performers || []).map((pf) => pf.id) }));
         }
@@ -2762,7 +2795,9 @@ class Generator {
         }
       }
       await seek(start);
-      const m = { kind: "video", el: v, w: v.videoWidth, h: v.videoHeight, id: s.id, key: s.key, perf: s.perf, rg: s.rg, start, name: s.name, file: s.file, url: s.url };
+      const m = { kind: "video", el: v, w: v.videoWidth, h: v.videoHeight, id: s.id, key: s.key, perf: s.perf, rg: s.rg, start, name: s.name, file: s.file, url: s.url, tagNames: s.tagNames };
+      // A marker with an end: the clip stays inside it (the scene would play on into something else) – see loop()
+      if (s.at != null && s.end > s.at + 0.5) m.endAt = Math.min(s.end, dur - 0.1);
       m.sig = info || (await analyzeAsync(v, m.w, m.h));
       if (this.S.smartCrop) {
         m.focus = Object.assign({}, m.sig.focus);
@@ -2881,6 +2916,7 @@ class Generator {
     if (!m) return false; // nothing ready yet → the field keeps running
     this.groups[gi] = m;
     this.cutT[gi] = t;
+    this.cutK[gi] = this.curK;
     if (opt && opt.scroll && old && old !== m) {
       // the old clip scrolls out: it keeps playing a moment longer
       const prev = this.leave[gi];
@@ -2912,8 +2948,10 @@ class Generator {
       const prev = old[gi % Math.max(1, old.length)] || null;
       this.groups[gi] = this.takeMedia(aspectOfGroup(this.slots, gi), prev, !!prev) || prev;
       this.cutT[gi] = t;
+      this.cutK[gi] = this.curK;
     }
     this.cutT.length = n;
+    this.cutK.length = n;
     this.nextGroup = 0;
     this.dropUnused(old);
     this.cuts++;
@@ -3084,11 +3122,35 @@ class Generator {
       toast("This browser can't record – running without recording", "error");
       return;
     }
-    this.chunks = [];
     this.mime = mime;
-    this.rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: this.S.quality === 1080 ? 12e6 : 7e6 });
-    this.rec.ondataavailable = (e) => e.data.size && this.chunks.push(e.data);
-    this.rec.start(1000);
+    this.recStream = stream;
+    this.newRecorder(0);
+  }
+  // A recorder of its own chunks (with "One video per song" a new one starts with each song)
+  newRecorder(t0) {
+    const chunks = [];
+    const rec = new MediaRecorder(this.recStream, { mimeType: this.mime, videoBitsPerSecond: this.S.quality === 1080 ? 12e6 : 7e6 });
+    rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+    rec.start(1000);
+    this.rec = rec;
+    this.chunks = chunks;
+    this.recSong = this.song;
+    this.recT0 = t0;
+  }
+  // The next song starts: the recording of the last one is closed (a file of its own), a new one begins
+  splitTake(t0) {
+    if (!this.rec || this.rec.state === "inactive" || !this.recStream) return;
+    const old = { rec: this.rec, chunks: this.chunks, song: this.recSong, t0: this.recT0 };
+    const take = { name: old.song.name, song: old.song, length: Math.max(0, t0 - old.t0), blob: null };
+    this.newRecorder(t0);
+    if (this.paused) this.rec.pause();
+    this.pendingTakes = (this.pendingTakes || 0) + 1;
+    old.rec.onstop = () => {
+      take.blob = new Blob(old.chunks, { type: this.mime.split(";")[0] });
+      this.takes.push(take);
+      this.pendingTakes--;
+    };
+    old.rec.stop();
   }
 
   // Two clocks: pos() = where the song is (beats), now() = show time for the pictures. They're the same
@@ -3167,6 +3229,53 @@ class Generator {
     }
   }
 
+  // New clips without stopping the music: the supply starts over with a fresh random order, and as soon as the first
+  // clips are ready every field changes at once (the beats, the layout and the effects go on as they were)
+  async reshuffle(auto) {
+    if (this.done || this.reshuffling || this.revealing || !this.layout) return;
+    this.reshuffling = true;
+    if (!auto) this.say("New clips …");
+    try {
+      this.ready.forEach((m) => this.release(m));
+      this.ready = [];
+      this.sp.forEach((P) => {
+        P.sources = [];
+        P.srcIdx = 0;
+        P.page = { scene: 1, image: 1, marker: 1 };
+        P.seed = Math.floor(Math.random() * 1e8);
+        P.dead = false;
+      });
+      this.bad = 0;
+      this.fillPool();
+      const need = Math.min(3, LAYOUTS[this.layout] ? LAYOUTS[this.layout].groups : 1);
+      const t0 = performance.now();
+      while (!this.done && this.ready.length < need && performance.now() - t0 < 15000) await sleep(100);
+      if (this.done) return;
+      if (this.ready.length) {
+        const t = this.now();
+        this.setLayout(this.layout, t);
+        this.comp.flash(t, 0.3, "#fff");
+      }
+    } finally {
+      this.reshuffling = false;
+      if (!this.done && !auto) this.say(this.paused ? "Paused – Space continues" : "");
+    }
+  }
+
+  // The next song of the running show has started (rebase() is done; t0 = the show time of the change)
+  songChanged(t0) {
+    const S = this.S;
+    if (S.introEach) {
+      // intro and outro count from this song's start; the outro needs the song's length
+      this.comp.songStart = t0;
+      this.comp.duration = this.song.live ? 0 : Math.max(0, (this.song.duration || 0) - Math.max(0, this.pos()));
+      this.comp.title = String(S.title || "").trim() || this.song.name;
+      this.songShown0 = this.shown.size;
+    }
+    if (S.record && S.recSplit) this.splitTake(t0);
+    if (S.reshuffleEach) this.reshuffle(true);
+  }
+
   // Another song in the running show (call rebase() once its position is set)
   setSong(song) {
     this.song = song;
@@ -3203,6 +3312,7 @@ class Generator {
         this.setSong(next);
         this.playSource(0);
         this.rebase(t0);
+        this.songChanged(t0);
         this.say(this.paused ? "Paused – Space continues" : "");
         this.paintTrack();
         if (!this.paused) this.comp.text(this.now());
@@ -3231,6 +3341,7 @@ class Generator {
       this.ext = at(u.pos);
       this.setHeld(!u.playing);
       this.rebase(t0);
+      this.songChanged(t0);
       this.sayPlex(u.playing ? "" : "Paused on Plex");
       return;
     }
@@ -3331,6 +3442,8 @@ class Generator {
     // (with "cut ahead of the beat" the cut is made a few ms early; the zoom pulse still sits on the real beat)
     const lead = (this.S.cutLead || 0) / 1000;
     while (this.bi < beats.length && beats[this.bi] - lead <= p) this.onBeat(this.bi++, t);
+    // A marker clip with an end loops inside its marker
+    for (const m of this.groups) if (m && m.endAt && m.kind === "video" && m.el.currentTime >= m.endAt) m.el.currentTime = m.start;
     if (this.tpl) {
       const evs = this.tpl.events;
       while (this.ti < evs.length && evs[this.ti].t <= t) this.applyEvent(evs[this.ti++], t);
@@ -3418,6 +3531,9 @@ class Generator {
   // Direction: decide what happens on each beat
   onBeat(k, t) {
     const S = this.S;
+    this.curK = k;
+    const minB = Math.max(0, Math.round(+S.minBeats || 0));
+    const maxB = Math.max(0, Math.round(+S.maxBeats || 0));
     const beats = this.song.beats;
     const e = this.song.energy[k] || 0;
     const prev = this.song.energy[k - 4] || 0;
@@ -3456,14 +3572,14 @@ class Generator {
     let nextLayout = null;
     if (this.tpl) {
       // Cuts and layouts come from the template (applyEvent)
-    } else if (this.layouts.length > 1 && (drop || due) && !this.revealing && (nextLayout = this.pickLayout(e, drop))) {
+    } else if (this.layouts.length > 1 && ((drop && k - this.layoutBeat >= minB) || due) && !this.revealing && (nextLayout = this.pickLayout(e, drop))) {
       this.setLayout(nextLayout, t);
       this.layoutBeat = k;
       this.centerK = k;
       // Scrolling sides: in a 3-way layout (not on a drop, not in the loudest parts) the middle clip stays and the sides scroll
       this.scrollDir = S.scroll && !drop && e <= 0.9 && (this.layout === "tri" || this.layout === "trim") && Math.random() < 0.75 ? (Math.random() < 0.5 ? -1 : 1) : 0;
       this.sideN = 0;
-      this.layoutHold = drop ? 4 : 8; // after a drop, move on after just one bar
+      this.layoutHold = Math.max(drop ? 4 : 8, minB); // after a drop, move on after just one bar (or the shortest clip, if that is longer)
       this.lastCut = k;
       comp.flash(t, drop ? 0.9 : 0.35, drop ? "#ff3e8a" : "#fff");
     } else {
@@ -3489,11 +3605,33 @@ class Generator {
         }
       } else if (onGrid || (every === 4 && bar && k - this.lastCut >= 2)) {
         const n = LAYOUTS[this.layout].groups;
-        const gi = this.nextGroup % n;
-        if (this.cutGroup(gi, t)) {
+        let gi = this.nextGroup % n;
+        // Shortest clip: the next field whose clip has been on long enough (none yet → wait for a later beat)
+        if (minB) {
+          gi = -1;
+          for (let j = 0; j < n; j++) {
+            const c = (this.nextGroup + j) % n;
+            if (k - (this.cutK[c] ?? -99) >= minB) {
+              gi = c;
+              break;
+            }
+          }
+        }
+        if (gi >= 0 && this.cutGroup(gi, t)) {
           this.nextGroup = gi + 1;
           this.lastCut = k;
           if (e > 0.5) comp.flash(t, 0.15 + 0.3 * e, bar ? "#ff3e8a" : "#fff");
+        }
+      }
+    }
+
+    // Longest clip: a field whose clip has been on for that long is cut now, whatever the pace says
+    if (maxB && !this.revealing && !this.tpl && this.slots.length) {
+      const n = LAYOUTS[this.layout].groups;
+      for (let gi = 0; gi < n; gi++) {
+        if (this.cutK[gi] != null && k - this.cutK[gi] >= maxB && this.cutGroup(gi, t)) {
+          this.lastCut = k;
+          break;
         }
       }
     }
@@ -3708,6 +3846,13 @@ class Generator {
         this.rec.stop();
       });
       blob = new Blob(this.chunks, { type: this.mime.split(";")[0] });
+      if (this.takes.length || this.pendingTakes) {
+        // One video per song: the last song's video joins the others (the earlier ones may still be closing)
+        for (let i = 0; i < 40 && this.pendingTakes; i++) await sleep(50);
+        this.takes.push({ name: this.recSong.name, song: this.recSong, length: Math.max(0, t - this.recT0), blob });
+        if (this.takes.length > 1) blob = null;
+        else blob = this.takes[0].blob;
+      }
     }
     if (this.ac) this.ac.close().catch(() => {});
     this.length = this.music ? t : Math.min(t, this.song.duration);
@@ -3724,6 +3869,8 @@ class Generator {
     this.blob = blob;
     const url = blob ? URL.createObjectURL(blob) : null;
     this.blobUrl = url;
+    const takes = this.takes && this.takes.length > 1 ? this.takes : null;
+    if (takes) takes.forEach((tk) => (tk.url = URL.createObjectURL(tk.blob)));
     end.hidden = false;
     end.innerHTML = error
       ? `<div class="kb-pmvg-endcard"><h2>That didn't work</h2><p>${esc(error)}</p>
@@ -3733,10 +3880,11 @@ class Generator {
           <div class="kb-card-acts"><button class="kb-btn" data-end="close">Back</button></div></div>`
       : `<div class="kb-pmvg-endcard">
           <h2>${early ? "Stopped" : "Done!"}</h2>
-          <p>${fmtDuration(this.length || 0)} · ${this.cuts} cuts · ${Math.round(this.song.bpm)} BPM${blob ? ` · ${fmtBytes(blob.size)}` : ""}</p>
+          <p>${fmtDuration(this.length || 0)} · ${this.cuts} cuts · ${Math.round(this.song.bpm)} BPM${blob ? ` · ${fmtBytes(blob.size)}` : ""}${takes ? ` · ${takes.length} videos` : ""}</p>
           ${early && blob && this.song.duration > 0 && this.length < this.song.duration - 2 ? `<p class="kb-hint">Stopped early – the video ends at ${fmtDuration(this.length || 0)} of ${fmtDuration(this.song.duration)}. The recording runs in real time, so let the show play to the end for the whole track.</p>` : ""}
           ${this.failed && this.failed.length ? `<details class="kb-pmvg-skipped"><summary>${this.failed.length} ${this.failed.length === 1 ? "clip was" : "clips were"} skipped</summary>${this.failListHtml(this.failed.slice().reverse())}</details>` : ""}
           ${url ? `<video class="kb-pmvg-result" src="${url}" controls playsinline></video>` : ""}
+          ${takes ? `<div class="kb-pmvg-takes">${takes.map((tk, i) => `<div class="kb-pmvg-take"><span><b>${esc(tk.name)}</b><small>${fmtDuration(tk.length)} · ${fmtBytes(tk.blob.size)}</small></span><a class="kb-btn" data-end="tfile" href="${tk.url}" download="${String(i + 1).padStart(2, "0")} ${esc(fileName(tk.name))}.webm">${icon("download")}Download</a><button class="kb-btn is-primary" data-end="tstash" data-i="${i}">Save to Stash</button></div>`).join("")}</div>` : ""}
           <div class="kb-card-acts">
             ${blob ? `<button class="kb-btn is-primary" data-end="stash">${icon("download")}Save to Stash</button><a class="kb-btn" data-end="file" href="${url}" download="${esc(fileName(this.song.name))}.webm">Download</a>` : ""}
             ${this.rgUsed.size ? `<button class="kb-btn" data-end="rgall" title="Download them into your library, scanned and tagged “RedGifs”">${icon("download")}Save the ${this.rgUsed.size} RedGifs ${this.rgUsed.size === 1 ? "clip" : "clips"}</button>` : ""}
@@ -3758,17 +3906,20 @@ class Generator {
       }
       if (a === "fs") this.saveFunscript();
       if (a === "stash") this.saveToStash(b);
+      if (a === "tstash") this.saveToStash(b, this.takes[Number(b.dataset.i)]);
       if (a === "rgall") this.saveAllUsed(b);
     };
   }
 
-  async saveToStash(btn) {
+  async saveToStash(btn, take) {
     const msg = this.el.querySelector("[data-end-msg]");
+    const blob = take ? take.blob : this.blob;
+    const song = take ? take.song : this.song;
     btn.disabled = true;
     try {
-      const out = await uploadRecording(this.blob, `PMV – ${this.song.name}`, (p) => (msg.textContent = `Uploading … ${Math.round(p * 100)} %`));
+      const out = await uploadRecording(blob, `PMV – ${song.name}`, (p) => (msg.textContent = `Uploading … ${Math.round(p * 100)} %`));
       msg.textContent = out.fixed ? "Saved – Stash is scanning it …" : "Saved (without ffmpeg post-processing) – Stash is scanning it …";
-      const id = await importScene(out, this.song);
+      const id = await importScene(out, song);
       msg.innerHTML = id ? `Saved to Stash as a scene. <a href="${esc(SCENE_LINK(id))}" data-end="close">View</a>` : "Saved – the scene appears after the scan.";
       btn.innerHTML = `${icon("check")}Saved`;
     } catch (err) {
@@ -3789,6 +3940,7 @@ class Generator {
     window.removeEventListener("resize", this.onResize);
     document.body.classList.remove("kb-noscroll");
     if (this.blobUrl) setTimeout(() => URL.revokeObjectURL(this.blobUrl), 60000);
+    (this.takes || []).forEach((tk) => tk.url && setTimeout(() => URL.revokeObjectURL(tk.url), 60000));
     this.el.remove();
     this.onClose(null);
   }
