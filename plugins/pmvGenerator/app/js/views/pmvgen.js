@@ -2129,6 +2129,15 @@ class Generator {
     [this.W, this.H] = this.sizeFor();
     // Tag stages (A → B → C, the last on drops and in the finale): their own supply each; needs a song with an end
     this.nStages = stagesActive(S) && !this.tpl && !this.outside ? S.stages.length : 1;
+    // Tag stages that can't run (Plex, a live app, a template: no song of known length): the tags of all stages count
+    // together – instead of no tags at all (the general tag box is hidden while stages are on)
+    if (S.stagesOn && this.nStages < 2 && S.clipFrom === "filter" && Array.isArray(S.stages)) {
+      const all = [...new Set(S.stages.flatMap((st) => st.tags || []))];
+      if (all.length) {
+        this.S = Object.assign({}, S, { tags: all, tagMode: "any" });
+        toast("Tag stages need your own song – here the tags of all stages count together", "ok");
+      }
+    }
     this.stageNow = 0;
     this.dropUntil = -1;
     this.prepN = [];

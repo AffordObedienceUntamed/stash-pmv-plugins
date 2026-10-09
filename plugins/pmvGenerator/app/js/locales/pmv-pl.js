@@ -610,6 +610,7 @@ export default {
     "Cut ahead of the beat": "Cięcie przed uderzeniem",
     "The cut happens a little before the beat, so the picture is already there when the beat hits (2 frames are about 33 ms)": "Cięcie następuje chwilę przed uderzeniem, więc obraz jest już na miejscu, gdy uderzenie wybrzmi (2 klatki to ok. 33 ms)",
     "Divider width": "Szerokość linii podziału",
+    "Tag stages need your own song – here the tags of all stages count together": "Etapy tagów wymagają własnego utworu – tutaj tagi wszystkich etapów działają razem",
     "Shortest clip": "Najkrótszy klip",
     "A clip stays on screen for at least this many beats before its field changes – no more clips that come and go on the next beat (0 = off)": "Klip zostaje na ekranie przez co najmniej tyle uderzeń, zanim jego pole się zmieni – koniec z klipami, które pojawiają się i znikają na następnym uderzeniu (0 = wyłączone)",
     "Shortest clip in beats": "Najkrótszy klip (uderzenia)",

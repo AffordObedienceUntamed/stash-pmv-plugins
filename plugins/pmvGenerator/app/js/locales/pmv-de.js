@@ -610,6 +610,7 @@ export default {
     "Cut ahead of the beat": "Schnitt vor dem Beat",
     "The cut happens a little before the beat, so the picture is already there when the beat hits (2 frames are about 33 ms)": "Der Schnitt passiert kurz vor dem Beat, sodass das Bild schon da ist, wenn der Beat trifft (2 Frames sind etwa 33 ms)",
     "Divider width": "Breite der Trennlinien",
+    "Tag stages need your own song – here the tags of all stages count together": "Tag-Stufen brauchen deinen eigenen Song – hier gelten die Tags aller Stufen zusammen",
     "Shortest clip": "Kürzester Clip",
     "A clip stays on screen for at least this many beats before its field changes – no more clips that come and go on the next beat (0 = off)": "Ein Clip bleibt mindestens so viele Beats im Bild, bevor sich sein Feld ändert – keine Clips mehr, die im nächsten Beat kommen und gehen (0 = aus)",
     "Shortest clip in beats": "Kürzester Clip in Beats",

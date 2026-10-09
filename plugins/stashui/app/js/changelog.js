@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.82.1",
+    date: "2026-10-09",
+    items: [
+      ["pmv", "PMV Generator 2.27.1: tag stages need your own song of known length. With Plex, a live app or a PMV template they used to apply no tags at all – so clips from everywhere came up although stages were set. Now the tags of all stages count together there, and a message says so.", "PMV 生成器 2.27.1：标签阶段需要你自己的、长度已知的歌曲。使用 Plex、实时应用或 PMV 模板时，它们过去完全不应用任何标签——因此尽管设置了阶段，仍会出现来自各处的片段。现在这些情况下所有阶段的标签一并生效，并会给出提示。"],
+    ],
+  },
+  {
     v: "3.82.0",
     date: "2026-10-09",
     items: [

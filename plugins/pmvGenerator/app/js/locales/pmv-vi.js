@@ -610,6 +610,7 @@ export default {
     "Cut ahead of the beat": "Cắt trước nhịp",
     "The cut happens a little before the beat, so the picture is already there when the beat hits (2 frames are about 33 ms)": "Cắt diễn ra hơi sớm hơn nhịp, nên khi nhịp đến hình ảnh đã sẵn sàng (2 khung hình khoảng 33 ms)",
     "Divider width": "Độ rộng đường chia",
+    "Tag stages need your own song – here the tags of all stages count together": "Giai đoạn thẻ cần bài hát của chính bạn – ở đây thẻ của mọi giai đoạn được dùng chung",
     "Shortest clip": "Clip ngắn nhất",
     "A clip stays on screen for at least this many beats before its field changes – no more clips that come and go on the next beat (0 = off)": "Một clip ở lại trên màn hình ít nhất số nhịp này trước khi khung của nó đổi – không còn clip đến rồi đi ngay ở nhịp sau (0 = tắt)",
     "Shortest clip in beats": "Clip ngắn nhất (nhịp)",

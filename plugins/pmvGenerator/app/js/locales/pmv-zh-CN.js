@@ -589,6 +589,7 @@ export default {
     "Cut ahead of the beat": "在节拍之前切换",
     "The cut happens a little before the beat, so the picture is already there when the beat hits (2 frames are about 33 ms)": "切换比节拍稍早一点发生，节拍到来时画面已经就位（2 帧约 33 毫秒）",
     "Divider width": "分隔线宽度",
+    "Tag stages need your own song – here the tags of all stages count together": "标签阶段需要你自己的歌曲——此处所有阶段的标签一并生效",
     "Shortest clip": "最短片段",
     "A clip stays on screen for at least this many beats before its field changes – no more clips that come and go on the next beat (0 = off)": "一个片段在其区域更换之前至少停留这么多拍——不再有下一拍就来了又走的片段（0 = 关）",
     "Shortest clip in beats": "最短片段（拍数）",

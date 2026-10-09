@@ -610,6 +610,7 @@ export default {
     "Cut ahead of the beat": "Couper avant le temps",
     "The cut happens a little before the beat, so the picture is already there when the beat hits (2 frames are about 33 ms)": "La coupe se fait un peu avant le temps, l'image est donc déjà là quand le temps tombe (2 images ≈ 33 ms)",
     "Divider width": "Épaisseur des séparateurs",
+    "Tag stages need your own song – here the tags of all stages count together": "Les étapes de tags demandent votre propre morceau – ici, les tags de toutes les étapes comptent ensemble",
     "Shortest clip": "Clip le plus court",
     "A clip stays on screen for at least this many beats before its field changes – no more clips that come and go on the next beat (0 = off)": "Un clip reste à l’écran au moins ce nombre de temps avant que son champ change – plus de clips qui viennent et repartent au temps suivant (0 = désactivé)",
     "Shortest clip in beats": "Clip le plus court (temps)",

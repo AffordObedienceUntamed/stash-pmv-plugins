@@ -610,6 +610,7 @@ export default {
     "Cut ahead of the beat": "ビートより先にカット",
     "The cut happens a little before the beat, so the picture is already there when the beat hits (2 frames are about 33 ms)": "カットをビートの少し前に行うので、ビートが来たときにはすでに映像が切り替わっています（2 フレームは約 33 ms）",
     "Divider width": "区切り線の幅",
+    "Tag stages need your own song – here the tags of all stages count together": "タグステージには自分の曲が必要です – ここではすべてのステージのタグがまとめて使われます",
     "Shortest clip": "最短クリップ",
     "A clip stays on screen for at least this many beats before its field changes – no more clips that come and go on the next beat (0 = off)": "クリップは、そのフィールドが切り替わるまで少なくともこの拍数だけ表示されます – 次の拍で出てすぐ消えるクリップがなくなります（0 = オフ）",
     "Shortest clip in beats": "最短クリップ（拍数）",
