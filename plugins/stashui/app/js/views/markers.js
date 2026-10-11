@@ -193,9 +193,9 @@ export async function render(main, params, query) {
     const v = document.createElement("video");
     const useOrig = store.get("markerOrig", false) && c.dataset.full;
     if (useOrig) {
-      // the marker's moment cut from the original file: from its start to its end (at most 12 s), then round again
+      // the marker's moment cut from the original file: from its start to its end (8 s if it has none), then round again
       const a = Number(c.dataset.from) || 0;
-      const z = Math.min(Number(c.dataset.to) > a ? Number(c.dataset.to) : a + 8, a + 12);
+      const z = Number(c.dataset.to) > a ? Number(c.dataset.to) : a + 8;
       v.src = c.dataset.full + "#t=" + a;
       v.loop = false;
       v.addEventListener("timeupdate", () => {
