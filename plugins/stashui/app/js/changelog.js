@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.91.1",
+    date: "2026-10-12",
+    items: [
+      ["ui", "Sharing → Internet access: when Tailscale is installed but not connected (message “NoState”), a Cloudflare tunnel is used instead if cloudflared is installed – otherwise you are told to open Tailscale and sign in.", "共享 → 互联网访问：如果已安装 Tailscale 但未连接（提示 “NoState”），且装有 cloudflared，就改用 Cloudflare 隧道 – 否则会提示你打开 Tailscale 并登录。"],
+    ],
+  },
+  {
     v: "3.91.0",
     date: "2026-10-12",
     items: [

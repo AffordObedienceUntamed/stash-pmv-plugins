@@ -944,15 +944,25 @@ def share_net(stash, args, conn):
         if not prov:
             raise RuntimeError("neither Tailscale nor cloudflared is installed")
         if prov == "tailscale":
+            problem = ""
             try:
                 out = net_run([progs["tailscale"], "funnel", "--bg", str(port)], 30)
+                m = TS_URL.search(out)
+                if m:
+                    cur = {"provider": "tailscale", "url": m.group(0)}
+                else:
+                    text = re.sub(r"\s+", " ", out).strip()
+                    if re.search(r"NoState|NeedsLogin|Stopped|not running|logged out|connect", text, re.I):
+                        problem = "Tailscale isn't connected – open Tailscale, sign in and make sure it says Connected (" + text[:120] + ")"
+                    else:
+                        problem = text[:400] or "Tailscale Funnel didn't start"
             except subprocess.TimeoutExpired:
-                raise RuntimeError("Tailscale didn't answer – is it running and signed in?")
-            m = TS_URL.search(out)
-            if not m:
-                raise RuntimeError(re.sub(r"\s+", " ", out).strip()[:400] or "Tailscale Funnel didn't start")
-            cur = {"provider": "tailscale", "url": m.group(0)}
-        else:
+                problem = "Tailscale didn't answer – is it running and signed in?"
+            if not cur:
+                if not (progs["cloudflared"] and not want):  # no other way (or Tailscale was asked for): say why
+                    raise RuntimeError(problem)
+                prov = "cloudflared"  # Tailscale isn't usable right now: a Cloudflare tunnel does the same job (with a changing address)
+        if prov == "cloudflared":
             log = os.path.join(folder, "cloudflared.log")
             flags = 0
             if os.name == "nt":
