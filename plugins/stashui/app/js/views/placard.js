@@ -51,6 +51,14 @@ function perfFacts(p, x) {
   };
 }
 
+// The studio at the top of the info bar: its logo (the name if it has none), a link to the studio
+function studioLink(x) {
+  const s = x.studio;
+  if (!s) return "";
+  const logo = s.image_path && !/default=true/.test(s.image_path);
+  return `<a class="kb-plc-studio${logo ? "" : " is-name"}" href="#/studio/${esc(s.id)}" title="${esc(s.name)}">${logo ? `<img alt="${esc(s.name)}" src="${esc(s.image_path)}">` : esc(s.name)}</a>`;
+}
+
 export function placardHtml(kind, x) {
   const fav = !!app.favId && x.tags.some((tg) => tg.id === app.favId);
   const info = fileInfo(kind, x);
@@ -59,6 +67,7 @@ export function placardHtml(kind, x) {
   const folder = (info.path || "").split(/[\\/]/).slice(0, -1).join("\\");
   return `
     <div class="kb-plc">
+      ${studioLink(x)}
       <p class="kb-plc-inv">${t({ scene: "Scene", image: "Image", gallery: "Gallery" }[kind])} #${x.id}${x.date ? `${t(", ")}${fmtDate(x.date)}` : ""}</p>
       <h2 class="kb-plc-title">${tierBadge(tierNow(kind, x.id))}${esc(title)}</h2>
       ${info.lines.filter(Boolean).map((l) => `<p class="kb-plc-meta">${esc(l)}</p>`).join("")}
