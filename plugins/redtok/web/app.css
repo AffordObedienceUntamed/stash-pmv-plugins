@@ -45,7 +45,7 @@ img { -webkit-user-drag: none; }
 .card .bg { position: absolute; left: -24px; top: -24px; z-index: 0; width: calc(100% + 48px); height: calc(100% + 48px); object-fit: cover; filter: blur(28px) brightness(.5) saturate(1.3); }
 .card .poster, .card video { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; object-fit: contain; }
 .card.is-fill .poster, .card.is-fill video { object-fit: cover; }
-.card video { opacity: 0; transition: opacity .2s ease; }
+.card video { opacity: 0; transition: opacity .12s ease; }
 .card video.on { opacity: 1; }
 .card .shade { position: absolute; inset: 0; z-index: 2; pointer-events: none; background: linear-gradient(transparent 58%, rgba(0, 0, 0, .7)), linear-gradient(rgba(0, 0, 0, .28), transparent 16%); transition: opacity .2s; }
 .card .hit { position: absolute; inset: 0; z-index: 3; cursor: pointer; }

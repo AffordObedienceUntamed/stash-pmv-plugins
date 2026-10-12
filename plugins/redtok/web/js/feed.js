@@ -25,7 +25,6 @@ const fillOf = (g) => settings.fit === "fill" || (settings.fit === "auto" && g.h
 const pool = [];
 let blessed = false;
 const SILENT = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
-const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 function newVideo() {
   const v = document.createElement("video");
   v.playsInline = true;
@@ -179,24 +178,35 @@ export function createFeed(host, S, opts = {}) {
     if (F.active) {
       ensure(n);
       play(n);
+      // the next two are warmed up (one only when the phone asks to save data)
       prime(F.nodes[i + 1]);
-      if (!isPhone() || (navigator.connection && navigator.connection.type === "wifi")) prime(F.nodes[i + 2]);
+      if (!(navigator.connection && navigator.connection.saveData)) setTimeout(() => F.active && F.cur === i && prime(F.nodes[i + 2]), 300);
       clearTimeout(F.wt);
       F.wt = setTimeout(() => F.nodes[F.cur] === n && F.active && markWatched(n.g), 2500);
       emit("current", { F, g: n.g, i });
     }
     if (i >= F.nodes.length - 5) loadMore();
   }
+  // Warm up a video before you get to it, so the swipe only has to press play – like TikTok. "preload" alone isn't
+  // enough on phones: Safari loads nothing and Chrome on Android often only the first bytes until play() is called.
+  // A muted play, stopped on the first frame, decodes that frame and keeps the browser filling the buffer.
   function prime(n) {
-    if (!n || n.video) return;
+    if (!n || n.warm) return;
     const v = ensure(n, true);
+    n.warm = true;
     v.preload = "auto";
+    if (F.nodes[F.cur] === n) return;
     v.muted = true;
-    if (IOS) {
-      // Safari loads nothing until play(): a muted play, stopped again, gets the first frames
-      const p = v.play();
-      if (p && p.then) p.then(() => { if (F.nodes[F.cur] !== n) { v.pause(); try { v.currentTime = n.start || 0; } catch (e) { /* not ready */ } } v.muted = muted; }).catch(() => {});
-    }
+    const stop = () => {
+      if (F.nodes[F.cur] === n && F.active) { v.muted = muted; return; }
+      v.pause();
+      if (v.currentTime > 0.3) try { v.currentTime = n.start || 0; } catch (e) { /* not ready */ }
+    };
+    let done = false;
+    const once = () => { if (!done) { done = true; stop(); } };
+    const p = v.play();
+    // stop on the first shown frame – or a moment later (videos off screen may never report a frame)
+    if (p && p.then) p.then(() => { if (v.requestVideoFrameCallback) v.requestVideoFrameCallback(once); setTimeout(once, 150); }).catch(() => {});
   }
   function ensure(n, preloadOnly) {
     if (n.video) return n.video;
@@ -211,6 +221,8 @@ export function createFeed(host, S, opts = {}) {
     v.src = playUrl(n.g) + (n.start ? "#t=" + n.start : "");
     v.playbackRate = v.defaultPlaybackRate = settings.speed || 1;
     v.onplaying = () => { v.classList.add("on"); card.classList.remove("is-wait", "is-paused"); };
+    // the first frame replaces the poster as soon as it is decoded (no fade while you swipe onto it)
+    v.onloadeddata = () => v.classList.add("on");
     v.onwaiting = () => card.classList.add("is-wait");
     v.oncanplay = () => card.classList.remove("is-wait");
     v.ontimeupdate = () => {
@@ -228,7 +240,8 @@ export function createFeed(host, S, opts = {}) {
     const v = n.video;
     if (!v) return;
     v.pause();
-    v.onplaying = v.onwaiting = v.oncanplay = v.ontimeupdate = v.onended = v.onerror = null;
+    v.onplaying = v.onloadeddata = v.onwaiting = v.oncanplay = v.ontimeupdate = v.onended = v.onerror = null;
+    n.warm = false;
     v.removeAttribute("src");
     try { v.load(); } catch (e) { /* fine */ }
     v.remove();
