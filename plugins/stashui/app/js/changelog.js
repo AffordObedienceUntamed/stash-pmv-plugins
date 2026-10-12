@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.91.4",
+    date: "2026-10-12",
+    items: [
+      ["ui", "Sharing: a new “Guide” tab explains how everything works, how to set up Tailscale (fixed address) and cloudflared (address changes, links can stop working) and what to keep in mind. A link in a Tailscale message (e.g. to allow Funnel) is clickable now.", "共享：新增“指南”标签页，说明各项功能、如何设置 Tailscale（固定地址）和 cloudflared（地址会变，链接可能失效）以及注意事项。Tailscale 消息中的链接（例如允许 Funnel）现在可以点击。"],
+    ],
+  },
+  {
     v: "3.91.3",
     date: "2026-10-12",
     items: [

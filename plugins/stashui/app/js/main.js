@@ -64,7 +64,7 @@ const ROUTES = [
   { re: /^settings\/([^/?]+)$/, view: "settings", keys: ["section"] },
   { re: /^plugins$/, view: "plugins" },
   { re: /^phone$/, view: "phone" },
-  { re: /^sharing(?:\/(inbox|link|send|chat))?$/, view: "sharing", keys: ["tab"] },
+  { re: /^sharing(?:\/(inbox|link|send|chat|guide))?$/, view: "sharing", keys: ["tab"] },
   { re: /^extern\/([a-z-]+)$/, view: "embed", keys: ["name"] },
   { re: /^p\/([^/?]+)(?:\/(.*))?$/, view: "xroute", keys: ["plugin", "rest"] }, // pages of extension plugins (ext.js addRoute)
   { re: /^scene\/(\d+)$/, view: "player", keys: ["id"], overlay: true },

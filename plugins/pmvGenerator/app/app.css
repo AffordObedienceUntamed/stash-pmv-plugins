@@ -1773,6 +1773,9 @@ html.kb-glass .kb-phone-file { border-bottom-color: var(--glass-edge); }
 .kb-share-state { color: var(--text-2); font-size: 13px; }
 .kb-share-help { color: var(--text-2); }
 .kb-share-on { color: #3ecf8e; }
+.kb-share-guide ul, .kb-share-guide ol { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; color: var(--text-2); }
+.kb-share-guide p { margin: 0; color: var(--text-2); }
+.kb-share-guide p b { color: var(--text); font: 700 15px/1.3 var(--f-label); }
 .kb-share-card a { color: var(--pink); }
 .kb-share-help summary { cursor: pointer; }
 .kb-share-help code { display: block; margin: 6px 0; padding: 8px 10px; border-radius: 8px; background: var(--bg-3); font-size: 13px; overflow-wrap: anywhere; user-select: all; }

@@ -12,9 +12,10 @@ import * as C from "../shareconn.js";
 import { tagsCache } from "./tagpicker.js";
 import { mountSend } from "./sharesend.js";
 import { mountChat } from "./sharechat.js";
+import { mountGuide } from "./shareguide.js";
 
-const TABS = ["inbox", "link", "send", "chat"];
-const LABEL = { inbox: "Inbox", link: "My link", send: "Send", chat: "Chat" };
+const TABS = ["inbox", "link", "send", "chat", "guide"];
+const LABEL = { inbox: "Inbox", link: "My link", send: "Send", chat: "Chat", guide: "Guide" };
 const timeText = (sec) => new Date(sec * 1000).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 
 export const avatarHtml = (a, name, cls = "") =>
@@ -76,7 +77,7 @@ export async function render(main, params) {
     main.querySelectorAll("[data-tab]").forEach((b) => b.classList.toggle("is-on", b.dataset.tab === k));
     if (pane && pane.destroy) pane.destroy();
     paneEl.innerHTML = "";
-    const mk = { inbox: mountInbox, link: mountLink, send: mountSend, chat: mountChat }[k];
+    const mk = { inbox: mountInbox, link: mountLink, send: mountSend, chat: mountChat, guide: mountGuide }[k];
     pane = mk(paneEl, ctx);
     pane.update && pane.update();
   }
@@ -350,6 +351,8 @@ function mountLink(host, ctx) {
   let netState = { running: false, providers: {} };
   let netBusy = false;
   let netLoaded = false;
+  let netErr = ""; // the last message of Tailscale / cloudflared (a link in it, e.g. to allow Funnel, is clickable)
+  const linkify = (s) => esc(s).replace(/https:\/\/(?:login\.)?tailscale\.com[^\s<)]*/g, (u) => `<a href="${u}" target="_blank" rel="noopener">${u}</a>`);
 
   // Internet access: one button (backend share_net starts Tailscale Funnel or a Cloudflare quick tunnel that is already installed)
   async function loadNet() {
@@ -365,6 +368,7 @@ function mountLink(host, ctx) {
     if (action === "start" && !(await confirmDialog({ title: t("Make reachable from the internet"), text: t("This makes your receiver reachable from the internet. Only people with a valid link can send you anything, and you can switch it off here at any time."), ok: t("Make reachable") }))) return;
     if (action === "install" && !(await confirmDialog({ title: t("Install cloudflared"), text: t("Install cloudflared (Cloudflare's tunnel program) with Windows' package manager (winget)? Windows may ask for permission, and it can take a minute."), ok: t("Install") }))) return;
     netBusy = true;
+    netErr = "";
     paintNet();
     try {
       const prev = netState.url;
@@ -374,6 +378,7 @@ function mountLink(host, ctx) {
       toast(action === "start" ? t("Internet access is on") : action === "install" ? t("cloudflared is installed") : t("Internet access is off"), "ok");
     } catch (e) {
       errorToast(e, t("Internet access"));
+      netErr = e.message;
       try {
         netState = await runBackend({ mode: "share_net", action: "status" });
       } catch (e2) { /* keep the old state */ }
@@ -395,14 +400,20 @@ function mountLink(host, ctx) {
     else if (p.tailscale || p.cloudflared)
       box.innerHTML = `<div class="kb-phone-acts"><button type="button" class="kb-btn is-primary" data-neton>${icon("share")}${t("Make reachable from the internet")}</button>
         ${!p.cloudflared && netState.canInstall ? `<button type="button" class="kb-btn" data-netinstall>${t("Install cloudflared")}</button>` : ""}</div>
-        <p class="kb-hint">${p.tailscale ? t("Uses Tailscale Funnel (a fixed address).") : t("Uses a Cloudflare quick tunnel (a new address every time).")}${netState.error ? " " + esc(netState.error) : ""}</p>`;
+        <p class="kb-hint">${p.tailscale ? t("Uses Tailscale Funnel (a fixed address).") : t("Uses a Cloudflare quick tunnel (a new address every time).")}${netState.error ? " " + esc(netState.error) : ""}</p>
+        ${netErr ? `<p class="kb-hint kb-share-warn">${linkify(netErr)}</p>` : ""}
+        <p class="kb-hint"><button type="button" class="kb-chip" data-toguide>${t("Open the guide")}</button></p>`;
     else
       box.innerHTML = `<p class="kb-hint">${t("To make your links work from outside, install Tailscale (free) or cloudflared on this PC – then one click here does the rest.")} <a href="https://tailscale.com/download" target="_blank" rel="noopener">${t("Get Tailscale")}</a></p>
-        ${netState.canInstall ? `<div class="kb-phone-acts"><button type="button" class="kb-btn is-primary" data-netinstall>${t("Install cloudflared")}</button></div>` : ""}`;
+        ${netState.canInstall ? `<div class="kb-phone-acts"><button type="button" class="kb-btn is-primary" data-netinstall>${t("Install cloudflared")}</button></div>` : ""}
+        ${netErr ? `<p class="kb-hint kb-share-warn">${linkify(netErr)}</p>` : ""}
+        <p class="kb-hint"><button type="button" class="kb-chip" data-toguide>${t("Open the guide")}</button></p>`;
     const on = box.querySelector("[data-neton]");
     if (on) on.onclick = () => netAct("start");
     const inst = box.querySelector("[data-netinstall]");
     if (inst) inst.onclick = () => netAct("install");
+    const gd = box.querySelector("[data-toguide]");
+    if (gd) gd.onclick = () => ctx.go("guide");
     const off = box.querySelector("[data-netoff]");
     if (off) off.onclick = () => netAct("stop");
   }
