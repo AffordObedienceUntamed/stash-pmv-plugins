@@ -4,6 +4,15 @@
 
 export const CHANGES = [
   {
+    v: "3.90.0",
+    date: "2026-10-12",
+    items: [
+      ["ui", "Russian (Русский): Stash UI is now also available in Russian, with the correct plural forms (1 сцена, 2 сцены, 5 сцен, 21 сцена). It follows Stash's own interface language, or pick it under Settings → This interface → Language. Thanks to Fixik071.", "俄语（Русский）：Stash UI 现已支持俄语，并带有正确的复数形式（1 сцена、2 сцены、5 сцен、21 сцена）。会跟随 Stash 自身的界面语言，也可在“设置 → 此界面 → 语言”中选择。感谢 Fixik071。"],
+      ["pmv", "PMV Generator 2.30.0: with “Best moments” the clips now follow the music – calm parts get calmer clips, loud parts and drops the busiest ones – scenes with a funscript count how fast it is at that spot, and spots a scene was just shown from are avoided. Thanks to PepegaSan.", "PMV Generator 2.30.0：开启“最佳时刻”后，片段会跟随音乐 – 平缓的部分用较平静的片段，响亮的部分和高潮用最激烈的片段；带 funscript 的场景还会参考该处的速度，并避开该场景刚用过的位置。感谢 PepegaSan。"],
+      ["pmv", "PMV Generator 2.30.0: RedGifs creators with their own tags – add a creator, then pick the tags to use from the ones they really use (all of them or any of them), and only their clips with those tags come. Thanks to PepegaSan.", "PMV Generator 2.30.0：RedGifs 创作者可附带自己的标签 – 添加创作者后，从其实际使用的标签中选择（全部或任一），就只会出现其带这些标签的片段。感谢 PepegaSan。"],
+    ],
+  },
+  {
     v: "3.89.1",
     date: "2026-10-12",
     items: [
