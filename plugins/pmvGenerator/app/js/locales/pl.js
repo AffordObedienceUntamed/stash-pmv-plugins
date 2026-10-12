@@ -2130,4 +2130,7 @@ export default {
   "Press and hold the button to delete.": "Przytrzymaj przycisk, aby usunąć.",
   "Reverse the wheel": "Odwróć kółko",
   "Normally turning the wheel up makes it louder or jumps forward. Switch this on and up goes quieter / back, down louder / forward.": "Zwykle obrót kółka w górę zwiększa głośność lub przewija do przodu. Po włączeniu góra = ciszej / do tyłu, dół = głośniej / do przodu.",
+  "Hold a performer to remove them.": "Przytrzymaj wykonawcę, aby go usunąć.",
+  "Remove “{name}” from this {what}?": "Usunąć „{name}” z tego elementu ({what})?",
+  "The performer itself stays – only the link to this {what} is removed.": "Sam wykonawca zostaje – usuwane jest tylko powiązanie z tym elementem ({what}).",
 };

@@ -1222,7 +1222,15 @@ button.kb-rail-group.is-closed .kb-rail-caret { transform: rotate(-45deg); }
 .kb-plc-perfwrap { position: relative; display: inline-flex; max-width: 100%; }
 .kb-plc-perfx { position: absolute; top: -6px; right: -6px; display: grid; place-items: center; width: 18px; height: 18px; padding: 0; border: 0; border-radius: 50%; color: #fff; font: 700 13px/1 var(--f-label); background: #b3243e; opacity: 0; transform: scale(.8); transition: opacity .15s, transform .15s; cursor: pointer; }
 .kb-plc-perfwrap:hover .kb-plc-perfx, .kb-plc-perfx:focus-visible { opacity: 1; transform: none; }
-@media (hover: none) { .kb-plc-perfx { opacity: .85; transform: none; } }
+/* Touch screens: no × (a tap is too easy) – hold the card to remove; the hint says so */
+.kb-plc-holdhint { display: none; margin: -6px 0 12px; }
+@media (hover: none) and (pointer: coarse) {
+  .kb-plc-perfx { display: none; }
+  .kb-plc-holdhint { display: block; }
+  .kb-plc-perfs .kb-plc-perf[data-perfcard] { -webkit-touch-callout: none; user-select: none; }
+}
+.kb-plc-perf.is-holding, html .kb-plc-perf.is-holding { border-color: #d22c4a; color: #fff; background: #b3243e; transform: scale(.96); transition: transform .15s, background .15s; }
+html.kb-glass .kb-plc-perf.is-holding { border-color: #ff5a76; background: color-mix(in srgb, #b3243e 70%, transparent); }
 .kb-plc-perfadd { padding: 3px 11px 3px 8px; border-style: dashed; color: var(--text-2); font: 600 13px/1 var(--f-label); cursor: pointer; }
 .kb-plc-perfadd .kb-ic { width: 15px; height: 15px; }
 .kb-plc-perfadd:only-of-type { padding: 6px 12px 6px 9px; }

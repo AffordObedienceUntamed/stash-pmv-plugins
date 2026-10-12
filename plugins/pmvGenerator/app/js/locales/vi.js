@@ -2125,4 +2125,7 @@ export default {
   "Press and hold the button to delete.": "Hãy nhấn giữ nút để xóa.",
   "Reverse the wheel": "Đảo chiều con lăn",
   "Normally turning the wheel up makes it louder or jumps forward. Switch this on and up goes quieter / back, down louder / forward.": "Thông thường cuộn lên sẽ tăng âm lượng hoặc tua tới. Bật tùy chọn này thì cuộn lên sẽ giảm âm lượng / tua lùi, cuộn xuống sẽ tăng âm lượng / tua tới.",
+  "Hold a performer to remove them.": "Nhấn giữ diễn viên để gỡ.",
+  "Remove “{name}” from this {what}?": "Gỡ “{name}” khỏi {what} này?",
+  "The performer itself stays – only the link to this {what} is removed.": "Diễn viên vẫn được giữ – chỉ gỡ liên kết với {what} này.",
 };

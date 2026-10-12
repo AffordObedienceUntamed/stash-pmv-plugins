@@ -2085,4 +2085,7 @@ export default {
   "Press and hold the button to delete.": "Halte den Knopf gedrückt, um zu löschen.",
   "Reverse the wheel": "Mausrad umkehren",
   "Normally turning the wheel up makes it louder or jumps forward. Switch this on and up goes quieter / back, down louder / forward.": "Normalerweise macht Hochdrehen lauter oder springt vor. Eingeschaltet geht hoch = leiser / zurück und runter = lauter / vor.",
+  "Hold a performer to remove them.": "Halte einen Darsteller gedrückt, um ihn zu entfernen.",
+  "Remove “{name}” from this {what}?": "„{name}“ von diesem {what} entfernen?",
+  "The performer itself stays – only the link to this {what} is removed.": "Der Darsteller selbst bleibt – nur die Verknüpfung mit diesem {what} wird gelöst.",
 };

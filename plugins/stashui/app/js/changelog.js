@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.92.1",
+    date: "2026-10-12",
+    items: [
+      ["ui", "Performers on a scene, image or gallery: the red × now asks before it takes a performer off. On touch screens the × is gone – hold the performer's card (it turns red), let go, and the question comes. Thanks to ufousox007 for the report.", "场景、图片或图库中的演员：点击红色 × 现在会先确认再移除。触屏上不再显示 ×——按住演员卡片（变红）后松开，即会出现确认。感谢 ufousox007 的反馈。"],
+    ],
+  },
+  {
     v: "3.92.0",
     date: "2026-10-12",
     items: [

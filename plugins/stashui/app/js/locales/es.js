@@ -2107,4 +2107,7 @@ export default {
   "Press and hold the button to delete.": "Mantén pulsado el botón para eliminar.",
   "Reverse the wheel": "Invertir la rueda",
   "Normally turning the wheel up makes it louder or jumps forward. Switch this on and up goes quieter / back, down louder / forward.": "Normalmente girar la rueda hacia arriba sube el volumen o avanza. Activado, arriba baja el volumen / retrocede y abajo sube el volumen / avanza.",
+  "Hold a performer to remove them.": "Mantén pulsado a un intérprete para quitarlo.",
+  "Remove “{name}” from this {what}?": "¿Quitar a «{name}» de este {what}?",
+  "The performer itself stays – only the link to this {what} is removed.": "El intérprete se conserva: solo se quita el vínculo con este {what}.",
 };

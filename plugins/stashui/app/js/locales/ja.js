@@ -2132,4 +2132,7 @@ export default {
   "Press and hold the button to delete.": "ボタンを長押しして削除します。",
   "Reverse the wheel": "ホイールの向きを反転",
   "Normally turning the wheel up makes it louder or jumps forward. Switch this on and up goes quieter / back, down louder / forward.": "通常はホイールを上に回すと音量が上がるか前に進みます。オンにすると、上で音量が下がる／戻る、下で音量が上がる／進むになります。",
+  "Hold a performer to remove them.": "出演者を長押しすると外せます。",
+  "Remove “{name}” from this {what}?": "「{name}」をこの{what}から外しますか？",
+  "The performer itself stays – only the link to this {what} is removed.": "出演者自体は残ります。この{what}との関連だけが外れます。",
 };

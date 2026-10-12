@@ -2189,4 +2189,7 @@ export default {
   "Press and hold the button to delete.": "请按住按钮来删除。",
   "Reverse the wheel": "反转滚轮方向",
   "Normally turning the wheel up makes it louder or jumps forward. Switch this on and up goes quieter / back, down louder / forward.": "通常向上滚动会增大音量或向前跳转。开启后，向上滚动会减小音量/后退，向下滚动会增大音量/前进。",
+  "Hold a performer to remove them.": "按住演员即可移除。",
+  "Remove “{name}” from this {what}?": "从此{what}中移除“{name}”？",
+  "The performer itself stays – only the link to this {what} is removed.": "演员本身会保留——只会移除与此{what}的关联。",
 };

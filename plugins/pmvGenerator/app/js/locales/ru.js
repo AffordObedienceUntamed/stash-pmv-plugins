@@ -2167,4 +2167,7 @@ export default {
   "Press and hold the button to delete.": "Нажмите и удерживайте кнопку, чтобы удалить.",
   "Reverse the wheel": "Обратить колесо",
   "Normally turning the wheel up makes it louder or jumps forward. Switch this on and up goes quieter / back, down louder / forward.": "Обычно прокрутка вверх делает громче или перематывает вперёд. Если включить, вверх — тише / назад, вниз — громче / вперёд.",
+  "Hold a performer to remove them.": "Удерживайте исполнителя, чтобы убрать его.",
+  "Remove “{name}” from this {what}?": "Убрать «{name}» из этого объекта ({what})?",
+  "The performer itself stays – only the link to this {what} is removed.": "Сам исполнитель остаётся — удаляется только связь с этим объектом ({what}).",
 };
