@@ -231,62 +231,72 @@ export function mountSend(host, ctx) {
     if (!host2) return;
     const p = pick;
     if (!p) return void (host2.innerHTML = "");
+    // The bar with the search box is built once and never replaced – only the list and the buttons below it are redrawn,
+    // so typing isn't interrupted while the pictures load
+    if (!host2.querySelector("[data-ptools]")) buildPicker(host2, p);
     const items = visible(p);
     const chosen = [...p.chosen.values()];
     const total = chosen.reduce((a, i) => a + (i.size || 0), 0);
-    host2.innerHTML = `<section class="kb-share-card">
-      <div class="kb-share-bar">
-        <div class="kb-seg" data-kind><button type="button" data-k="images" class="${p.kind === "images" ? "is-on" : ""}">${t("Images")}</button><button type="button" data-k="scenes" class="${p.kind === "scenes" ? "is-on" : ""}">${t("Scenes")}</button></div>
-        <input class="kb-field" data-q value="${esc(p.q)}" placeholder="${esc(t("Search your library"))}" spellcheck="false">
-      </div>
-      ${(hi.likes || []).length || (hi.dislikes || []).length ? `<label class="kb-check"><input type="checkbox" data-fit${p.match ? " checked" : ""}> ${t("Only what fits what they like and don't want")}</label>` : ""}
-      ${p.empty ? `<p class="kb-hint">${esc(p.empty)}</p>` : ""}
-      <div class="kb-share-grid is-pick">${items
-        .map((i) => {
-          const bad = problem(i);
-          return `<button type="button" class="kb-share-tile${p.chosen.has(i.key) ? " is-sel" : ""}${bad ? " is-bad" : ""}" data-key="${esc(i.key)}" title="${esc(bad || i.title)}"${bad ? " disabled" : ""}>
+    const q = (s) => host2.querySelector(s);
+    host2.querySelectorAll("[data-k]").forEach((b) => b.classList.toggle("is-on", p.kind === b.dataset.k));
+    const fit = q("[data-fit]");
+    if (fit) fit.checked = !!p.match;
+    const em = q("[data-pempty]");
+    em.hidden = !p.empty;
+    em.textContent = p.empty || "";
+    q("[data-pgrid]").innerHTML = items
+      .map((i) => {
+        const bad = problem(i);
+        return `<button type="button" class="kb-share-tile${p.chosen.has(i.key) ? " is-sel" : ""}${bad ? " is-bad" : ""}" data-key="${esc(i.key)}" title="${esc(bad || i.title)}"${bad ? " disabled" : ""}>
             <img src="${esc(i.thumb)}" alt="" loading="lazy"><span>${esc(i.title)}</span>${bad ? `<em>${esc(bad)}</em>` : ""}<b aria-hidden="true">✓</b>
           </button>`;
-        })
-        .join("")}</div>
-      ${!items.length && !p.loading && !p.empty ? `<p class="kb-hint">${t("Nothing to show.")}</p>` : ""}
+      })
+      .join("");
+    q("[data-pnone]").hidden = !(!items.length && !p.loading && !p.empty);
+    const mo = q("[data-more]");
+    mo.hidden = !p.more;
+    mo.disabled = p.loading;
+    mo.textContent = p.loading ? t("Loading …") : t("Load more");
+    const sb = q("[data-send]");
+    sb.disabled = !(chosen.length && !sending);
+    sb.innerHTML = `${icon("share")}${t("Send")}${chosen.length ? ` ${chosen.length} (${fmtBytes(total) || "0 B"})` : ""}`;
+  }
+
+  function buildPicker(host2, p) {
+    host2.innerHTML = `<section class="kb-share-card" data-ptools>
+      <div class="kb-share-bar">
+        <div class="kb-seg" data-kind><button type="button" data-k="images">${t("Images")}</button><button type="button" data-k="scenes">${t("Scenes")}</button></div>
+        <input class="kb-field" data-q value="${esc(p.q)}" placeholder="${esc(t("Search your library"))}" spellcheck="false" autocomplete="off">
+      </div>
+      ${(hi.likes || []).length || (hi.dislikes || []).length ? `<label class="kb-check"><input type="checkbox" data-fit> ${t("Only what fits what they like and don't want")}</label>` : ""}
+      <p class="kb-hint" data-pempty hidden></p>
+      <div class="kb-share-grid is-pick" data-pgrid></div>
+      <p class="kb-hint" data-pnone hidden>${t("Nothing to show.")}</p>
       <div class="kb-share-acts">
-        ${p.more ? `<button type="button" class="kb-btn" data-more${p.loading ? " disabled" : ""}>${p.loading ? t("Loading …") : t("Load more")}</button>` : ""}
-        <button type="button" class="kb-btn is-primary" data-send${chosen.length && !sending ? "" : " disabled"}>${icon("share")}${t("Send")}${chosen.length ? ` ${chosen.length} (${fmtBytes(total) || "0 B"})` : ""}</button>
+        <button type="button" class="kb-btn" data-more hidden>${t("Load more")}</button>
+        <button type="button" class="kb-btn is-primary" data-send disabled>${icon("share")}${t("Send")}</button>
       </div></section>`;
     const q = (s) => host2.querySelector(s);
-    host2.querySelectorAll("[data-k]").forEach(
-      (b) =>
-        (b.onclick = () => {
-          if (pick.kind === b.dataset.k) return;
-          Object.assign(pick, { kind: b.dataset.k, page: 0, items: [], total: 0, more: true, empty: "", token: pick.token + 1, loading: false });
-          loadMore();
-        })
-    );
+    const restart = (patch) => {
+      Object.assign(pick, patch, { page: 0, items: [], total: 0, more: true, empty: "", token: pick.token + 1, loading: false });
+      loadMore();
+    };
+    host2.querySelectorAll("[data-k]").forEach((b) => (b.onclick = () => pick.kind !== b.dataset.k && restart({ kind: b.dataset.k })));
     let qt = 0;
     q("[data-q]").oninput = (e) => {
       clearTimeout(qt);
-      qt = setTimeout(() => {
-        Object.assign(pick, { q: e.target.value, page: 0, items: [], total: 0, more: true, empty: "", token: pick.token + 1, loading: false });
-        loadMore();
-      }, 450);
+      qt = setTimeout(() => restart({ q: e.target.value }), 450);
     };
     const mt = q("[data-fit]");
-    if (mt)
-      mt.onchange = (e) => {
-        Object.assign(pick, { match: e.target.checked, page: 0, items: [], total: 0, more: true, empty: "", token: pick.token + 1, loading: false });
-        loadMore();
-      };
-    host2.querySelectorAll("[data-key]").forEach(
-      (b) =>
-        (b.onclick = () => {
-          const i = pick.items.find((x) => x.key === b.dataset.key);
-          pick.chosen.has(i.key) ? pick.chosen.delete(i.key) : pick.chosen.set(i.key, i);
-          paintPicker();
-        })
-    );
-    const mo = q("[data-more]");
-    if (mo) mo.onclick = loadMore;
+    if (mt) mt.onchange = (e) => restart({ match: e.target.checked });
+    q("[data-pgrid]").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-key]");
+      if (!b || !pick) return;
+      const i = pick.items.find((x) => x.key === b.dataset.key);
+      pick.chosen.has(i.key) ? pick.chosen.delete(i.key) : pick.chosen.set(i.key, i);
+      paintPicker();
+    });
+    q("[data-more]").onclick = loadMore;
     q("[data-send]").onclick = send;
   }
 

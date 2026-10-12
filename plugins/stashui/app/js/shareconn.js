@@ -63,22 +63,24 @@ export const myReply = () => store.get("shareReply", "");
 export const setMyReply = (u) => store.set("shareReply", u || "");
 
 // A picture from a file → a small square JPEG as data address (kept below ~25 KB)
-export function avatarFromFile(file, size = 128) {
+function squareFrom(src, size, revoke) {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    const u = URL.createObjectURL(file);
     img.onload = () => {
       const c = document.createElement("canvas");
       c.width = c.height = size;
       const s = Math.min(img.naturalWidth, img.naturalHeight);
       c.getContext("2d").drawImage(img, (img.naturalWidth - s) / 2, (img.naturalHeight - s) / 2, s, s, 0, 0, size, size);
-      URL.revokeObjectURL(u);
+      if (revoke) URL.revokeObjectURL(src);
       resolve(c.toDataURL("image/jpeg", 0.82));
     };
-    img.onerror = () => (URL.revokeObjectURL(u), reject(new Error(t("That isn't a picture"))));
-    img.src = u;
+    img.onerror = () => (revoke && URL.revokeObjectURL(src), reject(new Error(t("That isn't a picture"))));
+    img.src = src;
   });
 }
+export const avatarFromFile = (file, size = 128) => squareFrom(URL.createObjectURL(file), size, true);
+// A cut-out from the library (a data address) → the same small square
+export const avatarFromDataUrl = (url, size = 128) => squareFrom(url, size, false);
 export const safeAvatar = (a) => (/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(a || "") ? a : "");
 
 // ---------- links of others ----------

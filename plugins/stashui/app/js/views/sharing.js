@@ -3,7 +3,8 @@
 // others + choose from your library), Chat. The receiver is sharing.py on your PC (see shareconn.js); nothing goes
 // through a server of ours, and nothing lands in your library before you accept it.
 
-import { esc, icon, toast, errorToast, store, fmtBytes, confirmDialog, promptDialog } from "../ui.js";
+import { esc, icon, toast, errorToast, store, fmtBytes, confirmDialog, promptDialog, menu } from "../ui.js";
+import { openPhotoCutter } from "../perfcut.js";
 import { t } from "../i18n.js";
 import { gql } from "../api.js";
 import { runBackend } from "../interactive.js";
@@ -534,18 +535,25 @@ function mountLink(host, ctx) {
     };
     q("[data-name]").oninput = idSave;
     q("[data-about]").oninput = idSave;
-    q("[data-avatar]").onclick = () => q("[data-avfile]").click();
-    q("[data-avfile]").onchange = async (e) => {
-      const f = e.target.files[0];
-      if (!f) return;
+    const setAvatar = async (make) => {
       try {
-        const a = await C.avatarFromFile(f);
+        const a = await make();
         C.setMe({ avatar: a });
         await save({ avatar: a });
         paint();
       } catch (err) {
         errorToast(err, t("Picture"));
       }
+    };
+    // A picture: from a file, or cut out of an image / scene frame of the library
+    q("[data-avatar]").onclick = (e) =>
+      menu(e.currentTarget, [
+        { label: t("Upload a picture"), run: () => q("[data-avfile]").click() },
+        { label: t("Choose from my library"), run: () => openPhotoCutter(null, (url) => setAvatar(() => C.avatarFromDataUrl(url)), { square: true, kind: "image", title: t("Choose a picture"), maxSide: 512 }) },
+      ]);
+    q("[data-avfile]").onchange = async (e) => {
+      const f = e.target.files[0];
+      if (f) await setAvatar(() => C.avatarFromFile(f));
     };
     const na = q("[data-noav]");
     if (na) na.onclick = async () => (C.setMe({ avatar: "" }), await save({ avatar: "" }), paint());

@@ -2092,4 +2092,5 @@ export default {
   "Install cloudflared": "Cài cloudflared",
   "Install cloudflared (Cloudflare's tunnel program) with Windows' package manager (winget)? Windows may ask for permission, and it can take a minute.": "Cài cloudflared (chương trình đường hầm của Cloudflare) bằng trình quản lý gói của Windows (winget)? Windows có thể xin quyền và mất khoảng một phút.",
   "cloudflared is installed": "Đã cài cloudflared",
+  "Upload a picture": "Tải ảnh lên",
 };

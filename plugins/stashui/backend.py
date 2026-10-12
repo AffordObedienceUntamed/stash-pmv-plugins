@@ -701,7 +701,7 @@ def phone_stop(stash, args):
 #   share_stop:   {"mode": "share_stop"} → {"running": false}
 #   share_accept: {"mode": "share_accept", "ids": [...], "root": "<library folder>", "name": "Shared"} → the receiver moves the
 #                 files into <root>/<name>/<sender> (checked to lie inside a library folder) → {"moved", "failed", "dirs", "folder"}
-SHARE_STATE = os.path.join(tempfile.gettempdir(), "stashui-share.json")
+SHARE_STATE = os.environ.get("STASHUI_SHARE_STATE") or os.path.join(tempfile.gettempdir(), "stashui-share.json")  # (the variable is for tests: a separate receiver)
 SHARE_V = 1
 
 

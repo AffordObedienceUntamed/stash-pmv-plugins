@@ -2099,4 +2099,5 @@ export default {
   "Install cloudflared": "cloudflaredをインストール",
   "Install cloudflared (Cloudflare's tunnel program) with Windows' package manager (winget)? Windows may ask for permission, and it can take a minute.": "Windowsのパッケージマネージャー (winget) でcloudflared（Cloudflareのトンネルプログラム）をインストールしますか？Windowsが許可を求めることがあり、1分ほどかかる場合があります。",
   "cloudflared is installed": "cloudflaredをインストールしました",
+  "Upload a picture": "画像をアップロード",
 };

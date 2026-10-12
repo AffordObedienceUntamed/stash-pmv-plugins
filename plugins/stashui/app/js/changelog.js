@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.91.3",
+    date: "2026-10-12",
+    items: [
+      ["ui", "Sharing: your profile picture can now be cut out of a picture or a scene frame of your library (square crop) – or uploaded as before. And typing in the search box when you choose what to send is no longer interrupted while the pictures below load.", "共享：头像现在可以从媒体库的图片或场景画面中裁剪（方形裁剪），也可以像以前一样上传。选择要发送的内容时，在搜索框输入不再被下方图片的加载打断。"],
+    ],
+  },
+  {
     v: "3.91.2",
     date: "2026-10-12",
     items: [

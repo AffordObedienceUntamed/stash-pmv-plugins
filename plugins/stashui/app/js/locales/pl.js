@@ -2097,4 +2097,5 @@ export default {
   "Install cloudflared": "Zainstaluj cloudflared",
   "Install cloudflared (Cloudflare's tunnel program) with Windows' package manager (winget)? Windows may ask for permission, and it can take a minute.": "Zainstalować cloudflared (program tunelowy Cloudflare) menedżerem pakietów Windows (winget)? Windows może poprosić o zgodę, a to może potrwać minutę.",
   "cloudflared is installed": "cloudflared zainstalowany",
+  "Upload a picture": "Prześlij obraz",
 };
