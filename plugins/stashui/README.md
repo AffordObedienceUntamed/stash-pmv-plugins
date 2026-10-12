@@ -66,7 +66,7 @@ Open it: just open Stash (e.g. `http://localhost:9999`) – the home page redire
 
 ## Languages
 
-Stash UI is available in **English**, **Simplified Chinese (简体中文)**, **Japanese (日本語)**, **Vietnamese (Tiếng Việt)**, **French (Français)**, **Spanish (Español)**, **German (Deutsch)** and **Polish (Polski)**. By default it follows the interface language set in Stash (classic Stash → Settings → Interface → Language); you can also pick one under **Settings → This interface → Language**.
+Stash UI is available in **English**, **Simplified Chinese (简体中文)**, **Japanese (日本語)**, **Vietnamese (Tiếng Việt)**, **French (Français)**, **Spanish (Español)**, **German (Deutsch)**, **Polish (Polski)** and **Russian (Русский)**. By default it follows the interface language set in Stash (classic Stash → Settings → Interface → Language); you can also pick one under **Settings → This interface → Language**.
 
 ![Stash UI in Simplified Chinese](../../docs/screenshots/stashui-zh.png)
 
@@ -83,8 +83,8 @@ export default {
 
 - Anything missing simply shows in English, so partial translations work.
 - `python tools/i18n_keys.py zh-CN` (or `ja`, `de` …) lists the texts a language file is still missing.
-- Polish counts 2–4 with its own form: besides `"scenes"` the file has `"scenes#few"` (see `pl.js`).
-- A new language: copy `zh-CN.js`, translate the values, and add it to `LANGS` and `FILES` in `app/js/i18n.js`.
+- Polish and Russian count 2–4 with their own form: besides `"scenes"` the file has `"scenes#few"` (see `pl.js`). Russian also uses the singular after 21, 31 … (not 11) – see `one()` in `app/js/i18n.js`.
+- A new language: copy `zh-CN.js`, translate the values, and add it to `LANGS`, `FILES` and `match()` in `app/js/i18n.js` and to `SHARED` in `tools/build.py`.
 - Found an odd or too long wording? Open an issue or a pull request.
 
 ## Works with the other plugins

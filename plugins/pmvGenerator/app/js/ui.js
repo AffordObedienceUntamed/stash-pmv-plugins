@@ -1,7 +1,7 @@
 // Small helpers for display, formatting, messages and dialogs.
 
 import { largeNow } from "./scale.js";
-import { t, locale, few } from "./i18n.js";
+import { t, locale, few, one as isOne } from "./i18n.js";
 
 export const esc = (s) =>
   String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -140,8 +140,8 @@ export function fmtAgo(iso) {
 export const fmtNum = (n) => Number(n || 0).toLocaleString(locale());
 // The unit words are translated too: plural(3, "scene", "scenes") → "3 scenes" / "3 个场景"
 export const plural = (n, one, many) => {
-  let word = t(n === 1 ? one : many);
-  if (n !== 1 && few(n) && t(many + "#few") !== many + "#few") word = t(many + "#few");
+  let word = t(isOne(n) ? one : many);
+  if (!isOne(n) && few(n) && t(many + "#few") !== many + "#few") word = t(many + "#few");
   return `${fmtNum(n)} ${word}`;
 };
 
