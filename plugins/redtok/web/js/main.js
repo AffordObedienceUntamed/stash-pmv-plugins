@@ -1,7 +1,7 @@
 // RedTok – the frame: sidebar (wide screens), top tabs and bottom bar (phones), the main views (For You, Following,
 // My Stash, Explore, Profile, Downloads), feeds opened from a grid, keys, and the start.
 
-import { $, esc, t, tn, ic, toast, nav, on, emit, gql, store, closeLayers, closeTop, layerCount, topLayer, allLayers, pushLayer, closeLayer, isPhone, VERSION, initLang, modal } from "./core.js";
+import { $, esc, t, tn, ic, toast, nav, on, emit, gql, store, closeLayers, closeTop, layerCount, topLayer, allLayers, pushLayer, closeLayer, isPhone, VERSION, initLang, modal, BLANK, isRgPic, useBackendPics, imgViaBackend } from "./core.js";
 import { settings, saveSettings, makeSource, ORDERS, orderOf, following, userPic, isFollowing, setFollow, imgData } from "./data.js";
 import { restoredN } from "./boot.js";
 import { createFeed, activeFeed, unlockSound, av, setMuted, muted } from "./feed.js";
@@ -213,7 +213,9 @@ on("current", ({ F, g }) => {
   paintUpDown();
   if (F !== activeFeed()) return;
   const a = $("#ambient");
-  if (g.poster) { a.style.backgroundImage = `url("${g.poster.replace(/"/g, "%22")}")`; a.classList.add("on"); }
+  const set = (u) => { if (u && activeFeed() === F) { a.style.backgroundImage = `url("${u.replace(/"/g, "%22")}")`; a.classList.add("on"); } };
+  if (!g.poster) return;
+  if (isRgPic(g.poster) && imgViaBackend) imgData(g.poster).then(set); else set(g.poster);
 });
 
 // ---------- clear display: only the video ----------
@@ -263,17 +265,35 @@ document.addEventListener("visibilitychange", () => {
   else if (v && resumeAfter) v.play().catch(() => {});
 });
 
-// a picture that doesn't load from RedGifs comes through the plugin's backend instead
+// RedGifs pictures: those marked data-pic come through the backend (Stash doesn't let the page load them itself);
+// one that fails directly (data-fb) switches every later one to the backend too. A picture that can't load at all
+// is hidden – never the browser's "broken picture" box.
+const fillPic = (el) => {
+  const u = el.dataset.pic;
+  if (!u || el.dataset.picDone) return;
+  el.dataset.picDone = "1";
+  imgData(u).then((d) => { if (d) el.src = d; else el.style.visibility = "hidden"; });
+};
+new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((n) => {
+  if (n.nodeType !== 1) return;
+  if (n.tagName === "IMG") fillPic(n);
+  else if (n.querySelectorAll) n.querySelectorAll("img[data-pic]").forEach(fillPic);
+}))).observe(document.body, { childList: true, subtree: true });
 document.addEventListener("error", (e) => {
   const el = e.target;
-  if (!el || el.tagName !== "IMG" || !el.dataset.fb) return;
-  if (el.dataset.fbDone) { el.remove(); return; }
+  if (!el || el.tagName !== "IMG") return;
+  el.style.visibility = "hidden";
+  const u = el.dataset.fb;
+  if (!u || el.dataset.fbDone || !isRgPic(u)) return;
   el.dataset.fbDone = "1";
-  if (!/^https:\/\/[^/]*(redgifs\.com)\//.test(el.dataset.fb)) { el.remove(); return; }
-  imgData(el.dataset.fb).then((d) => { if (d) el.src = d; else el.remove(); });
+  useBackendPics();
+  imgData(u).then((d) => { if (d) { el.src = d; el.style.visibility = ""; } });
 }, true);
-// pictures on the right in the list: hide the letter once the picture is there
-document.addEventListener("load", (e) => { const el = e.target; if (el && el.tagName === "IMG" && el.parentElement && el.parentElement.classList.contains("av")) el.parentElement.classList.add("has-img"); }, true);
+// a round picture: hide the letter once the picture is there
+document.addEventListener("load", (e) => {
+  const el = e.target;
+  if (el && el.tagName === "IMG" && el.src !== BLANK && el.parentElement && el.parentElement.classList.contains("av")) el.parentElement.classList.add("has-img");
+}, true);
 
 addEventListener("resize", () => { const F = activeFeed(); if (F && F.cur >= 0) F.host.scrollTop = F.cur * F.host.clientHeight; });
 

@@ -2,7 +2,7 @@
 // A feed shows one source (see data.js). Several feeds can exist at once (For You, Following, a list opened from a
 // grid …) – only the one on top plays, and only that one holds video elements beyond a few.
 
-import { $, esc, t, fmt, ago, mmss, ic, isPhone, nav, on, emit } from "./core.js";
+import { $, esc, t, fmt, ago, mmss, ic, isPhone, nav, on, emit, img } from "./core.js";
 import { settings, saveSettings, isLiked, setLiked, isFollowing, setFollow, userPic, markWatched, refetchGif, stashStart, isHidden } from "./data.js";
 import { enqueue, jobOf, isSaved } from "./dl.js";
 
@@ -14,7 +14,7 @@ export let muted = !settings.sound;
 // ---------- small shared pieces ----------
 // a round picture with the first letter underneath (shown until the picture is there, or when it can't load)
 export function av(url, name, cls = "") {
-  return `<span class="av ${cls}"><b>${esc(String(name || "?").replace(/^@/, "")[0] || "?")}</b>${url ? `<img src="${esc(url)}" data-fb="${esc(url)}" alt="" loading="lazy" referrerpolicy="no-referrer" draggable="false">` : ""}</span>`;
+  return `<span class="av ${cls}"><b>${esc(String(name || "?").replace(/^@/, "")[0] || "?")}</b>${img(url, "", ' loading="lazy"')}</span>`;
 }
 export const tick = () => `<i class="vtick" title="${esc(t("Verified"))}">${ic("verified")}</i>`;
 const fillOf = (g) => settings.fit === "fill" || (settings.fit === "auto" && g.h > g.w * 1.15);
@@ -59,8 +59,8 @@ function itemHtml(g) {
     ? `<button class="act" data-act="openstash" aria-label="${esc(t("Open in Stash"))}"><span class="ic">${ic("open")}</span><span class="n">${esc(t("Open"))}</span></button>`
     : `<button class="act save" data-act="dl" aria-label="${esc(t("Save to your library"))}"><span class="ic">${ic("down")}<i class="ring"></i></span><span class="n">${esc(t("Save"))}</span></button>`;
   return `<div class="col"><div class="card${fillOf(g) ? " is-fill" : ""}">
-      <div class="bg" style="background-image:url('${esc(g.poster)}')"></div>
-      <img class="poster" src="${esc(g.poster || g.thumb)}" alt="" draggable="false" referrerpolicy="no-referrer">
+      ${img(g.poster || g.thumb, "bg")}
+      ${img(g.poster || g.thumb, "poster") || '<img class="poster" alt="">'}
       <div class="shade"></div>
       <div class="hit" data-act="tap"></div>
       <div class="playbig">${ic("play")}</div>

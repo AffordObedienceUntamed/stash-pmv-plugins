@@ -4,7 +4,8 @@ The page asks RedGifs itself whenever the browser may (from localhost); this bac
 else and does what a browser can't: saving files into your library.
 
 * mode "api":      {"path": "/gifs/search?..."} → {"data": {...}}  (read-only RedGifs API paths, no account)
-* mode "image":    {"url"} → {"data": "data:image/...;base64,..."}  (a RedGifs picture the page couldn't load)
+* mode "images":   {"urls": [...]} → {"data": {url: "data:image/...;base64,..."}}  (RedGifs pictures the page may not
+                   load itself – Stash's Content-Security-Policy; "image" does one)
 * mode "download": {"url", "base", "folder", "filename"} → saved as <base>/<folder>/<filename>.mp4
 * mode "have":     {"base", "ids": [...]} → {"have": [ids already on disk]}
 * mode "conf":     → {"base": "<first video library>/RedGifs"} (a suggestion for the download folder)
@@ -124,6 +125,22 @@ def image(url):
             f.write(data)
     with open(path, "rb") as f:
         return {"data": f"data:{ctype};base64," + base64.b64encode(f.read()).decode()}
+
+
+def images(urls):
+    """Up to 24 pictures at once, fetched side by side (each cached on disk)."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    urls = [str(u) for u in (urls or []) if u][:24]
+
+    def one(u):
+        try:
+            return u, image(u)["data"]
+        except Exception:
+            return u, ""
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        return {"data": dict(pool.map(one, urls))}
 
 
 # --------------------------------------------------------------------------- downloads
@@ -318,6 +335,8 @@ def main():
             output = api(args.get("path"))
         elif mode == "image":
             output = image(args.get("url"))
+        elif mode == "images":
+            output = images(args.get("urls"))
         elif mode == "download":
             output = download(args)
         elif mode == "have":

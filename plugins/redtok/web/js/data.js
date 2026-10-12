@@ -84,18 +84,24 @@ export async function rg(path, fresh) {
 }
 export const usingBackend = () => viaBackend;
 
-// pictures: straight from RedGifs; when one doesn't load, the backend fetches it
+// pictures the page may not load itself: the backend fetches them, up to 24 per call, two calls at a time
 const imgCache = new Map(), imgQ = [];
-let imgBusy = 0;
+let imgBusy = 0, imgTimer = 0;
 export function imgData(url) {
-  if (!imgCache.has(url)) imgCache.set(url, new Promise((res) => { imgQ.push({ url, res }); pumpImg(); }));
+  if (!imgCache.has(url)) {
+    imgCache.set(url, new Promise((res) => { imgQ.push({ url, res }); clearTimeout(imgTimer); imgTimer = setTimeout(pumpImg, 30); }));
+    if (imgCache.size > 1500) imgCache.delete(imgCache.keys().next().value);
+  }
   return imgCache.get(url);
 }
 function pumpImg() {
-  while (imgBusy < 4 && imgQ.length) {
-    const j = imgQ.shift();
+  while (imgBusy < 2 && imgQ.length) {
+    const batch = imgQ.splice(0, 24);
     imgBusy++;
-    call({ mode: "image", url: j.url }).then((o) => j.res((o && o.data) || "")).catch(() => j.res("")).finally(() => { imgBusy--; pumpImg(); });
+    call({ mode: "images", urls: batch.map((j) => j.url) })
+      .then((o) => { const d = (o && o.data) || {}; batch.forEach((j) => j.res(d[j.url] || "")); })
+      .catch(() => batch.forEach((j) => { imgCache.delete(j.url); j.res(""); }))
+      .finally(() => { imgBusy--; pumpImg(); });
   }
 }
 

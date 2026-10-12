@@ -1,7 +1,7 @@
 // RedTok – the pages around the feed: grids of videos (profiles, niches, search, your likes …), lists, settings and
 // the sheets that open from a video (share/options, details).
 
-import { $, esc, t, tn, fmt, ago, mmss, ic, toast, nav, on, modal, pushLayer, closeLayer, closeLayers, copyText, hasHover, isPhone, store, LANGS, VERSION } from "./core.js";
+import { $, esc, t, tn, fmt, ago, mmss, ic, toast, nav, on, modal, pushLayer, closeLayer, closeLayers, copyText, hasHover, isPhone, store, LANGS, VERSION, img } from "./core.js";
 import {
   settings, saveSettings, makeSource, listSource, ORDERS, orderOf, rg, takeUsers, userOf, userPic, users,
   liked, following, niches, hidden, nope, history, saved, doneSet, isFollowing, setFollow, followsNiche, setNiche, isHidden, setHidden, setNope,
@@ -48,7 +48,7 @@ export function mountGrid(box, S0, o = {}) {
   bar.className = "selbar";
   bar.hidden = true;
   (o.barHost || box).appendChild(bar);
-  const tile = (g, i) => `<button class="tile${st.sel.has(g.id) ? " is-sel" : ""}" data-i="${i}"><img src="${esc(g.thumb || g.poster)}" alt="" loading="lazy" draggable="false" referrerpolicy="no-referrer"><span class="tick">${ic("check")}</span>${!g.stash && isSaved(g.id) ? `<span class="badge">${ic("down")}</span>` : ""}<span class="views">${ic("play")}${fmt(g.views)}</span>${g.dur ? `<span class="dur">${mmss(g.dur)}</span>` : ""}</button>`;
+  const tile = (g, i) => `<button class="tile${st.sel.has(g.id) ? " is-sel" : ""}" data-i="${i}">${img(g.thumb || g.poster, "", ' loading="lazy"')}<span class="tick">${ic("check")}</span>${!g.stash && isSaved(g.id) ? `<span class="badge">${ic("down")}</span>` : ""}<span class="views">${ic("play")}${fmt(g.views)}</span>${g.dur ? `<span class="dur">${mmss(g.dur)}</span>` : ""}</button>`;
   const paintEnd = () => {
     if (S.error && !S.busy) end.innerHTML = `<button class="btn" data-gretry>${ic("refresh")}${esc(t("Try again"))}</button><small>${esc(S.error.message || S.error)}</small>`;
     else if (S.done && !S.items.length) { const e = o.empty || {}; end.innerHTML = `<div class="gempty">${ic(e.icon || "grid")}<b>${esc(e.title || t("No videos yet"))}</b>${e.text ? `<span>${esc(e.text)}</span>` : ""}</div>`; }
@@ -259,7 +259,7 @@ export function openNiche(id, label) {
   const paint = () => {
     const f = followsNiche(id);
     const pic = info.thumbnail || info.cover || "";
-    head.innerHTML = `<span class="nthumb">${pic ? `<img src="${esc(pic)}" data-fb="${esc(pic)}" alt="" referrerpolicy="no-referrer">` : ic("tag")}</span>
+    head.innerHTML = `<span class="nthumb">${pic ? img(pic) : ic("tag")}</span>
       <div class="pinfo"><h1>#${esc(info.name)}</h1><div class="stats">${(info.gifs ?? S.total) != null ? `<span><b>${fmt(info.gifs ?? S.total)}</b>${esc(t("Videos"))}</span>` : ""}${info.subscribers != null ? `<span><b>${fmt(info.subscribers)}</b>${esc(t("Followers"))}</span>` : ""}</div>
       ${info.description ? `<p class="bio">${esc(info.description)}</p>` : ""}
       <div class="pbtns"><button class="btn ${f ? "" : "is-red"}" data-nf>${ic(f ? "check" : "plus")}${esc(f ? t("Following") : t("Follow niche"))}</button><button class="btn" data-nplay>${ic("play")}${esc(t("Play"))}</button></div></div>`;
@@ -280,7 +280,7 @@ export function openNiche(id, label) {
 const nicheTile = (x) => {
   const id = x.id || x.name;
   const pic = x.thumbnail || x.img || "";
-  return `<button class="ntile" data-n="${esc(id)}" data-q="${esc(x.name || nicheName(id))}">${pic ? `<img src="${esc(pic)}" data-fb="${esc(pic)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ""}<b>${esc(x.name || nicheName(id))}</b><small>${x.gifs != null ? esc(tn(x.gifs, "{n} video", "{n} videos")) : ""}</small></button>`;
+  return `<button class="ntile" data-n="${esc(id)}" data-q="${esc(x.name || nicheName(id))}">${img(pic, "", ' loading="lazy"')}<b>${esc(x.name || nicheName(id))}</b><small>${x.gifs != null ? esc(tn(x.gifs, "{n} video", "{n} videos")) : ""}</small></button>`;
 };
 
 // all niches, with a filter
@@ -534,7 +534,7 @@ export function mountDownloads(view) {
     const done = jobs.filter((j) => !["queued", "run"].includes(j.state)).length, act = jobs.length - done, bad = jobs.filter((j) => j.state === "bad").length;
     list.innerHTML = `<div class="jhead"><b>${esc(act ? t("Downloading {a} of {b}", { a: done + 1 > jobs.length ? jobs.length : done + 1, b: jobs.length }) : t("Done"))}</b><span class="sp"></span>${act ? `<button class="chipb" data-cancel>${esc(t("Cancel the rest"))}</button>` : ""}${bad ? `<button class="chipb" data-retry>${esc(t("Try failed again"))}</button>` : ""}${done ? `<button class="chipb" data-clear>${esc(t("Clear list"))}</button>` : ""}</div>
       <div class="jbar"><i style="width:${(done / jobs.length) * 100}%"></i></div>
-      <div class="jlist">${jobs.slice().reverse().slice(0, 200).map((j) => `<div class="jrow is-${j.state}"><img src="${esc(j.g.thumb)}" alt="" referrerpolicy="no-referrer" loading="lazy"><span class="jt"><b>@${esc(j.g.user)}</b><small>${esc(j.state === "bad" ? j.note || t("Failed") : j.g.desc || j.g.id)}</small></span><em>${j.state === "run" ? '<i class="mini-spin"></i>' : ""}${esc(stateText(j))}</em></div>`).join("")}</div>`;
+      <div class="jlist">${jobs.slice().reverse().slice(0, 200).map((j) => `<div class="jrow is-${j.state}">${img(j.g.thumb, "", ' loading="lazy"') || "<i></i>"}<span class="jt"><b>@${esc(j.g.user)}</b><small>${esc(j.state === "bad" ? j.note || t("Failed") : j.g.desc || j.g.id)}</small></span><em>${j.state === "run" ? '<i class="mini-spin"></i>' : ""}${esc(stateText(j))}</em></div>`).join("")}</div>`;
   };
   const paintGrid = () => { if (grid) grid.destroy(); grid = mountGrid(p.body.querySelector(".gbox"), listSource(saved.slice()), { root: p.body, barHost: view, feedTitle: t("Saved"), selectable: false, empty: { icon: "down", title: t("Nothing saved yet"), text: t("Press Save on a video – it goes into your Stash library.") } }); };
   paintFolder(); paintJobs(); paintGrid();

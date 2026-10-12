@@ -33,4 +33,5 @@ Open it from Stash UI's menu (it shows up there by itself) or with the **RedTok*
 
 | Version | What changed |
 |---|---|
+| 1.0.1 | Pictures (posters, grids, profile pictures) showed as broken boxes where Stash doesn't let plugin pages load pictures from other sites – they now come through the plugin's backend, a batch at a time. |
 | 1.0.0 | First release: For You (with your taste), Following, My Stash, Explore, search, profiles, niche pages, your profile, downloads into the library, share/options sheet, details, keys, backup, eight languages. |

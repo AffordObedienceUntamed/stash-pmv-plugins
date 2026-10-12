@@ -2,7 +2,7 @@
 // toasts and the layer stack (pages and dialogs that the browser's Back button closes again).
 
 export const PLUGIN = "redtok";
-export const VERSION = "1.0.0";
+export const VERSION = "1.0.1";
 
 export const $ = (s, r = document) => r.querySelector(s);
 export const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -155,6 +155,26 @@ export async function call(args) {
   // (RedGifs' own answers come back with a status – data.js reads those)
   if (o && o.error && !(args.mode === "api" && o.status)) throw new Error(o.error);
   return o;
+}
+
+// ---------- pictures ----------
+// Stash may forbid the page to load pictures from other sites (its Content-Security-Policy) while videos still play.
+// Then RedGifs pictures come through the plugin's backend as data. Found out by the first picture that fails,
+// remembered for a day.
+export const BLANK = "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
+const IMGKEY = "redtok.imgVia";
+export let imgViaBackend = (() => { try { const v = JSON.parse(localStorage.getItem(IMGKEY) || "null"); return !!(v && v.until > Date.now()); } catch (e) { return false; } })();
+export function useBackendPics() {
+  if (imgViaBackend) return;
+  imgViaBackend = true;
+  try { localStorage.setItem(IMGKEY, JSON.stringify({ until: Date.now() + 86400e3 })); } catch (e) { /* blocked */ }
+}
+export const isRgPic = (u) => /^https:\/\/[^/]*redgifs\.com\//.test(String(u || ""));
+export function img(url, cls = "", extra = "") {
+  if (!url) return "";
+  const c = cls ? ` class="${cls}"` : "";
+  if (isRgPic(url) && imgViaBackend) return `<img${c} src="${BLANK}" data-pic="${esc(url)}" alt="" draggable="false"${extra}>`;
+  return `<img${c} src="${esc(url)}"${isRgPic(url) ? ` data-fb="${esc(url)}"` : ""} alt="" draggable="false" referrerpolicy="no-referrer"${extra}>`;
 }
 
 // ---------- toasts ----------

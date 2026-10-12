@@ -42,7 +42,7 @@ img { -webkit-user-drag: none; }
 .item { position: relative; height: 100%; padding: 16px 0; display: flex; align-items: center; justify-content: center; scroll-snap-align: start; scroll-snap-stop: always; }
 .col { display: flex; align-items: flex-end; gap: 16px; height: 100%; max-width: 100%; }
 .card { position: relative; height: 100%; aspect-ratio: 9 / 16; max-width: calc(100vw - var(--side) - 110px); border-radius: 16px; overflow: hidden; background: var(--panel); isolation: isolate; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
-.card .bg { position: absolute; inset: -24px; z-index: 0; background: center / cover no-repeat; filter: blur(28px) brightness(.5) saturate(1.3); }
+.card .bg { position: absolute; left: -24px; top: -24px; z-index: 0; width: calc(100% + 48px); height: calc(100% + 48px); object-fit: cover; filter: blur(28px) brightness(.5) saturate(1.3); }
 .card .poster, .card video { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; object-fit: contain; }
 .card.is-fill .poster, .card.is-fill video { object-fit: cover; }
 .card video { opacity: 0; transition: opacity .2s ease; }
@@ -362,7 +362,7 @@ body.is-clear .info, body.is-clear .rail, body.is-clear .ctl, body.is-clear #top
 .jbar i, .dl-bar i { display: block; height: 100%; width: 0; background: var(--gold); transition: width .3s ease; }
 .jlist { max-height: 360px; overflow-y: auto; }
 .jrow { display: flex; align-items: center; gap: 12px; padding: 6px 0; }
-.jrow img { width: 36px; height: 48px; border-radius: 4px; object-fit: cover; background: var(--panel-3); flex: none; }
+.jrow img, .jrow > i { width: 36px; height: 48px; border-radius: 4px; object-fit: cover; background: var(--panel-3); flex: none; }
 .jt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .jt b { font-size: 14px; }
 .jt small { color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
