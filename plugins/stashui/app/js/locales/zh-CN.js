@@ -2192,4 +2192,5 @@ export default {
   "Hold a performer to remove them.": "按住演员即可移除。",
   "Remove “{name}” from this {what}?": "从此{what}中移除“{name}”？",
   "The performer itself stays – only the link to this {what} is removed.": "演员本身会保留——只会移除与此{what}的关联。",
+  "Open on {name}": "在 {name} 上打开",
 };

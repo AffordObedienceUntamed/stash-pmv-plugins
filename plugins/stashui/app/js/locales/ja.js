@@ -2135,4 +2135,5 @@ export default {
   "Hold a performer to remove them.": "出演者を長押しすると外せます。",
   "Remove “{name}” from this {what}?": "「{name}」をこの{what}から外しますか？",
   "The performer itself stays – only the link to this {what} is removed.": "出演者自体は残ります。この{what}との関連だけが外れます。",
+  "Open on {name}": "{name} で開く",
 };

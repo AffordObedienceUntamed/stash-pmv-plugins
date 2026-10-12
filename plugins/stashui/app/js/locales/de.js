@@ -2088,4 +2088,5 @@ export default {
   "Hold a performer to remove them.": "Halte einen Darsteller gedrückt, um ihn zu entfernen.",
   "Remove “{name}” from this {what}?": "„{name}“ von diesem {what} entfernen?",
   "The performer itself stays – only the link to this {what} is removed.": "Der Darsteller selbst bleibt – nur die Verknüpfung mit diesem {what} wird gelöst.",
+  "Open on {name}": "Auf {name} öffnen",
 };

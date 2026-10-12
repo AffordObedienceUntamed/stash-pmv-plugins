@@ -2170,4 +2170,5 @@ export default {
   "Hold a performer to remove them.": "Удерживайте исполнителя, чтобы убрать его.",
   "Remove “{name}” from this {what}?": "Убрать «{name}» из этого объекта ({what})?",
   "The performer itself stays – only the link to this {what} is removed.": "Сам исполнитель остаётся — удаляется только связь с этим объектом ({what}).",
+  "Open on {name}": "Открыть на {name}",
 };

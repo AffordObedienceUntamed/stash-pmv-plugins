@@ -2110,4 +2110,5 @@ export default {
   "Hold a performer to remove them.": "Mantén pulsado a un intérprete para quitarlo.",
   "Remove “{name}” from this {what}?": "¿Quitar a «{name}» de este {what}?",
   "The performer itself stays – only the link to this {what} is removed.": "El intérprete se conserva: solo se quita el vínculo con este {what}.",
+  "Open on {name}": "Abrir en {name}",
 };

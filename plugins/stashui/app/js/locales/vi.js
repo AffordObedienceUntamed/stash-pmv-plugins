@@ -2128,4 +2128,5 @@ export default {
   "Hold a performer to remove them.": "Nhấn giữ diễn viên để gỡ.",
   "Remove “{name}” from this {what}?": "Gỡ “{name}” khỏi {what} này?",
   "The performer itself stays – only the link to this {what} is removed.": "Diễn viên vẫn được giữ – chỉ gỡ liên kết với {what} này.",
+  "Open on {name}": "Mở trên {name}",
 };

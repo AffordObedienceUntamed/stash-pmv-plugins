@@ -2133,4 +2133,5 @@ export default {
   "Hold a performer to remove them.": "Przytrzymaj wykonawcę, aby go usunąć.",
   "Remove “{name}” from this {what}?": "Usunąć „{name}” z tego elementu ({what})?",
   "The performer itself stays – only the link to this {what} is removed.": "Sam wykonawca zostaje – usuwane jest tylko powiązanie z tym elementem ({what}).",
+  "Open on {name}": "Otwórz na {name}",
 };

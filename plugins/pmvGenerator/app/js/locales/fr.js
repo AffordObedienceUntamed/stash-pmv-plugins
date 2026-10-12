@@ -2073,4 +2073,5 @@ export default {
   "Hold a performer to remove them.": "Maintenez une personne appuyée pour la retirer.",
   "Remove “{name}” from this {what}?": "Retirer « {name} » de ce {what} ?",
   "The performer itself stays – only the link to this {what} is removed.": "La personne reste – seul le lien avec ce {what} est supprimé.",
+  "Open on {name}": "Ouvrir sur {name}",
 };

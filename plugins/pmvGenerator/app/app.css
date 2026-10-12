@@ -1344,6 +1344,7 @@ html.kb-glass .kb-rail-ghead { border-color: var(--glass-edge); background: tran
 .kb-pl-head small .kb-ic { width: 15px; height: 15px; }
 .kb-pl-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 28px; }
 .kb-pl-chips .kb-chip { cursor: default; }
+.kb-sid b { margin-right: 6px; color: var(--pink); font-weight: 700; }
 .kb-pl-sort { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; color: var(--faint); font: 500 12px/1 var(--f-label); }
 .kb-pl-sort .kb-ic { width: 13px; height: 13px; }
 .kb-pl-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
