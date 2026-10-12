@@ -2081,4 +2081,8 @@ export default {
   "Guide": "Anleitung",
   "Start now": "Jetzt starten",
   "Start time": "Startzeit",
+  "Hold to delete": "Zum Löschen gedrückt halten",
+  "Press and hold the button to delete.": "Halte den Knopf gedrückt, um zu löschen.",
+  "Reverse the wheel": "Mausrad umkehren",
+  "Normally turning the wheel up makes it louder or jumps forward. Switch this on and up goes quieter / back, down louder / forward.": "Normalerweise macht Hochdrehen lauter oder springt vor. Eingeschaltet geht hoch = leiser / zurück und runter = lauter / vor.",
 };

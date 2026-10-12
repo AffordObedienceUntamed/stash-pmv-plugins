@@ -221,14 +221,43 @@ export async function render(host, params, query = {}) {
     const want = caps.findIndex((c) => c.language_code === prefs.subs);
     setTimeout(() => setSubs(want));
   }
+  // Live transcodes (Stash's "resolution=" streams) don't know their length and can't be seeked: the bar uses the
+  // scene's known length, and a jump outside what is already loaded asks the stream to start at that second
+  // (start=<s>; the pictures then count from 0, `tcOff` adds the offset back). v.currentTime / v.duration are
+  // wrapped for this, so everything else in the player keeps working with real scene time.
+  const mediaProto = HTMLMediaElement.prototype;
+  const nativeTime = Object.getOwnPropertyDescriptor(mediaProto, "currentTime");
+  const nativeDur = Object.getOwnPropertyDescriptor(mediaProto, "duration");
+  let tcOff = 0;
+  const isLive = (i) => /[?&]resolution=/.test(sources[i] || "") && dur > 0;
+  const withStart = (u, sec) => u + (u.includes("?") ? "&" : "?") + "start=" + Math.floor(sec);
+  const inBuffer = (sec) => {
+    for (let k = 0; k < v.buffered.length; k++) if (sec >= v.buffered.start(k) && sec <= v.buffered.end(k) - 0.5) return true;
+    return false;
+  };
+  function loadAt(i, at, play) {
+    srcIdx = i;
+    tcOff = isLive(i) && at > 2 ? Math.floor(at) : 0;
+    v.src = tcOff ? withStart(sources[i], tcOff) : sources[i];
+    if (!tcOff && at > 0) v.currentTime = at;
+    if (play) v.play().catch(() => {});
+  }
+  Object.defineProperty(v, "currentTime", {
+    configurable: true,
+    get: () => nativeTime.get.call(v) + tcOff,
+    set: (x) => {
+      x = Number(x);
+      if (!isFinite(x)) return;
+      if (!isLive(srcIdx)) return nativeTime.set.call(v, x);
+      const local = x - tcOff;
+      if (local >= 0 && (inBuffer(local) || (tcOff === 0 && local < 1))) nativeTime.set.call(v, local);
+      else loadAt(srcIdx, Math.max(0, Math.min(x, dur - 1)), !v.paused);
+    },
+  });
+  Object.defineProperty(v, "duration", { configurable: true, get: () => (isLive(srcIdx) ? dur : nativeDur.get.call(v)) });
   function switchSource(i) {
     if (i === srcIdx) return;
-    const at = v.currentTime;
-    const playing = !v.paused;
-    srcIdx = i;
-    v.src = sources[i];
-    v.currentTime = at;
-    if (playing) v.play().catch(() => {});
+    loadAt(i, v.currentTime, !v.paused);
   }
   // Menu: quality, subtitles, speed (one button instead of three – the bar is full enough)
   function menuHtml() {
@@ -331,10 +360,7 @@ export async function render(host, params, query = {}) {
   });
   v.addEventListener("error", () => {
     if (srcIdx < sources.length - 1) {
-      const at = v.currentTime;
-      v.src = sources[++srcIdx];
-      v.currentTime = at;
-      v.play().catch(() => {});
+      loadAt(srcIdx + 1, v.currentTime, true);
     } else toast(t("This video can't be played here"), "error");
   });
   v.src = sources[srcIdx];
@@ -441,7 +467,7 @@ export async function render(host, params, query = {}) {
   }
   function paintBuffer() {
     if (!v.buffered.length || !v.duration) return;
-    $("[data-buf]").style.width = (v.buffered.end(v.buffered.length - 1) / v.duration) * 100 + "%";
+    $("[data-buf]").style.width = ((v.buffered.end(v.buffered.length - 1) + tcOff) / v.duration) * 100 + "%";
   }
   const posFrom = (e) => {
     const r = tl.getBoundingClientRect();
@@ -610,6 +636,38 @@ export async function render(host, params, query = {}) {
   };
   stage.addEventListener("pointerup", endSwipe);
   stage.addEventListener("pointercancel", endSwipe);
+  // Touch: holding a finger on the picture plays at 2× while it stays down, back to normal on release.
+  // A swipe (finger moves) cancels it, a boost cancels the swipe; the tap that ends it doesn't pause.
+  let boost = null;
+  const boostEnd = () => {
+    if (!boost) return;
+    clearTimeout(boost.timer);
+    if (boost.on) {
+      v.playbackRate = boost.prev;
+      swiped = Date.now();
+      flash("", false);
+    }
+    boost = null;
+  };
+  stage.addEventListener("pointerdown", (e) => {
+    boostEnd();
+    if (e.pointerType === "mouse" || (vr && vr.mode) || !(e.target === v || e.target.classList.contains("kb-screen"))) return;
+    boost = { id: e.pointerId, x: e.clientX, y: e.clientY, on: false, prev: v.playbackRate };
+    boost.timer = setTimeout(() => {
+      if (!boost || v.paused || (swipe && swipe.on)) return (boost = null);
+      swipe = null;
+      boost.on = true;
+      v.playbackRate = 2;
+      if (navigator.vibrate) navigator.vibrate(15);
+      flash("▸▸ 2×", true);
+    }, 450);
+  });
+  stage.addEventListener("pointermove", (e) => {
+    if (!boost || boost.on || e.pointerId !== boost.id) return;
+    if (Math.hypot(e.clientX - boost.x, e.clientY - boost.y) > 12) boostEnd();
+  });
+  ["pointerup", "pointercancel"].forEach((ev) => stage.addEventListener(ev, (e) => boost && e.pointerId === boost.id && boostEnd()));
+  stage.addEventListener("contextmenu", (e) => lastPointer !== "mouse" && (e.target === v || e.target.classList.contains("kb-screen")) && e.preventDefault());
 
   host.addEventListener("click", (e) => {
     const el = e.target;
@@ -1549,6 +1607,7 @@ export async function render(host, params, query = {}) {
   function flash(note, hold) {
     const f = $("[data-seekflash]");
     if (!f) return;
+    if (!note) return f.classList.remove("is-on"); // (empty note = hide)
     f.textContent = note;
     clearTimeout(flashT);
     if (hold) {
@@ -1584,7 +1643,7 @@ export async function render(host, params, query = {}) {
       const how = store.get("player", {}).wheel || "volume";
       if (how === "off" || e.ctrlKey || !e.deltaY || (e.target.closest && e.target.closest("[data-side], input, button, select, textarea, canvas"))) return;
       e.preventDefault();
-      const dir = e.deltaY < 0 ? 1 : -1;
+      const dir = (e.deltaY < 0 ? 1 : -1) * (store.get("player", {}).wheelRev ? -1 : 1);
       if ((how === "volume") !== e.shiftKey) {
         v.muted = false;
         v.volume = Math.max(0, Math.min(1, Math.round((v.volume + dir * 0.05) * 100) / 100));

@@ -4,6 +4,16 @@
 
 export const CHANGES = [
   {
+    v: "3.92.0",
+    date: "2026-10-12",
+    items: [
+      ["ui", "Phone player: holding a finger on the picture plays at 2× while it stays down (back to normal when you let go; swiping still seeks). “From the start” in the corner is a real button again (not just underlined text). Thanks to ufousox007 for the ideas.", "手机播放器：手指按住画面时以 2 倍速播放，松开恢复正常（滑动仍用于快进/快退）。角落里的“从头开始”重新成为真正的按钮（不再只是带下划线的文字）。感谢 ufousox007 的建议。"],
+      ["ui", "Performer editor on touch screens: the red Delete button has to be held for a moment (it fills up), then the usual confirmation comes – no more accidental taps.", "触屏上的演员编辑器：红色“删除”按钮需要按住片刻（会逐渐填满），然后才出现常规确认——不会再误触。"],
+      ["ui", "Videos that Stash transcodes live (quality menu): the bar now shows the scene's full length and you can jump anywhere – outside what is loaded, the stream is asked to start at that second (start=). Not verified against a real Stash yet.", "由 Stash 实时转码的视频（画质菜单）：进度条现在显示场景的完整时长并可跳到任意位置——超出已加载的部分时会请求从该秒开始的流（start=）。尚未在真实 Stash 上验证。"],
+      ["ui", "Settings → Player and previews: new switch “Reverse the wheel” – up = quieter / back, down = louder / forward.", "设置 → 播放器与预览：新增开关“反转滚轮方向”——向上 = 减小音量/后退，向下 = 增大音量/前进。"],
+    ],
+  },
+  {
     v: "3.91.5",
     date: "2026-10-12",
     items: [

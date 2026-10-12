@@ -261,6 +261,14 @@ span.kb-tree-caret { display: inline-block; }
 .kb-btn.is-primary:active { box-shadow: 1px 1px 0 var(--paper); transform: translate(2px, 2px); }
 .kb-btn.is-danger { color: var(--paper); background: #b3243e; border-color: #b3243e; }
 .kb-btn.is-danger:hover { background: #d22c4a; border-color: #d22c4a; }
+/* Delete that must be held on touch screens (performer editor): the red fills up while the finger stays */
+.kb-holddel .kb-hd-hold { display: none; }
+@media (hover: none) and (pointer: coarse) {
+  .kb-holddel .kb-hd-click { display: none; }
+  .kb-holddel .kb-hd-hold { display: inline; }
+  .kb-holddel { -webkit-touch-callout: none; user-select: none; background-image: linear-gradient(#ff5a76, #ff5a76); background-repeat: no-repeat; background-size: 0 100%; }
+  .kb-holddel.is-holding { background-size: 100% 100%; transition: background-size .7s linear; }
+}
 .kb-btn.is-ghost { background: transparent; border-color: transparent; color: var(--text-2); }
 .kb-btn.is-ghost:hover { color: var(--text); background: var(--bg-2); }
 .kb-btn.is-on { color: var(--ink); background: var(--pink); border-color: var(--pink); }
@@ -888,8 +896,8 @@ html.kb-glass .kb-resume-hint .kb-btn.kb-btn { color: var(--text); border-color:
 html.kb-glass .kb-resume-hint .kb-btn.kb-btn:hover { color: var(--ink); background: var(--pink); }
 /* Phones: the small resume pill (text button) and the menu as a sheet at the bottom */
 @media (max-width: 560px), (hover: none) and (max-height: 500px) {
-  html.kb-glass .kb-player .kb-resume-hint .kb-btn.kb-btn { border-color: transparent; background: transparent; }
-  html.kb-glass .kb-player .kb-resume-hint .kb-btn.kb-btn:hover { color: var(--pink); }
+  html.kb-glass .kb-player .kb-resume-hint .kb-btn.kb-btn { color: var(--text); border-color: var(--glass-edge); background: color-mix(in srgb, var(--text) 12%, transparent); }
+  html.kb-glass .kb-player .kb-resume-hint .kb-btn.kb-btn:hover { color: var(--ink); background: var(--pink); }
   html.kb-glass .kb-player .kb-pmenu { border-radius: 20px; background: var(--glass-shine), color-mix(in srgb, var(--base) 84%, transparent); box-shadow: var(--glass-shadow), 0 -8px 40px rgba(0, 0, 0, .45); }
 }
 /* PMV Generator: option boxes, sections, pickers, the live HUD and end card */

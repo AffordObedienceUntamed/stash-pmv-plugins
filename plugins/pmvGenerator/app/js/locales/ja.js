@@ -2128,4 +2128,8 @@ export default {
   "Guide": "ガイド",
   "Start now": "今すぐ開始",
   "Start time": "開始時間",
+  "Hold to delete": "長押しで削除",
+  "Press and hold the button to delete.": "ボタンを長押しして削除します。",
+  "Reverse the wheel": "ホイールの向きを反転",
+  "Normally turning the wheel up makes it louder or jumps forward. Switch this on and up goes quieter / back, down louder / forward.": "通常はホイールを上に回すと音量が上がるか前に進みます。オンにすると、上で音量が下がる／戻る、下で音量が上がる／進むになります。",
 };

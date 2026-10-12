@@ -2103,4 +2103,8 @@ export default {
   "Guide": "Guía",
   "Start now": "Iniciar ahora",
   "Start time": "Hora de inicio",
+  "Hold to delete": "Mantén para eliminar",
+  "Press and hold the button to delete.": "Mantén pulsado el botón para eliminar.",
+  "Reverse the wheel": "Invertir la rueda",
+  "Normally turning the wheel up makes it louder or jumps forward. Switch this on and up goes quieter / back, down louder / forward.": "Normalmente girar la rueda hacia arriba sube el volumen o avanza. Activado, arriba baja el volumen / retrocede y abajo sube el volumen / avanza.",
 };

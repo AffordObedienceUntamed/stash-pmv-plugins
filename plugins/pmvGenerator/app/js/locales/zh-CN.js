@@ -2185,4 +2185,8 @@ export default {
   "Guide": "指南",
   "Start now": "立即开始",
   "Start time": "开始时间",
+  "Hold to delete": "按住以删除",
+  "Press and hold the button to delete.": "请按住按钮来删除。",
+  "Reverse the wheel": "反转滚轮方向",
+  "Normally turning the wheel up makes it louder or jumps forward. Switch this on and up goes quieter / back, down louder / forward.": "通常向上滚动会增大音量或向前跳转。开启后，向上滚动会减小音量/后退，向下滚动会增大音量/前进。",
 };

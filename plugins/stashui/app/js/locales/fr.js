@@ -2066,4 +2066,8 @@ export default {
   "Guide": "Guide",
   "Start now": "Démarrer",
   "Start time": "Heure de début",
+  "Hold to delete": "Maintenir pour supprimer",
+  "Press and hold the button to delete.": "Maintenez le bouton appuyé pour supprimer.",
+  "Reverse the wheel": "Inverser la molette",
+  "Normally turning the wheel up makes it louder or jumps forward. Switch this on and up goes quieter / back, down louder / forward.": "Normalement, tourner la molette vers le haut augmente le volume ou avance. Activé, le haut baisse le volume / recule, le bas l'augmente / avance.",
 };

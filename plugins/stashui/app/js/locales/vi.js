@@ -2121,4 +2121,8 @@ export default {
   "Guide": "Hướng dẫn",
   "Start now": "Bắt đầu ngay",
   "Start time": "Thời gian bắt đầu",
+  "Hold to delete": "Nhấn giữ để xóa",
+  "Press and hold the button to delete.": "Hãy nhấn giữ nút để xóa.",
+  "Reverse the wheel": "Đảo chiều con lăn",
+  "Normally turning the wheel up makes it louder or jumps forward. Switch this on and up goes quieter / back, down louder / forward.": "Thông thường cuộn lên sẽ tăng âm lượng hoặc tua tới. Bật tùy chọn này thì cuộn lên sẽ giảm âm lượng / tua lùi, cuộn xuống sẽ tăng âm lượng / tua tới.",
 };

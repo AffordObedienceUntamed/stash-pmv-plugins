@@ -2163,4 +2163,8 @@ export default {
   "Guide": "Руководство",
   "Start now": "Запустить",
   "Start time": "Время начала",
+  "Hold to delete": "Удерживайте для удаления",
+  "Press and hold the button to delete.": "Нажмите и удерживайте кнопку, чтобы удалить.",
+  "Reverse the wheel": "Обратить колесо",
+  "Normally turning the wheel up makes it louder or jumps forward. Switch this on and up goes quieter / back, down louder / forward.": "Обычно прокрутка вверх делает громче или перематывает вперёд. Если включить, вверх — тише / назад, вниз — громче / вперёд.",
 };

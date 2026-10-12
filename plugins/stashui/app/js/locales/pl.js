@@ -2126,4 +2126,8 @@ export default {
   "Guide": "Poradnik",
   "Start now": "Uruchom teraz",
   "Start time": "Czas rozpoczęcia",
+  "Hold to delete": "Przytrzymaj, aby usunąć",
+  "Press and hold the button to delete.": "Przytrzymaj przycisk, aby usunąć.",
+  "Reverse the wheel": "Odwróć kółko",
+  "Normally turning the wheel up makes it louder or jumps forward. Switch this on and up goes quieter / back, down louder / forward.": "Zwykle obrót kółka w górę zwiększa głośność lub przewija do przodu. Po włączeniu góra = ciszej / do tyłu, dół = głośniej / do przodu.",
 };
