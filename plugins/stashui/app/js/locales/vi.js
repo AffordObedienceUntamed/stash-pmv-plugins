@@ -2119,4 +2119,6 @@ export default {
   "Your tags decide what is wanted: files with a tag you don't want are turned away, and, if you like, only files with a tag you like are accepted.": "Thẻ của bạn quyết định điều gì được nhận: tệp có thẻ bạn không muốn sẽ bị từ chối và, nếu bạn muốn, chỉ nhận tệp có thẻ bạn thích.",
   "cloudflared – no account, but the address changes": "cloudflared – không cần tài khoản nhưng địa chỉ đổi",
   "Guide": "Hướng dẫn",
+  "Start now": "Bắt đầu ngay",
+  "Start time": "Thời gian bắt đầu",
 };

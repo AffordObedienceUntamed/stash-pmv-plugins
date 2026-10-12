@@ -2126,4 +2126,6 @@ export default {
   "Your tags decide what is wanted: files with a tag you don't want are turned away, and, if you like, only files with a tag you like are accepted.": "タグで何を受け付けるかを決めます：望まないタグのファイルは断られ、希望すれば好きなタグのファイルだけを受け入れます。",
   "cloudflared – no account, but the address changes": "cloudflared – アカウント不要ですがアドレスが変わります",
   "Guide": "ガイド",
+  "Start now": "今すぐ開始",
+  "Start time": "開始時間",
 };

@@ -28,7 +28,7 @@ export function openClipCut(x, video) {
     body: `
       <p class="kb-hint">${t("Play or scrub the video, press “Here” at the start and the end of a part, then “Add clip”. Save all clips as new videos – the original stays untouched.")}</p>
       <div class="kb-music-range">
-        <label class="kb-form-row"><span>${t("Start")}</span><span class="kb-music-t"><input class="kb-field" data-from value="0:00.0"><button type="button" class="kb-btn is-ghost" data-here="from">${t("Here")}</button></span></label>
+        <label class="kb-form-row"><span>${t("Start time")}</span><span class="kb-music-t"><input class="kb-field" data-from value="0:00.0"><button type="button" class="kb-btn is-ghost" data-here="from">${t("Here")}</button></span></label>
         <label class="kb-form-row"><span>${t("End")}</span><span class="kb-music-t"><input class="kb-field" data-to value="${fmt(Math.min(dur, 30))}"><button type="button" class="kb-btn is-ghost" data-here="to">${t("Here")}</button></span></label>
       </div>
       <div class="kb-cut-add"><button class="kb-btn is-primary" data-add>${icon("plus")}${t("Add clip")}</button><span class="kb-hint">${t("The whole video is {d}.", { d: esc(fmtDuration(dur)) })}</span></div>

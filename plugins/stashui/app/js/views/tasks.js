@@ -103,7 +103,7 @@ async function cardHtml(task, def) {
   return `<form class="kb-card" data-task="${task.id}">
     <h2>${esc(t(task.title))}</h2><p>${esc(t(task.text))}</p>
     <details class="kb-card-opts"><summary>${t("Options")}</summary>${extra}${fields.join("")}</details>
-    <div class="kb-card-acts"><button type="submit" class="kb-btn ${task.primary ? "is-primary" : ""}">${icon("play")}${t("Start")}</button>
+    <div class="kb-card-acts"><button type="submit" class="kb-btn ${task.primary ? "is-primary" : ""}">${icon("play")}${t("Start now")}</button>
     ${task.defaults ? `<button type="button" class="kb-btn is-ghost" data-savedef="${task.id}">${t("Save options as default")}</button>` : ""}</div>
   </form>`;
 }

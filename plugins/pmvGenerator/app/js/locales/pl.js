@@ -2124,4 +2124,6 @@ export default {
   "Your tags decide what is wanted: files with a tag you don't want are turned away, and, if you like, only files with a tag you like are accepted.": "Twoje tagi decydują, co jest pożądane: pliki z niechcianym tagiem są odrzucane, a jeśli chcesz, przyjmowane są tylko pliki z lubianym tagiem.",
   "cloudflared – no account, but the address changes": "cloudflared – bez konta, ale adres się zmienia",
   "Guide": "Poradnik",
+  "Start now": "Uruchom teraz",
+  "Start time": "Czas rozpoczęcia",
 };

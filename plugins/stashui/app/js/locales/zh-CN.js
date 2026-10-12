@@ -2183,4 +2183,6 @@ export default {
   "Your tags decide what is wanted: files with a tag you don't want are turned away, and, if you like, only files with a tag you like are accepted.": "你的标签决定想要什么：带有你不想要的标签的文件会被拒收，如果你愿意，也可以只接受带有你喜欢的标签的文件。",
   "cloudflared – no account, but the address changes": "cloudflared – 无需账号，但地址会变化",
   "Guide": "指南",
+  "Start now": "立即开始",
+  "Start time": "开始时间",
 };

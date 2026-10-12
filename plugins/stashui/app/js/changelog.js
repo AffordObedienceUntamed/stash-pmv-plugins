@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.91.5",
+    date: "2026-10-12",
+    items: [
+      ["ui", "Chinese (and the other languages): the “Start” button on the Tasks page, in the clip cutter, the marker editor, Phone upload and Sharing no longer reads “Home” – only the menu entry that leads to the start page keeps that word. Thanks to ufousox007 for spotting it.", "中文（及其他语言）：任务页、剪辑裁切、标记编辑、手机上传和共享中的“开始”按钮不再显示为“主页” – 只有通往起始页的菜单项仍使用该词。感谢 ufousox007 指出。"],
+    ],
+  },
+  {
     v: "3.91.4",
     date: "2026-10-12",
     items: [

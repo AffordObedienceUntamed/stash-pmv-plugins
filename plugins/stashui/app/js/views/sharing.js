@@ -134,7 +134,7 @@ export function startCard(ctx, what) {
     <h2>${t("Start sharing")}</h2>
     <p class="kb-hint">${what}</p>
     <p class="kb-hint">${t("It opens a small receiver on this PC. It only answers requests that carry one of your sharing links, and files only go to an inbox. Windows may ask once whether Python may use the network – allow it for private networks.")}</p>
-    <div class="kb-phone-acts"><button type="button" class="kb-btn is-primary" data-start>${icon("share")}${t("Start")}</button></div>
+    <div class="kb-phone-acts"><button type="button" class="kb-btn is-primary" data-start>${icon("share")}${t("Start now")}</button></div>
   </section>`;
 }
 function wireStart(host, ctx) {

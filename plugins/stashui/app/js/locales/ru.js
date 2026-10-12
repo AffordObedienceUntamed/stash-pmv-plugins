@@ -2161,4 +2161,6 @@ export default {
   "Your tags decide what is wanted: files with a tag you don't want are turned away, and, if you like, only files with a tag you like are accepted.": "Ваши теги решают, что желательно: файлы с нежелательным тегом отклоняются, а при желании принимаются только файлы с понравившимся тегом.",
   "cloudflared – no account, but the address changes": "cloudflared – без аккаунта, но адрес меняется",
   "Guide": "Руководство",
+  "Start now": "Запустить",
+  "Start time": "Время начала",
 };
