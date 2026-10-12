@@ -2049,4 +2049,7 @@ export default {
   "Working …": "Wird ausgeführt …",
   "Your PC isn't reachable from the internet by itself. The links use this address – inside your own network they work without it.": "Dein PC ist aus dem Internet nicht von selbst erreichbar. Die Links nutzen diese Adresse – im eigenen Netzwerk funktionieren sie auch ohne.",
   "via {name}": "über {name}",
+  "Install cloudflared": "cloudflared installieren",
+  "Install cloudflared (Cloudflare's tunnel program) with Windows' package manager (winget)? Windows may ask for permission, and it can take a minute.": "cloudflared (das Tunnel-Programm von Cloudflare) mit der Windows-Paketverwaltung (winget) installieren? Windows fragt eventuell nach Erlaubnis, und es kann eine Minute dauern.",
+  "cloudflared is installed": "cloudflared ist installiert",
 };

@@ -362,6 +362,7 @@ function mountLink(host, ctx) {
   async function netAct(action) {
     if (netBusy) return;
     if (action === "start" && !(await confirmDialog({ title: t("Make reachable from the internet"), text: t("This makes your receiver reachable from the internet. Only people with a valid link can send you anything, and you can switch it off here at any time."), ok: t("Make reachable") }))) return;
+    if (action === "install" && !(await confirmDialog({ title: t("Install cloudflared"), text: t("Install cloudflared (Cloudflare's tunnel program) with Windows' package manager (winget)? Windows may ask for permission, and it can take a minute."), ok: t("Install") }))) return;
     netBusy = true;
     paintNet();
     try {
@@ -369,7 +370,7 @@ function mountLink(host, ctx) {
       netState = await runBackend({ mode: "share_net", action });
       if (action === "start" && netState.url) await ctx.save({ baseUrl: netState.url });
       if (action === "stop" && prev && ctx.s.config.baseUrl === prev) await ctx.save({ baseUrl: "" });
-      toast(action === "start" ? t("Internet access is on") : t("Internet access is off"), "ok");
+      toast(action === "start" ? t("Internet access is on") : action === "install" ? t("cloudflared is installed") : t("Internet access is off"), "ok");
     } catch (e) {
       errorToast(e, t("Internet access"));
       try {
@@ -391,12 +392,16 @@ function mountLink(host, ctx) {
         ${netState.provider === "cloudflared" ? `<p class="kb-hint kb-share-warn">${t("This address changes every time it is started, so permanent links stop working after a restart.")}</p>` : ""}
         <div class="kb-phone-acts"><button type="button" class="kb-btn is-ghost kb-pdanger" data-netoff>${icon("stop")}${t("Switch internet access off")}</button></div>`;
     else if (p.tailscale || p.cloudflared)
-      box.innerHTML = `<div class="kb-phone-acts"><button type="button" class="kb-btn is-primary" data-neton>${icon("share")}${t("Make reachable from the internet")}</button></div>
+      box.innerHTML = `<div class="kb-phone-acts"><button type="button" class="kb-btn is-primary" data-neton>${icon("share")}${t("Make reachable from the internet")}</button>
+        ${!p.cloudflared && netState.canInstall ? `<button type="button" class="kb-btn" data-netinstall>${t("Install cloudflared")}</button>` : ""}</div>
         <p class="kb-hint">${p.tailscale ? t("Uses Tailscale Funnel (a fixed address).") : t("Uses a Cloudflare quick tunnel (a new address every time).")}${netState.error ? " " + esc(netState.error) : ""}</p>`;
     else
-      box.innerHTML = `<p class="kb-hint">${t("To make your links work from outside, install Tailscale (free) or cloudflared on this PC – then one click here does the rest.")} <a href="https://tailscale.com/download" target="_blank" rel="noopener">${t("Get Tailscale")}</a></p>`;
+      box.innerHTML = `<p class="kb-hint">${t("To make your links work from outside, install Tailscale (free) or cloudflared on this PC – then one click here does the rest.")} <a href="https://tailscale.com/download" target="_blank" rel="noopener">${t("Get Tailscale")}</a></p>
+        ${netState.canInstall ? `<div class="kb-phone-acts"><button type="button" class="kb-btn is-primary" data-netinstall>${t("Install cloudflared")}</button></div>` : ""}`;
     const on = box.querySelector("[data-neton]");
     if (on) on.onclick = () => netAct("start");
+    const inst = box.querySelector("[data-netinstall]");
+    if (inst) inst.onclick = () => netAct("install");
     const off = box.querySelector("[data-netoff]");
     if (off) off.onclick = () => netAct("stop");
   }

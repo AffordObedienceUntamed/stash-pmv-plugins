@@ -2131,4 +2131,7 @@ export default {
   "Working …": "Выполняется …",
   "Your PC isn't reachable from the internet by itself. The links use this address – inside your own network they work without it.": "Ваш ПК сам по себе недоступен из интернета. Ссылки используют этот адрес – в вашей сети они работают и без него.",
   "via {name}": "через {name}",
+  "Install cloudflared": "Установить cloudflared",
+  "Install cloudflared (Cloudflare's tunnel program) with Windows' package manager (winget)? Windows may ask for permission, and it can take a minute.": "Установить cloudflared (программу туннеля Cloudflare) через менеджер пакетов Windows (winget)? Windows может запросить разрешение, это может занять минуту.",
+  "cloudflared is installed": "cloudflared установлен",
 };

@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.91.2",
+    date: "2026-10-12",
+    items: [
+      ["ui", "Sharing → Internet access: an “Install cloudflared” button (Windows) installs the Cloudflare tunnel program with Windows' own package manager, after a confirmation – so the internet button works without Tailscale.", "共享 → 互联网访问：新增“安装 cloudflared”按钮（Windows），确认后用 Windows 自带的包管理器安装 Cloudflare 隧道程序 – 这样没有 Tailscale 也能使用互联网按钮。"],
+    ],
+  },
+  {
     v: "3.91.1",
     date: "2026-10-12",
     items: [

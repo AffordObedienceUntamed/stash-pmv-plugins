@@ -928,6 +928,13 @@ def share_net(stash, args, conn):
         except OSError:
             pass
     act = str(args.get("action") or "status")
+    if act == "install":  # cloudflared from Windows' own package manager (the official package, nothing else is downloaded by us)
+        if os.name != "nt" or not shutil.which("winget"):
+            raise RuntimeError("Installing from here needs Windows with winget – install cloudflared yourself (cloudflared releases on github.com/cloudflare)")
+        out = net_run(["winget", "install", "--id", "Cloudflare.cloudflared", "-e", "--silent", "--accept-source-agreements", "--accept-package-agreements"], 300)
+        progs["cloudflared"] = net_find("cloudflared")
+        if not progs["cloudflared"]:
+            raise RuntimeError("cloudflared wasn't found after installing – restart Stash and try again. " + re.sub(r"\s+", " ", out).strip()[-200:])
     if act == "stop" and cur:
         if cur["provider"] == "tailscale":
             net_run([progs["tailscale"], "funnel", str(port), "off"], 20)
@@ -989,7 +996,7 @@ def share_net(stash, args, conn):
             cur = {"provider": "cloudflared", "url": url, "pid": p.pid}
         with open(path, "w", encoding="utf-8") as f:
             json.dump(cur, f)
-    return {"providers": {k: bool(v) for k, v in progs.items()}, "running": bool(cur), "provider": (cur or {}).get("provider", ""), "url": (cur or {}).get("url", "")}
+    return {"providers": {k: bool(v) for k, v in progs.items()}, "canInstall": os.name == "nt" and bool(shutil.which("winget")), "running": bool(cur), "provider": (cur or {}).get("provider", ""), "url": (cur or {}).get("url", "")}
 
 
 # ---------- Cut clips (player → "Cut clips") ----------

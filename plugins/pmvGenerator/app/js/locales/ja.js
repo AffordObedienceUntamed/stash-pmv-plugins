@@ -2096,4 +2096,7 @@ export default {
   "Working …": "処理中 …",
   "Your PC isn't reachable from the internet by itself. The links use this address – inside your own network they work without it.": "PCはそのままではインターネットから届きません。リンクはこのアドレスを使います – 自分のネットワーク内ではなくても使えます。",
   "via {name}": "{name} 経由",
+  "Install cloudflared": "cloudflaredをインストール",
+  "Install cloudflared (Cloudflare's tunnel program) with Windows' package manager (winget)? Windows may ask for permission, and it can take a minute.": "Windowsのパッケージマネージャー (winget) でcloudflared（Cloudflareのトンネルプログラム）をインストールしますか？Windowsが許可を求めることがあり、1分ほどかかる場合があります。",
+  "cloudflared is installed": "cloudflaredをインストールしました",
 };

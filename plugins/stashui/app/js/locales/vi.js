@@ -2089,4 +2089,7 @@ export default {
   "Working …": "Đang xử lý …",
   "Your PC isn't reachable from the internet by itself. The links use this address – inside your own network they work without it.": "Máy của bạn không tự truy cập được từ internet. Liên kết dùng địa chỉ này – trong mạng của bạn thì không cần.",
   "via {name}": "qua {name}",
+  "Install cloudflared": "Cài cloudflared",
+  "Install cloudflared (Cloudflare's tunnel program) with Windows' package manager (winget)? Windows may ask for permission, and it can take a minute.": "Cài cloudflared (chương trình đường hầm của Cloudflare) bằng trình quản lý gói của Windows (winget)? Windows có thể xin quyền và mất khoảng một phút.",
+  "cloudflared is installed": "Đã cài cloudflared",
 };

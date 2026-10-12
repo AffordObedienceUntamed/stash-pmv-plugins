@@ -2153,4 +2153,7 @@ export default {
   "Working …": "处理中 …",
   "Your PC isn't reachable from the internet by itself. The links use this address – inside your own network they work without it.": "你的电脑本身无法从互联网访问。链接使用此地址 – 在你自己的网络内无需它也能使用。",
   "via {name}": "通过 {name}",
+  "Install cloudflared": "安装 cloudflared",
+  "Install cloudflared (Cloudflare's tunnel program) with Windows' package manager (winget)? Windows may ask for permission, and it can take a minute.": "用 Windows 的包管理器 (winget) 安装 cloudflared（Cloudflare 的隧道程序）？Windows 可能会请求权限，可能需要一分钟。",
+  "cloudflared is installed": "cloudflared 已安装",
 };
