@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.91.0",
+    date: "2026-10-12",
+    items: [
+      ["ui", "Sharing (Manage → Sharing): give people a link and they send you photos, videos and messages – or use their links to send yours. Your name and picture, tags you like and don't want (checked when a file arrives and shown to the sender), permanent or expiring links you can switch off or delete any time, an inbox where nothing reaches your library before you accept it (blurred previews, accept, reject, block), saved links of others with a picker for what fits their taste, and a chat. Everything goes directly between the PCs – no server of ours. A button under “Public address” makes your links work from the internet (Tailscale Funnel or a Cloudflare tunnel, if installed) and switches it off again. Setup and security notes are in the README.", "共享（管理 → 共享）：把链接给别人，他们就能给你发照片、视频和消息 – 也可以用他们的链接发送你的内容。包括你的名字和头像、你喜欢和不想要的标签（文件到达时检查，并向发送者显示）、可随时关闭或删除的永久或限时链接、在你接受之前任何内容都不会进入媒体库的收件箱（模糊预览、接受、拒绝、屏蔽）、保存他人的链接并按其喜好挑选内容，以及聊天。一切都在电脑之间直接传输 – 没有我们的服务器。“公开地址”下的按钮可让链接从互联网访问（需已安装 Tailscale Funnel 或 Cloudflare 隧道），并可再次关闭。设置与安全说明见 README。"],
+    ],
+  },
+  {
     v: "3.90.0",
     date: "2026-10-12",
     items: [
