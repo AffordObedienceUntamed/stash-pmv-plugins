@@ -104,7 +104,7 @@ nav.openFeed = (S, index, title) => {
 
 Object.assign(nav, {
   openProfile, openNiche, openSettings, openShare, openDetails, openPerformer, openStashTag, openNicheBrowser,
-  openSearch: (q, tab) => openSearch(q || "", tab || "videos"),
+  openSearch: (q, tab, exact) => openSearch(q || "", tab || "videos", !!exact),
   openDownloads: () => showView("downloads"),
   toast,
   emitSettings: () => emit("settings", {}),

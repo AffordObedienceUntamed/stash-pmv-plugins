@@ -369,7 +369,7 @@ export function createFeed(host, S, opts = {}) {
         return nav.openProfile(g.user);
       case "tag":
         if (g.stash) return a.dataset.tid ? nav.openStashTag(a.dataset.tid, a.dataset.tag) : null;
-        return nav.openSearch(a.dataset.tag, "videos");
+        return nav.openSearch(a.dataset.tag, "videos", true);
       case "moretxt": {
         const info = a.closest(".info");
         const open = info.classList.toggle("is-open");

@@ -324,7 +324,7 @@ export function openNicheBrowser() {
 // ---------- search ----------
 const recent = () => store.get("history", []).filter((x) => typeof x === "string");
 const remember = (q) => store.set("history", [q, ...recent().filter((x) => x.toLowerCase() !== q.toLowerCase())].slice(0, 12));
-export function openSearch(q0 = "", tab0 = "videos") {
+export function openSearch(q0 = "", tab0 = "videos", exact0 = false) {
   const p = openPage("");
   p.head.querySelector("h2").outerHTML = `<form class="searchbox is-head" role="search">${ic("search")}<input type="search" enterkeyhint="search" placeholder="${esc(t("Search"))}" autocomplete="off" spellcheck="false" value="${esc(q0)}"><button type="submit" class="sb-go">${esc(t("Search"))}</button></form>`;
   const form = p.head.querySelector("form"), inp = form.querySelector("input");
@@ -356,11 +356,11 @@ export function openSearch(q0 = "", tab0 = "videos") {
     creators.forEach((c) => { const n = c.username || c.name; if (n) users.set(String(n).toLowerCase(), Object.assign(userOf(n) || {}, c)); });
     const nl = ((ni && ni.niches) || []).slice(0, 12);
     const tags = (Array.isArray(sg) ? sg : []).map((x) => (typeof x === "string" ? x : x.text || x.name || "")).filter(Boolean).slice(0, 8);
-    sugg.innerHTML = top + `${tags.map((x) => `<button class="srow-main" data-q="${esc(x)}"><span class="sa">${ic("search")}</span><span>${esc(x)}</span></button>`).join("")}
+    sugg.innerHTML = top + `${tags.map((x) => `<button class="srow-main" data-q="${esc(x)}" data-tag="1"><span class="sa">#</span><span>${esc(x)}</span></button>`).join("")}
       ${creators.length ? `<h3>${esc(t("Creators"))}</h3>${creators.map(userRow).join("")}` : ""}
       ${nl.length ? `<h3>${esc(t("Niches"))}</h3><div class="ngrid">${nl.map(nicheTile).join("")}</div>` : ""}`;
   };
-  const results = (q, tab) => {
+  const results = (q, tab, exact) => {
     query = q;
     remember(q);
     inp.value = q;
@@ -370,7 +370,7 @@ export function openSearch(q0 = "", tab0 = "videos") {
     res.innerHTML = "";
     if (tabs) tabs.destroy();
     tabs = tabbed(p, res, [{ id: "videos", label: t("Videos") }, { id: "creators", label: t("Creators") }, { id: "niches", label: t("Niches") }, { id: "stash", label: t("My Stash") }], tab || "videos", (id, box) => {
-      if (id === "videos") return mountGrid(box, makeSource({ t: "search", q, order: "trending" }), { root: p.body, barHost: p.el, sorts: ORDERS.search, makeS: (o) => makeSource({ t: "search", q, order: o }), feedTitle: q, empty: { icon: "search", title: t("No results"), text: t("Try another word.") } });
+      if (id === "videos") return mountGrid(box, makeSource({ t: "search", q, exact, order: "trending" }), { root: p.body, barHost: p.el, sorts: ORDERS.search, makeS: (o) => makeSource({ t: "search", q, exact, order: o }), feedTitle: exact ? "#" + q : q, empty: { icon: "search", title: t("No results"), text: t("Try another word.") } });
       if (id === "stash") return mountGrid(box, makeSource({ t: "stash", q, order: "random" }), { root: p.body, barHost: p.el, sorts: ORDERS.stash, makeS: (o) => makeSource({ t: "stash", q, order: o }), feedTitle: q, selectable: false, empty: { icon: "film", title: t("Nothing in your Stash"), text: t("No scene matches “{q}”.", { q }) } });
       if (id === "creators") return pagedList(box, p.body, (page) => `/creators/search?query=${enc(q)}&count=30&page=${page}`, (d) => d.items || [], userRow, t("No creators found"));
       if (id === "niches") return pagedList(box, p.body, (page) => `/niches/search?query=${enc(q)}&order=best_match&count=40&page=${page}`, (d) => d.niches || [], nicheTile, t("No niches found"), "ngrid");
@@ -389,9 +389,9 @@ export function openSearch(q0 = "", tab0 = "videos") {
     const n = e.target.closest("[data-n]");
     if (n) return openNiche(n.dataset.n, n.dataset.nq || n.dataset.q);
     const s = e.target.closest("[data-q]");
-    if (s && sugg.contains(s)) return results(s.dataset.q, "videos");
+    if (s && sugg.contains(s)) return results(s.dataset.q, "videos", s.dataset.tag === "1");
   });
-  if (q0) results(q0, tab0); else { showStart(); setTimeout(() => inp.focus(), 60); }
+  if (q0) results(q0, tab0, exact0); else { showStart(); setTimeout(() => inp.focus(), 60); }
 }
 // a creator in a list, with a Follow button
 const userRow = (c) => {
@@ -683,7 +683,7 @@ export function openDetails(g) {
       const n = e.target.closest("[data-dn]");
       if (n) { close(); return openNiche(n.dataset.dn, nicheName(n.dataset.dn)); }
       const tg = e.target.closest("[data-dt]");
-      if (tg) { close(); return g.stash ? tg.dataset.tid && openStashTag(tg.dataset.tid, tg.dataset.dt) : openSearch(tg.dataset.dt, "videos"); }
+      if (tg) { close(); return g.stash ? tg.dataset.tid && openStashTag(tg.dataset.tid, tg.dataset.dt) : openSearch(tg.dataset.dt, "videos", true); }
     });
   }, { bottom: true, cls: "details" });
 }

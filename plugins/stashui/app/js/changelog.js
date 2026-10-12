@@ -4,6 +4,14 @@
 
 export const CHANGES = [
   {
+    v: "3.89.1",
+    date: "2026-10-12",
+    items: [
+      ["pmv", "PMV Generator 2.29.1: RedGifs tags you pick bring clips with that tag again – RedGifs had stopped understanding the old way of asking and sent its trending clips instead.", "PMV Generator 2.29.1：所选的 RedGifs 标签重新只带来含该标签的片段 – RedGifs 已不再支持旧的请求方式，之前返回的是热门片段。"],
+      ["storm", "Media Storm 2.8.1: the same fix for RedGifs tags in the storm – a tag now brings videos with that tag, not RedGifs' trending ones.", "Media Storm 2.8.1：风暴中的 RedGifs 标签同样已修复 – 现在只会出现带该标签的视频，而不是 RedGifs 的热门视频。"],
+    ],
+  },
+  {
     v: "3.89.0",
     date: "2026-10-11",
     items: [

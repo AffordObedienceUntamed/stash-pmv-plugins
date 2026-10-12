@@ -265,8 +265,9 @@ export function makeSource(spec) {
     if (d.total != null) S.total = d.total;
     return { list: (d.gifs || []).map(norm).filter(Boolean), last: !(d.gifs || []).length || (d.pages && d.page >= d.pages) };
   };
+  // search: query= finds the words in tags and descriptions, tags= only that tag (RedGifs ignores the older search_text=)
   const search = async (order, q) => {
-    const r = await gifPage(`/gifs/search?${q ? "search_text=" + enc(q) + "&" : ""}order=${order}&count=40&page=${++S.page}&type=g`);
+    const r = await gifPage(`/gifs/search?${q ? (spec.exact ? "tags=" : "query=") + enc(q) + "&" : ""}order=${order}&count=40&page=${++S.page}&type=g`);
     if (r.last || S.page >= Math.min(S.pages, 200)) S.done = true;
     return r.list;
   };
