@@ -722,7 +722,7 @@ export async function render(host, params, query = {}) {
       if (handy) handy.setLoop(prefs.mode === "one");
       paintMode();
       paintUpnext();
-      return toast(modeOf()[2], "ok");
+      return toast(t(modeOf()[2]), "ok");
     }
     const up = el.closest("[data-upgo]");
     if (up) return jump(Number(up.dataset.upgo));

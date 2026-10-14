@@ -152,14 +152,14 @@ export function mediaBrowser(host, opts) {
     sortSel.value = sorts.some(([k]) => k === st.sort) ? st.sort : sorts[0][0];
     // a sort by a criterion of the detailed rating (the entries are added when the criteria are known)
     if (String(st.sort).startsWith("crit:")) {
-      sortSel.insertAdjacentHTML("beforeend", `<option value="${esc(st.sort)}">${t("Detailed")}: ${esc(st.sort.slice(5))}</option>`);
+      sortSel.insertAdjacentHTML("beforeend", `<option value="${esc(st.sort)}">${t("Detailed")}: ${esc(t(st.sort.slice(5)))}</option>`);
       sortSel.value = st.sort;
     }
     if (critKinds(kind))
       critInfo(kind).then((info) => {
         const names = info.names.filter((n) => info.have.has(n));
         if (!names.length || $("[data-sort]") !== sortSel || !sortSel.isConnected) return;
-        sortSel.insertAdjacentHTML("beforeend", names.filter((n) => !sortSel.querySelector(`option[value="${CSS.escape("crit:" + n)}"]`)).map((n) => `<option value="${esc("crit:" + n)}">${t("Detailed")}: ${esc(n)}</option>`).join(""));
+        sortSel.insertAdjacentHTML("beforeend", names.filter((n) => !sortSel.querySelector(`option[value="${CSS.escape("crit:" + n)}"]`)).map((n) => `<option value="${esc("crit:" + n)}">${t("Detailed")}: ${esc(t(n))}</option>`).join(""));
         sortSel.value = st.sort;
       }).catch(() => {});
     st.sort = sortSel.value;

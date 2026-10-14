@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.92.2",
+    date: "2026-10-14",
+    items: [
+      ["ui", "Translations: the bubble that pops up in the corner when you switch the end-of-video mode (In order / Random order / Repeat …) is now translated, and so are the default criteria and groups of the detailed rating (Production Quality, Chemistry … Face, Body, Technique …) in the rating window, the scene and performer chips, the filter and the sort list. Names you typed yourself stay as they are. Thanks to ufousox007 for spotting it.", "翻译：切换视频结束方式（顺序播放/随机播放/循环…）时角落弹出的气泡现已翻译；详细评分的默认评分项和分组（制作质量、化学反应……脸蛋、身材、技巧等）在评分窗口、场景和演员标签、筛选及排序列表中也已翻译。您自己输入的名称保持不变。感谢 ufousox007 的发现。"],
+    ],
+  },
+  {
     v: "3.92.1",
     date: "2026-10-12",
     items: [

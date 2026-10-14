@@ -152,8 +152,8 @@ export async function render(main, params, query) {
     .then((info) => {
       const names = info.names.filter((n) => info.have.has(n));
       const sel = $("[data-sort]");
-      sel.insertAdjacentHTML("beforeend", names.map((n) => `<option value="${esc("crit:" + n)}">${t("Detailed")}: ${esc(n)}</option>`).join(""));
-      if (query.sort && query.sort.startsWith("crit:") && !names.includes(query.sort.slice(5))) sel.insertAdjacentHTML("beforeend", `<option value="${esc(query.sort)}">${t("Detailed")}: ${esc(query.sort.slice(5))}</option>`);
+      sel.insertAdjacentHTML("beforeend", names.map((n) => `<option value="${esc("crit:" + n)}">${t("Detailed")}: ${esc(t(n))}</option>`).join(""));
+      if (query.sort && query.sort.startsWith("crit:") && !names.includes(query.sort.slice(5))) sel.insertAdjacentHTML("beforeend", `<option value="${esc(query.sort)}">${t("Detailed")}: ${esc(t(query.sort.slice(5)))}</option>`);
       sel.value = query.sort || "name";
       $("[data-critopen]").hidden = !names.length && !crit;
       if (crit) $("[data-crittext]").textContent = critText(parseCrit(crit));
