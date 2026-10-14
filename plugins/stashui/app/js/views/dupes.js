@@ -40,6 +40,7 @@ export async function render(main) {
   let groups = [];
   let shown = PAGE;
   const ignored = new Set(store.get("dupIgnore", []));
+  const picked = new Set(); // scene ids ticked for deleting
 
   main.innerHTML = `
     <header class="kb-head"><div class="kb-head-title">
@@ -51,6 +52,9 @@ export async function render(main) {
       <div class="kb-seg" data-acc>${ACCURACY.map(([v, l]) => `<button type="button" data-v="${v}"${v === distance ? ' class="is-on"' : ""}>${t(l)}</button>`).join("")}</div>
       <span class="kb-hint">${t("Length")}</span>
       <div class="kb-seg" data-dur>${DURATION.map(([v, l]) => `<button type="button" data-v="${v}"${v === durDiff ? ' class="is-on"' : ""}>${t(l)}</button>`).join("")}</div>
+      <span class="kb-spacer"></span>
+      <button type="button" class="kb-btn" data-selrest title="${esc(t("Ticks every copy except the best one of each group (also the groups not shown yet)"))}">${t("Select all but the best")}</button>
+      <button type="button" class="kb-btn is-ghost" data-selnone>${t("Select none")}</button>
     </div>
     <div data-list><div class="kb-loading">${t("Loading …")}</div></div>`;
   const list = main.querySelector("[data-list]");
@@ -89,13 +93,14 @@ export async function render(main) {
             <div class="kb-dupe-row">${g
               .map((s, i) => {
                 const f = s.files[0] || {};
-                return `<article class="kb-dupe-item${i === 0 ? " is-best" : ""}" data-sid="${s.id}">
+                return `<article class="kb-dupe-item${i === 0 ? " is-best" : ""}${picked.has(s.id) ? " is-picked" : ""}" data-sid="${s.id}">
                   <a class="kb-dupe-thumb" href="#/scene/${s.id}">${s.paths.screenshot ? `<img alt="" loading="lazy" src="${esc(s.paths.screenshot)}">` : ""}${i === 0 ? `<span class="kb-dupe-badge">${t("Best")}</span>` : ""}${f.duration ? `<span class="kb-dupe-dur">${fmtDuration(f.duration)}</span>` : ""}</a>
                   <b title="${esc(s.title || f.basename || "")}">${esc(s.title || f.basename || "#" + s.id)}</b>
                   <small>${esc(fileLine(f))}</small>
                   <small><b>${esc(fmtBytes(f.size))}</b>${s.play_count ? " · " + plural(s.play_count, "play", "plays") : ""}${s.o_counter ? " · " + s.o_counter + " O" : ""}${s.rating100 ? " · " + ratingText(s.rating100) : ""}</small>
                   <small class="kb-dupe-path" title="${esc(f.path || "")}">${esc(f.path || "")}</small>
-                  <button type="button" class="kb-btn is-ghost kb-pdanger" data-del="${s.id}">${icon("trash")}${t("Delete")}</button>
+                  <div class="kb-dupe-btns"><label class="kb-dupe-pick"><input type="checkbox" data-pick="${s.id}"${picked.has(s.id) ? " checked" : ""}><span>${t("Select")}</span></label>
+                  <button type="button" class="kb-btn is-ghost kb-pdanger" data-del="${s.id}">${icon("trash")}${t("Delete")}</button></div>
                 </article>`;
               })
               .join("")}</div>
@@ -108,6 +113,32 @@ export async function render(main) {
         .join("") +
       (visible.length > shown ? `<div class="kb-more-wrap"><button type="button" class="kb-btn" data-more>${t("Show more")}</button></div>` : "");
   }
+
+  // The bar with the ticked copies: one question for all of them
+  let bar = null;
+  function paintBar() {
+    if (!picked.size) {
+      if (bar) bar.remove();
+      bar = null;
+      return;
+    }
+    if (!bar) {
+      bar = document.createElement("div");
+      bar.className = "kb-bulk";
+      main.appendChild(bar);
+    }
+    bar.innerHTML = `<b>${t("{n} selected", { n: picked.size })}</b>
+      <button type="button" class="kb-btn is-danger" data-delpicked>${icon("trash")}${t("Delete selected")}</button>
+      <span class="kb-spacer"></span>
+      <button type="button" class="kb-btn" data-selnone>${t("Done")}</button>`;
+  }
+  main.addEventListener("change", (e) => {
+    const c = e.target.closest("[data-pick]");
+    if (!c) return;
+    c.checked ? picked.add(c.dataset.pick) : picked.delete(c.dataset.pick);
+    c.closest("[data-sid]").classList.toggle("is-picked", c.checked);
+    paintBar();
+  });
 
   async function destroy(ids, what) {
     const r = await confirmDialog({
@@ -145,6 +176,27 @@ export async function render(main) {
       ignored.clear();
       store.set("dupIgnore", []);
       return paint();
+    }
+    if (e.target.closest("[data-selrest]")) {
+      groups.filter((g) => !ignored.has(keyOf(g))).forEach((g) => g.slice(1).forEach((s) => picked.add(s.id)));
+      paint();
+      return paintBar();
+    }
+    if (e.target.closest("[data-selnone]")) {
+      picked.clear();
+      paint();
+      return paintBar();
+    }
+    if (e.target.closest("[data-delpicked]")) {
+      const ids = [...picked];
+      if (await destroy(ids, t("Delete the {n} selected scenes?", { n: ids.length }))) {
+        const gone = new Set(ids);
+        groups = groups.map((x) => x.filter((s) => !gone.has(s.id))).filter((x) => x.length > 1);
+        picked.clear();
+        paint();
+        paintBar();
+      }
+      return;
     }
     const card = e.target.closest("[data-key]");
     if (!card) return;

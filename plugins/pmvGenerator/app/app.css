@@ -377,6 +377,42 @@ a.kb-chip:hover, button.kb-chip:hover { background: rgba(180, 140, 255, .28); }
 
 .kb-hang { position: relative; --gap: 8px; }
 .kb-row { display: flex; gap: var(--gap); margin-bottom: var(--gap); }
+/* Card view of scenes (like the card of classic Stash): the picture with logo, rating (bottom left, the top left belongs to the tier badge and the selection box) and specs on it; title, date, details and icon buttons below */
+.kb-rows.is-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--cardw, 340px), 1fr)); gap: 14px; }
+.kb-scard { position: relative; display: flex; flex-direction: column; min-width: 0; overflow: visible; border: 1px solid var(--bg-3); border-radius: 8px; background: var(--bg-2); }
+.kb-scard .kb-piece { flex: none; width: 100%; height: auto; aspect-ratio: 16 / 9; border-radius: 7px 7px 0 0; }
+.kb-scard.is-plain { border: 0; background: none; }
+.kb-scard .kb-placard, .kb-scard .kb-studio { display: none; }
+.kb-scard .kb-stamp { top: auto; right: 7px; bottom: 7px; }
+/* a layer exactly over the picture (16:9) that carries the studio logo and the rating */
+.kb-scard-over { position: absolute; top: 0; left: 0; right: 0; z-index: 2; aspect-ratio: 16 / 9; pointer-events: none; }
+.kb-scard-studio { position: absolute; top: 8px; right: 8px; z-index: 2; pointer-events: auto; display: flex; align-items: center; max-width: 42%; height: 26px; }
+.kb-scard-studio img { max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(0 1px 3px rgba(0, 0, 0, .85)); }
+.kb-scard-studio.is-name { height: auto; padding: 3px 7px; overflow: hidden; border-radius: 4px; color: #fff; font: 700 11.5px/1.2 var(--f-label); white-space: nowrap; text-overflow: ellipsis; background: rgba(0, 0, 0, .6); }
+.kb-scard-rating { position: absolute; bottom: 8px; left: 8px; z-index: 2; padding: 2px 8px; border-radius: 4px; color: #fff; font: 700 12px/1.4 var(--f-label); background: rgba(0, 0, 0, .62); pointer-events: none; transition: opacity .15s; }
+.kb-scard-body { display: flex; flex-direction: column; gap: 5px; min-width: 0; padding: 10px 12px 10px; }
+.kb-scard-title { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; color: var(--text); font: 700 15px/1.25 var(--f-text); }
+.kb-scard-title:hover { color: var(--pink); }
+.kb-scard-date { color: var(--text-2); font: 500 12.5px/1.2 var(--f-label); }
+.kb-scard-details { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; margin: 0; color: var(--text-2); font: 400 13px/1.4 var(--f-text); }
+.kb-scard-pops { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 4px; padding-top: 8px; border-top: 1px solid var(--bg-3); }
+.kb-scard-pop, .kb-scard-stat { display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 9px; border: 0; border-radius: 6px; color: var(--text); font: 600 12.5px/1 var(--f-label); background: var(--bg-3); }
+.kb-scard-pop { cursor: pointer; }
+.kb-scard-pop:hover, .kb-scard-pop.is-open { color: var(--ink); background: var(--pink); }
+.kb-scard-stat { color: var(--text-2); background: none; padding: 0 4px; }
+.kb-scard-pop .kb-ic, .kb-scard-stat .kb-ic { width: 15px; height: 15px; }
+/* the list that opens from an icon button */
+.kb-scpop { position: fixed; z-index: 90; display: flex; flex-direction: column; gap: 2px; min-width: 180px; max-width: 320px; max-height: 320px; overflow: auto; padding: 8px; border: 1px solid var(--bg-3); border-radius: 8px; background: var(--bg-2); box-shadow: 0 14px 40px rgba(0, 0, 0, .55); }
+.kb-scpop.is-tags { flex-direction: row; flex-wrap: wrap; gap: 5px; }
+.kb-scpop-row { display: flex; align-items: center; gap: 9px; padding: 4px 6px; border-radius: 6px; color: var(--text); font: 600 13.5px/1.2 var(--f-label); }
+.kb-scpop-row:hover { color: var(--pink); background: var(--bg-3); }
+.kb-scpop-row img, .kb-scpop-row i { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; object-fit: cover; object-position: top; background: var(--base); font-style: normal; }
+.kb-scpop-row i .kb-ic { width: 15px; height: 15px; }
+html.kb-glass .kb-scard:not(.is-plain) { border-color: var(--glass-edge); background: var(--glass-shine), var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); box-shadow: var(--glass-shadow); }
+html.kb-glass .kb-scard-pops { border-top-color: var(--glass-edge); }
+html.kb-glass .kb-scard-pop { background: var(--glass-deep); }
+html.kb-glass .kb-scard-pop:hover { background: var(--pink); }
+html.kb-glass .kb-scpop { border-color: var(--glass-edge); background: var(--glass-shine), var(--glass-deep); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); box-shadow: var(--glass-shadow); }
 .kb-piece {
   position: relative;
   flex: none;
@@ -530,6 +566,21 @@ a.kb-chip:hover, button.kb-chip:hover { background: rgba(180, 140, 255, .28); }
 .kb-room:hover b { color: var(--pink); }
 
 /* Tag list */
+/* Tags as cards: a picture (or the initial), the name and counts; the mouse resting on one plays a marker of the tag */
+.kb-tagcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+.kb-tagcard { display: flex; flex-direction: column; min-width: 0; overflow: hidden; border: 1px solid var(--bg-3); border-radius: 8px; background: var(--bg-2); transition: box-shadow .2s ease; }
+.kb-tagcard:hover { box-shadow: 0 0 0 2px var(--pink); }
+.kb-tagcard-pic { position: relative; display: grid; place-items: center; aspect-ratio: 16 / 9; overflow: hidden; background: var(--base); }
+.kb-tagcard-pic > img, .kb-tagcard-pic > video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.kb-tagcard-pic > video, .kb-tagcard-pic > .kb-tagcard-anim { opacity: 0; transition: opacity .3s ease; pointer-events: none; }
+.kb-tagcard.is-previewing .kb-tagcard-pic > video, .kb-tagcard.is-previewing .kb-tagcard-pic > .kb-tagcard-anim { opacity: 1; }
+.kb-tagcard-pic > i { color: var(--faint); font: 700 56px/1 var(--f-display); font-style: normal; text-transform: uppercase; }
+.kb-tagcard-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; padding: 9px 12px 11px; }
+.kb-tagcard-info b { overflow: hidden; font: 700 16px/1.2 var(--f-text); text-overflow: ellipsis; white-space: nowrap; }
+.kb-tagcard:hover .kb-tagcard-info b { color: var(--pink); }
+.kb-tagcard-info small { color: var(--text-2); font: 500 12.5px/1.2 var(--f-label); }
+html.kb-glass .kb-tagcard { border-color: var(--glass-edge); background: var(--glass-shine), var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); box-shadow: var(--glass-shadow); }
+html.kb-glass .kb-tagcard:hover { box-shadow: var(--glass-shadow), 0 0 0 2px var(--pink); }
 .kb-taglist { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 2px 28px; }
 .kb-tagrow { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; min-width: 0; padding: 12px 4px; border-bottom: 1px solid var(--line); }
 .kb-tagrow b { min-width: 0; font: 700 22px/1.15 var(--f-display); font-stretch: 85%; overflow-wrap: anywhere; }
@@ -1231,6 +1282,9 @@ button.kb-rail-group.is-closed .kb-rail-caret { transform: rotate(-45deg); }
 }
 .kb-plc-perf.is-holding, html .kb-plc-perf.is-holding { border-color: #d22c4a; color: #fff; background: #b3243e; transform: scale(.96); transition: transform .15s, background .15s; }
 html.kb-glass .kb-plc-perf.is-holding { border-color: #ff5a76; background: color-mix(in srgb, #b3243e 70%, transparent); }
+.kb-plc-studiorow { margin-bottom: 8px; }
+.kb-plc-perf.kb-plc-studio img { width: auto; max-width: 64px; height: 26px; margin-left: 2px; border-radius: 5px; object-fit: contain; background: transparent; }
+.kb-plc-perf.kb-plc-studio .kb-ic { width: 18px; height: 18px; margin-left: 8px; }
 .kb-plc-perfadd { padding: 3px 11px 3px 8px; border-style: dashed; color: var(--text-2); font: 600 13px/1 var(--f-label); cursor: pointer; }
 .kb-plc-perfadd .kb-ic { width: 15px; height: 15px; }
 .kb-plc-perfadd:only-of-type { padding: 6px 12px 6px 9px; }
@@ -1901,3 +1955,14 @@ html.kb-glass .kb-ptg-thumb { border: 1px solid var(--glass-edge); background: v
 @media (max-width: 640px) { .kb-tg-row { flex-direction: column; } .kb-tg-thumb { width: 100%; height: 160px; } }
 html.kb-glass .kb-tg-row { border-color: var(--glass-edge); background: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); }
 html.kb-glass .kb-tg-review { background: color-mix(in srgb, var(--base) 45%, transparent); }
+html.kb-glass .kb-mkpop { border-color: var(--glass-edge); box-shadow: var(--glass-shadow); }
+html.kb-glass .kb-tl-range { box-shadow: 0 0 0 1px rgba(255, 255, 255, .25); }
+/* "Make default" next to a sort control */
+.kb-defsort { white-space: nowrap; }
+.kb-defsort.is-on { color: var(--pink); border-color: var(--pink); }
+html.kb-glass .kb-defsort.is-on { color: var(--pink); border-color: var(--pink); background: color-mix(in srgb, var(--pink) 14%, transparent); }
+/* Identify card on the Tasks page: sources and fields as tick boxes in a wrapping row */
+.kb-idsrc { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 2px 0 10px; }
+.kb-chk { display: inline-flex; align-items: center; gap: 7px; font: 600 13.5px/1.3 var(--f-label); cursor: pointer; }
+.kb-chk input { width: 16px; height: 16px; accent-color: var(--pink); }
+.kb-chk small { color: var(--text-2); font-weight: 500; }

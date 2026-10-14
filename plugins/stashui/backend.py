@@ -1005,7 +1005,7 @@ def share_net(stash, args, conn):
 # {"mode": "clip_status", "job"} → {"state": "running"|"done"|"error", "i", "n", "files": [paths], "error"}
 
 CUT_DIR = tempfile.gettempdir()
-BAD_NAME = '<>:"/\|?*'
+BAD_NAME = r'<>:"/\|?*'
 
 
 def find_ffmpeg(stash):

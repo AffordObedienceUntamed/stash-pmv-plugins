@@ -4,6 +4,41 @@
 
 export const CHANGES = [
   {
+    v: "3.94.1",
+    date: "2026-10-14",
+    items: [
+      ["ui", "Scene cards now look like the cards of classic Stash: studio logo on the picture (top right), rating (bottom left), resolution and length (bottom right); below it the title, the date, a piece of the details and a row of small icon buttons with numbers – performers, tags, galleries (the mouse resting on one, or a click, opens the list) – plus plays, O counter and “organized”. Thanks to finn.", "场景卡片现在与经典 Stash 的卡片一致：图片上有工作室徽标（右上）、评分（左下）、分辨率和时长（右下）；下方是标题、日期、详情摘要，以及一排带数字的小图标按钮——演员、标签、图库（鼠标停留或点击即可打开列表）——还有播放次数、O 计数和“已整理”。感谢 finn。"],
+    ],
+  },
+  {
+    v: "3.94.0",
+    date: "2026-10-14",
+    items: [
+      ["ui", "Scenes can be shown as cards: next to the sound button there is a Tiles / Cards switch. A card has the picture (hover preview as before) with the title, studio, date, performers, tags, rating and file facts below it. The size slider sets the card width. Thanks to finn.", "场景可以显示为卡片：声音按钮旁新增“平铺/卡片”切换。卡片在图片（悬停预览同前）下方显示标题、工作室、日期、演员、标签、评分和文件信息。大小滑块调整卡片宽度。感谢 finn。"],
+      ["ui", "Tags can be shown as cards (List / Cards switch on the Tags page): the tag's picture or its initial, name and counts – and when the mouse rests on a card, a random marker of that tag plays over it. Thanks to redignium.", "标签可以显示为卡片（标签页上的“列表/卡片”切换）：显示标签的图片或首字母、名称和数量——鼠标停在卡片上时，会播放该标签的一个随机标记。感谢 redignium。"],
+      ["ui", "Tasks → Identify: bulk identify of your scenes by their fingerprints in your StashDB-style boxes and scrapers – choose the sources (tried from the top), what to fill in, keep or overwrite existing values, create missing performers/studios/tags, skip unclear matches, optionally only some folders. Needs the sources set up in classic Stash; only tested against the demo server here, not a real Stash. Thanks to finn.", "任务 → 识别：通过指纹在 StashDB 类站点和抓取器中批量识别场景——可选择来源（从上往下尝试）、要填写的内容、保留或覆盖已有值、创建缺失的演员/工作室/标签、跳过不确定的匹配，也可只处理部分文件夹。需要先在经典 Stash 中设置好来源；这里只在演示服务器上测试过，未在真实 Stash 上测试。感谢 finn。"],
+    ],
+  },
+  {
+    v: "3.93.0",
+    date: "2026-10-14",
+    items: [
+      ["ui", "Clip cutter: after saving, the clips now really get the original's performers, tags and studio (and the tag “Clip”). Before, the step was skipped quietly when Stash hadn't finished adding the new file – now it waits up to a minute for each clip and says so if a clip never showed up. Also fixes the Python “invalid escape sequence” warning in Stash's log. Thanks to tvzndro.", "剪辑裁切：保存后，剪辑现在确实会带上原视频的演员、标签和工作室（以及标签“Clip”）。此前如果 Stash 还没添加新文件，这一步会被悄悄跳过——现在每个剪辑最多等待一分钟，若仍未出现会明确提示。同时修复了 Stash 日志里 Python 的“无效转义序列”警告。感谢 tvzndro。"],
+      ["ui", "Duplicates: tick the copies you want to get rid of (checkbox on each one, or “Select all but the best” for every group at once) and delete them with a single question – no more three clicks per scene. Thanks to tvzndro.", "重复项：勾选要删除的副本（每个副本上有复选框，或用“选择除最佳外的全部”一次选中所有组），只需确认一次即可删除——不必再为每个场景点三次。感谢 tvzndro。"],
+      ["ui", "Sort order as the default: a “Make default” button next to the sort control of Scenes, Images, Galleries, Performers, Studios, Groups and Tags (and the list pages of a tag, performer or studio) – the page then opens with that sort every time (kept in this browser). Click again to remove it. Thanks to redignium.", "默认排序：场景、图片、图库、演员、工作室、群组和标签（以及标签、演员、工作室的列表页）的排序控件旁新增“设为默认”按钮——之后每次打开该页面都使用该排序（保存在此浏览器中）。再次点击可取消。感谢 redignium。"],
+      ["ui", "Scene cards can show the resolution (1080p, 720p …) next to the length: Settings → This interface → “Resolution on scene cards”. Thanks to redignium.", "场景卡片可以在时长旁显示分辨率（1080p、720p……）：设置 → 此界面 →“场景卡片上显示分辨率”。感谢 redignium。"],
+      ["ui", "The scene's info panel now shows the studio (logo and name, a link to the studio page). Thanks to finn.", "场景信息面板现在会显示工作室（徽标和名称，可链接到工作室页面）。感谢 finn。"],
+      ["ui", "Parts of a scene with a start and an end are drawn as coloured bars on the timeline – every main tag has its own colour (pins and rows in the list share it), and neighbouring parts alternate in shade so you can see where one ends and the next begins. In the marker list, hovering a marker shows its preview picture next to it. Thanks to redignium.", "带开始和结束的场景片段在时间轴上以彩色条显示——每个主标签有自己的颜色（图钉和列表中的行使用同一种颜色），相邻片段交替深浅，便于看出一个在哪里结束、下一个从哪里开始。在标记列表中悬停某个标记时，会在旁边显示其预览图。感谢 redignium。"],
+    ],
+  },
+  {
+    v: "3.92.2",
+    date: "2026-10-14",
+    items: [
+      ["ui", "Translations: the bubble that pops up in the corner when you switch the end-of-video mode (In order / Random order / Repeat …) is now translated, and so are the default criteria and groups of the detailed rating (Production Quality, Chemistry … Face, Body, Technique …) in the rating window, the scene and performer chips, the filter and the sort list. Names you typed yourself stay as they are. Thanks to ufousox007 for spotting it.", "翻译：切换视频结束方式（顺序播放/随机播放/循环…）时角落弹出的气泡现已翻译；详细评分的默认评分项和分组（制作质量、化学反应……脸蛋、身材、技巧等）在评分窗口、场景和演员标签、筛选及排序列表中也已翻译。您自己输入的名称保持不变。感谢 ufousox007 的发现。"],
+    ],
+  },
+  {
     v: "3.92.1",
     date: "2026-10-12",
     items: [

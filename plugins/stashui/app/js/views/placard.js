@@ -61,6 +61,7 @@ export function placardHtml(kind, x) {
     <div class="kb-plc">
       <p class="kb-plc-inv">${t({ scene: "Scene", image: "Image", gallery: "Gallery" }[kind])} #${x.id}${x.date ? `${t(", ")}${fmtDate(x.date)}` : ""}</p>
       <h2 class="kb-plc-title">${tierBadge(tierNow(kind, x.id))}${esc(title)}</h2>
+      ${x.studio ? `<div class="kb-plc-perfs kb-plc-studiorow"><a class="kb-plc-perf kb-plc-studio" href="#/studio/${x.studio.id}" title="${esc(t("Studio"))}">${x.studio.image_path && !/default=true/.test(x.studio.image_path) ? `<img alt="" loading="lazy" src="${esc(x.studio.image_path)}">` : icon("film")}<span>${esc(x.studio.name)}</span></a></div>` : ""}
       ${info.lines.filter(Boolean).map((l) => `<p class="kb-plc-meta">${esc(l)}</p>`).join("")}
       <div class="kb-plc-acts">
         <div data-rate>${starsHtml(x.rating100, true)}</div>
@@ -68,7 +69,7 @@ export function placardHtml(kind, x) {
         ${kind === "scene" ? `<button class="kb-plc-btn" data-advrate title="${t("Rate by several criteria – Stash's rating follows")}">★+ ${t("Detailed")}</button>` : ""}
         <button class="kb-plc-btn" data-o title="${t("O counter (O), right-click subtracts one")}">${icon("drop")}<span data-ocount>${x.o_counter || 0}</span></button>
       </div>
-      ${kind === "scene" && critOf("scene", x) ? `<div class="kb-critlist" title="${t("Detailed rating")}">${critOf("scene", x).map((c) => `<span class="kb-critchip"><b>${esc(c.name)}</b><i style="--v:${c.score * 20}%"></i><em>${c.score}</em></span>`).join("")}</div>` : ""}
+      ${kind === "scene" && critOf("scene", x) ? `<div class="kb-critlist" title="${t("Detailed rating")}">${critOf("scene", x).map((c) => `<span class="kb-critchip"><b>${esc(t(c.name))}</b><i style="--v:${c.score * 20}%"></i><em>${c.score}</em></span>`).join("")}</div>` : ""}
       ${kind === "scene" ? `<p class="kb-plc-meta">${x.play_count ? t("Watched {what}, last {when}", { what: plural(x.play_count, "time", "times"), when: fmtAgo(x.last_played_at) }) : t("Never watched to the end")}</p>` : ""}
       ${
         kind !== "gallery"

@@ -725,10 +725,16 @@ html.kb-glass .kb-pmvg-fromvid { border-color: var(--glass-edge); background: va
 /* Own markers: pins on the timeline (always shown), a list in the info bar */
 .kb-tl-mks { position: absolute; inset: 0; pointer-events: none; }
 .kb-tl-mk { position: absolute; bottom: 100%; width: 12px; height: 16px; margin-left: -6px; padding: 0; border: 0; background: none; pointer-events: auto; cursor: pointer; }
-.kb-tl-mk::before { content: ""; position: absolute; left: 5px; bottom: 0; width: 2px; height: 10px; background: #ffd23f; }
-.kb-tl-mk::after { content: ""; position: absolute; left: 1px; top: 0; width: 10px; height: 8px; border-radius: 50% 50% 50% 0; background: #ffd23f; box-shadow: 0 0 6px rgba(0, 0, 0, .6); transform: rotate(-45deg); }
+.kb-tl-mk::before { content: ""; position: absolute; left: 5px; bottom: 0; width: 2px; height: 10px; background: var(--mk, #ffd23f); }
+.kb-tl-mk::after { content: ""; position: absolute; left: 1px; top: 0; width: 10px; height: 8px; border-radius: 50% 50% 50% 0; background: var(--mk, #ffd23f); box-shadow: 0 0 6px rgba(0, 0, 0, .6); transform: rotate(-45deg); }
 .kb-tl-mk:hover::after { background: #fff; }
-.kb-mkrow { display: flex; align-items: center; gap: 2px; }
+/* a part with a start and an end: a bar in its tag's colour over the timeline; rows carry the same colour */
+.kb-tl-range { position: absolute; bottom: 0; height: 100%; min-width: 3px; border-radius: 2px; background: var(--mk); opacity: .85; box-shadow: 0 0 0 1px rgba(0, 0, 0, .35); pointer-events: none; }
+.kb-tl-range.is-alt { filter: brightness(.72); } /* (neighbouring parts alternate, so one ends and the next begins visibly) */
+.kb-mkrow { display: flex; align-items: center; gap: 2px; border-left: 3px solid var(--mk, transparent); border-radius: 3px; }
+.kb-mkpop { position: fixed; z-index: 80; width: 240px; overflow: hidden; border: 2px solid var(--pink); border-radius: 8px; background: #000; box-shadow: 0 14px 40px rgba(0, 0, 0, .6); pointer-events: none; }
+.kb-mkpop img { display: block; width: 100%; height: auto; }
+@media (hover: none) { .kb-mkpop { display: none; } }
 .kb-mkgo { flex: 1; display: flex; align-items: baseline; gap: 10px; min-width: 0; padding: 7px 8px; border: 0; border-radius: var(--r); color: var(--text); text-align: left; background: none; cursor: pointer; }
 .kb-mkgo:hover { background: var(--bg-3); }
 .kb-mkgo b { flex: none; color: #ffd23f; font: 700 13px/1 var(--f-label); font-variant-numeric: tabular-nums; }
