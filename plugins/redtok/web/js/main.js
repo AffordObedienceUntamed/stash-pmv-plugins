@@ -250,9 +250,11 @@ $("#unclear").addEventListener("click", () => setClear(false));
 
 // ---------- keys ----------
 addEventListener("keydown", (e) => {
-  if (e.target.closest && e.target.closest("input, textarea, select, [contenteditable]")) { if (e.key === "Escape") e.target.blur(); return; }
+  // Only fields you type into keep the keys (a volume slider or a switch that was clicked last must not swallow ↑ ↓ and the space bar)
+  if (e.target.closest && e.target.closest("input:not([type=range]):not([type=checkbox]):not([type=radio]):not([type=button]), textarea, select, [contenteditable]")) { if (e.key === "Escape") e.target.blur(); return; }
   if (e.ctrlKey || e.metaKey || e.altKey) return;
   const k = e.key;
+  if ((k === " " || k.startsWith("Arrow") || k === "PageDown" || k === "PageUp") && e.target.blur && e.target !== document.body && !(topLayer() && topLayer().kind === "modal")) e.target.blur(); // (a focused slider or button would also act on the key)
   if (k === "Escape") { if (layerCount()) closeTop(); else if (document.body.classList.contains("is-clear")) setClear(false); return; }
   const top = topLayer();
   if (top && top.kind === "modal") return;
@@ -263,7 +265,7 @@ addEventListener("keydown", (e) => {
   const n = F.node();
   if (k === "ArrowDown" || k === "j" || k === "PageDown") { e.preventDefault(); F.go(1); }
   else if (k === "ArrowUp" || k === "k" || k === "PageUp") { e.preventDefault(); F.go(-1); }
-  else if (k === " ") { e.preventDefault(); F.togglePlay(); }
+  else if (k === " ") { e.preventDefault(); if (settings.space === "next") F.go(e.shiftKey ? -1 : 1); else F.togglePlay(); }
   else if (k === "m") setMuted(!muted);
   else if (k === "l") F.like();
   else if (k === "s" || k === "d") F.save();

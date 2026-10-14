@@ -300,4 +300,7 @@ export default {
   "Enlarge wide videos": "放大宽屏视频",
   "On a PC: a wide video (16:9 …) grows to its own shape when you scroll to it. Off: every video keeps the tall frame.": "在电脑上：滚动到宽屏视频（16:9 等）时，画面会放大为它自己的形状。关闭：所有视频保持竖向画框。",
   "Your browser can't go fullscreen here.": "你的浏览器无法在此处全屏。",
+  "Space bar": "空格键",
+  "The arrow keys ↑ ↓ always go to the previous / next video.": "方向键 ↑ ↓ 始终切换到上一个/下一个视频。",
+  "Next video (Shift: previous)": "下一个视频（Shift：上一个）",
 };

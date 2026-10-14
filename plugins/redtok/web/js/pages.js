@@ -697,6 +697,7 @@ export function openSettings(focus) {
     p.body.innerHTML = `<div class="wrap sets">
     <h3 class="sh">${esc(t("Playback"))}</h3>
     ${sw("sound", t("Sound on"), t("Videos start with sound (your browser may want one tap first)."))}
+    ${sel("space", t("Space bar"), t("The arrow keys ↑ ↓ always go to the previous / next video."), [["pause", t("Pause")], ["next", t("Next video (Shift: previous)")]])}
     ${sw("autonext", t("Auto scroll"), t("Go to the next video when one ends. Off: videos loop."))}
     ${sw("skipSeen", t("Skip videos you've watched"), t("For You leaves out what you have already seen."))}
     ${sel("playq", t("Playback quality"), t("Auto plays the smaller file on phones – it starts much faster."), [["auto", t("Auto")], ["sd", t("Always SD")], ["hd", t("Always HD")]])}
@@ -775,7 +776,7 @@ export function openSettings(focus) {
   const off = on("hidden", paint);
   p.cleanup(off);
 }
-export const KEYS = () => [["↑ ↓ / J K", t("Previous / next video")], [t("Space"), t("Pause")], ["M", t("Sound")], ["L", t("Like")], ["S", t("Save")], ["← →", t("Back / forward 5 s")], ["F", t("Follow")], ["P", t("Profile")], ["C", t("Clear display")], ["Z", t("Fullscreen")], ["/", t("Search")], ["?", t("Shortcuts")]];
+export const KEYS = () => [["↑ ↓ / J K", t("Previous / next video")], [t("Space"), settings.space === "next" ? t("Next video") : t("Pause")], ["M", t("Sound")], ["L", t("Like")], ["S", t("Save")], ["← →", t("Back / forward 5 s")], ["F", t("Follow")], ["P", t("Profile")], ["C", t("Clear display")], ["Z", t("Fullscreen")], ["/", t("Search")], ["?", t("Shortcuts")]];
 export function openKeys() {
   modal(`<h3>${esc(t("Keyboard shortcuts"))}</h3><div class="keys">${KEYS().map(([k, v]) => `<span><kbd>${esc(k)}</kbd>${esc(v)}</span>`).join("")}</div><div class="row"><button class="btn" data-close>${esc(t("Close"))}</button></div>`);
 }

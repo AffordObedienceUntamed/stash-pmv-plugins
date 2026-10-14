@@ -299,4 +299,7 @@ export default {
   "Enlarge wide videos": "横長動画を拡大",
   "On a PC: a wide video (16:9 …) grows to its own shape when you scroll to it. Off: every video keeps the tall frame.": "PC では、横長の動画（16:9 など）までスクロールすると、その動画本来の形に広がります。オフにすると、すべて縦長の枠のままです。",
   "Your browser can't go fullscreen here.": "このブラウザではここで全画面にできません。",
+  "Space bar": "スペースキー",
+  "The arrow keys ↑ ↓ always go to the previous / next video.": "矢印キー ↑ ↓ は常に前／次の動画に移動します。",
+  "Next video (Shift: previous)": "次の動画（Shift：前の動画）",
 };

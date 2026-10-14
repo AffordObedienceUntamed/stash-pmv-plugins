@@ -295,4 +295,7 @@ export default {
   "Enlarge wide videos": "Ampliar los vídeos anchos",
   "On a PC: a wide video (16:9 …) grows to its own shape when you scroll to it. Off: every video keeps the tall frame.": "En PC: un vídeo ancho (16:9 …) crece a su propia forma al llegar a él. Desactivado: todos los vídeos conservan el marco vertical.",
   "Your browser can't go fullscreen here.": "Tu navegador no puede pasar a pantalla completa aquí.",
+  "Space bar": "Barra espaciadora",
+  "The arrow keys ↑ ↓ always go to the previous / next video.": "Las flechas ↑ ↓ siempre van al vídeo anterior / siguiente.",
+  "Next video (Shift: previous)": "Siguiente vídeo (Mayús: anterior)",
 };

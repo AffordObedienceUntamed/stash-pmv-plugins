@@ -41,3 +41,5 @@ Open it from Stash UI's menu (it shows up there by itself) or with the **RedTok*
 **Smooth scrolling:** the soft glow behind the video (Settings → *Glow behind the video*) can be switched off if scrolling ever feels slow; the next videos are warmed up only after a swipe has come to rest.
 
 **On a PC:** a wide video (16:9 …) grows to its own shape, with an animation, when you scroll to it (Settings → *Enlarge wide videos*), and a **fullscreen** button (top right of the video, or key **Z**) hides the menu and gives the video all the room.
+
+**Keys:** ↑ ↓ (or J K) always go to the previous / next video – also when a slider or button was clicked last. Settings → *Space bar* decides whether the space bar pauses (default) or goes to the next video (Shift + space: previous).
