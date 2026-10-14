@@ -2246,4 +2246,5 @@ export default {
   "Choose what to fill in.": "请选择要填写的内容。",
   "Identify scenes?": "识别场景？",
   "Scenes that are found get new details from the sources. This can't be undone – back up first if unsure.": "找到的场景会从来源获得新的详情。此操作无法撤销——不确定时请先备份。",
+  "Open on {name}": "在 {name} 上打开",
 };

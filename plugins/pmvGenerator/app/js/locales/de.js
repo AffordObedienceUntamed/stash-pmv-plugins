@@ -2142,4 +2142,5 @@ export default {
   "Choose what to fill in.": "Wähle, was ausgefüllt werden soll.",
   "Identify scenes?": "Szenen identifizieren?",
   "Scenes that are found get new details from the sources. This can't be undone – back up first if unsure.": "Gefundene Szenen erhalten neue Details aus den Quellen. Das lässt sich nicht rückgängig machen – im Zweifel vorher sichern.",
+  "Open on {name}": "Auf {name} öffnen",
 };

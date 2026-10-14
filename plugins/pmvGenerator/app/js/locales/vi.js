@@ -2182,4 +2182,5 @@ export default {
   "Choose what to fill in.": "Hãy chọn nội dung cần điền.",
   "Identify scenes?": "Nhận dạng các cảnh?",
   "Scenes that are found get new details from the sources. This can't be undone – back up first if unsure.": "Cảnh tìm thấy sẽ nhận chi tiết mới từ các nguồn. Không thể hoàn tác – hãy sao lưu trước nếu chưa chắc.",
+  "Open on {name}": "Mở trên {name}",
 };

@@ -2224,4 +2224,5 @@ export default {
   "Choose what to fill in.": "Выберите, что заполнять.",
   "Identify scenes?": "Определить сцены?",
   "Scenes that are found get new details from the sources. This can't be undone – back up first if unsure.": "Найденные сцены получат новые сведения из источников. Это нельзя отменить – при сомнениях сначала сделайте резервную копию.",
+  "Open on {name}": "Открыть на {name}",
 };

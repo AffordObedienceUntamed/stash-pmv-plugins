@@ -2189,4 +2189,5 @@ export default {
   "Choose what to fill in.": "入力する項目を選んでください。",
   "Identify scenes?": "シーンを識別しますか？",
   "Scenes that are found get new details from the sources. This can't be undone – back up first if unsure.": "見つかったシーンはソースから新しい詳細を取得します。元に戻せません。不安な場合は先にバックアップしてください。",
+  "Open on {name}": "{name} で開く",
 };
