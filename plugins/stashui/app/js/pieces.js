@@ -1,6 +1,6 @@
 // Common model for scenes, images and galleries ("pieces") and the salon hanging.
 
-import { esc, icon, fmtDuration, fmtRes, fmtDate, fmtBytes, invNo, plural, store, menu, errorToast, inlineSvg } from "./ui.js";
+import { esc, icon, fmtDuration, fmtRes, fmtDate, fmtBytes, invNo, plural, store, menu, errorToast, inlineSvg, starsHtml } from "./ui.js";
 import { t } from "./i18n.js";
 import { tierNow } from "./tiers.js";
 import { tierBadge } from "./versusx.js";
@@ -109,6 +109,23 @@ function pieceHtml(p) {
   );
 }
 
+// The details under a scene's picture in the card view: title, studio · date, performers, tags, rating and file facts
+function cardBody(p) {
+  const x = p.raw || {};
+  const f = (x.files || [])[0] || {};
+  const perfs = x.performers || [];
+  const tags = x.tags || [];
+  const more = (n, all) => (all > n ? `<span class="kb-scard-more">+${all - n}</span>` : "");
+  const facts = [fmtRes(f.width, f.height), f.size ? fmtBytes(f.size) : "", x.play_count ? plural(x.play_count, "play", "plays") : ""].filter(Boolean);
+  return (
+    `<a class="kb-scard-title" href="#/scene/${p.id}" title="${esc(p.title)}">${esc(p.title)}</a>` +
+    (x.studio || x.date ? `<div class="kb-scard-sub">${x.studio ? `<a href="#/studio/${x.studio.id}">${esc(x.studio.name)}</a>` : ""}${x.studio && x.date ? " · " : ""}${x.date ? esc(fmtDate(x.date)) : ""}</div>` : "") +
+    (perfs.length ? `<div class="kb-scard-perfs">${perfs.slice(0, 4).map((q) => `<a href="#/performer/${q.id}">${esc(q.name)}</a>`).join("")}${more(4, perfs.length)}</div>` : "") +
+    (tags.length ? `<div class="kb-scard-tags">${tags.slice(0, 6).map((q) => `<a class="kb-chip" href="#/tag/${q.id}">${esc(q.name)}</a>`).join("")}${more(6, tags.length)}</div>` : "") +
+    `<div class="kb-scard-foot">${x.rating100 ? starsHtml(x.rating100) : ""}<small>${esc(facts.join(" · "))}</small></div>`
+  );
+}
+
 // ---------- Salon hanging ----------
 // Justified rows, loads more while scrolling, preview video on hover, multi-select.
 
@@ -121,6 +138,7 @@ export class Hang {
     this.cleanups = []; // (of the extensions' cards: key → function)
     this.cleanupBy = new Map();
     this.nodes = new Map();
+    this.cardNodes = new Map(); // (card view: the wrapper with the details under a picture)
     this.page = 0;
     this.count = null;
     this.done = false;
@@ -265,6 +283,36 @@ export class Hang {
     }
     // (an anchor that is gone, or a page without items: at the end)
     this.extras.forEach((x) => placed.has(x) || seq.push(x.piece));
+    // Card view (scenes): a grid of cards, the picture with its details below – instead of the justified rows
+    const cards = !!(this.opts.cards && this.opts.cards());
+    this.rowsEl.classList.toggle("is-cards", cards);
+    if (cards) {
+      this.rowsEl.style.setProperty("--cardw", Math.round(H * 1.4) + "px");
+      const grid = document.createDocumentFragment();
+      for (const p of seq) {
+        const key = keyOf(p);
+        const n = this.node(p);
+        n.style.width = n.style.height = "";
+        let c = this.cardNodes.get(key);
+        if (!c) {
+          c = document.createElement("div");
+          if (p.kind === "scene" && !p.foreign) {
+            c.className = "kb-scard";
+            const body = document.createElement("div");
+            body.className = "kb-scard-body";
+            body.innerHTML = cardBody(p);
+            c.append(n, body);
+          } else {
+            c.className = "kb-scard is-plain"; // (images, galleries, an extension's card: only the picture)
+            c.append(n);
+          }
+          this.cardNodes.set(key, c);
+        } else if (c.firstElementChild !== n) c.prepend(n);
+        grid.appendChild(c);
+      }
+      this.rowsEl.replaceChildren(grid);
+      return;
+    }
     for (const p of seq) {
       const ar = cardAspect() || Math.min(3, Math.max(0.42, p.w / p.h || 1)); // (posters / scenes: every thumbnail the same shape)
       row.push([p, ar]);
@@ -298,12 +346,14 @@ export class Hang {
     if (i < 0) return;
     this.pieces[i] = p;
     this.nodes.delete(key);
+    this.cardNodes.delete(key);
     this.layout();
   }
   remove(keys) {
     this.pieces = this.pieces.filter((p) => !keys.includes(p.kind + ":" + p.id));
     keys.forEach((k) => {
       this.nodes.delete(k);
+      this.cardNodes.delete(k);
       this.selected.delete(k);
     });
     if (this.count != null) this.count -= keys.length;

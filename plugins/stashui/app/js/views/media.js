@@ -94,6 +94,7 @@ export function mediaBrowser(host, opts) {
         <button class="kb-btn" data-filter>${icon("filter")}<span>${t("Filter")}</span></button>
         <span class="kb-xtool" data-xtool></span>
         <span class="kb-spacer"></span>
+        ${kinds.includes("scene") ? `<span class="kb-seg" data-viewseg hidden title="${esc(t("How scenes are shown"))}"><button type="button" data-view="tiles">${t("Tiles")}</button><button type="button" data-view="cards">${t("Cards")}</button></span>` : ""}
         ${kinds.includes("scene") ? `<button type="button" class="kb-btn is-ghost" data-mute title="${t("Sound in hover previews")}"></button>` : ""}
         <label class="kb-range" title="${t("Thumbnail size")}">${icon("image")}<input type="range" min="130" max="480" step="10" data-rowh value="${rowH()}" aria-label="${t("Size")}"></label>
         ${opts.playlist ? `<select class="kb-field kb-plpick" data-plpick hidden title="${t("Your saved filters – the playlists made from this list")}" aria-label="${t("Saved filters")}"></select>` : ""}
@@ -141,6 +142,14 @@ export function mediaBrowser(host, opts) {
   });
 
   // Sound in the hover previews: the same switch as on the home page and in Settings → Player and previews
+  // Tiles (justified rows) or cards (picture with details) for scenes – kept in this browser
+  const cardsOn = () => kind === "scene" && !!store.get("sceneCards", false);
+  const paintView = () => {
+    const seg = $("[data-viewseg]");
+    if (!seg) return;
+    seg.hidden = kind !== "scene";
+    seg.querySelectorAll("[data-view]").forEach((b) => b.classList.toggle("is-on", (b.dataset.view === "cards") === !!store.get("sceneCards", false)));
+  };
   const paintMute = () => {
     const b = $("[data-mute]");
     if (!b) return;
@@ -179,6 +188,7 @@ export function mediaBrowser(host, opts) {
     $("[data-filter]").classList.toggle("is-on", filterOpen);
     $("[data-play]").hidden = kind === "gallery";
     paintMute();
+    paintView();
     if ($("[data-plsave]")) $("[data-plsave]").hidden = kind === "gallery";
     renderFilters();
   }
@@ -386,6 +396,7 @@ export function mediaBrowser(host, opts) {
     };
     hang = new Hang(box, {
       rowHeight: rowH(),
+      cards: cardsOn,
       fetchPage: async (page) => {
         await ensureTiers(); // (the badge on the cards, and the tier filter)
         const ids = await restrictIds(kind, st); // tier and detailed-rating filters (and "sorted by a criterion": those that have it)
@@ -573,6 +584,12 @@ export function mediaBrowser(host, opts) {
       renderTools();
       pushSlots();
       return apply();
+    }
+    const vw = e.target.closest("[data-view]");
+    if (vw) {
+      store.set("sceneCards", vw.dataset.view === "cards");
+      paintView();
+      return hang && hang.layout();
     }
     if (e.target.closest("[data-mute]")) {
       store.set("previewSound", !store.get("previewSound", true));

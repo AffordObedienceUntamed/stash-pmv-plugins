@@ -4,6 +4,15 @@
 
 export const CHANGES = [
   {
+    v: "3.94.0",
+    date: "2026-10-14",
+    items: [
+      ["ui", "Scenes can be shown as cards: next to the sound button there is a Tiles / Cards switch. A card has the picture (hover preview as before) with the title, studio, date, performers, tags, rating and file facts below it. The size slider sets the card width. Thanks to finn.", "场景可以显示为卡片：声音按钮旁新增“平铺/卡片”切换。卡片在图片（悬停预览同前）下方显示标题、工作室、日期、演员、标签、评分和文件信息。大小滑块调整卡片宽度。感谢 finn。"],
+      ["ui", "Tags can be shown as cards (List / Cards switch on the Tags page): the tag's picture or its initial, name and counts – and when the mouse rests on a card, a random marker of that tag plays over it. Thanks to redignium.", "标签可以显示为卡片（标签页上的“列表/卡片”切换）：显示标签的图片或首字母、名称和数量——鼠标停在卡片上时，会播放该标签的一个随机标记。感谢 redignium。"],
+      ["ui", "Tasks → Identify: bulk identify of your scenes by their fingerprints in your StashDB-style boxes and scrapers – choose the sources (tried from the top), what to fill in, keep or overwrite existing values, create missing performers/studios/tags, skip unclear matches, optionally only some folders. Needs the sources set up in classic Stash; only tested against the demo server here, not a real Stash. Thanks to finn.", "任务 → 识别：通过指纹在 StashDB 类站点和抓取器中批量识别场景——可选择来源（从上往下尝试）、要填写的内容、保留或覆盖已有值、创建缺失的演员/工作室/标签、跳过不确定的匹配，也可只处理部分文件夹。需要先在经典 Stash 中设置好来源；这里只在演示服务器上测试过，未在真实 Stash 上测试。感谢 finn。"],
+    ],
+  },
+  {
     v: "3.93.0",
     date: "2026-10-14",
     items: [
