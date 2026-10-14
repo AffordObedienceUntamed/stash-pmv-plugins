@@ -178,9 +178,15 @@ export function createFeed(host, S, opts = {}) {
     if (F.active) {
       ensure(n);
       play(n);
-      // the next two are warmed up (one only when the phone asks to save data)
-      prime(F.nodes[i + 1]);
-      if (!(navigator.connection && navigator.connection.saveData)) setTimeout(() => F.active && F.cur === i && prime(F.nodes[i + 2]), 300);
+      // The next two are warmed up (one only when the phone asks to save data) – but only once the swipe has come to
+      // rest: starting two more decoders while the page is still scrolling made the scrolling stutter on a PC
+      clearTimeout(F.settleT);
+      clearTimeout(F.settleT2);
+      F.settleT = setTimeout(() => {
+        if (!F.active || F.cur !== i) return;
+        prime(F.nodes[i + 1]);
+        if (!(navigator.connection && navigator.connection.saveData)) F.settleT2 = setTimeout(() => F.active && F.cur === i && prime(F.nodes[i + 2]), 300);
+      }, 380);
       clearTimeout(F.wt);
       F.wt = setTimeout(() => F.nodes[F.cur] === n && F.active && markWatched(n.g), 2500);
       emit("current", { F, g: n.g, i });

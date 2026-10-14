@@ -702,6 +702,7 @@ export function openSettings(focus) {
     ${sel("playq", t("Playback quality"), t("Auto plays the smaller file on phones – it starts much faster."), [["auto", t("Auto")], ["sd", t("Always SD")], ["hd", t("Always HD")]])}
     ${sel("fit", t("Picture"), t("Auto fills the screen with tall videos and shows wide ones whole."), [["auto", t("Auto")], ["fill", t("Fill the screen")], ["fit", t("Always whole")]])}
     ${sel("speed", t("Speed"), "", SPEEDS.map((x) => [x, x + "×"]))}
+    ${sw("glow", t("Glow behind the video"), t("A soft coloured glow from the video's picture behind the page. Switch it off if scrolling feels slow."))}
     <h3 class="sh">${esc(t("Downloads"))}</h3>
     <div class="set is-col" data-focus="base"><span class="st"><b>${esc(t("Download folder"))}</b><small>${esc(t("Videos go into a folder per creator in here. Put it inside your Stash library, then Stash finds them."))}</small></span>
       <span class="setrow"><input type="text" data-k="base" value="${esc(settings.base)}" placeholder="${esc(t("e.g. D:\\Videos\\RedGifs"))}" spellcheck="false"><button class="btn" data-detect>${esc(t("Suggest"))}</button></span></div>

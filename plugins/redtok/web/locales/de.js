@@ -283,4 +283,6 @@ export default {
   "{n} video left out": "{n} Video ausgelassen",
   "{n} videos left out": "{n} Videos ausgelassen",
   "Most videos": "Meiste Videos",
+  "Glow behind the video": "Schein hinter dem Video",
+  "A soft coloured glow from the video's picture behind the page. Switch it off if scrolling feels slow.": "Ein weicher farbiger Schein aus dem Bild des Videos hinter der Seite. Ausschalten, wenn das Scrollen zäh wirkt.",
 };

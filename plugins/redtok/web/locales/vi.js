@@ -292,4 +292,6 @@ export default {
   "{n} video left out": "Đã bỏ qua {n} video",
   "{n} videos left out": "Đã bỏ qua {n} video",
   "Most videos": "Nhiều video nhất",
+  "Glow behind the video": "Quầng sáng sau video",
+  "A soft coloured glow from the video's picture behind the page. Switch it off if scrolling feels slow.": "Quầng sáng màu dịu lấy từ hình của video, nằm sau trang. Hãy tắt nếu cuộn thấy chậm.",
 };

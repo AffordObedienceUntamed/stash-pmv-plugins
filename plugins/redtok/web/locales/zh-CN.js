@@ -294,4 +294,6 @@ export default {
   "{n} videos left out": "已排除 {n} 个视频",
   "Most videos": "视频最多",
   "A–Z": "A–Z",
+  "Glow behind the video": "视频背后的光晕",
+  "A soft coloured glow from the video's picture behind the page. Switch it off if scrolling feels slow.": "页面背后来自视频画面的柔和彩色光晕。如果滚动感觉卡顿，请关闭。",
 };

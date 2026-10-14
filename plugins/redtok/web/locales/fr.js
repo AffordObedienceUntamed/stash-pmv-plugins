@@ -287,4 +287,6 @@ export default {
   "{n} video left out": "{n} vidéo écartée",
   "{n} videos left out": "{n} vidéos écartées",
   "Most videos": "Plus de vidéos",
+  "Glow behind the video": "Halo derrière la vidéo",
+  "A soft coloured glow from the video's picture behind the page. Switch it off if scrolling feels slow.": "Un halo de couleur doux tiré de l'image de la vidéo, derrière la page. Désactivez-le si le défilement est lent.",
 };

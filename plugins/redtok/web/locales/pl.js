@@ -296,4 +296,6 @@ export default {
   "{n} videos saved#few": "Zapisano {n} filmy",
   "{n} of the newest are already saved#few": "{n} z najnowszych są już zapisane",
   "{n} videos left out#few": "Pominięto {n} filmy",
+  "Glow behind the video": "Poświata za filmem",
+  "A soft coloured glow from the video's picture behind the page. Switch it off if scrolling feels slow.": "Delikatna kolorowa poświata z obrazu filmu za stroną. Wyłącz, jeśli przewijanie działa wolno.",
 };

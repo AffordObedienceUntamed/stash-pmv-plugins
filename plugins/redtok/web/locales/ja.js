@@ -293,4 +293,6 @@ export default {
   "{n} video left out": "{n} 本を除外",
   "{n} videos left out": "{n} 本を除外",
   "Most videos": "動画が多い順",
+  "Glow behind the video": "動画の背後のグロー",
+  "A soft coloured glow from the video's picture behind the page. Switch it off if scrolling feels slow.": "動画の画像から作られる、ページ背景のやわらかな色の光です。スクロールが重いときはオフにしてください。",
 };

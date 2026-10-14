@@ -213,10 +213,16 @@ on("current", ({ F, g }) => {
   paintUpDown();
   if (F !== activeFeed()) return;
   const a = $("#ambient");
-  const set = (u) => { if (u && activeFeed() === F) { a.style.backgroundImage = `url("${u.replace(/"/g, "%22")}")`; a.classList.add("on"); } };
+  if (!settings.glow) return a.classList.remove("on");
+  // The glow is a big blurred picture: a new one is made after the swipe has come to rest – blurring it in the middle of
+  // the scrolling animation made the scrolling stutter
+  const set = (u) => { if (u && activeFeed() === F && F.nodes[F.cur] && F.nodes[F.cur].g === g) { a.style.backgroundImage = `url("${u.replace(/"/g, "%22")}")`; a.classList.add("on"); } };
   if (!g.poster) return;
-  if (isRgPic(g.poster) && imgViaBackend) imgData(g.poster).then(set); else set(g.poster);
+  clearTimeout(glowT);
+  glowT = setTimeout(() => (isRgPic(g.poster) && imgViaBackend ? imgData(g.poster).then(set) : set(g.poster)), 450);
 });
+let glowT = 0;
+on("settings", () => { if (!settings.glow) $("#ambient").classList.remove("on"); });
 
 // ---------- clear display: only the video ----------
 function setClear(on) {

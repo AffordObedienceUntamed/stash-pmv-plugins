@@ -30,7 +30,7 @@ svg { width: 1em; height: 1em; fill: currentColor; flex: none; }
 img { -webkit-user-drag: none; }
 
 /* ---------- frame ---------- */
-#ambient { position: fixed; inset: -10%; z-index: 0; background: center / cover no-repeat; filter: blur(80px) brightness(.32) saturate(1.5); opacity: 0; transition: opacity .6s ease; pointer-events: none; }
+#ambient { position: fixed; inset: -5%; z-index: 0; background: center / cover no-repeat; filter: blur(40px) brightness(.32) saturate(1.5); opacity: 0; transition: opacity .6s ease; pointer-events: none; }
 #ambient.on { opacity: 1; }
 #main { position: fixed; top: 0; bottom: var(--nav); left: var(--side); right: 0; z-index: 1; }
 .view { position: absolute; inset: 0; }

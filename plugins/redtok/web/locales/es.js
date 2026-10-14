@@ -289,4 +289,6 @@ export default {
   "{n} video left out": "{n} vídeo excluido",
   "{n} videos left out": "{n} vídeos excluidos",
   "Most videos": "Más vídeos",
+  "Glow behind the video": "Resplandor tras el vídeo",
+  "A soft coloured glow from the video's picture behind the page. Switch it off if scrolling feels slow.": "Un suave resplandor de color tomado de la imagen del vídeo, detrás de la página. Desactívalo si el desplazamiento va lento.",
 };
