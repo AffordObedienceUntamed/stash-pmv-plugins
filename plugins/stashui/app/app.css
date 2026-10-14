@@ -1972,3 +1972,5 @@ html.kb-glass .kb-defsort.is-on { color: var(--pink); border-color: var(--pink);
 .kb-chk { display: inline-flex; align-items: center; gap: 7px; font: 600 13.5px/1.3 var(--f-label); cursor: pointer; }
 .kb-chk input { width: 16px; height: 16px; accent-color: var(--pink); }
 .kb-chk small { color: var(--text-2); font-weight: 500; }
+/* Duplicates: the bar with the selection rules and "Delete selected" */
+html.kb-glass .kb-dupe-bulk { border-color: var(--glass-edge); background: var(--glass-shine), var(--glass-deep); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); box-shadow: var(--glass-shadow); }
