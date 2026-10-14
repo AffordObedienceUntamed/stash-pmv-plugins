@@ -298,4 +298,8 @@ export default {
   "{n} videos left out#few": "Pominięto {n} filmy",
   "Glow behind the video": "Poświata za filmem",
   "A soft coloured glow from the video's picture behind the page. Switch it off if scrolling feels slow.": "Delikatna kolorowa poświata z obrazu filmu za stroną. Wyłącz, jeśli przewijanie działa wolno.",
+  "Fullscreen": "Pełny ekran",
+  "Enlarge wide videos": "Powiększaj szerokie filmy",
+  "On a PC: a wide video (16:9 …) grows to its own shape when you scroll to it. Off: every video keeps the tall frame.": "Na PC: szeroki film (16:9 …) powiększa się do własnego kształtu, gdy do niego przewiniesz. Wyłączone: każdy film zachowuje wysoką ramkę.",
+  "Your browser can't go fullscreen here.": "Twoja przeglądarka nie może tu przejść na pełny ekran.",
 };

@@ -296,4 +296,8 @@ export default {
   "A–Z": "A–Z",
   "Glow behind the video": "视频背后的光晕",
   "A soft coloured glow from the video's picture behind the page. Switch it off if scrolling feels slow.": "页面背后来自视频画面的柔和彩色光晕。如果滚动感觉卡顿，请关闭。",
+  "Fullscreen": "全屏",
+  "Enlarge wide videos": "放大宽屏视频",
+  "On a PC: a wide video (16:9 …) grows to its own shape when you scroll to it. Off: every video keeps the tall frame.": "在电脑上：滚动到宽屏视频（16:9 等）时，画面会放大为它自己的形状。关闭：所有视频保持竖向画框。",
+  "Your browser can't go fullscreen here.": "你的浏览器无法在此处全屏。",
 };

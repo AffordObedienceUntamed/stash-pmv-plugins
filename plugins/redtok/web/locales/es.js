@@ -291,4 +291,8 @@ export default {
   "Most videos": "Más vídeos",
   "Glow behind the video": "Resplandor tras el vídeo",
   "A soft coloured glow from the video's picture behind the page. Switch it off if scrolling feels slow.": "Un suave resplandor de color tomado de la imagen del vídeo, detrás de la página. Desactívalo si el desplazamiento va lento.",
+  "Fullscreen": "Pantalla completa",
+  "Enlarge wide videos": "Ampliar los vídeos anchos",
+  "On a PC: a wide video (16:9 …) grows to its own shape when you scroll to it. Off: every video keeps the tall frame.": "En PC: un vídeo ancho (16:9 …) crece a su propia forma al llegar a él. Desactivado: todos los vídeos conservan el marco vertical.",
+  "Your browser can't go fullscreen here.": "Tu navegador no puede pasar a pantalla completa aquí.",
 };

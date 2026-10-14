@@ -109,6 +109,20 @@ Object.assign(nav, {
   toast,
   emitSettings: () => emit("settings", {}),
   setClear,
+  toggleFull,
+});
+
+// ---------- fullscreen (the whole page: the menu steps aside, the video gets all the room) ----------
+function toggleFull() {
+  const el = document.documentElement;
+  if (document.fullscreenElement) return document.exitFullscreen();
+  if (!el.requestFullscreen) return toast(t("Your browser can't go fullscreen here."), true);
+  el.requestFullscreen().catch(() => toast(t("Your browser can't go fullscreen here."), true));
+}
+document.addEventListener("fullscreenchange", () => {
+  const on = !!document.fullscreenElement;
+  document.documentElement.classList.toggle("is-full", on);
+  document.querySelectorAll(".cbtn.fs").forEach((b) => (b.innerHTML = ic(on ? "fullexit" : "full")));
 });
 
 // ---------- top bar (phones: tabs; wide screens: only the sort button) ----------
@@ -256,6 +270,7 @@ addEventListener("keydown", (e) => {
   else if (k === "ArrowRight") { e.preventDefault(); F.seek(5); }
   else if (k === "ArrowLeft") { e.preventDefault(); F.seek(-5); }
   else if (k === "c") setClear(!document.body.classList.contains("is-clear"));
+  else if (k === "z") toggleFull();
   else if (k === "f" && n && !n.g.stash) { const now = setFollow(n.g.user, !isFollowing(n.g.user)); toast(now ? t("Following @{u}", { u: n.g.user }) : t("Unfollowed @{u}", { u: n.g.user })); }
   else if (k === "p" && n) n.g.stash ? n.g.pid && openPerformer(n.g.pid, n.g.user, n.g.img) : openProfile(n.g.user);
   else if (k === "." && n) F.menu();

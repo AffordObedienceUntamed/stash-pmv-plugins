@@ -289,4 +289,8 @@ export default {
   "Most videos": "Plus de vidéos",
   "Glow behind the video": "Halo derrière la vidéo",
   "A soft coloured glow from the video's picture behind the page. Switch it off if scrolling feels slow.": "Un halo de couleur doux tiré de l'image de la vidéo, derrière la page. Désactivez-le si le défilement est lent.",
+  "Fullscreen": "Plein écran",
+  "Enlarge wide videos": "Agrandir les vidéos larges",
+  "On a PC: a wide video (16:9 …) grows to its own shape when you scroll to it. Off: every video keeps the tall frame.": "Sur PC : une vidéo large (16:9 …) s'agrandit à sa propre forme quand vous y arrivez. Désactivé : chaque vidéo garde le cadre vertical.",
+  "Your browser can't go fullscreen here.": "Votre navigateur ne peut pas passer en plein écran ici.",
 };

@@ -285,4 +285,8 @@ export default {
   "Most videos": "Meiste Videos",
   "Glow behind the video": "Schein hinter dem Video",
   "A soft coloured glow from the video's picture behind the page. Switch it off if scrolling feels slow.": "Ein weicher farbiger Schein aus dem Bild des Videos hinter der Seite. Ausschalten, wenn das Scrollen zäh wirkt.",
+  "Fullscreen": "Vollbild",
+  "Enlarge wide videos": "Breite Videos vergrößern",
+  "On a PC: a wide video (16:9 …) grows to its own shape when you scroll to it. Off: every video keeps the tall frame.": "Am PC: Ein breites Video (16:9 …) wächst auf seine eigene Form, sobald du hinscrollst. Aus: Jedes Video behält den hohen Rahmen.",
+  "Your browser can't go fullscreen here.": "Dein Browser kann hier nicht in den Vollbildmodus wechseln.",
 };
