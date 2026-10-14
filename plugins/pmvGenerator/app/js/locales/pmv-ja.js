@@ -636,6 +636,9 @@ export default {
     "This creator's clips have no tags": "このクリエイターのクリップにはタグがありません",
     "All of the tags": "すべてのタグ",
     "Any of the tags": "いずれかのタグ",
+    "Clip speed follows the music (experimental)": "クリップの速さが音楽に合う（試験的）",
+    "Fast, busy music gets clips with fast motion, calm music slow ones. Finds the fast and calm spots of each scene in Stash's scene previews (Tasks → Generate → Previews) – without them it measures the spot it takes": "速くて密度の高い音楽には動きの速いクリップ、穏やかな音楽にはゆっくりしたクリップを選びます。Stash のシーンプレビュー（タスク → 生成 → プレビュー）から各シーンの速い所と穏やかな所を見つけます。プレビューがない場合は選んだ箇所を測定します",
+    "clip speed follows the music": "クリップの速さが音楽に合う",
   },
   patterns: [
     ["Couldn't load the creator's tags: (.+)", "クリエイターのタグを読み込めませんでした：$1"],

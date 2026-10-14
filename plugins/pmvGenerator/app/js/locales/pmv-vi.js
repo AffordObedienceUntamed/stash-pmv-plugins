@@ -636,6 +636,9 @@ export default {
     "This creator's clips have no tags": "Clip của người sáng tạo này không có thẻ",
     "All of the tags": "Tất cả các thẻ",
     "Any of the tags": "Một trong các thẻ",
+    "Clip speed follows the music (experimental)": "Tốc độ clip theo nhạc (thử nghiệm)",
+    "Fast, busy music gets clips with fast motion, calm music slow ones. Finds the fast and calm spots of each scene in Stash's scene previews (Tasks → Generate → Previews) – without them it measures the spot it takes": "Nhạc nhanh, dồn dập sẽ có clip chuyển động nhanh, nhạc êm có clip chậm. Tìm chỗ nhanh và chỗ êm của mỗi cảnh trong bản xem trước của Stash (Tác vụ → Tạo → Xem trước) – không có thì đo đoạn được chọn",
+    "clip speed follows the music": "tốc độ clip theo nhạc",
   },
   patterns: [
     ["Couldn't load the creator's tags: (.+)", "Không tải được thẻ của người sáng tạo: $1"],

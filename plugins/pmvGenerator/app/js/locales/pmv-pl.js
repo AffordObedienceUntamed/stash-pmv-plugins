@@ -636,6 +636,9 @@ export default {
     "This creator's clips have no tags": "Klipy tego twórcy nie mają tagów",
     "All of the tags": "Wszystkie tagi",
     "Any of the tags": "Dowolny z tagów",
+    "Clip speed follows the music (experimental)": "Tempo klipów podąża za muzyką (eksperymentalne)",
+    "Fast, busy music gets clips with fast motion, calm music slow ones. Finds the fast and calm spots of each scene in Stash's scene previews (Tasks → Generate → Previews) – without them it measures the spot it takes": "Szybka, gęsta muzyka dostaje klipy z szybkim ruchem, spokojna – spokojne. Znajduje szybkie i spokojne miejsca każdej sceny w podglądach scen Stasha (Zadania → Generuj → Podglądy) – bez nich mierzy wybrane miejsce",
+    "clip speed follows the music": "tempo klipów podąża za muzyką",
   },
   patterns: [
     ["Couldn't load the creator's tags: (.+)", "Nie udało się wczytać tagów twórcy: $1"],

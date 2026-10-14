@@ -642,6 +642,9 @@ export default {
     "This creator's clips have no tags": "该创作者的片段没有标签",
     "All of the tags": "全部标签",
     "Any of the tags": "任一标签",
+    "Clip speed follows the music (experimental)": "片段速度跟随音乐（实验性）",
+    "Fast, busy music gets clips with fast motion, calm music slow ones. Finds the fast and calm spots of each scene in Stash's scene previews (Tasks → Generate → Previews) – without them it measures the spot it takes": "快速、密集的音乐配快速运动的片段，平静的音乐配缓慢的片段。会在 Stash 的场景预览（任务 → 生成 → 预览）中找出每个场景的快慢位置——没有预览时则测量所选的位置",
+    "clip speed follows the music": "片段速度跟随音乐",
   },
   patterns: [
     ["Couldn't load the creator's tags: (.+)", "无法加载创作者的标签：$1"],

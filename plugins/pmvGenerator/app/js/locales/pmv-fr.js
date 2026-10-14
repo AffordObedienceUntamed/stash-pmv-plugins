@@ -636,6 +636,9 @@ export default {
     "This creator's clips have no tags": "Les clips de ce créateur n'ont pas de tags",
     "All of the tags": "Tous les tags",
     "Any of the tags": "Un des tags",
+    "Clip speed follows the music (experimental)": "La vitesse des clips suit la musique (expérimental)",
+    "Fast, busy music gets clips with fast motion, calm music slow ones. Finds the fast and calm spots of each scene in Stash's scene previews (Tasks → Generate → Previews) – without them it measures the spot it takes": "Une musique rapide et dense reçoit des clips au mouvement rapide, une musique calme des clips lents. Trouve les passages rapides et calmes de chaque scène dans les aperçus de Stash (Tâches → Générer → Aperçus) – sans eux, il mesure le passage choisi",
+    "clip speed follows the music": "la vitesse des clips suit la musique",
   },
   patterns: [
     ["Couldn't load the creator's tags: (.+)", "Impossible de charger les tags du créateur : $1"],

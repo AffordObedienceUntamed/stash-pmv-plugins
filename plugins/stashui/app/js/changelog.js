@@ -4,6 +4,17 @@
 
 export const CHANGES = [
   {
+    v: "3.95.0",
+    date: "2026-10-14",
+    items: [
+      ["ui", "Duplicates (pull request by Fixik071): a “Select …” menu ticks copies by a rule in every group – all but the highest resolution, all but the largest file, the oldest or the newest file – and “Delete selected (N)” removes them all after one question, in batches with progress (also the groups below “Show more”). It warns when every copy of a group is ticked. When Stash refuses a file (e.g. “file name too long”), the others still go and the failed ones stay ticked with the reason on their card. Replaces the simpler selection of 3.93.0.", "重复项（Fixik071 的拉取请求）：“选择 …”菜单按规则勾选每组中的副本——除最高分辨率外的全部、除最大文件外的全部、最旧或最新的文件——然后“删除所选 (N)”只需确认一次，分批删除并显示进度（包括“显示更多”下方的组）。若某组的所有副本都被勾选会给出警告。当 Stash 拒绝某个文件（如“文件名过长”）时，其余文件仍会删除，失败的保持勾选并在卡片上显示原因。取代 3.93.0 中较简单的选择方式。"],
+      ["ui", "Performer page (pull request by Fixik071): the performer's Stash IDs show up as links to their page on StashDB, ThePornDB and any other configured stash-box.", "演员页面（Fixik071 的拉取请求）：演员的 Stash ID 会显示为指向 StashDB、ThePornDB 及其他已配置 stash-box 上其页面的链接。"],
+      ["ui", "Player (pull request by AffordObedienceUntamed): the controls keep taking clicks for a moment after they fade out, and a click counts as activity – skipping 10 seconds every second or two no longer pauses the video by accident.", "播放器（AffordObedienceUntamed 的拉取请求）：控制栏淡出后仍会短暂接受点击，且点击算作操作——每隔一两秒跳过 10 秒时不再误暂停视频。"],
+      ["ui", "Versus (pull request by magz-hash): an “Exclude tag” field keeps scenes, images, performers or moments with certain tags out of the pool, and two new match options set how long moments play at least and how often scene previews jump to a new spot.", "对决（magz-hash 的拉取请求）：新增“排除标签”字段，可将带有某些标签的场景、图片、演员或片段排除在候选池之外；另有两个对决选项，设置片段至少播放多久以及场景预览多久跳到新位置。"],
+      ["pmv", "Clip speed follows the music (experimental, off by default; pull request by PepegaSan): fast, busy music gets clips with fast motion, calm music slow ones. The music's pace per beat is measured, and the fast and calm spots of each scene are found in Stash's scene previews. Also in Media Storm's copy of the beat analysis.", "片段速度跟随音乐（实验性，默认关闭；PepegaSan 的拉取请求）：快速、密集的音乐配快速运动的片段，平静的音乐配缓慢的片段。会测量每拍的音乐节奏，并在 Stash 的场景预览中找出每个场景的快慢位置。Media Storm 的节拍分析副本同步更新。"],
+    ],
+  },
+  {
     v: "3.94.1",
     date: "2026-10-14",
     items: [

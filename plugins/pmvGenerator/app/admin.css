@@ -395,12 +395,6 @@ body.kb-embedded .kb-main { padding: 0; }
 .kb-dupe { margin-bottom: 16px; padding: 14px; }
 .kb-dupe-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
 .kb-dupe-item { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 8px; border: 1px solid var(--bg-3); border-radius: 6px; background: var(--base); }
-.kb-dupe-btns { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.kb-dupe-pick { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 6px; font: 600 13px/1 var(--f-label); cursor: pointer; }
-.kb-dupe-pick input { width: 16px; height: 16px; accent-color: #d22c4a; cursor: pointer; }
-.kb-dupe-item.is-picked { border-color: #d22c4a; box-shadow: 0 0 0 1px #d22c4a; background: color-mix(in srgb, #b3243e 12%, var(--bg-2)); }
-html.kb-glass .kb-dupe-item.is-picked { background: color-mix(in srgb, #b3243e 22%, transparent); }
-html.kb-glass .kb-dupe-pick { background: var(--glass-shine), var(--glass); border: 1px solid var(--glass-edge); }
 .kb-dupe-item.is-best { border-color: var(--ok); box-shadow: 0 0 0 1px var(--ok); }
 .kb-dupe-thumb { position: relative; display: block; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 4px; background: #000; }
 .kb-dupe-thumb img { width: 100%; height: 100%; object-fit: cover; }
