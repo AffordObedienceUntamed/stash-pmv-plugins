@@ -23,7 +23,7 @@ export function toPiece(kind, x, favId) {
       w: f.width || 16, h: f.height || 9,
       thumb: x.paths && x.paths.screenshot,
       preview: x.paths && x.paths.preview,
-      stamp: fmtDuration(dur),
+      stamp: (store.get("cardRes", false) && res ? res + " · " : "") + fmtDuration(dur),
       meta: [t("Video"), fmtDuration(dur), res, x.date ? fmtDate(x.date) : ""].filter(Boolean).join(", "),
       resume: dur && x.resume_time ? Math.min(1, x.resume_time / dur) : 0,
       rating: x.rating100 || 0,

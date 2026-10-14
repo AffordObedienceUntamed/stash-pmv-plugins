@@ -4,6 +4,18 @@
 
 export const CHANGES = [
   {
+    v: "3.93.0",
+    date: "2026-10-14",
+    items: [
+      ["ui", "Clip cutter: after saving, the clips now really get the original's performers, tags and studio (and the tag “Clip”). Before, the step was skipped quietly when Stash hadn't finished adding the new file – now it waits up to a minute for each clip and says so if a clip never showed up. Also fixes the Python “invalid escape sequence” warning in Stash's log. Thanks to tvzndro.", "剪辑裁切：保存后，剪辑现在确实会带上原视频的演员、标签和工作室（以及标签“Clip”）。此前如果 Stash 还没添加新文件，这一步会被悄悄跳过——现在每个剪辑最多等待一分钟，若仍未出现会明确提示。同时修复了 Stash 日志里 Python 的“无效转义序列”警告。感谢 tvzndro。"],
+      ["ui", "Duplicates: tick the copies you want to get rid of (checkbox on each one, or “Select all but the best” for every group at once) and delete them with a single question – no more three clicks per scene. Thanks to tvzndro.", "重复项：勾选要删除的副本（每个副本上有复选框，或用“选择除最佳外的全部”一次选中所有组），只需确认一次即可删除——不必再为每个场景点三次。感谢 tvzndro。"],
+      ["ui", "Sort order as the default: a “Make default” button next to the sort control of Scenes, Images, Galleries, Performers, Studios, Groups and Tags (and the list pages of a tag, performer or studio) – the page then opens with that sort every time (kept in this browser). Click again to remove it. Thanks to redignium.", "默认排序：场景、图片、图库、演员、工作室、群组和标签（以及标签、演员、工作室的列表页）的排序控件旁新增“设为默认”按钮——之后每次打开该页面都使用该排序（保存在此浏览器中）。再次点击可取消。感谢 redignium。"],
+      ["ui", "Scene cards can show the resolution (1080p, 720p …) next to the length: Settings → This interface → “Resolution on scene cards”. Thanks to redignium.", "场景卡片可以在时长旁显示分辨率（1080p、720p……）：设置 → 此界面 →“场景卡片上显示分辨率”。感谢 redignium。"],
+      ["ui", "The scene's info panel now shows the studio (logo and name, a link to the studio page). Thanks to finn.", "场景信息面板现在会显示工作室（徽标和名称，可链接到工作室页面）。感谢 finn。"],
+      ["ui", "Parts of a scene with a start and an end are drawn as coloured bars on the timeline – every main tag has its own colour (pins and rows in the list share it), and neighbouring parts alternate in shade so you can see where one ends and the next begins. In the marker list, hovering a marker shows its preview picture next to it. Thanks to redignium.", "带开始和结束的场景片段在时间轴上以彩色条显示——每个主标签有自己的颜色（图钉和列表中的行使用同一种颜色），相邻片段交替深浅，便于看出一个在哪里结束、下一个从哪里开始。在标记列表中悬停某个标记时，会在旁边显示其预览图。感谢 redignium。"],
+    ],
+  },
+  {
     v: "3.92.2",
     date: "2026-10-14",
     items: [

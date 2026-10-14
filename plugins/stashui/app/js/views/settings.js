@@ -52,7 +52,7 @@ SECTIONS.splice(SECTIONS.findIndex((x) => x.id === "classic-ui"), 0, Object.assi
 const CUSTOM_ENTRIES = {
   look: ["Colors", "Liquid glass", "Effects and animations"],
   "player-ui": ["At the end of a video", "Start at a random spot", "Mouse wheel on the video", "Reverse the wheel", "Info panel in fullscreen", "Sound in previews", "The Handy", "Connection key", "Script offset"],
-  "this-ui": ["Language", "Folder loading", "This interface as home page", "Install as app", "Studio on scenes", "Other plugins in the menu", "Rating system", "Thumbnail size", "Favorites", "Backup and restore", "Reset interface settings"],
+  "this-ui": ["Language", "Folder loading", "This interface as home page", "Install as app", "Studio on scenes", "Resolution on scene cards", "Other plugins in the menu", "Rating system", "Thumbnail size", "Favorites", "Backup and restore", "Reset interface settings"],
   database: ["Back up database", "Optimize database", "Clean up generated files"],
   login: ["API key"],
 };
@@ -475,6 +475,8 @@ async function renderApp(body) {
       <div class="kb-set"><div class="kb-set-label"><b>${t("Install as app")}</b><small data-installhint></small></div><button type="button" class="kb-btn" data-install hidden>${icon("phone")}${t("Install")}</button></div>
       <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("Studio on scenes")}</b><small>${t("Shows the studio's logo (or its name) in the corner of scene thumbnails.")}</small></span>
         <span class="kb-switch"><input type="checkbox" data-studiologo${store.get("studioLogos", false) ? " checked" : ""}><i></i></span></label>
+      <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("Resolution on scene cards")}</b><small>${t("Shows 1080p, 720p … next to the length in the corner of scene thumbnails (after the next page load).")}</small></span>
+        <span class="kb-switch"><input type="checkbox" data-cardres${store.get("cardRes", false) ? " checked" : ""}><i></i></span></label>
       <label class="kb-set"><span class="kb-set-label"><b>${t("Studio logo: corner")}</b><small>${t("Where the logo sits on a thumbnail.")}</small></span>
         <select class="kb-field" data-dsp="studioPos">${[["bl", "Bottom left"], ["br", "Bottom right"], ["tl", "Top left"], ["tr", "Top right"]].map(([v, l]) => `<option value="${v}"${store.get("studioPos", "bl") === v ? " selected" : ""}>${t(l)}</option>`).join("")}</select></label>
       <label class="kb-set"><span class="kb-set-label"><b>${t("Studio logo: size")}</b><small>${t("How big the logo is.")}</small></span>
@@ -579,6 +581,10 @@ async function renderApp(body) {
     if (el.type === "range") el.addEventListener("change", () => toast(t("Saved"), "ok"));
     else el.addEventListener("change", () => toast(t("Saved"), "ok"));
   });
+  body.querySelector("[data-cardres]").onchange = (e) => {
+    store.set("cardRes", e.target.checked);
+    toast(t("Saved"), "ok");
+  };
   body.querySelector("[data-studiologo]").onchange = (e) => {
     store.set("studioLogos", e.target.checked);
     toast(t("Saved"), "ok");

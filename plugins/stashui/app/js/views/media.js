@@ -17,6 +17,7 @@ import { studioPicker, studiosCache } from "./studiopicker.js";
 import { openEditor } from "./edit.js";
 import { loadStashFilters, stashFilter } from "../stashfilters.js";
 import { hasSources, extendPage, mountSlots, registerList } from "../ext.js";
+import { getDef, defButton } from "../defsort.js";
 import { openAdvFilter, parseAdv, advStr, advCount, andInto } from "../advfilter.js";
 
 export const KIND_NAME = { scene: ["Scene", "Scenes"], image: ["Image", "Images"], gallery: ["Gallery", "Galleries"] };
@@ -62,8 +63,16 @@ export function mediaBrowser(host, opts) {
   // opts: { kinds, query, base(kind) → { filter, tagId }, defaults, counts: {kind: n}, onCount(kind, n), persist }
   const kinds = opts.kinds;
   let kind = kinds.includes(opts.query.kind) ? opts.query.kind : opts.initialKind || kinds[0];
-  let st = readState(opts.query, kind, opts.defaults && opts.defaults[kind]);
+  // the sort order kept with "Make default" (per page and kind) beats the page's own default
+  const defKey = (k) => (opts.page || "list") + ":" + k;
+  const userDef = (k) => {
+    const [sort, dir] = getDef(defKey(k)).split("|");
+    return sort ? { sort, dir } : null;
+  };
+  const defaultsOf = (k) => Object.assign({}, opts.defaults && opts.defaults[k], userDef(k) || {});
+  let st = readState(opts.query, kind, defaultsOf(kind));
   let hang = null;
+  let defPaint = null;
   let sf = null; // a saved filter from Stash, applied on top: { id, name, kind, filter, skipped }
   let sfPending = null; // (being fetched)
   // The Stash filter is an AND on top of the filters set here
@@ -163,6 +172,8 @@ export function mediaBrowser(host, opts) {
         sortSel.value = st.sort;
       }).catch(() => {});
     st.sort = sortSel.value;
+    if (!defPaint) defPaint = defButton($("[data-dir]"), () => defKey(kind), () => (st.sort === "random" ? "" : st.sort + "|" + st.dir));
+    defPaint();
     $("[data-dir]").innerHTML = st.dir === "ASC" ? "↑" : "↓";
     $("[data-dir]").hidden = st.sort === "random";
     $("[data-filter]").classList.toggle("is-on", filterOpen);
@@ -558,7 +569,7 @@ export function mediaBrowser(host, opts) {
       kind = k.dataset.kind;
       sf = null;
       paintSfNote();
-      st = readState({}, kind, opts.defaults && opts.defaults[kind]);
+      st = readState({}, kind, defaultsOf(kind));
       renderTools();
       pushSlots();
       return apply();

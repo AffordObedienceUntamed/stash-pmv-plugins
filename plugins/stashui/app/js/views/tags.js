@@ -1,5 +1,6 @@
 // All tags as an index, with item counts.
 
+import { getDef, defButton } from "../defsort.js";
 import { esc, icon, debounce, errorToast, plural, promptDialog } from "../ui.js";
 import { t } from "../i18n.js";
 import { findTags, createTag } from "../api.js";
@@ -26,7 +27,8 @@ export async function render(main, params, query) {
     </header>
     <div class="kb-taglist" data-list><div class="kb-loading">${t("Loading …")}</div></div>`;
   const $ = (s) => main.querySelector(s);
-  $("[data-sort]").value = query.sort || "name";
+  $("[data-sort]").value = query.sort || getDef("tags") || "name";
+  defButton($("[data-sort]"), () => "tags", () => $("[data-sort]").value);
 
   async function load() {
     try {

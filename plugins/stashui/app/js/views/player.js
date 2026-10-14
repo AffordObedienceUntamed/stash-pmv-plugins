@@ -934,13 +934,27 @@ export async function render(host, params, query = {}) {
     const c = await gql(`mutation { tagCreate(input: { name: "Highlight" }) { id } }`);
     return (markTagId = c.tagCreate.id);
   }
+  // Every main tag gets its own colour (the same tag always the same one) – on the timeline pin, the bar of a part and its row
+  const mkColor = (m) => {
+    const key = String((m.primary_tag && (m.primary_tag.name || m.primary_tag.id)) || m.title || "");
+    let h = 0;
+    for (const c of key) h = (h * 31 + c.charCodeAt(0)) % 360;
+    return `hsl(${(h * 47) % 360} 78% 58%)`;
+  };
   function paintMarks() {
     const box = $("[data-mks]");
     if (!box) return;
     const total = v.duration || dur || 1;
     const best = bestMarkersNow() || new Map();
-    box.innerHTML = (x.scene_markers || [])
-      .map((m) => `<button type="button" class="kb-tl-mk${best.has(m.id) ? " is-best" : ""}" data-mk="${m.seconds}" style="left:${(m.seconds / total) * 100}%" title="${esc((best.has(m.id) ? "★ " + t("Best moment") + " · " : "") + (m.title || (m.primary_tag || {}).name || t("Marker")) + " · " + fmtDuration(m.seconds))}"></button>`)
+    // a part with an end is drawn as a coloured bar over the timeline; the pin stays at its start
+    const bars = (x.scene_markers || [])
+      .slice()
+      .sort((a, b) => a.seconds - b.seconds)
+      .filter((m) => m.end_seconds > m.seconds)
+      .map((m, i) => `<i class="kb-tl-range${i % 2 ? " is-alt" : ""}" style="left:${(m.seconds / total) * 100}%;width:${((Math.min(m.end_seconds, total) - m.seconds) / total) * 100}%;--mk:${mkColor(m)}"></i>`)
+      .join("");
+    box.innerHTML = bars + (x.scene_markers || [])
+      .map((m) => `<button type="button" class="kb-tl-mk${best.has(m.id) ? " is-best" : ""}" data-mk="${m.seconds}" style="left:${(m.seconds / total) * 100}%;--mk:${mkColor(m)}" title="${esc((best.has(m.id) ? "★ " + t("Best moment") + " · " : "") + (m.title || (m.primary_tag || {}).name || t("Marker")) + " · " + fmtDuration(m.seconds))}"></button>`)
       .join("");
   }
   // the best moments arrive a moment later (standings from Stash) – then the marks again
@@ -961,7 +975,7 @@ export async function render(host, params, query = {}) {
       `${t("Markers")}<small class="kb-upsec-n">${list.length || ""}</small>`,
       list
         .map(
-          (m) => `<div class="kb-mkrow${(bestMarkersNow() || new Map()).has(m.id) ? " is-best" : ""}"><button type="button" class="kb-mkgo" data-mkgo="${m.seconds}"><b>${fmtDuration(m.seconds)}${m.end_seconds > m.seconds ? "–" + fmtDuration(m.end_seconds) : ""}</b><span>${esc(m.title || (m.primary_tag || {}).name || t("Marker"))}${partTags(m)}</span></button><button type="button" class="kb-btn is-icon is-ghost" data-mkren="${m.id}" title="${t("Edit the part (name, start, end, tags)")}">${icon("edit")}</button><button type="button" class="kb-btn is-icon is-ghost kb-qdel" data-mkdel="${m.id}" title="${t("Delete marker")}">${icon("close")}</button></div>`
+          (m) => `<div class="kb-mkrow${(bestMarkersNow() || new Map()).has(m.id) ? " is-best" : ""}" data-mkid="${m.id}" style="--mk:${mkColor(m)}"><button type="button" class="kb-mkgo" data-mkgo="${m.seconds}"><b>${fmtDuration(m.seconds)}${m.end_seconds > m.seconds ? "–" + fmtDuration(m.end_seconds) : ""}</b><span>${esc(m.title || (m.primary_tag || {}).name || t("Marker"))}${partTags(m)}</span></button><button type="button" class="kb-btn is-icon is-ghost" data-mkren="${m.id}" title="${t("Edit the part (name, start, end, tags)")}">${icon("edit")}</button><button type="button" class="kb-btn is-icon is-ghost kb-qdel" data-mkdel="${m.id}" title="${t("Delete marker")}">${icon("close")}</button></div>`
         )
         .join("") + `<div class="kb-mkadds"><button type="button" class="kb-btn is-ghost kb-mkadd" data-mkadd>${icon("plus")}${t("Add a marker here (B)")}</button><button type="button" class="kb-btn is-ghost kb-mkadd" data-mkpart title="${t("A part of the video with a start, an end and its own tags")}">${icon("tag")}${t("Add a part …")}</button></div>`
     );
@@ -1015,6 +1029,37 @@ export async function render(host, params, query = {}) {
 
   paintMarkers();
   v.addEventListener("loadedmetadata", paintMarks);
+  // Hovering a marker in the list plays its preview next to it (the picture Stash made for it)
+  let mkPop = null;
+  const mkPopOff = () => {
+    if (mkPop) mkPop.remove();
+    mkPop = null;
+  };
+  host.addEventListener("mouseover", (e) => {
+    const row = e.target.closest && e.target.closest("[data-mkid]");
+    if (!row) return;
+    const m = (x.scene_markers || []).find((q) => q.id === row.dataset.mkid);
+    const src = m && (m.preview || m.screenshot);
+    if (!src || (mkPop && mkPop.dataset.for === m.id)) return;
+    mkPopOff();
+    mkPop = document.createElement("div");
+    mkPop.className = "kb-mkpop";
+    mkPop.dataset.for = m.id;
+    mkPop.innerHTML = `<img alt="" src="${esc(src)}">`;
+    document.body.appendChild(mkPop);
+    const place = () => {
+      if (!mkPop) return;
+      const r = row.getBoundingClientRect();
+      mkPop.style.left = Math.max(8, r.left - (mkPop.offsetWidth || 240) - 10) + "px";
+      mkPop.style.top = Math.max(8, Math.min(r.top, innerHeight - mkPop.offsetHeight - 8)) + "px";
+    };
+    place();
+    mkPop.querySelector("img").addEventListener("load", place); // (the height is known once the picture is there)
+  });
+  host.addEventListener("mouseout", (e) => {
+    if (mkPop && !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest("[data-mkid]"))) mkPopOff();
+  });
+  host.addEventListener("click", mkPopOff);
   $("[data-mks]").addEventListener("click", (e) => {
     const b = e.target.closest("[data-mk]");
     if (!b) return;
