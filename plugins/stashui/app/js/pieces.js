@@ -1,6 +1,6 @@
 // Common model for scenes, images and galleries ("pieces") and the salon hanging.
 
-import { esc, icon, fmtDuration, fmtRes, fmtDate, fmtBytes, invNo, plural, store, menu, errorToast, inlineSvg, starsHtml } from "./ui.js";
+import { esc, icon, fmtDuration, fmtRes, fmtDate, fmtBytes, invNo, plural, store, menu, errorToast, inlineSvg, ratingText } from "./ui.js";
 import { t } from "./i18n.js";
 import { tierNow } from "./tiers.js";
 import { tierBadge } from "./versusx.js";
@@ -109,21 +109,77 @@ function pieceHtml(p) {
   );
 }
 
-// The details under a scene's picture in the card view: title, studio · date, performers, tags, rating and file facts
+// The card view of a scene follows the card of classic Stash: on the picture the studio logo (top right), the rating (top left),
+// resolution and length (bottom right); below it the title, the date, a piece of the details and a row of small icon buttons with
+// numbers – performers, tags, galleries (a click or the mouse resting on one opens the list), plays, O counter and "organized".
+function cardOverlays(p) {
+  const x = p.raw || {};
+  const logo = x.studio && x.studio.image_path && !/default=true/.test(x.studio.image_path);
+  return (
+    `<div class="kb-scard-over">` +
+    (x.studio ? `<a class="kb-scard-studio${logo ? "" : " is-name"}" href="#/studio/${x.studio.id}" title="${esc(x.studio.name)}">${logo ? `<img alt="${esc(x.studio.name)}" loading="lazy" src="${esc(x.studio.image_path)}">` : esc(x.studio.name)}</a>` : "") +
+    (x.rating100 ? `<span class="kb-scard-rating" title="${esc(t("Rating"))}">${esc(/★/.test(ratingText(x.rating100)) ? ratingText(x.rating100) : "★ " + ratingText(x.rating100))}</span>` : "") +
+    `</div>`
+  );
+}
+
 function cardBody(p) {
   const x = p.raw || {};
-  const f = (x.files || [])[0] || {};
   const perfs = x.performers || [];
   const tags = x.tags || [];
-  const more = (n, all) => (all > n ? `<span class="kb-scard-more">+${all - n}</span>` : "");
-  const facts = [fmtRes(f.width, f.height), f.size ? fmtBytes(f.size) : "", x.play_count ? plural(x.play_count, "play", "plays") : ""].filter(Boolean);
+  const gals = x.galleries || [];
+  const pop = (kind, ic, n, label) => (n ? `<button type="button" class="kb-scard-pop" data-pop="${kind}" title="${esc(label)}">${icon(ic)}<span>${n}</span></button>` : "");
+  const stat = (ic, n, label) => (n ? `<span class="kb-scard-stat" title="${esc(label)}">${icon(ic)}<span>${n}</span></span>` : "");
   return (
     `<a class="kb-scard-title" href="#/scene/${p.id}" title="${esc(p.title)}">${esc(p.title)}</a>` +
-    (x.studio || x.date ? `<div class="kb-scard-sub">${x.studio ? `<a href="#/studio/${x.studio.id}">${esc(x.studio.name)}</a>` : ""}${x.studio && x.date ? " · " : ""}${x.date ? esc(fmtDate(x.date)) : ""}</div>` : "") +
-    (perfs.length ? `<div class="kb-scard-perfs">${perfs.slice(0, 4).map((q) => `<a href="#/performer/${q.id}">${esc(q.name)}</a>`).join("")}${more(4, perfs.length)}</div>` : "") +
-    (tags.length ? `<div class="kb-scard-tags">${tags.slice(0, 6).map((q) => `<a class="kb-chip" href="#/tag/${q.id}">${esc(q.name)}</a>`).join("")}${more(6, tags.length)}</div>` : "") +
-    `<div class="kb-scard-foot">${x.rating100 ? starsHtml(x.rating100) : ""}<small>${esc(facts.join(" · "))}</small></div>`
+    (x.date ? `<div class="kb-scard-date">${esc(fmtDate(x.date))}</div>` : "") +
+    (x.details ? `<p class="kb-scard-details">${esc(x.details)}</p>` : "") +
+    `<div class="kb-scard-pops">` +
+    pop("perfs", "person", perfs.length, t("Performers")) +
+    pop("tags", "tag", tags.length, t("Tags")) +
+    pop("gals", "image", gals.length, t("Galleries")) +
+    stat("play", x.play_count, t("Plays")) +
+    stat("drop", x.o_counter, t("O counter")) +
+    (x.organized ? `<span class="kb-scard-stat" title="${esc(t("Organized"))}">${icon("check")}</span>` : "") +
+    `</div>`
   );
+}
+
+// The list that opens from one of the icon buttons (one panel at a time, next to the button)
+let scPop = null;
+let scPopFor = null;
+let scPopTimer = 0;
+let scPopHide = 0;
+export function closeScPop() {
+  clearTimeout(scPopTimer);
+  clearTimeout(scPopHide);
+  if (scPop) scPop.remove();
+  scPop = scPopFor = null;
+}
+function openScPop(btn, p) {
+  closeScPop();
+  const x = p.raw || {};
+  const kind = btn.dataset.pop;
+  const items =
+    kind === "perfs"
+      ? (x.performers || []).map((q) => `<a class="kb-scpop-row" href="#/performer/${q.id}">${q.image_path ? `<img alt="" loading="lazy" src="${esc(q.image_path)}">` : "<i></i>"}<span>${esc(q.name)}</span></a>`)
+      : kind === "gals"
+        ? (x.galleries || []).map((q) => `<a class="kb-scpop-row" href="#/gallery/${q.id}"><i>${icon("image")}</i><span>${esc(q.title || t("Gallery {id}", { id: q.id }))}</span></a>`)
+        : (x.tags || []).map((q) => `<a class="kb-chip" href="#/tag/${q.id}">${esc(q.name)}</a>`);
+  if (!items.length) return;
+  scPop = document.createElement("div");
+  scPop.className = "kb-scpop" + (kind === "tags" ? " is-tags" : "");
+  scPop.innerHTML = items.join("");
+  scPopFor = btn;
+  document.body.appendChild(scPop);
+  const r = btn.getBoundingClientRect();
+  const w = scPop.offsetWidth;
+  const h = scPop.offsetHeight;
+  scPop.style.left = Math.max(8, Math.min(r.left, innerWidth - w - 8)) + "px";
+  scPop.style.top = (r.bottom + 6 + h > innerHeight && r.top - 6 - h > 8 ? r.top - 6 - h : r.bottom + 6) + "px";
+  scPop.addEventListener("pointerenter", () => clearTimeout(scPopHide));
+  scPop.addEventListener("pointerleave", () => (scPopHide = setTimeout(closeScPop, 250)));
+  scPop.addEventListener("click", (e) => e.target.closest("a") && closeScPop());
 }
 
 // ---------- Salon hanging ----------
@@ -167,6 +223,8 @@ export class Hang {
   }
 
   destroy() {
+    closeScPop();
+    window.removeEventListener("scroll", closeScPop, true);
     this.io.disconnect();
     this.ro.disconnect();
     this.stopPreview();
@@ -298,10 +356,13 @@ export class Hang {
           c = document.createElement("div");
           if (p.kind === "scene" && !p.foreign) {
             c.className = "kb-scard";
+            c.dataset.key = key;
             const body = document.createElement("div");
             body.className = "kb-scard-body";
             body.innerHTML = cardBody(p);
-            c.append(n, body);
+            c.append(n);
+            c.insertAdjacentHTML("beforeend", cardOverlays(p));
+            c.append(body);
           } else {
             c.className = "kb-scard is-plain"; // (images, galleries, an extension's card: only the picture)
             c.append(n);
@@ -445,6 +506,38 @@ export class Hang {
       const i = this.pieces.findIndex((p) => p.kind + ":" + p.id === key);
       this.opts.onOpen && this.opts.onOpen(this.pieces[i], i, this);
     });
+    // the icon buttons of a card: the mouse resting on one (or a click, on touch screens) opens its list
+    const popPiece = (b) => {
+      const c = b.closest(".kb-scard");
+      return c && this.pieces.find((q) => q.kind + ":" + q.id === c.dataset.key);
+    };
+    this.el.addEventListener("pointerover", (e) => {
+      const b = e.target.closest && e.target.closest("[data-pop]");
+      if (!b || e.pointerType === "touch") return;
+      clearTimeout(scPopHide);
+      if (scPopFor === b) return;
+      clearTimeout(scPopTimer);
+      scPopTimer = setTimeout(() => {
+        const p = popPiece(b);
+        if (p) openScPop(b, p);
+      }, 150);
+    });
+    this.el.addEventListener("pointerout", (e) => {
+      const b = e.target.closest && e.target.closest("[data-pop]");
+      if (b && !b.contains(e.relatedTarget)) {
+        clearTimeout(scPopTimer);
+        scPopHide = setTimeout(closeScPop, 250);
+      }
+    });
+    this.el.addEventListener("click", (e) => {
+      const b = e.target.closest && e.target.closest("[data-pop]");
+      if (!b) return;
+      e.preventDefault();
+      if (scPopFor === b) return closeScPop();
+      const p = popPiece(b);
+      if (p) openScPop(b, p);
+    });
+    window.addEventListener("scroll", closeScPop, true);
     this.el.addEventListener("pointerover", (e) => {
       const n = e.target.closest(".kb-piece");
       if (!n || n === this.hoverNode) return;

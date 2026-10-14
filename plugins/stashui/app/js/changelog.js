@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.94.1",
+    date: "2026-10-14",
+    items: [
+      ["ui", "Scene cards now look like the cards of classic Stash: studio logo on the picture (top right), rating (bottom left), resolution and length (bottom right); below it the title, the date, a piece of the details and a row of small icon buttons with numbers – performers, tags, galleries (the mouse resting on one, or a click, opens the list) – plus plays, O counter and “organized”. Thanks to finn.", "场景卡片现在与经典 Stash 的卡片一致：图片上有工作室徽标（右上）、评分（左下）、分辨率和时长（右下）；下方是标题、日期、详情摘要，以及一排带数字的小图标按钮——演员、标签、图库（鼠标停留或点击即可打开列表）——还有播放次数、O 计数和“已整理”。感谢 finn。"],
+    ],
+  },
+  {
     v: "3.94.0",
     date: "2026-10-14",
     items: [
