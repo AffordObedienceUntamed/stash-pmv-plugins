@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.95.1",
+    date: "2026-10-14",
+    items: [
+      ["ui", "Smoother scrolling in the Liquid glass look: the cards of long lists (scene cards, tag cards, performer cards, tier and extension badges, tagger rows) no longer carry their own blur filter – with hundreds of cards it was recalculated on every scrolled frame and could drop scrolling to about 15 fps. The glass look stays (translucent fill, light edge); the blur remains on the big panels.", "液态玻璃外观下滚动更流畅：长列表中的卡片（场景卡片、标签卡片、演员卡片、等级和扩展徽章、标记器行）不再各自带有模糊滤镜——卡片多达数百张时，每滚动一帧都要重新计算，可能使滚动降到约 15 帧。玻璃外观保留（半透明填充、浅色边缘）；大面板仍保留模糊。"],
+    ],
+  },
+  {
     v: "3.95.0",
     date: "2026-10-14",
     items: [

@@ -1974,3 +1974,7 @@ html.kb-glass .kb-defsort.is-on { color: var(--pink); border-color: var(--pink);
 .kb-chk small { color: var(--text-2); font-weight: 500; }
 /* Duplicates: the bar with the selection rules and "Delete selected" */
 html.kb-glass .kb-dupe-bulk { border-color: var(--glass-edge); background: var(--glass-shine), var(--glass-deep); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); box-shadow: var(--glass-shadow); }
+/* Scrolling stays smooth: no blur filter on every card of a long list (each one is blurred again on every scrolled frame –
+   with hundreds of cards that drops to ~15 fps). The glass look stays (translucent fill, light edge, shine); the blur
+   remains on the few big panels (menu, info bar, dialogs, the bar of selected items). */
+html.kb-glass :is(.kb-scard, .kb-tagcard, .kb-pcard, .kb-perf-fav, .kb-tierpos .kb-tier, .kb-xbadge, .kb-xact, .kb-tg-row) { -webkit-backdrop-filter: none; backdrop-filter: none; }
