@@ -1323,7 +1323,12 @@ html.kb-glass .kb-rail-ghead { border-color: var(--glass-edge); background: tran
 /* Versus: two side by side – pick the better one */
 .kb-vs { display: grid; gap: 14px; }
 .kb-vs-top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
-.kb-vs-tags { flex: 1; min-width: 220px; }
+.kb-vs-filter { flex: 1 1 260px; min-width: 200px; }
+.kb-vs-filter.kb-tagpick { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px; }
+.kb-vs-filter .kb-chips { display: contents; }
+.kb-vs-filter .kb-field { flex: 1 1 140px; width: auto; min-width: 140px; }
+.kb-vs-xtags .kb-chip { background: rgba(255, 62, 138, .14); color: var(--text); box-shadow: inset 3px 0 0 var(--pink); text-decoration: line-through; text-decoration-color: rgba(255, 62, 138, .8); }
+.kb-vs-xtags .kb-chip button { text-decoration: none; }
 .kb-vs-arena { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: stretch; gap: 14px; }
 .kb-vs-card { position: relative; display: flex; flex-direction: column; min-width: 0; padding: 0; overflow: hidden; border: 1px solid var(--bg-3); border-radius: 8px; color: var(--text); text-align: left; background: var(--bg-2); cursor: pointer; transition: transform .15s ease, border-color .15s ease, opacity .3s ease, box-shadow .15s ease; }
 .kb-vs-card:hover { border-color: var(--pink); transform: translateY(-2px); }
