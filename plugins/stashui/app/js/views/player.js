@@ -580,12 +580,22 @@ export async function render(host, params, query = {}) {
   syncPlay();
   const toggle = () => (v.paused ? v.play().catch(() => {}) : v.pause());
 
-  // Controls hide when idle
+  // Controls hide when idle: first they fade out (is-idle), but for a moment they still take clicks, so
+  // a click on a button that has just faded works and doesn't land on the picture (and pause it).
+  // Only then (is-gone) the picture gets the clicks again.
+  const IDLE_MS = 2600;
+  const GRACE_MS = 2500;
   let idle;
+  let gone;
   const wake = () => {
-    stage.classList.remove("is-idle");
+    stage.classList.remove("is-idle", "is-gone");
     clearTimeout(idle);
-    idle = setTimeout(() => !v.paused && stage.classList.add("is-idle"), 2600);
+    clearTimeout(gone);
+    idle = setTimeout(() => {
+      if (v.paused) return;
+      stage.classList.add("is-idle");
+      gone = setTimeout(() => stage.classList.add("is-gone"), GRACE_MS);
+    }, IDLE_MS);
   };
   stage.addEventListener("pointermove", wake);
   wake();
@@ -673,6 +683,7 @@ export async function render(host, params, query = {}) {
     const el = e.target;
     const woke = tapWoke;
     tapWoke = false;
+    wake(); // a click counts as activity: the bar stays and the countdown starts over
     if (Date.now() - swiped < 400 && (el === v || el.classList.contains("kb-screen"))) return;
     if (el.closest("[data-close]")) return closeOverlay();
     if (el.closest("[data-play]") || el.closest("[data-bigplay]")) return toggle();

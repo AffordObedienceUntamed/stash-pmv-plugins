@@ -172,6 +172,7 @@ The CSS variables (`--base`, `--bg`, `--bg-2`, `--bg-3`, `--text`, `--text-2`, `
 ## Player
 
 - Custom controls, timeline with thumbnails on hover, speed, volume, fullscreen.
+- A click counts as activity. After the controls fade out they still take clicks for a moment (invisible), so skipping 10 seconds every second or two doesn't pause the video.
 - Portrait videos (9:16) are fitted completely, nothing is cropped.
 - **Resume**: starts where you left off (button “From the start”), saves progress and counts plays like Stash.
 - **Start at a random spot** (sliders menu or Settings → Player and previews): every scene starts somewhere between 5 % and 85 % – for just looking around. Your resume points in Stash aren't touched (the play still counts); “From the start” in the hint switches back to normal for that scene.

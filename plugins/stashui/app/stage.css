@@ -22,7 +22,9 @@
 .kb-slowmo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; pointer-events: none; }
 .kb-slowmo[hidden] { display: none; }
 .kb-stage.is-idle { cursor: none; }
-.kb-stage.is-idle .kb-controls, .kb-stage.is-idle .kb-topbar, .kb-stage.is-idle .kb-nav-arrow { opacity: 0; pointer-events: none; }
+.kb-stage.is-idle .kb-controls, .kb-stage.is-idle .kb-topbar, .kb-stage.is-idle .kb-nav-arrow { opacity: 0; }
+/* a moment after fading out the bar stops taking clicks (before that a click on it still works) */
+.kb-stage.is-idle.is-gone .kb-controls, .kb-stage.is-idle.is-gone .kb-topbar, .kb-stage.is-idle.is-gone .kb-nav-arrow { pointer-events: none; }
 /* while the Handy menu is open, the bar stays */
 .kb-stage.is-idle:has(.kb-handy-panel:not([hidden])) .kb-controls { opacity: 1; pointer-events: auto; }
 .kb-stage.is-idle:has(.kb-handy-panel:not([hidden])) { cursor: auto; }
