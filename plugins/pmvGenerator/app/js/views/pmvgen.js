@@ -3445,7 +3445,7 @@ class Generator {
         this.measuring++;
         try {
           let fr = await captureFrames(v, SECS, 2);
-          let ms = this.S.paceMatch ? actionSpeed(fr, v.videoWidth, v.videoHeight) : null;
+          let ms = this.S.paceMatch ? await actionSpeed(fr, v.videoWidth, v.videoHeight) : null;
           noteSpeed(ms);
           // A piece of the map is only 0.75 s of the scene: if the spot turns out far off the wanted pace,
           // the next best piece is tried, and the better of the two taken
@@ -3454,7 +3454,7 @@ class Generator {
             const alt = mapCands[1].x.t;
             await seek(alt);
             const fr2 = await captureFrames(v, SECS, 2);
-            const ms2 = actionSpeed(fr2, v.videoWidth, v.videoHeight);
+            const ms2 = await actionSpeed(fr2, v.videoWidth, v.videoHeight);
             noteSpeed(ms2);
             if (ms2 != null && off(ms2) < off(ms)) [start, fr, ms] = [alt, fr2, ms2];
           }
