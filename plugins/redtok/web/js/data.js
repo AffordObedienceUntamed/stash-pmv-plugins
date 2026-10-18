@@ -7,7 +7,7 @@ import { call, gql, store, setAfterSet, emit, t, wait } from "./core.js";
 
 // ---------- settings ----------
 export const settings = Object.assign({
-  base: "", scan: true, quality: "hd", playq: "auto", fit: "auto", sound: true, volume: 1, autonext: false,
+  base: "", scan: true, meta: true, quality: "hd", playq: "auto", fit: "auto", sound: true, volume: 1, autonext: false,
   skipSeen: true, skipSeenMore: false, speed: 1, lang: "auto", glow: true, wide: true, space: "pause", frame: "auto", side: true,
 }, store.get("settings", {}));
 delete settings.subs; delete settings.sync; // (Reddit and the RedGifs login of the older local version)
@@ -274,7 +274,7 @@ export function taste() {
 
 // ---------- sources: one list of videos, filled page by page, shared by a feed and a grid ----------
 export const ORDERS = {
-  foryou: [["foryou", "For you"], ["trending", "Trending"], ["latest", "New"], ["top7", "Top this week"], ["top28", "Top this month"], ["top", "Top of all time"]],
+  foryou: [["foryou", "For you"], ["mine", "Only my niches"], ["trending", "Trending"], ["latest", "New"], ["top7", "Top this week"], ["top28", "Top this month"], ["top", "Top of all time"]],
   search: [["trending", "Trending"], ["latest", "New"], ["top7", "Top this week"], ["top", "Top of all time"]],
   niche: [["hot", "Hot"], ["latest", "New"], ["top", "Top"], ["best", "Best"]],
   user: [["recent", "Latest"], ["top", "Popular"], ["trending", "Trending"]],
@@ -329,6 +329,20 @@ export function makeSource(spec) {
   const LOAD = {
     foryou: async () => {
       const o = orderOf(spec);
+      // "My niches": only what you follow – the niches (and #tags), a few at a time, mixed; ends when all are through
+      if (o === "mine") {
+        S.np = S.np || {};
+        S.tp = S.tp || {};
+        const pool = [...niches.map((n) => ({ n: n.id })), ...tagFollows.map((tg) => ({ tg }))].filter((c) => !(c.n ? S.np[c.n] : S.tp[c.tg])?.done);
+        if (!pool.length) { S.done = true; return []; }
+        const take = pool.sort(() => Math.random() - 0.5).slice(0, 3);
+        let err = null;
+        const lists = (await Promise.all(take.map((c) => (c.n ? nichePage((S.np[c.n] = S.np[c.n] || { page: 0 }), c.n, "hot") : tagPage((S.tp[c.tg] = S.tp[c.tg] || { page: 0 }), c.tg)).catch((e) => { err = e; return null; })))).filter(Boolean);
+        if (!lists.length && err) throw err; // (RedGifs slowing down or offline: say so – don't end your feed)
+        const out = [];
+        while (lists.some((l) => l.length)) for (const l of lists) if (l.length) out.push(l.shift());
+        return out;
+      }
       const mix = o === "foryou" ? taste() : [];
       const tf = o === "foryou" ? tagFollows.slice() : [];
       if (!mix.length && !tf.length) return search(o === "foryou" ? "trending" : o);

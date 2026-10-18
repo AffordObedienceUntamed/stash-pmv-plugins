@@ -342,4 +342,9 @@ export default {
   "Their videos show up in For You and Following. Tap one to stop following.": "它们的视频会出现在“为你推荐”和“关注”中。点按一个即可取消关注。",
   "None. Open a #tag (tap it under a video) and press Follow.": "还没有。打开一个 #标签（点按视频下方的标签），然后按“关注”。",
   "Press the + under a creator's picture, or Follow on the page of a #tag.": "点按创作者头像下方的 +，或在 #标签 页面上按“关注”。",
+  "Only my niches": "仅我的分区",
+  "Follow niches to see them here": "关注分区后在此查看",
+  "Follow a niche on its page (or a #tag under a video), then “Only my niches” plays just those.": "在分区页面关注一个分区（或视频下方的 #标签），“仅我的分区”就只播放这些内容。",
+  "Fill in date and creator": "填写日期和创作者",
+  "Once Stash has the new videos, RedTok sets their date, the creator as the studio and the RedGifs link. Needs this page to stay open for a minute.": "Stash 获取到新视频后，RedTok 会设置其日期、以创作者作为工作室，以及 RedGifs 链接。此页面需保持打开约一分钟。",
 };

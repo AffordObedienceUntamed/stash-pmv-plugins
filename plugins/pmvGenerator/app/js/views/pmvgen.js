@@ -79,6 +79,8 @@ const DEFAULTS = {
   bright: 0, // smooth extra brightness (%)
   soft: false, // soft seams: the fields of a split screen blend into each other
   softAmt: 50, // how wide the blend is (%)
+  skipHead: 0, // seconds at the start of every scene that no clip is taken from (on top of the automatic intro skip)
+  skipTail: 0, // … and at the end
   divW: 2, // width of the dividers between the fields (px at 1280 wide, scales with the picture)
   cutLead: 0, // cuts land this many ms before the beat (the picture is a touch early, which feels tighter)
   minBeats: 0, // a clip stays at least this many beats before its field is cut again (0 = off)
@@ -379,6 +381,8 @@ export function render(main) {
           ${sw("cleanCuts", "Clean cuts", "With best moments: a clip starts where its scene runs on for the next few seconds – no hidden cut inside the clip that jumps to another scene by itself")}
           ${sw("smartCrop", "Smart crop", "The crop follows what matters in the clip instead of sticking to the center")}
         </div>
+        <label class="kb-pmvg-range" title="No clip is taken from the first seconds of a scene (studio logo, titles). On top of the automatic skip of the intro; 0 = automatic only"><span>${icon("sliders")}Skip the start of each scene</span><input type="range" min="0" max="300" step="5" data-r="skipHead" aria-label="Skip the start of each scene"><output data-ro="skipHead" data-unit=" s"></output></label>
+        <label class="kb-pmvg-range" title="No clip is taken from the last seconds of a scene (credits, outro). 0 = off"><span>${icon("sliders")}Skip the end of each scene</span><input type="range" min="0" max="300" step="5" data-r="skipTail" aria-label="Skip the end of each scene"><output data-ro="skipTail" data-unit=" s"></output></label>
         <span class="kb-lab-t">Clip order <small>– which clip follows which</small></span>
         <div class="kb-pmvg-opts">
           ${sw("matchCut", "Match cuts", "At each cut, the clip that best matches the previous one in color, brightness and composition comes next")}
@@ -2073,7 +2077,11 @@ function layoutIcon(id) {
 const spriteCache = new Map();
 // Where a scene's intro (studio logo, titles) is surely over: picked spots start after it – your markers may be in it.
 // 3 min → 15 s, 10 min → 24 s, longer → 30 s; short clips a tenth
-const introEnd = (dur) => (dur > 10 ? Math.min(30, Math.max(dur * 0.04, Math.min(15, dur * 0.1))) : 0);
+// "Skip the start / the end of each scene" (Clip selection) adds to that: skipS = [seconds at the start, seconds at the end],
+// never more than 40 % of a scene each
+const skipS = [0, 0];
+const introEnd = (dur) => (dur > 10 ? Math.max(Math.min(30, Math.max(dur * 0.04, Math.min(15, dur * 0.1))), Math.min(skipS[0], dur * 0.4)) : 0);
+const tailX = (dur) => (dur > 10 ? Math.min(skipS[1], dur * 0.4) : 0);
 
 async function spriteSpots(s, dur, heat) {
   if (!s.sprite || !s.vtt) return null;
@@ -2092,7 +2100,7 @@ async function spriteSpots(s, dur, heat) {
     img.src = s.sprite;
     await withTimeout(img.decode(), 8000);
     const out = [];
-    const use = cues.filter((c) => c.t >= introEnd(dur) && c.t <= dur - 4); // not the intro or the very end
+    const use = cues.filter((c) => c.t >= introEnd(dur) && c.t <= dur - 4 - tailX(dur)); // not the intro or the very end
     const sigs = analyzeTiles(img, use.map((c) => c.r));
     for (const [i, c] of use.entries()) {
       const a = sigs[i];
@@ -2743,6 +2751,8 @@ class Generator {
     this.song = tpl ? tpl.song : song;
     this.music = tpl ? null : music || null;
     this.S = S;
+    skipS[0] = Math.max(0, Number(S.skipHead) || 0);
+    skipS[1] = Math.max(0, Number(S.skipTail) || 0);
     this.setBars();
     this.onClose = onClose;
     this.tpl = tpl || null;
@@ -3308,7 +3318,7 @@ class Generator {
     let d = null;
     for (const p of map) {
       const pct = speedPct(p.speed);
-      if (pct == null || p.t < introEnd(x.dur) || p.t >= x.dur - 3 || (seq && (p.t < seq.lo || p.t > seq.hi))) continue;
+      if (pct == null || p.t < introEnd(x.dur) || p.t >= x.dur - 3 - tailX(x.dur) || (seq && (p.t < seq.lo || p.t > seq.hi))) continue;
       const v = Math.abs(pct - goal) + (this.usedNear(x, p.t, x.dur) ? 0.5 : 0);
       if (d == null || v < d) d = v;
     }
@@ -3552,7 +3562,7 @@ class Generator {
       const inSeq = (t) => !seq || (t >= seq.lo && t <= seq.hi);
       // (the scene timeline starts at the scene's start – but not in its intro)
       const head = introEnd(dur);
-      const rand = () => (seq ? Math.max(seq.lo, Math.min(head, seq.hi)) + Math.random() * Math.max(0, seq.hi - Math.max(seq.lo, head)) : dur > 10 ? head + Math.random() * Math.max(0, dur * 0.92 - 4 - head) : 0);
+      const rand = () => (seq ? Math.max(seq.lo, Math.min(head, seq.hi)) + Math.random() * Math.max(0, seq.hi - Math.max(seq.lo, head)) : dur > 10 ? head + Math.random() * Math.max(0, Math.min(dur * 0.92 - 4, dur - 4 - tailX(dur)) - head) : 0);
       const seek = async (t) => {
         v.currentTime = t;
         await withTimeout(once(v, "seeked"), 8000);
@@ -3580,7 +3590,7 @@ class Generator {
       let mapCands = null;
       if (Array.isArray(map)) {
         mapCands = map
-          .filter((x) => x.t >= head && x.t < dur - 3 && inSeq(x.t)) // (the preview starts at 0 – the intro's logo moves fast)
+          .filter((x) => x.t >= head && x.t < dur - 3 - tailX(dur) && inSeq(x.t)) // (the preview starts at 0 – the intro's logo moves fast)
           .map((x) => ({ x, d: Math.abs((speedPct(x.speed) ?? 0.5) - goal) + (fresh(x.t) ? 0 : 0.5) + Math.random() * 0.12 }))
           .sort((a, b) => a.d - b.d);
       }

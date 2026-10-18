@@ -340,7 +340,10 @@ export function render(main, params = {}) {
       const open = e.target.closest("[data-open]");
       if (open) {
         if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); // the player opens outside of it
-        return go(KINDS[S.kind].open(open.dataset.open, (pair || []).find((x) => x.id === open.dataset.open)));
+        const route = KINDS[S.kind].open(open.dataset.open, (pair || []).find((x) => x.id === open.dataset.open));
+        // A performer's page opens in a new tab: the duel (and its streak) stays where it is
+        if (S.kind === "performer") return void window.open(location.href.split("#")[0] + "#/" + route, "_blank", "noopener");
+        return go(route);
       }
       const c = e.target.closest("[data-side]");
       if (c) vote(Number(c.dataset.side));
@@ -606,7 +609,7 @@ export function render(main, params = {}) {
         .map(([id, [elo, w, l]], i) => {
           const x = byId.get(id);
           if (!x) return "";
-          return `<li data-lid="${esc(id)}"><a href="#/${esc(k.open(id, x))}"><span class="kb-vs-pos${i < 3 ? " is-podium" : ""}">${i + 1}</span>
+          return `<li data-lid="${esc(id)}"><a href="#/${esc(k.open(id, x))}"${S.kind === "performer" ? ' target="_blank" rel="noopener"' : ""}><span class="kb-vs-pos${i < 3 ? " is-podium" : ""}">${i + 1}</span>
             <img src="${esc(thumbOf(S.kind, x) || "")}" alt="" loading="lazy"><b>${esc(titleOf(S.kind, x))}</b>${tierBadge(tiers.map.get(id)) || "<span></span>"}
             <span class="kb-vs-pts">${Math.round(elo)}</span><small>${w}–${l}</small></a>
             <button type="button" class="kb-vs-hist" data-hist title="${t("Last matches")}" aria-label="${t("Last matches")}">${icon("history")}</button><div class="kb-vs-ledger" hidden></div></li>`;

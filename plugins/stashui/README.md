@@ -240,6 +240,7 @@ Settings → General → **Install as app**: Stash UI gets its own window and a 
 - **Versus for performers** has a gender filter (only women, only men …).
 - **Style classic Stash like this interface** (Settings → General, on by default): off, classic Stash keeps its own look and only Stash UI is styled (plugin setting *Keep classic Stash plain* does the same; a button back to Stash UI stays).
 - **E key**: opens Edit on the performer, studio, gallery and tag pages and in the image viewer (also in the player).
+- **Versus (performers)**: the button that opens a performer’s page opens it in a new tab – the duel stays.
 - **Show file**: a button in the info bar opens the file in Explorer / Finder with the file selected (Stash on the same computer; otherwise the path is copied).
 - **Looks filter** (Performers → Looks): the performer's own eye color, hair color, ethnicity and country as dropdowns with the values of your library.
 - **Quick keys on a card** (scene / image / gallery lists, mouse resting on the card): **E** edit, **T** tags, **D** or **Delete** delete (asks first).

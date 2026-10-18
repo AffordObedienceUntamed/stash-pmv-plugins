@@ -341,4 +341,9 @@ export default {
   "Their videos show up in For You and Following. Tap one to stop following.": "これらの動画は「おすすめ」と「フォロー中」に表示されます。タップするとフォロー解除。",
   "None. Open a #tag (tap it under a video) and press Follow.": "まだありません。#タグ（動画の下のタグをタップ）を開いて「フォロー」を押してください。",
   "Press the + under a creator's picture, or Follow on the page of a #tag.": "クリエイターの画像の下の + を押すか、#タグ のページで「フォロー」を押してください。",
+  "Only my niches": "自分のニッチのみ",
+  "Follow niches to see them here": "ニッチをフォローするとここに表示されます",
+  "Follow a niche on its page (or a #tag under a video), then “Only my niches” plays just those.": "ニッチのページ（または動画の下の#タグ）でフォローすると、「自分のニッチのみ」はそれらだけを再生します。",
+  "Fill in date and creator": "日付とクリエイターを入力",
+  "Once Stash has the new videos, RedTok sets their date, the creator as the studio and the RedGifs link. Needs this page to stay open for a minute.": "Stash が新しい動画を認識すると、RedTok が日付、スタジオとしてのクリエイター、RedGifs のリンクを設定します。このページを1分ほど開いたままにしてください。",
 };

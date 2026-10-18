@@ -335,4 +335,9 @@ export default {
   "Their videos show up in For You and Following. Tap one to stop following.": "Leurs vidéos apparaissent dans « Pour vous » et « Abonnements ». Touchez-en un pour ne plus le suivre.",
   "None. Open a #tag (tap it under a video) and press Follow.": "Aucun pour l'instant. Ouvrez un #tag (touchez-le sous une vidéo) et appuyez sur Suivre.",
   "Press the + under a creator's picture, or Follow on the page of a #tag.": "Appuyez sur le + sous l'image d'un créateur, ou sur Suivre dans la page d'un #tag.",
+  "Only my niches": "Seulement mes niches",
+  "Follow niches to see them here": "Suis des niches pour les voir ici",
+  "Follow a niche on its page (or a #tag under a video), then “Only my niches” plays just those.": "Suis une niche sur sa page (ou un #tag sous une vidéo), puis « Seulement mes niches » ne lit que celles-ci.",
+  "Fill in date and creator": "Renseigner la date et le créateur",
+  "Once Stash has the new videos, RedTok sets their date, the creator as the studio and the RedGifs link. Needs this page to stay open for a minute.": "Une fois les nouvelles vidéos dans Stash, RedTok y met la date, le créateur comme studio et le lien RedGifs. Cette page doit rester ouverte une minute.",
 };

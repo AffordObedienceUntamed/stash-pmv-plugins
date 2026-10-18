@@ -7,6 +7,7 @@ export const jobs = [];
 const byId = new Map();
 let running = 0, scanTimer = 0, hideTimer = 0;
 const dirs = new Set();
+const metaQ = []; // saved videos whose scene in Stash gets its date / creator once the scan has found it
 
 export const jobOf = (id) => byId.get(id) || null;
 export const isSaved = (id) => doneSet.has(id);
@@ -80,7 +81,7 @@ async function run(j) {
       j.state = "ok";
       j.note = o.existed ? "there" : "saved";
       j.size = o.size || 0;
-      if (o.dir && !o.existed) dirs.add(o.dir);
+      if (o.dir && !o.existed) { dirs.add(o.dir); metaQ.push(j.g); }
       addSaved(j.g);
       return;
     } catch (e) {
@@ -116,6 +117,46 @@ async function scanNow() {
     await gql("mutation($p: [String!]) { metadataScan(input: { paths: $p }) }", { p: paths });
     toast(t("Stash is scanning the new videos"));
   } catch (e) { /* only a courtesy – Stash finds the files at its next scan */ }
+  const q = metaQ.splice(0);
+  if (settings.meta && q.length) fillMeta(q).catch(() => {});
+}
+
+// The scene of a saved video gets what RedGifs knows: date, creator (as the studio) and the link. The scan runs on its own,
+// so the scene is looked up (by its file name "<creator> - <id>") for up to ~2 minutes.
+const SCENE_Q = "query($f: SceneFilterType) { findScenes(scene_filter: $f, filter: { per_page: 1 }) { scenes { id } } }";
+const studioIds = new Map();
+async function studioFor(name) {
+  if (studioIds.has(name)) return studioIds.get(name);
+  const d = await gql("query($f: StudioFilterType) { findStudios(studio_filter: $f, filter: { per_page: 1 }) { studios { id } } }", { f: { name: { value: name, modifier: "EQUALS" } } });
+  let id = d.findStudios.studios[0] && d.findStudios.studios[0].id;
+  if (!id) id = (await gql("mutation($i: StudioCreateInput!) { studioCreate(input: $i) { id } }", { i: { name, url: `https://www.redgifs.com/users/${name}` } })).studioCreate.id;
+  studioIds.set(name, id);
+  return id;
+}
+async function fillMeta(list) {
+  const todo = list.map((g) => ({ g, left: 40 }));
+  while (todo.length) {
+    await wait(3000);
+    for (const it of todo.slice()) {
+      const { g } = it;
+      let sid = "";
+      try {
+        const d = await gql(SCENE_Q, { f: { path: { value: `${g.user} - ${g.id}`, modifier: "INCLUDES" } } });
+        sid = d.findScenes.scenes[0] ? d.findScenes.scenes[0].id : "";
+      } catch (e) { /* try again */ }
+      if (!sid && --it.left > 0) continue;
+      todo.splice(todo.indexOf(it), 1);
+      if (!sid) continue;
+      const input = { id: sid };
+      if (g.date) input.date = new Date(g.date * 1000).toISOString().slice(0, 10);
+      if (g.desc && g.desc.length < 200) input.details = g.desc;
+      try { input.studio_id = await studioFor(g.user); } catch (e) { /* the rest still goes in */ }
+      const link = `https://www.redgifs.com/watch/${g.id}`;
+      for (const extra of [{ urls: [link] }, { url: link }, {}]) {
+        try { await gql("mutation($i: SceneUpdateInput!) { sceneUpdate(input: $i) { id } }", { i: { ...input, ...extra } }); break; } catch (e) { /* older / newer field name – next form */ }
+      }
+    }
+  }
 }
 
 export function cancelQueued() {

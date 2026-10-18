@@ -4,6 +4,14 @@
 
 export const CHANGES = [
   {
+    v: "3.102.0",
+    date: "2026-10-19",
+    items: [
+      ["ui", "Versus (performers): the button that opens a performer\u2019s page now opens it in a new tab, so the duel and your streak stay where they are \u2013 also the names in the ranking. (Thanks Ghboon!)", "对战（演员）：打开演员页面的按钮现在会在新标签页中打开，对战和连胜记录保持原样——排行榜中的名字也一样。（感谢 Ghboon！）"],
+      ["pmv", "Clip selection: two sliders, \u201cSkip the start of each scene\u201d and \u201cSkip the end of each scene\u201d (0\u2013300 s). No clip is taken from those seconds \u2013 e.g. a studio logo or the credits. The start comes on top of the automatic intro skip, the end sits on top of the last few seconds that were always skipped. Off by default. (Thanks rudi123!)", "片段选择：新增两个滑块“跳过每个场景的开头”和“跳过每个场景的结尾”（0–300 秒）。这些秒数内不会取片段——例如厂牌标志或片尾字幕。开头叠加在自动跳过片头之上，结尾叠加在原本就会跳过的最后几秒之上。默认关闭。（感谢 rudi123！）"],
+    ],
+  },
+  {
     v: "3.101.1",
     date: "2026-10-19",
     items: [

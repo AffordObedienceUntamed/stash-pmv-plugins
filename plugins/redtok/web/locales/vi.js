@@ -340,4 +340,9 @@ export default {
   "Their videos show up in For You and Following. Tap one to stop following.": "Video của chúng hiện trong “Dành cho bạn” và “Đang theo dõi”. Chạm vào một thẻ để bỏ theo dõi.",
   "None. Open a #tag (tap it under a video) and press Follow.": "Chưa có. Mở một #thẻ (chạm vào thẻ dưới video) rồi bấm Theo dõi.",
   "Press the + under a creator's picture, or Follow on the page of a #tag.": "Bấm dấu + dưới ảnh người sáng tạo, hoặc bấm Theo dõi trên trang của một #thẻ.",
+  "Only my niches": "Chỉ chủ đề của tôi",
+  "Follow niches to see them here": "Theo dõi chủ đề để xem tại đây",
+  "Follow a niche on its page (or a #tag under a video), then “Only my niches” plays just those.": "Theo dõi một chủ đề trên trang của nó (hoặc một #tag dưới video), rồi “Chỉ chủ đề của tôi” sẽ chỉ phát những cái đó.",
+  "Fill in date and creator": "Điền ngày và nhà sáng tạo",
+  "Once Stash has the new videos, RedTok sets their date, the creator as the studio and the RedGifs link. Needs this page to stay open for a minute.": "Khi Stash đã có video mới, RedTok sẽ đặt ngày, nhà sáng tạo làm studio và liên kết RedGifs. Cần để trang này mở khoảng một phút.",
 };

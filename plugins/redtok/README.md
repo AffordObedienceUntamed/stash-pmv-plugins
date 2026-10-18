@@ -6,7 +6,7 @@ Open it from Stash UI's menu (it shows up there by itself) or with the **RedTok*
 
 ## What's in it
 
-- **For You** – trending videos mixed with the niches of what you like, save and follow (videos you've watched are skipped, if you like). Sort it by Trending, New or Top this week / month / all time instead.
+- **For You** – (sort list: *Only my niches* plays just the niches and #tags you follow) trending videos mixed with the niches of what you like, save and follow (videos you've watched are skipped, if you like). Sort it by Trending, New or Top this week / month / all time instead.
 - **Following** – the newest videos of every creator you follow, newest first.
 - **My Stash** – your own scenes as a feed (random, recently added, newest, rating, most played, most O); long scenes start somewhere in the middle, like a clip.
 - **Explore** – a grid of trending videos with chips for top lists, the niches you follow and popular niches; all niches with a filter.
@@ -33,6 +33,7 @@ Open it from Stash UI's menu (it shows up there by itself) or with the **RedTok*
 
 | Version | What changed |
 |---|---|
+| 1.4.0 | **Only my niches**: in the sort list of For You, a new entry plays just the niches (and #tags) you follow, mixed, until they are through. **Fill in date and creator** (Settings, on by default): once Stash has scanned a saved video, RedTok sets its date, the creator as the studio and the RedGifs link (the page has to stay open for a minute). |
 | 1.3.0 | **Follow #tags**: tap a #tag under a video and press *Follow* – its videos then show up in **For You** (two pages of your followed tags are mixed in with the niches and trending) and in **Following** (newest first, together with the creators). The tags you follow are listed in Profile → Niches, as chips in Explore, and in Settings (tap to stop following). |
 | 1.2.0 | **Player shape** (button top right of the video / key A / Settings): auto, portrait, landscape (16:9) or window; **sidebar on/off** (button top left / key B); skipping watched videos now also counts what you scrolled past, and can be extended to Following, niches and search; **blocked tags** (Settings, or from a video's details); My Stash: *Mark for deletion* (tag "RedTok: delete") and *Delete from Stash* in the video's menu. |
 | 1.0.3 | Search brings matching videos again: RedGifs no longer understood the old way of asking and answered with its trending videos. The search box now finds the words in tags and descriptions; a tapped #tag (or a suggested tag) shows exactly that tag. |
