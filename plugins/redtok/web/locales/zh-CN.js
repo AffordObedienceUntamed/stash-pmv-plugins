@@ -335,4 +335,11 @@ export default {
   "Remove the scene from Stash, keep the file": "从 Stash 移除场景，保留文件",
   "Deleted": "已删除",
   "Couldn't delete: {e}": "无法删除：{e}",
+  "Following #{t}": "已关注 #{t}",
+  "Unfollowed #{t}": "已取消关注 #{t}",
+  "Your tags": "你的标签",
+  "Tags you follow": "你关注的标签",
+  "Their videos show up in For You and Following. Tap one to stop following.": "它们的视频会出现在“为你推荐”和“关注”中。点按一个即可取消关注。",
+  "None. Open a #tag (tap it under a video) and press Follow.": "还没有。打开一个 #标签（点按视频下方的标签），然后按“关注”。",
+  "Press the + under a creator's picture, or Follow on the page of a #tag.": "点按创作者头像下方的 +，或在 #标签 页面上按“关注”。",
 };

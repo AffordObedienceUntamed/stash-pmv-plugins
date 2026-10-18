@@ -334,4 +334,11 @@ export default {
   "Remove the scene from Stash, keep the file": "Stash からシーンを外し、ファイルは残す",
   "Deleted": "削除しました",
   "Couldn't delete: {e}": "削除できませんでした：{e}",
+  "Following #{t}": "#{t} をフォローしました",
+  "Unfollowed #{t}": "#{t} のフォローを解除しました",
+  "Your tags": "あなたのタグ",
+  "Tags you follow": "フォロー中のタグ",
+  "Their videos show up in For You and Following. Tap one to stop following.": "これらの動画は「おすすめ」と「フォロー中」に表示されます。タップするとフォロー解除。",
+  "None. Open a #tag (tap it under a video) and press Follow.": "まだありません。#タグ（動画の下のタグをタップ）を開いて「フォロー」を押してください。",
+  "Press the + under a creator's picture, or Follow on the page of a #tag.": "クリエイターの画像の下の + を押すか、#タグ のページで「フォロー」を押してください。",
 };

@@ -33,6 +33,7 @@ Open it from Stash UI's menu (it shows up there by itself) or with the **RedTok*
 
 | Version | What changed |
 |---|---|
+| 1.3.0 | **Follow #tags**: tap a #tag under a video and press *Follow* – its videos then show up in **For You** (two pages of your followed tags are mixed in with the niches and trending) and in **Following** (newest first, together with the creators). The tags you follow are listed in Profile → Niches, as chips in Explore, and in Settings (tap to stop following). |
 | 1.2.0 | **Player shape** (button top right of the video / key A / Settings): auto, portrait, landscape (16:9) or window; **sidebar on/off** (button top left / key B); skipping watched videos now also counts what you scrolled past, and can be extended to Following, niches and search; **blocked tags** (Settings, or from a video's details); My Stash: *Mark for deletion* (tag "RedTok: delete") and *Delete from Stash* in the video's menu. |
 | 1.0.3 | Search brings matching videos again: RedGifs no longer understood the old way of asking and answered with its trending videos. The search box now finds the words in tags and descriptions; a tapped #tag (or a suggested tag) shows exactly that tag. |
 | 1.0.2 | Videos start the moment you swipe: the next two are warmed up in advance (a muted play stopped on the first frame, so phones buffer them – preload alone isn't enough on Android/iOS), and the first frame replaces the poster as soon as it is decoded. |

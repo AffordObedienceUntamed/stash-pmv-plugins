@@ -336,6 +336,8 @@ body.is-clear .info, body.is-clear .rail, body.is-clear .ctl, body.is-clear #top
 .srow-x { display: grid; place-items: center; width: 40px; height: 40px; color: var(--faint); font-size: 18px; border-radius: 50%; }
 .srow-x:hover { color: #fff; background: rgba(255, 255, 255, .06); }
 .sa { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--panel-2); color: var(--text-2); font-size: 18px; flex: none; }
+.tagbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px 0; }
+.tagbar b { font-size: 20px; font-weight: 800; letter-spacing: -.01em; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 6px; }
 .sugg .ngrid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
 .sugg .btn.is-full { margin: 14px 0 20px; }

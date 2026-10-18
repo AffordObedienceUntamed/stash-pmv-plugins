@@ -337,4 +337,11 @@ export default {
   "Remove the scene from Stash, keep the file": "Usuń scenę ze Stasha, zachowaj plik",
   "Deleted": "Usunięto",
   "Couldn't delete: {e}": "Nie udało się usunąć: {e}",
+  "Following #{t}": "Obserwujesz #{t}",
+  "Unfollowed #{t}": "Przestałeś obserwować #{t}",
+  "Your tags": "Twoje tagi",
+  "Tags you follow": "Obserwowane tagi",
+  "Their videos show up in For You and Following. Tap one to stop following.": "Ich filmy pojawiają się w „Dla Ciebie” i „Obserwowane”. Dotknij jednego, aby przestać obserwować.",
+  "None. Open a #tag (tap it under a video) and press Follow.": "Jeszcze żadnego. Otwórz #tag (dotknij go pod filmem) i naciśnij Obserwuj.",
+  "Press the + under a creator's picture, or Follow on the page of a #tag.": "Naciśnij + pod zdjęciem twórcy albo Obserwuj na stronie #tagu.",
 };

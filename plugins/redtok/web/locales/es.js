@@ -330,4 +330,11 @@ export default {
   "Remove the scene from Stash, keep the file": "Quitar la escena de Stash y conservar el archivo",
   "Deleted": "Borrado",
   "Couldn't delete: {e}": "No se pudo borrar: {e}",
+  "Following #{t}": "Siguiendo #{t}",
+  "Unfollowed #{t}": "Dejaste de seguir #{t}",
+  "Your tags": "Tus etiquetas",
+  "Tags you follow": "Etiquetas que sigues",
+  "Their videos show up in For You and Following. Tap one to stop following.": "Sus vídeos aparecen en «Para ti» y «Siguiendo». Toca una para dejar de seguirla.",
+  "None. Open a #tag (tap it under a video) and press Follow.": "Ninguna todavía. Abre un #etiqueta (tócala bajo un vídeo) y pulsa Seguir.",
+  "Press the + under a creator's picture, or Follow on the page of a #tag.": "Pulsa el + bajo la foto de un creador, o Seguir en la página de un #etiqueta.",
 };

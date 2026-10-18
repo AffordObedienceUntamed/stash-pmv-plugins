@@ -4,7 +4,7 @@
 import { $, esc, t, tn, fmt, ago, mmss, ic, toast, nav, on, modal, pushLayer, closeLayer, closeLayers, copyText, hasHover, isPhone, store, LANGS, VERSION, img } from "./core.js";
 import {
   settings, saveSettings, makeSource, listSource, ORDERS, orderOf, rg, takeUsers, userOf, userPic, users,
-  liked, following, niches, hidden, nope, blocked, history, saved, doneSet, isFollowing, setFollow, followsNiche, setNiche, isHidden, setHidden, setNope,
+  liked, following, niches, hidden, nope, blocked, history, saved, doneSet, isFollowing, setFollow, followsNiche, setNiche, tagFollows, followsTag, setFollowTag, isHidden, setHidden, setNope,
   isBlockedTag, setBlockedTag, stashMark, stashDelete, DELETE_TAG, unlikeMany, clearHistory, removeFromHistory, forgetDownloads, exportData, importData, stashPerformer, usingBackend,
 } from "./data.js";
 import { av, tick, setSpeed, setAutoNext, setFit, setMuted, setFrame, frameName, FRAMES } from "./feed.js";
@@ -328,7 +328,17 @@ export function openSearch(q0 = "", tab0 = "videos", exact0 = false) {
   const p = openPage("");
   p.head.querySelector("h2").outerHTML = `<form class="searchbox is-head" role="search">${ic("search")}<input type="search" enterkeyhint="search" placeholder="${esc(t("Search"))}" autocomplete="off" spellcheck="false" value="${esc(q0)}"><button type="submit" class="sb-go">${esc(t("Search"))}</button></form>`;
   const form = p.head.querySelector("form"), inp = form.querySelector("input");
-  p.body.innerHTML = `<div class="sugg" data-sugg></div><div class="results" data-res hidden></div>`;
+  p.body.innerHTML = `<div class="tagbar" data-tagbar hidden></div><div class="sugg" data-sugg></div><div class="results" data-res hidden></div>`;
+  // a tapped #tag: its name and a button to follow it (its videos then come in For You and Following)
+  const tagbar = p.body.querySelector("[data-tagbar]");
+  let barTag = "";
+  const paintBar = () => {
+    tagbar.hidden = !barTag;
+    if (!barTag) return;
+    const f = followsTag(barTag);
+    tagbar.innerHTML = `<b>#${esc(barTag)}</b><button type="button" class="btn ${f ? "" : "is-red"}" data-ft>${ic(f ? "check" : "plus")}${esc(f ? t("Following") : t("Follow"))}</button>`;
+  };
+  p.cleanup(on("tagfollows", paintBar));
   const sugg = p.body.querySelector("[data-sugg]"), res = p.body.querySelector("[data-res]");
   let seq = 0, timer = 0, tabs = null, query = "";
   p.cleanup(() => tabs && tabs.destroy());
@@ -368,6 +378,8 @@ export function openSearch(q0 = "", tab0 = "videos", exact0 = false) {
     sugg.hidden = true;
     res.hidden = false;
     res.innerHTML = "";
+    barTag = exact ? q : "";
+    paintBar();
     if (tabs) tabs.destroy();
     tabs = tabbed(p, res, [{ id: "videos", label: t("Videos") }, { id: "creators", label: t("Creators") }, { id: "niches", label: t("Niches") }, { id: "stash", label: t("My Stash") }], tab || "videos", (id, box) => {
       if (id === "videos") return mountGrid(box, makeSource({ t: "search", q, exact, order: "trending" }), { root: p.body, barHost: p.el, sorts: ORDERS.search, makeS: (o) => makeSource({ t: "search", q, exact, order: o }), feedTitle: exact ? "#" + q : q, empty: { icon: "search", title: t("No results"), text: t("Try another word.") } });
@@ -380,6 +392,10 @@ export function openSearch(q0 = "", tab0 = "videos", exact0 = false) {
   inp.addEventListener("focus", () => { if (!res.hidden) { res.hidden = true; sugg.hidden = false; suggest(); } });
   form.addEventListener("submit", (e) => { e.preventDefault(); const q = inp.value.trim(); if (q) results(q, "videos"); });
   p.body.addEventListener("click", (e) => {
+    if (e.target.closest("[data-ft]") && barTag) {
+      const now = setFollowTag(barTag, !followsTag(barTag));
+      return toast(now ? t("Following #{t}", { t: barTag }) : t("Unfollowed #{t}", { t: barTag }));
+    }
     const x = e.target.closest("[data-delh]");
     if (x) { store.set("history", recent().filter((h) => h !== x.dataset.delh)); return showStart(); }
     if (e.target.closest("[data-clearh]")) { store.set("history", []); return showStart(); }
@@ -443,7 +459,7 @@ export function mountExplore(view) {
   let pop = [], grid = null, cur = "trending";
   const base = [["trending", "Trending"], ["latest", "New"], ["top7", "Top this week"], ["top28", "Top this month"], ["top", "Top of all time"]];
   const paintChips = () => {
-    const mine = niches.map((n) => ["n:" + n.id, "#" + n.name]);
+    const mine = [...tagFollows.map((tg) => ["t:" + tg, "#" + tg]), ...niches.map((n) => ["n:" + n.id, "#" + n.name])];
     const others = pop.filter((n) => !followsNiche(n.id)).map((n) => ["n:" + n.id, "#" + (n.name || nicheName(n.id))]);
     chipsBox.innerHTML = [...base.map(([v, l]) => [v, t(l)]), ...mine, ...others].map(([v, l]) => `<button class="chipb${v === cur ? " is-on" : ""}" data-x="${esc(v)}">${esc(l)}</button>`).join("") + `<button class="chipb is-more" data-allniches>${esc(t("All niches"))} ›</button>`;
   };
@@ -451,8 +467,8 @@ export function mountExplore(view) {
     cur = v;
     paintChips();
     if (grid) grid.destroy();
-    const label = v.startsWith("n:") ? "#" + ((niches.find((n) => n.id === v.slice(2)) || pop.find((n) => n.id === v.slice(2)) || {}).name || nicheName(v.slice(2))) : t((base.find((b) => b[0] === v) || [, ""])[1]);
-    const S = v.startsWith("n:") ? makeSource({ t: "niche", slug: v.slice(2), order: "hot" }) : makeSource({ t: "search", order: v });
+    const label = v.startsWith("t:") ? "#" + v.slice(2) : v.startsWith("n:") ? "#" + ((niches.find((n) => n.id === v.slice(2)) || pop.find((n) => n.id === v.slice(2)) || {}).name || nicheName(v.slice(2))) : t((base.find((b) => b[0] === v) || [, ""])[1]);
+    const S = v.startsWith("t:") ? makeSource({ t: "search", q: v.slice(2), exact: true, order: "trending" }) : v.startsWith("n:") ? makeSource({ t: "niche", slug: v.slice(2), order: "hot" }) : makeSource({ t: "search", order: v });
     grid = mountGrid(p.body.querySelector(".gbox"), S, { root: p.body, barHost: view, feedTitle: label, selectable: false });
   };
   paintChips();
@@ -465,6 +481,7 @@ export function mountExplore(view) {
     if (c && c.dataset.x !== cur) { show(c.dataset.x); c.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" }); }
   });
   on("niches", paintChips);
+  on("tagfollows", paintChips);
   return { top: () => p.body.scrollTo({ top: 0, behavior: "smooth" }) };
 }
 
@@ -491,12 +508,16 @@ export function mountMe(view) {
       return null;
     }
     if (id === "niches") {
-      box.innerHTML = `<div class="gbar"><button class="btn" data-allniches>${ic("search")}${esc(t("Find niches"))}</button></div>${niches.length ? `<div class="ngrid">${niches.map((n) => nicheTile({ id: n.id, name: n.name, thumbnail: n.img })).join("")}</div>` : `<div class="gempty">${ic("tag")}<b>${esc(t("No niches followed"))}</b><span>${esc(t("Follow niches and For You shows more of them."))}</span></div>`}`;
+      box.innerHTML = `<div class="gbar"><button class="btn" data-allniches>${ic("search")}${esc(t("Find niches"))}</button></div>${tagFollows.length ? `<h3 class="mh">${esc(t("Your tags"))}</h3><div class="chips" data-mytags>${tagFollows.map((tg) => `<button class="chipb" data-ftag="${esc(tg)}">#${esc(tg)}</button>`).join("")}</div>` : ""}${niches.length ? `<div class="ngrid">${niches.map((n) => nicheTile({ id: n.id, name: n.name, thumbnail: n.img })).join("")}</div>` : `<div class="gempty">${ic("tag")}<b>${esc(t("No niches followed"))}</b><span>${esc(t("Follow niches and For You shows more of them."))}</span></div>`}`;
       return null;
     }
   });
+  // (followed or unfollowed a tag while another page was on top: the list shows the new state when it is the open tab)
+  on("tagfollows", () => { const b = view.querySelector(".ptab.is-on"); if (b && b.dataset.tab === "niches" && view.isConnected) tabs.show("niches"); });
   view.addEventListener("click", (e) => {
     if (e.target.closest("[data-set]")) return nav.openSettings();
+    const ftg = e.target.closest("[data-ftag]");
+    if (ftg) return nav.openSearch(ftg.dataset.ftag, "videos", true);
     const g = e.target.closest("[data-go]");
     if (g) return tabs.show(g.dataset.go);
     if (e.target.closest("[data-playliked]")) return liked.length && nav.openFeed(listSource(liked.slice().reverse()), 0, t("Liked"));
@@ -739,6 +760,7 @@ export function openSettings(focus) {
     ${sel("quality", t("Download quality"), "", [["hd", t("HD (original)")], ["sd", t("SD (smaller)")]])}
     ${sw("scan", t("Scan into Stash"), t("After downloading, Stash scans the folders that got new videos."))}
     <h3 class="sh">${esc(t("Your feed"))}</h3>
+    <div class="set is-col"><span class="st"><b>${esc(t("Tags you follow"))}</b><small>${esc(tagFollows.length ? t("Their videos show up in For You and Following. Tap one to stop following.") : t("None. Open a #tag (tap it under a video) and press Follow."))}</small></span>${tagFollows.length ? `<div class="chips">${tagFollows.map((x) => `<button class="chipb is-x" data-untagf="${esc(x)}">#${esc(x)} ${ic("close")}</button>`).join("")}</div>` : ""}</div>
     <div class="set is-col"><span class="st"><b>${esc(t("Hidden creators"))}</b><small>${esc(hidden.length ? t("Their videos never show up. Tap one to show it again.") : t("None. Hide a creator from a video's share menu."))}</small></span>${hidden.length ? `<div class="chips">${hidden.map((h) => `<button class="chipb is-x" data-unhide="${esc(h)}">@${esc(h)} ${ic("close")}</button>`).join("")}</div>` : ""}</div>
     <div class="set"><span class="st"><b>${esc(t("Not interested"))}</b><small>${esc(tn(nope.length, "{n} video left out", "{n} videos left out"))}</small></span>${nope.length ? `<button class="btn is-ghost is-sm" data-resetnope>${esc(t("Reset"))}</button>` : ""}</div>
     <div class="set is-col"><span class="st"><b>${esc(t("Blocked tags"))}</b><small>${esc(blocked.length ? t("Videos with these tags or niches never show up. Tap one to unblock it.") : t("None yet. Add one below, or block a tag from a video's details."))}</small></span>${blocked.length ? `<div class="chips">${blocked.map((b) => `<button class="chipb is-x" data-unblock="${esc(b)}">#${esc(b)} ${ic("close")}</button>`).join("")}</div>` : ""}
@@ -788,6 +810,8 @@ export function openSettings(focus) {
       } catch (x) { toast(String(x.message || x), true); }
       return;
     }
+    const utf = e.target.closest("[data-untagf]");
+    if (utf) { setFollowTag(utf.dataset.untagf, false); return paint(); }
     const ub = e.target.closest("[data-unblock]");
     if (ub) { setBlockedTag(ub.dataset.unblock, false); return paint(); }
     if (e.target.closest("[data-blockadd]")) {

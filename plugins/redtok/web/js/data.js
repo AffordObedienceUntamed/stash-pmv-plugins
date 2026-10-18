@@ -159,6 +159,7 @@ export let niches = store.get("niches", []); // followed niches [{id, name, img}
 export let hidden = store.get("hidden", []); // creators you never want to see
 export let nope = store.get("nope", []); // single videos you're not interested in
 export let blocked = store.get("blocked", []); // tags and niches you never want to see
+export let tagFollows = store.get("tagFollows", []); // #tags you follow: their videos come in For You and Following
 export let history = playable(store.get("watched", [])); // newest first, gifs
 export let saved = playable(store.get("saved", [])); // downloaded gifs, newest first
 export let doneSet = new Set(store.get("done", [])); // ids of everything downloaded (also older downloads without details)
@@ -194,6 +195,16 @@ export function setNiche(n, on) {
   niches = on ? [...niches, { id: n.id, name: n.name || n.id, img: n.img || "" }] : niches.filter((x) => x.id !== n.id);
   store.set("niches", niches);
   emit("niches", {});
+  return on;
+}
+const tagKey = (s) => String(s || "").replace(/^#/, "").trim();
+export const followsTag = (tag) => tagFollows.some((x) => low(x) === low(tagKey(tag)));
+export function setFollowTag(tag, on) {
+  tag = tagKey(tag);
+  if (!tag || on === followsTag(tag)) return on;
+  tagFollows = on ? [...tagFollows, tag] : tagFollows.filter((x) => low(x) !== low(tag));
+  store.set("tagFollows", tagFollows);
+  emit("tagfollows", { tag, on });
   return on;
 }
 export const isHidden = (name) => hidden.some((h) => low(h) === low(name));
@@ -307,19 +318,31 @@ export function makeSource(spec) {
     }
     return [];
   };
+  // a page of one #tag (exact tag; newest or trending, at random so the same top videos don't come first every time)
+  const tagPage = async (st, tag) => {
+    const d = await rg(`/gifs/search?tags=${enc(tag)}&order=${Math.random() < 0.5 ? "latest" : "trending"}&count=40&page=${st.page + 1}&type=g`);
+    st.page++;
+    takeUsers(d);
+    st.done = !(d.gifs || []).length || st.page >= Math.min(d.pages || 1, 100);
+    return (d.gifs || []).map(norm).filter(Boolean);
+  };
   const LOAD = {
     foryou: async () => {
       const o = orderOf(spec);
       const mix = o === "foryou" ? taste() : [];
-      if (!mix.length) return search(o === "foryou" ? "trending" : o);
-      // a page of what's trending, mixed with two pages of the niches you like (weighted, at random)
+      const tf = o === "foryou" ? tagFollows.slice() : [];
+      if (!mix.length && !tf.length) return search(o === "foryou" ? "trending" : o);
+      // a page of what's trending, mixed with two pages of the niches you like (weighted, at random) and two of the #tags you follow
       S.np = S.np || {};
+      S.tp = S.tp || {};
       const total = mix.reduce((a, [, w]) => a + w, 0);
       const pick = () => { let r = Math.random() * total; for (const [id, w] of mix) if ((r -= w) <= 0) return id; return mix[0][0]; };
-      const picks = [...new Set([pick(), pick(), pick()])].filter((id) => !(S.np[id] && S.np[id].done)).slice(0, 2);
+      const picks = mix.length ? [...new Set([pick(), pick(), pick()])].filter((id) => !(S.np[id] && S.np[id].done)).slice(0, 2) : [];
+      const tpicks = tf.sort(() => Math.random() - 0.5).filter((tg) => !(S.tp[tg] && S.tp[tg].done)).slice(0, 2);
       const lists = await Promise.all([
         search("trending").catch(() => []),
         ...picks.map((id) => nichePage((S.np[id] = S.np[id] || { page: 0 }), id, "hot").catch(() => [])),
+        ...tpicks.map((tg) => tagPage((S.tp[tg] = S.tp[tg] || { page: 0 }), tg).catch(() => [])),
       ]);
       S.done = false; // trending alone ending doesn't end your feed
       const [a, ...b] = lists;
@@ -338,14 +361,14 @@ export function makeSource(spec) {
     },
     // newest first across everyone you follow: a few videos per creator are kept ready, the newest one goes next
     following: async () => {
-      if (!S.fx) S.fx = following.map((f) => ({ name: f.name, page: 0, buf: [], done: false }));
+      if (!S.fx) S.fx = [...following.map((f) => ({ name: f.name, page: 0, buf: [], done: false })), ...tagFollows.map((tg) => ({ tag: tg, page: 0, buf: [], done: false }))];
       if (!S.fx.length) { S.done = true; return []; }
       const out = [];
       while (out.length < 24) {
         const need = S.fx.filter((c) => !c.done && !c.buf.length);
         await inPool(need, 6, async (c) => {
           try {
-            const d = await rg(`/users/${enc(c.name)}/search?order=recent&count=20&page=${++c.page}`);
+            const d = await rg(c.tag ? `/gifs/search?tags=${enc(c.tag)}&order=latest&count=20&page=${++c.page}&type=g` : `/users/${enc(c.name)}/search?order=recent&count=20&page=${++c.page}`);
             takeUsers(d);
             const l = (d.gifs || []).map(norm).filter(Boolean);
             c.buf.push(...l);

@@ -333,4 +333,11 @@ export default {
   "Remove the scene from Stash, keep the file": "Gỡ cảnh khỏi Stash, giữ lại tệp",
   "Deleted": "Đã xóa",
   "Couldn't delete: {e}": "Không thể xóa: {e}",
+  "Following #{t}": "Đã theo dõi #{t}",
+  "Unfollowed #{t}": "Đã bỏ theo dõi #{t}",
+  "Your tags": "Thẻ của bạn",
+  "Tags you follow": "Thẻ bạn theo dõi",
+  "Their videos show up in For You and Following. Tap one to stop following.": "Video của chúng hiện trong “Dành cho bạn” và “Đang theo dõi”. Chạm vào một thẻ để bỏ theo dõi.",
+  "None. Open a #tag (tap it under a video) and press Follow.": "Chưa có. Mở một #thẻ (chạm vào thẻ dưới video) rồi bấm Theo dõi.",
+  "Press the + under a creator's picture, or Follow on the page of a #tag.": "Bấm dấu + dưới ảnh người sáng tạo, hoặc bấm Theo dõi trên trang của một #thẻ.",
 };
