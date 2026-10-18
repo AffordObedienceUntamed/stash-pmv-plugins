@@ -2069,6 +2069,10 @@ function layoutIcon(id) {
 // Best-looking spots of a scene from Stash's sprite sheet + VTT (the scrubbing thumbnails):
 // skin and contrast per picture, a bonus near your markers and where the funscript is fast → [{ t, score }], best first
 const spriteCache = new Map();
+// Where a scene's intro (studio logo, titles) is surely over: picked spots start after it – your markers may be in it.
+// 3 min → 15 s, 10 min → 24 s, longer → 30 s; short clips a tenth
+const introEnd = (dur) => (dur > 10 ? Math.min(30, Math.max(dur * 0.04, Math.min(15, dur * 0.1))) : 0);
+
 async function spriteSpots(s, dur, heat) {
   if (!s.sprite || !s.vtt) return null;
   if (spriteCache.has(s.key)) return spriteCache.get(s.key);
@@ -2086,7 +2090,7 @@ async function spriteSpots(s, dur, heat) {
     img.src = s.sprite;
     await withTimeout(img.decode(), 8000);
     const out = [];
-    const use = cues.filter((c) => c.t >= dur * 0.04 && c.t <= dur - 4); // not the very start (titles) or the end
+    const use = cues.filter((c) => c.t >= introEnd(dur) && c.t <= dur - 4); // not the intro or the very end
     const sigs = analyzeTiles(img, use.map((c) => c.r));
     for (const [i, c] of use.entries()) {
       const a = sigs[i];
@@ -3206,7 +3210,9 @@ class Generator {
         seq = { lo, hi };
       }
       const inSeq = (t) => !seq || (t >= seq.lo && t <= seq.hi);
-      const rand = () => (seq ? seq.lo + Math.random() * Math.max(0, seq.hi - seq.lo) : dur > 10 ? dur * 0.08 + Math.random() * Math.max(0, dur * 0.84 - 4) : 0);
+      // (the scene timeline starts at the scene's start – but not in its intro)
+      const head = introEnd(dur);
+      const rand = () => (seq ? Math.max(seq.lo, Math.min(head, seq.hi)) + Math.random() * Math.max(0, seq.hi - Math.max(seq.lo, head)) : dur > 10 ? head + Math.random() * Math.max(0, dur * 0.92 - 4 - head) : 0);
       const seek = async (t) => {
         v.currentTime = t;
         await withTimeout(once(v, "seeked"), 8000);
@@ -3237,7 +3243,7 @@ class Generator {
       if (Array.isArray(map)) {
         want = this.paceAt(this.now() + 1 + Math.random() * this.readyWait());
         mapCands = map
-          .filter((x) => x.t < dur - 3 && inSeq(x.t))
+          .filter((x) => x.t >= head && x.t < dur - 3 && inSeq(x.t)) // (the preview starts at 0 – the intro's logo moves fast)
           .map((x) => ({ x, d: Math.abs((speedPct(x.speed) ?? 0.5) - want) + (fresh(x.t) ? 0 : 0.5) + Math.random() * 0.12 }))
           .sort((a, b) => a.d - b.d);
       }
@@ -3338,8 +3344,11 @@ class Generator {
       }
       const m = { kind: "video", el: v, w: v.videoWidth, h: v.videoHeight, id: s.id, key: s.key, perf: s.perf, rg: s.rg, start, name: s.name, file: s.file, url: s.url, tagNames: s.tagNames,
         motion: mo, heat: heat ? heat(start) : null, speed: spd };
-      // A marker with an end: the clip stays inside it (the scene would play on into something else) – see loop()
-      if (s.at != null && s.end > s.at + 0.5) m.endAt = Math.min(s.end, dur - 0.1);
+      // Where the clip turns back to its start (see loop()): a marker with an end – the clip stays inside it (the
+      // scene would play on into something else) – else just before the scene's end: the video would start over
+      // at 0, in its intro (a spot near the end, a clip that stays on for long)
+      const end = s.at != null && s.end > s.at + 0.5 ? Math.min(s.end, dur - 0.1) : dur - 0.4;
+      if (end > start + 0.5) m.endAt = end;
       m.sig = info || (await analyzeAsync(v, m.w, m.h));
       if (this.S.smartCrop) {
         m.focus = Object.assign({}, m.sig.focus);
@@ -4008,8 +4017,13 @@ class Generator {
     // (with "cut ahead of the beat" the cut is made a few ms early; the zoom pulse still sits on the real beat)
     const lead = (this.S.cutLead || 0) / 1000;
     while (this.bi < beats.length && beats[this.bi] - lead <= p) this.onBeat(this.bi++, t);
-    // A marker clip with an end loops inside its marker
-    for (const m of this.groups) if (m && m.endAt && m.kind === "video" && m.el.currentTime >= m.endAt) m.el.currentTime = m.start;
+    // A clip at its end turns back to its start (see prepareFrom) – also when the video got to its end first and
+    // started over at 0 (its intro)
+    for (const m of this.groups) {
+      if (!m || !m.endAt || m.kind !== "video") continue;
+      const ct = m.el.currentTime;
+      if (ct >= m.endAt || ct < m.start - 0.5) m.el.currentTime = m.start;
+    }
     if (this.tpl) {
       const evs = this.tpl.events;
       while (this.ti < evs.length && evs[this.ti].t <= t) this.applyEvent(evs[this.ti++], t);
