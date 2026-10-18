@@ -2230,4 +2230,6 @@ export default {
   "Opened in the file manager": "ファイルマネージャーで開きました",
   "Can't open it from here – the path is copied": "ここからは開けません – パスをコピーしました",
   "File path": "ファイルパス",
+  "This file isn't inside a library folder of Stash – the path is copied": "このファイルは Stash のライブラリフォルダー内にありません – パスをコピーしました",
+  "Stash's computer can't find this file at that path – the path is copied": "Stash を実行しているコンピューターではこのパスにファイルが見つかりません – パスをコピーしました",
 };

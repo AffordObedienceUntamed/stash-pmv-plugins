@@ -2287,4 +2287,6 @@ export default {
   "Opened in the file manager": "已在文件管理器中打开",
   "Can't open it from here – the path is copied": "无法从这里打开 – 路径已复制",
   "File path": "文件路径",
+  "This file isn't inside a library folder of Stash – the path is copied": "该文件不在 Stash 的库文件夹内 – 路径已复制",
+  "Stash's computer can't find this file at that path – the path is copied": "运行 Stash 的电脑在该路径找不到这个文件 – 路径已复制",
 };

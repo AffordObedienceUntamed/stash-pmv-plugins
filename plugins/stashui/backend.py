@@ -1159,7 +1159,9 @@ def reveal(stash, args):
         return {"opened": False, "why": "missing"}
     real = os.path.realpath(path)
     if os.name == "nt":
-        subprocess.Popen(["explorer", "/select," + os.path.normpath(real)], creationflags=0x08000000, close_fds=True)
+        # as one raw command line: /select,"<path>" – a list would quote the whole "/select,<path>" argument, which Explorer
+        # misreads for paths with spaces or commas (it then opens some default folder instead of selecting the file)
+        subprocess.Popen('explorer /select,"' + os.path.normpath(real) + '"', creationflags=0x08000000, close_fds=True)
     elif sys.platform == "darwin":
         subprocess.Popen(["open", "-R", real], close_fds=True)
     else:

@@ -2228,4 +2228,6 @@ export default {
   "Opened in the file manager": "Otwarto w menedżerze plików",
   "Can't open it from here – the path is copied": "Nie można otworzyć stąd – ścieżka została skopiowana",
   "File path": "Ścieżka pliku",
+  "This file isn't inside a library folder of Stash – the path is copied": "Ten plik nie leży w folderze biblioteki Stash – ścieżka została skopiowana",
+  "Stash's computer can't find this file at that path – the path is copied": "Komputer ze Stash nie znajduje tego pliku pod tą ścieżką – ścieżka została skopiowana",
 };

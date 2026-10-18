@@ -2223,4 +2223,6 @@ export default {
   "Opened in the file manager": "Đã mở trong trình quản lý tệp",
   "Can't open it from here – the path is copied": "Không thể mở từ đây – đường dẫn đã được sao chép",
   "File path": "Đường dẫn tệp",
+  "This file isn't inside a library folder of Stash – the path is copied": "Tệp này không nằm trong thư mục thư viện của Stash – đường dẫn đã được sao chép",
+  "Stash's computer can't find this file at that path – the path is copied": "Máy chạy Stash không tìm thấy tệp này tại đường dẫn đó – đường dẫn đã được sao chép",
 };

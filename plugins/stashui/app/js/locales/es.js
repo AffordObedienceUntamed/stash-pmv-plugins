@@ -2205,4 +2205,6 @@ export default {
   "Opened in the file manager": "Abierto en el administrador de archivos",
   "Can't open it from here – the path is copied": "No se puede abrir desde aquí – la ruta está copiada",
   "File path": "Ruta del archivo",
+  "This file isn't inside a library folder of Stash – the path is copied": "Este archivo no está dentro de una carpeta de biblioteca de Stash – la ruta está copiada",
+  "Stash's computer can't find this file at that path – the path is copied": "El equipo de Stash no encuentra este archivo en esa ruta – la ruta está copiada",
 };

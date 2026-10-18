@@ -2265,4 +2265,6 @@ export default {
   "Opened in the file manager": "Открыто в файловом менеджере",
   "Can't open it from here – the path is copied": "Отсюда не открыть – путь скопирован",
   "File path": "Путь к файлу",
+  "This file isn't inside a library folder of Stash – the path is copied": "Этот файл не находится в папке библиотеки Stash – путь скопирован",
+  "Stash's computer can't find this file at that path – the path is copied": "Компьютер со Stash не находит этот файл по этому пути – путь скопирован",
 };

@@ -2183,4 +2183,6 @@ export default {
   "Opened in the file manager": "Im Dateimanager geöffnet",
   "Can't open it from here – the path is copied": "Von hier nicht zu öffnen – der Pfad wurde kopiert",
   "File path": "Dateipfad",
+  "This file isn't inside a library folder of Stash – the path is copied": "Diese Datei liegt nicht in einem Bibliotheksordner von Stash – der Pfad wurde kopiert",
+  "Stash's computer can't find this file at that path – the path is copied": "Der Computer von Stash findet diese Datei unter dem Pfad nicht – der Pfad wurde kopiert",
 };

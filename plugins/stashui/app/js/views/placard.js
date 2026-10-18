@@ -55,17 +55,22 @@ function perfFacts(p, x) {
 // phone) the path goes to the clipboard so it can be pasted into the file manager
 async function revealFile(path) {
   if (!path) return;
-  let opened = false;
+  let res = {};
   try {
     const { runBackend } = await import("../interactive.js");
-    opened = !!((await runBackend({ mode: "reveal", path })) || {}).opened;
+    res = (await runBackend({ mode: "reveal", path })) || {};
   } catch {
     /* backend too old or not reachable – copy below */
   }
-  if (opened) return toast(t("Opened in the file manager"), "ok");
+  if (res.opened) return toast(t("Opened in the file manager"), "ok");
   try {
     await navigator.clipboard.writeText(path);
-    toast(t("Can't open it from here – the path is copied"), "ok");
+    toast(
+      res.why === "outside" ? t("This file isn't inside a library folder of Stash – the path is copied")
+        : res.why === "missing" ? t("Stash's computer can't find this file at that path – the path is copied")
+        : t("Can't open it from here – the path is copied"),
+      "ok",
+    );
   } catch {
     window.prompt(t("File path"), path);
   }

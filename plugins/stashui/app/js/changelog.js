@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.101.1",
+    date: "2026-10-19",
+    items: [
+      ["ui", "Fix: \u201cShow file\u201d worked only for some files \u2013 on Windows, paths with spaces or commas made Explorer open a default folder instead of selecting the file. The file is now passed to Explorer the way it expects it. If it still can\u2019t open a file, the message says why (not in a library folder / not found on Stash\u2019s computer) and the path is copied. (Thanks Ghboon!)", "修复：“显示文件”只对部分文件有效——在 Windows 上，含空格或逗号的路径会使资源管理器打开默认文件夹，而不是选中文件。现在按资源管理器期望的方式传递文件。如果仍无法打开，提示会说明原因（不在库文件夹内 / 在 Stash 所在电脑上找不到），并复制路径。（感谢 Ghboon！）"],
+    ],
+  },
+  {
     v: "3.101.0",
     date: "2026-10-19",
     items: [
