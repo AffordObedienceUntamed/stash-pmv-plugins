@@ -2269,4 +2269,7 @@ export default {
   "Select all {n} found": "Chọn tất cả {n} kết quả",
   "The performers disappear from Stash. Their scenes, images and galleries stay – only the link to the performer is removed. This can't be undone.": "Các diễn viên sẽ biến mất khỏi Stash. Cảnh, ảnh và thư viện ảnh của họ vẫn còn – chỉ liên kết với diễn viên bị gỡ. Không thể hoàn tác.",
   "Tick performers to delete several at once": "Chọn diễn viên để xóa nhiều người cùng lúc",
+  "Show me": "Cho tôi xem",
+  "Entries with “Show me” take you to the feature and light it up for a moment.": "Các mục có “Cho tôi xem” sẽ đưa bạn đến tính năng đó và làm nó sáng lên trong giây lát.",
+  "There is nothing to show it on in your library yet.": "Thư viện của bạn chưa có gì để hiển thị tính năng này.",
 };

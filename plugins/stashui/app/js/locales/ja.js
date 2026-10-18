@@ -2276,4 +2276,7 @@ export default {
   "Select all {n} found": "見つかった {n} 件をすべて選択",
   "The performers disappear from Stash. Their scenes, images and galleries stay – only the link to the performer is removed. This can't be undone.": "パフォーマーは Stash から消えます。シーン・画像・ギャラリーは残り、パフォーマーとの紐付けだけが外れます。元に戻せません。",
   "Tick performers to delete several at once": "パフォーマーを選んでまとめて削除",
+  "Show me": "見に行く",
+  "Entries with “Show me” take you to the feature and light it up for a moment.": "「見に行く」付きの項目は、その機能の場所へ移動して少しの間ハイライトします。",
+  "There is nothing to show it on in your library yet.": "ライブラリにはまだ表示できるものがありません。",
 };

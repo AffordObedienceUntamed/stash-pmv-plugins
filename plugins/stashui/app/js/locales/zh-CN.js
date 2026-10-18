@@ -2333,4 +2333,7 @@ export default {
   "Select all {n} found": "选择全部 {n} 个结果",
   "The performers disappear from Stash. Their scenes, images and galleries stay – only the link to the performer is removed. This can't be undone.": "这些演员会从 Stash 中消失。他们的场景、图片和图库会保留 – 只会移除与演员的关联。此操作无法撤销。",
   "Tick performers to delete several at once": "勾选演员，一次删除多个",
+  "Show me": "带我去看",
+  "Entries with “Show me” take you to the feature and light it up for a moment.": "带有“带我去看”的条目会带你到该功能，并让它短暂高亮。",
+  "There is nothing to show it on in your library yet.": "你的资料库里还没有可以用来演示的内容。",
 };

@@ -2215,4 +2215,7 @@ export default {
   "Select all {n} found": "Tout sélectionner ({n} trouvés)",
   "The performers disappear from Stash. Their scenes, images and galleries stay – only the link to the performer is removed. This can't be undone.": "Les interprètes disparaissent de Stash. Leurs scènes, images et galeries restent – seul le lien avec l'interprète est supprimé. Impossible d'annuler.",
   "Tick performers to delete several at once": "Cochez des interprètes pour en supprimer plusieurs d'un coup",
+  "Show me": "Me le montrer",
+  "Entries with “Show me” take you to the feature and light it up for a moment.": "Les entrées avec « Me le montrer » vous mènent à la fonction et la mettent brièvement en évidence.",
+  "There is nothing to show it on in your library yet.": "Votre bibliothèque ne contient encore rien pour le montrer.",
 };

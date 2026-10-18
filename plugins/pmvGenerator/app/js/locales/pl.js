@@ -2274,4 +2274,7 @@ export default {
   "Select all {n} found": "Zaznacz wszystkie {n} znalezione",
   "The performers disappear from Stash. Their scenes, images and galleries stay – only the link to the performer is removed. This can't be undone.": "Wykonawcy znikną ze Stash. Ich sceny, obrazy i galerie zostają – usuwane jest tylko powiązanie z wykonawcą. Nie można tego cofnąć.",
   "Tick performers to delete several at once": "Zaznacz wykonawców, by usunąć kilku naraz",
+  "Show me": "Pokaż mi",
+  "Entries with “Show me” take you to the feature and light it up for a moment.": "Wpisy z „Pokaż mi” prowadzą do funkcji i na chwilę ją podświetlają.",
+  "There is nothing to show it on in your library yet.": "W twojej bibliotece nie ma jeszcze niczego, na czym można to pokazać.",
 };

@@ -2311,4 +2311,7 @@ export default {
   "Select all {n} found": "Выбрать все найденные ({n})",
   "The performers disappear from Stash. Their scenes, images and galleries stay – only the link to the performer is removed. This can't be undone.": "Исполнители исчезнут из Stash. Их сцены, изображения и галереи останутся – удаляется только связь с исполнителем. Это нельзя отменить.",
   "Tick performers to delete several at once": "Отметьте исполнителей, чтобы удалить сразу нескольких",
+  "Show me": "Показать",
+  "Entries with “Show me” take you to the feature and light it up for a moment.": "Записи с кнопкой «Показать» ведут к функции и ненадолго подсвечивают её.",
+  "There is nothing to show it on in your library yet.": "В вашей библиотеке пока нет ничего, на чём это можно показать.",
 };

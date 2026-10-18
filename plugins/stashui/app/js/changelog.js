@@ -1,8 +1,18 @@
 // What's new: the patch notes shown on the "What's new" page (newest first).
 // Every release that changes something you can see gets an entry; en + zh (Simplified Chinese).
 // app: "ui" = Stash UI, "pmv" = PMV Generator, "storm" = Media Storm
+// An item can have a 4th entry "route::target" – the What's new page then shows a "Show me" button that opens the route and lights
+// up the target for a moment. The target is a CSS selector (starts with [ . #) or the label of a setting (opens it in Settings).
+// "@performer" / "@scene" inside the route (performer/@performer) stand for the id of one of your own performers (most scenes) / scenes. Older entries are listed in LINKS.
 
 export const CHANGES = [
+  {
+    v: "3.105.0",
+    date: "2026-10-19",
+    items: [
+      ["ui", "What’s new: entries of new features now have a “Show me” button that takes you to the feature – the right page, or the right setting – and lights it up for a moment (the latest entries have it; plugin authors can add it to their own with a fourth entry).", "更新内容：新功能的条目现在有“带我去看”按钮，点击后会跳到对应的页面或设置，并让该功能短暂高亮（最近的条目都有）。"],
+    ],
+  },
   {
     v: "3.104.0",
     date: "2026-10-19",
@@ -1059,5 +1069,19 @@ export const CHANGES = [
     ],
   },
 ];
+
+// "version:index of the item" → target, for entries written before items could carry their own
+export const LINKS = {
+  "3.104.0:0": "performers::[data-selmode]",
+  "3.103.0:0": "performer/@performer::[data-pstats], [data-pmiss]",
+  "3.103.0:1": "settings/this-ui::Rating badge",
+  "3.101.0:1": "scene/@scene::[data-reveal]",
+  "3.99.0:0": "performers::[data-attrbtn]",
+  "3.97.0:0": "settings/player-ui::Start playing when a scene opens",
+  "3.97.0:1": "settings/this-ui::Style classic Stash like this interface",
+  "3.97.0:5": "performer/@performer::[data-fav]",
+  "3.94.1:0": "scenes::[data-viewseg]",
+  "3.94.0:0": "scenes::[data-viewseg]",
+};
 
 export const LATEST = CHANGES[0].v;

@@ -2059,3 +2059,15 @@ html.kb-glass .kb-pm-list a:hover { background: color-mix(in srgb, var(--pink) 2
 .kb-perf.is-picked .kb-perf-img { box-shadow: 0 0 0 3px var(--pink); }
 .kb-perf.is-picked .kb-perf-img img { opacity: .75; }
 .kb-perfgrid.is-selecting .kb-perf { cursor: pointer; }
+
+/* What's new: entries that jump to the feature, and the ring that lights it up */
+.kb-news-v li.is-link { align-items: center; margin: 0 -8px; padding: 4px 8px; border-radius: 8px; cursor: pointer; transition: background .15s; }
+.kb-news-v li.is-link:hover, .kb-news-v li.is-link:focus-visible { background: color-mix(in srgb, var(--pink) 12%, transparent); }
+.kb-news-go { flex: none; margin-left: auto; padding: 2px 10px; border: 1px solid color-mix(in srgb, var(--pink) 55%, transparent); border-radius: 999px; color: var(--pink-2); font: 700 11.5px/1.4 var(--f-label); white-space: nowrap; }
+.kb-news-v li.is-link:hover .kb-news-go, .kb-news-v li.is-link:focus-visible .kb-news-go { color: var(--ink); background: var(--pink); }
+html.kb-glass .kb-news-go { border-color: var(--glass-edge); }
+.kb-spot { position: relative; z-index: 3; animation: kb-spot 3s ease; }
+@keyframes kb-spot {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  10%, 75% { box-shadow: 0 0 0 4px var(--pink), 0 0 30px 8px color-mix(in srgb, var(--pink) 55%, transparent); }
+}
