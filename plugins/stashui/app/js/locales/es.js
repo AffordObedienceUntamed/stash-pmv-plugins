@@ -2254,4 +2254,8 @@ export default {
   "Show me": "Muéstramelo",
   "Entries with “Show me” take you to the feature and light it up for a moment.": "Las entradas con «Muéstramelo» te llevan a la función y la resaltan un momento.",
   "There is nothing to show it on in your library yet.": "Tu biblioteca aún no tiene nada donde mostrarlo.",
+  "Your month": "Tu mes",
+  "Your last 3 months": "Tus últimos 3 meses",
+  "Your year": "Tu año",
+  "Your whole history": "Todo tu historial",
 };

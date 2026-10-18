@@ -7,6 +7,13 @@
 
 export const CHANGES = [
   {
+    v: "3.105.1",
+    date: "2026-10-19",
+    items: [
+      ["ui", "Statistics: the big panel at the top (“Your week”) now follows the period you pick – 7 days, 30 days, 3 months, a year or all time – with its title, dates, most watched, top performer and tag, busiest day and days with something on. And in the Liquid glass look every panel of the page is glass now: the key figures, the bar with the period buttons, the achievements, the streak, the hover tip and the small bars. (Thanks ufousox007!)", "统计：顶部的大面板（“你的一周”）现在会跟随所选时间段变化 – 7 天、30 天、3 个月、1 年或全部 – 标题、日期、观看最多、最常看的演员和标签、最忙的一天和有观看的天数都会随之变化。并且在液态玻璃样式下，该页面的所有面板都是玻璃效果：关键数据、时间段按钮栏、成就、连续天数、悬停提示和小条形图。（感谢 ufousox007！）", "stats::[data-period]"],
+    ],
+  },
+  {
     v: "3.105.0",
     date: "2026-10-19",
     items: [

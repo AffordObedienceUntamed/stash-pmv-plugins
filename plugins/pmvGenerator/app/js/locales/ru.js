@@ -2314,4 +2314,8 @@ export default {
   "Show me": "Показать",
   "Entries with “Show me” take you to the feature and light it up for a moment.": "Записи с кнопкой «Показать» ведут к функции и ненадолго подсвечивают её.",
   "There is nothing to show it on in your library yet.": "В вашей библиотеке пока нет ничего, на чём это можно показать.",
+  "Your month": "Ваш месяц",
+  "Your last 3 months": "Ваши последние 3 месяца",
+  "Your year": "Ваш год",
+  "Your whole history": "Вся ваша история",
 };

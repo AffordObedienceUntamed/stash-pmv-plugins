@@ -2272,4 +2272,8 @@ export default {
   "Show me": "Cho tôi xem",
   "Entries with “Show me” take you to the feature and light it up for a moment.": "Các mục có “Cho tôi xem” sẽ đưa bạn đến tính năng đó và làm nó sáng lên trong giây lát.",
   "There is nothing to show it on in your library yet.": "Thư viện của bạn chưa có gì để hiển thị tính năng này.",
+  "Your month": "Tháng của bạn",
+  "Your last 3 months": "3 tháng gần đây của bạn",
+  "Your year": "Năm của bạn",
+  "Your whole history": "Toàn bộ lịch sử của bạn",
 };

@@ -2218,4 +2218,8 @@ export default {
   "Show me": "Me le montrer",
   "Entries with “Show me” take you to the feature and light it up for a moment.": "Les entrées avec « Me le montrer » vous mènent à la fonction et la mettent brièvement en évidence.",
   "There is nothing to show it on in your library yet.": "Votre bibliothèque ne contient encore rien pour le montrer.",
+  "Your month": "Votre mois",
+  "Your last 3 months": "Vos 3 derniers mois",
+  "Your year": "Votre année",
+  "Your whole history": "Tout votre historique",
 };

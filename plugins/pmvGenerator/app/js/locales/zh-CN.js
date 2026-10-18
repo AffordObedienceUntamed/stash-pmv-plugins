@@ -2336,4 +2336,8 @@ export default {
   "Show me": "带我去看",
   "Entries with “Show me” take you to the feature and light it up for a moment.": "带有“带我去看”的条目会带你到该功能，并让它短暂高亮。",
   "There is nothing to show it on in your library yet.": "你的资料库里还没有可以用来演示的内容。",
+  "Your month": "你的这个月",
+  "Your last 3 months": "你的最近三个月",
+  "Your year": "你的这一年",
+  "Your whole history": "你的全部历史",
 };

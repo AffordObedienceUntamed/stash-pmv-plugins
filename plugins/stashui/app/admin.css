@@ -449,3 +449,16 @@ html.kb-glass .kb-srccaret:hover { background: color-mix(in srgb, var(--bg-3) 45
 .kb-cut-opt b { color: var(--text); }
 html.kb-glass .kb-cut-row { border-bottom-color: rgba(255, 255, 255, .16); }
 html.kb-glass .kb-cut .kb-drawer-foot { background: rgba(255, 255, 255, .06); }
+
+/* Statistics in the Liquid glass look: every panel is glass, not only the big cards */
+html.kb-glass .kb-st-kpi, html.kb-glass .kb-st-tip { border-color: var(--glass-edge); background: var(--glass-shine), var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); box-shadow: var(--glass-shadow); }
+html.kb-glass .kb-st-kpi { border-radius: 16px; }
+html.kb-glass .kb-st-bar { top: 6px; margin-bottom: 14px; padding: 8px 10px; border: 1px solid var(--glass-edge); border-radius: 18px; background: var(--glass-shine), var(--glass-deep); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); box-shadow: var(--glass-shadow); }
+html.kb-glass .kb-st-badge, html.kb-glass .kb-st-streak, html.kb-glass .kb-st-hero { border: 1px solid var(--glass-edge); border-radius: 14px; background: var(--glass-shine), var(--glass-deep); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16); }
+html.kb-glass .kb-st-badge.is-earned { border-color: color-mix(in srgb, #ffd166 45%, var(--glass-edge)); }
+html.kb-glass :is(.kb-st-share, .kb-st-meter, .kb-st-prog) { background: rgba(255, 255, 255, .13); }
+html.kb-glass .kb-st-delta:not(.is-up):not(.is-down) { background: rgba(255, 255, 255, .14); }
+html.kb-glass .kb-st-medal:not([data-tier="1"]):not([data-tier="2"]):not([data-tier="3"]):not([data-tier="4"]):not([data-tier="5"]) { background: rgba(255, 255, 255, .12); }
+html.kb-glass .kb-card.kb-st-week { background: linear-gradient(135deg, color-mix(in srgb, var(--pink) 20%, transparent), transparent 62%), var(--glass-shine), var(--glass); }
+html.kb-glass .kb-st-mini i { background: color-mix(in srgb, var(--pink) 50%, rgba(255, 255, 255, .14)); }
+html.kb-glass .kb-st-mini .is-best i { background: var(--pink); }

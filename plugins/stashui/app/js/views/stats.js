@@ -205,9 +205,9 @@ export async function render(main) {
     <section class="kb-card kb-st-card" data-lib></section>
     <p class="kb-hint">${t("Stash keeps only when a play happened, not how long it lasted – a play's length is estimated from the scene's total watch time. Plays under a minute count as quick looks.")}</p>`;
 
-  // ---------- Week in review (always the last 7 days) ----------
-  function paintWeek() {
-    const r = rangeOf(7);
+  // ---------- The big panel on top: follows the chosen period (the last 7 days, 30 days … all time) ----------
+  const WEEK_TITLES = { 7: "Your week", 30: "Your month", 90: "Your last 3 months", 365: "Your year", 0: "Your whole history" };
+  function paintWeek(r) {
     const a = summary(r);
     const b = r.prev ? summary(r.prev) : null; // the week before – only if it's fully recorded
     const el = body.querySelector("[data-week]");
@@ -218,9 +218,10 @@ export async function render(main) {
     const perDay = new Array(7).fill(0);
     plays.filter(inR(r)).forEach((e) => (perDay[(new Date(e.at).getDay() + 6) % 7] += val(e)));
     const best = perDay.indexOf(Math.max(...perDay));
-    const what = t("compared with the 7 days before");
+    const what = r.prev ? t("compared with the {n} days before", { n: days }) : "";
+    const span = Math.max(1, Math.round((r.to - r.from) / DAY));
     el.innerHTML = `
-      <div class="kb-st-head"><h2>${t("Your week")}</h2><span class="kb-hint">${esc(dateFmt(r.from, { day: "numeric", month: "short" }))} – ${esc(dateFmt(Date.now(), { day: "numeric", month: "short" }))}</span></div>
+      <div class="kb-st-head"><h2>${t(WEEK_TITLES[days] || "Your week")}</h2><span class="kb-hint">${esc(dateFmt(r.from, days > 300 || !days ? { day: "numeric", month: "short", year: "numeric" } : { day: "numeric", month: "short" }))} – ${esc(dateFmt(Date.now(), days > 300 || !days ? { day: "numeric", month: "short", year: "numeric" } : { day: "numeric", month: "short" }))}</span></div>
       ${
         a.plays || a.o
           ? `<div class="kb-st-weekgrid">
@@ -232,10 +233,10 @@ export async function render(main) {
           ${pf ? `<li><small>${t("Top performer")}</small><a href="#/performer/${pf.x.id}">${esc(pf.x.name)}</a></li>` : ""}
           ${tg ? `<li><small>${t("Top tag")}</small><a href="#/tag/${tg.x.id}">${esc(tg.x.name)}</a></li>` : ""}
           ${perDay[best] ? `<li><small>${t("Busiest day")}</small><b>${esc(weekdays[best])}</b></li>` : ""}
-          <li><small>${t("Days with something on")}</small><b>${a.days} / 7</b></li>
+          <li><small>${t("Days with something on")}</small><b>${a.days} / ${span}</b></li>
         </ul>
       </div>`
-          : `<p class="kb-hint">${t("Nothing watched in the last 7 days.")}</p>`
+          : `<p class="kb-hint">${t("Nothing in this period")}</p>`
       }`;
   }
 
@@ -562,7 +563,7 @@ export async function render(main) {
     const r = rangeOf(days);
     body.querySelectorAll("[data-period] [data-n]").forEach((b) => b.classList.toggle("is-on", +b.dataset.n === days));
     body.querySelectorAll("[data-metric] [data-m]").forEach((b) => b.classList.toggle("is-on", b.dataset.m === metric));
-    paintWeek();
+    paintWeek(r);
     paintBadges();
     paintKpis(r);
     paintChart(r);

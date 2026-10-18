@@ -2277,4 +2277,8 @@ export default {
   "Show me": "Pokaż mi",
   "Entries with “Show me” take you to the feature and light it up for a moment.": "Wpisy z „Pokaż mi” prowadzą do funkcji i na chwilę ją podświetlają.",
   "There is nothing to show it on in your library yet.": "W twojej bibliotece nie ma jeszcze niczego, na czym można to pokazać.",
+  "Your month": "Twój miesiąc",
+  "Your last 3 months": "Twoje ostatnie 3 miesiące",
+  "Your year": "Twój rok",
+  "Your whole history": "Cała twoja historia",
 };

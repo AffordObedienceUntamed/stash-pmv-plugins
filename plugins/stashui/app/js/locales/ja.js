@@ -2279,4 +2279,8 @@ export default {
   "Show me": "見に行く",
   "Entries with “Show me” take you to the feature and light it up for a moment.": "「見に行く」付きの項目は、その機能の場所へ移動して少しの間ハイライトします。",
   "There is nothing to show it on in your library yet.": "ライブラリにはまだ表示できるものがありません。",
+  "Your month": "この1か月",
+  "Your last 3 months": "直近3か月",
+  "Your year": "この1年",
+  "Your whole history": "これまでのすべて",
 };
