@@ -287,6 +287,7 @@ span.kb-tree-caret { display: inline-block; }
 .kb-field::placeholder { color: var(--faint); }
 .kb-field:hover { border-color: var(--faint); }
 .kb-field:focus { border-color: var(--pink); outline: none; box-shadow: 0 0 0 3px rgba(255, 62, 138, .18); }
+.kb-field:disabled { opacity: .45; cursor: not-allowed; border-color: var(--bg-3); }
 textarea.kb-field { height: auto; min-height: 96px; padding: 9px 11px; line-height: 1.45; resize: vertical; }
 select.kb-field { padding-right: 28px; appearance: none; background: var(--base) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%23ff3e8a' stroke-width='1.8'/%3E%3C/svg%3E") no-repeat right 10px center / 11px; }
 select.kb-field option { background: var(--base); }
