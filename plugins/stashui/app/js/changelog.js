@@ -7,6 +7,13 @@
 
 export const CHANGES = [
   {
+    v: "3.105.2",
+    date: "2026-10-19",
+    items: [
+      ["ui", "Liquid glass: the filter panel of the Scenes, Images, Galleries and other lists (tags, performers, rating, resolution …) and its suggestion list when you type a tag, performer or studio are glass now, like the rest of the page.", "液态玻璃：场景、图片、图库等列表的筛选面板（标签、演员、评分、分辨率等）以及输入标签、演员或工作室时的建议列表现在也是玻璃效果，与页面其余部分一致。", "scenes::[data-filter]"],
+    ],
+  },
+  {
     v: "3.105.1",
     date: "2026-10-19",
     items: [
