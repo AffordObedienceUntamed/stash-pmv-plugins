@@ -435,6 +435,18 @@ export async function destroyItems(kind, ids, deleteFile) {
   libraryChanged();
 }
 
+// Performers away for good (the scenes, images and galleries stay; only their link to the performer goes).
+// One call where Stash has it, otherwise one by one.
+export async function destroyPerformers(ids) {
+  try {
+    await gql(`mutation($ids: [ID!]!) { performersDestroy(ids: $ids) }`, { ids });
+  } catch (e) {
+    if (!/performersDestroy|Cannot query|Unknown argument/i.test(String(e.message))) throw e;
+    for (const id of ids) await gql(`mutation($id: ID!) { performerDestroy(input: { id: $id }) }`, { id });
+  }
+  libraryChanged();
+}
+
 export async function createTag(name) {
   const d = await gql(`mutation($n: String!) { tagCreate(input: { name: $n }) { id name } }`, { n: name });
   return d.tagCreate;

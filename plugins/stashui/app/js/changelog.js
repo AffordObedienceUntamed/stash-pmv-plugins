@@ -4,6 +4,13 @@
 
 export const CHANGES = [
   {
+    v: "3.104.0",
+    date: "2026-10-19",
+    items: [
+      ["ui", "New: delete several performers at once. The Performers page has a “Select” button, and every card gets a tick box on hover (shift-click ticks a stretch, ctrl-click one more; once something is ticked a click on a card ticks it instead of opening it). The bar at the bottom deletes what is ticked after one question – their scenes, images and galleries stay, only the link to the performer goes – and “Select all” also takes everything the search and filters found, not just what is loaded. (Thanks ufousox007!)", "新增：一次删除多个演员。演员页面有“选择”按钮，鼠标悬停在每张卡片上都会出现勾选框（Shift+点击勾选一段，Ctrl+点击再勾一个；有勾选后，点击卡片是勾选而不是打开）。底部的操作栏只问一次就删除已勾选的 – 他们的场景、图片和图库会保留，只移除与演员的关联 – “全选”还会选中搜索和筛选找到的全部，而不只是已加载的。（感谢 ufousox007！）"],
+    ],
+  },
+  {
     v: "3.103.0",
     date: "2026-10-19",
     items: [

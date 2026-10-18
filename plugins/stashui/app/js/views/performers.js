@@ -1,9 +1,9 @@
 // All performers as portrait cards: search, sort, gender, favorites only. Scrolling loads more.
 
 import { getDef, defButton } from "../defsort.js";
-import { esc, icon, debounce, errorToast, toast, plural, promptDialog, starsHtml, pop, burst } from "../ui.js";
+import { esc, icon, debounce, errorToast, toast, plural, promptDialog, confirmDialog, starsHtml, pop, burst } from "../ui.js";
 import { t, locale } from "../i18n.js";
-import { findPerformers, updatePerformer, createPerformer, gql, routeSignal } from "../api.js";
+import { findPerformers, updatePerformer, createPerformer, destroyPerformers, gql, routeSignal } from "../api.js";
 import { go, setQuery } from "../main.js";
 import { ensureTiers, hasTiers, tierNow } from "../tiers.js";
 import { restrictIds, critInfo, parseCrit, critStr, critText, sortByCrit, openCritFilter } from "../ratingx.js";
@@ -86,14 +86,15 @@ export function countryOf(c) {
   }
 }
 
-export function performerCard(p) {
+export function performerCard(p, pick) {
   const age = ageOf(p.birthdate);
   const sub = [p.scene_count ? plural(p.scene_count, "scene", "scenes") : "", age ? t("{n} years", { n: age }) : ""].filter(Boolean).join(" · ");
   return `<a class="kb-perf" href="#/performer/${p.id}" data-pid="${p.id}">
     <span class="kb-perf-img"><img alt="" loading="lazy" src="${esc(p.image_path || "")}">
       <button type="button" class="kb-perf-fav${p.favorite ? " is-on" : ""}" data-pfav title="${p.favorite ? t("Remove from favorites") : t("Add to favorites")}">${icon("heart")}</button>
       ${tierNow("performer", p.id) ? `<span class="kb-tierpos">${tierBadge(tierNow("performer", p.id))}</span>` : ""}
-      ${p.o_counter ? `<span class="kb-perf-o">${icon("drop")}${p.o_counter}</span>` : ""}</span>
+      ${p.o_counter ? `<span class="kb-perf-o">${icon("drop")}${p.o_counter}</span>` : ""}
+      ${pick === true ? `<span class="kb-pick kb-perf-pick" role="checkbox" aria-checked="false" aria-label="${t("Select")}">${icon("check")}</span>` : ""}</span>
     <b>${esc(p.name)}${p.disambiguation ? ` <small>(${esc(p.disambiguation)})</small>` : ""}</b>
     <small>${sub || "&nbsp;"}</small>
     ${p.rating100 ? starsHtml(p.rating100) : ""}
@@ -137,6 +138,7 @@ export async function render(main, params, query) {
         <span class="kb-seg kb-tierchips" data-tf hidden title="${t("Tier")}">${TIERS.map((x) => `<button type="button" data-tier="${x.k}" style="--tc:${x.color}">${x.k}</button>`).join("")}</span>
         <button type="button" class="kb-btn" data-attrbtn aria-expanded="false" title="${esc(t("Filter by eye color, hair color, ethnicity or country"))}">${icon("sliders")}<span>${t("Looks")}</span></button>
         <button type="button" class="kb-btn${query.fav === "1" ? " is-on" : ""}" data-favonly aria-pressed="${query.fav === "1"}">${icon("heart")}${t("Favorites")}</button>
+        <button type="button" class="kb-btn" data-selmode aria-pressed="false" title="${esc(t("Tick performers to delete several at once"))}">${icon("select")}${t("Select")}</button>
         <button type="button" class="kb-btn" data-new>${icon("plus")}${t("New performer")}</button>
       </div>
     </header>
@@ -309,9 +311,10 @@ export async function render(main, params, query) {
         $("[data-list]").innerHTML = filtered
           ? `<div class="kb-empty"><b>${t("No performer found")}</b><p>${t("Try another search or filter.")}</p></div>`
           : `<div class="kb-empty"><b>${t("No performers yet")}</b><p>${t("Stash can fill them in from StashDB: Tasks → Identify (or the scene tagger in classic Stash). Or add one yourself with “New performer”.")}</p></div>`;
-      } else if (reset) $("[data-list]").innerHTML = list.map(performerCard).join("");
-      else $("[data-list]").insertAdjacentHTML("beforeend", r.performers.map(performerCard).join(""));
+      } else if (reset) $("[data-list]").innerHTML = list.map((p) => performerCard(p, true)).join("");
+      else $("[data-list]").insertAdjacentHTML("beforeend", r.performers.map((p) => performerCard(p, true)).join(""));
       page++;
+      paintSel();
     } catch (e) {
       if (my === run) $("[data-list]").innerHTML = `<div class="kb-empty"><b>${t("Couldn't load the performers")}</b><p>${esc(e.message)}</p></div>`;
     } finally {
@@ -361,8 +364,115 @@ export async function render(main, params, query) {
     e.currentTarget.setAttribute("aria-pressed", favOnly);
     reload();
   };
+  // Selection: tick the box on a card (shift = a stretch, ctrl = one more); once something is ticked – or "Select" is on – a click
+  // on a card ticks it instead of opening it. The bar at the bottom deletes what is ticked.
+  const sel = new Set();
+  let selMode = false;
+  let lastPick = "";
+  let bar = null;
+  const selecting = () => selMode || sel.size > 0;
+  function paintSel() {
+    const grid = $("[data-list]");
+    if (!grid) return;
+    grid.classList.toggle("is-selecting", selecting());
+    grid.querySelectorAll("[data-pid]").forEach((c) => {
+      const on = sel.has(c.dataset.pid);
+      c.classList.toggle("is-picked", on);
+      const box = c.querySelector(".kb-perf-pick");
+      if (box) box.setAttribute("aria-checked", String(on));
+    });
+    $("[data-selmode]").classList.toggle("is-on", selMode);
+    $("[data-selmode]").setAttribute("aria-pressed", String(selMode));
+    paintBar();
+  }
+  function paintBar() {
+    if (!sel.size) {
+      if (bar) bar.remove();
+      bar = null;
+      return;
+    }
+    if (!bar) {
+      bar = document.createElement("div");
+      bar.className = "kb-bulk";
+      document.body.appendChild(bar);
+      bar.addEventListener("click", onBar);
+    }
+    const more = total > list.length && sel.size < total;
+    bar.innerHTML = `<b>${t("{what} selected", { what: plural(sel.size, "performer", "performers") })}</b>
+      <button class="kb-btn" data-b="all">${more ? t("Select all {n} found", { n: total }) : t("Select all")}</button>
+      <button class="kb-btn is-danger" data-b="delete">${icon("trash")}${t("Delete")}</button>
+      <span class="kb-spacer"></span>
+      <button class="kb-btn" data-b="none">${t("Done")}</button>`;
+  }
+  async function onBar(e) {
+    const b = e.target.closest("[data-b]");
+    if (!b) return;
+    try {
+      if (b.dataset.b === "none") {
+        sel.clear();
+        selMode = false;
+        return paintSel();
+      }
+      if (b.dataset.b === "all") {
+        if (total > list.length) {
+          b.disabled = true;
+          const q = $("[data-q]").value.trim();
+          const ids = await restrictIds("performer", { tier: tiers, crit, sort: $("[data-sort]").value });
+          const all = await findIds("performer", { q: q || undefined, per_page: -1 }, filter(), ids);
+          all.items.forEach((x) => sel.add(x.id));
+        } else list.forEach((x) => sel.add(x.id));
+        return paintSel();
+      }
+      if (b.dataset.b === "delete") {
+        const ids = [...sel];
+        const names = ids.map((id) => (list.find((x) => x.id === id) || {}).name).filter(Boolean);
+        const r = await confirmDialog({
+          title: t("Delete {what}?", { what: plural(ids.length, "performer", "performers") }),
+          text: (names.length && names.length <= 6 ? names.join(", ") + ". " : "") + t("The performers disappear from Stash. Their scenes, images and galleries stay – only the link to the performer is removed. This can't be undone."),
+          ok: t("Delete"),
+          danger: true,
+        });
+        if (!r.ok) return;
+        b.disabled = true;
+        await destroyPerformers(ids);
+        const gone = new Set(ids);
+        list = list.filter((x) => !gone.has(x.id));
+        total = Math.max(0, total - ids.length);
+        main.querySelectorAll("[data-pid]").forEach((c) => gone.has(c.dataset.pid) && c.remove());
+        sel.clear();
+        selMode = false;
+        $("[data-sub]").textContent = plural(total, "performer", "performers");
+        toast(t("{what} deleted", { what: plural(ids.length, "performer", "performers") }), "ok");
+        paintSel();
+        if (!list.length && total) load(true);
+        else requestAnimationFrame(fillMore);
+      }
+    } catch (err) {
+      errorToast(err, "Action failed");
+      b.disabled = false;
+    }
+  }
+  function toggleSel(id, range) {
+    const ids = list.map((x) => x.id);
+    if (range && lastPick && ids.includes(lastPick) && ids.includes(id)) {
+      const [a, z] = [ids.indexOf(lastPick), ids.indexOf(id)].sort((x, y) => x - y);
+      const on = !sel.has(id);
+      ids.slice(a, z + 1).forEach((i) => (on ? sel.add(i) : sel.delete(i)));
+    } else sel.has(id) ? sel.delete(id) : sel.add(id);
+    lastPick = id;
+    paintSel();
+  }
+  $("[data-selmode]").onclick = () => {
+    selMode = !selMode;
+    paintSel();
+  };
   $("[data-list]").addEventListener("click", (e) => {
+    const card = e.target.closest("[data-pid]");
     const b = e.target.closest("[data-pfav]");
+    if (card && !b && (e.target.closest(".kb-perf-pick") || selecting() || e.ctrlKey || e.metaKey || e.shiftKey)) {
+      e.preventDefault();
+      return toggleSel(card.dataset.pid, e.shiftKey);
+    }
     if (!b) return;
     e.preventDefault();
     toggleCardFav(b, list);
@@ -378,5 +488,8 @@ export async function render(main, params, query) {
     }
   };
   load(true);
-  return () => io.disconnect();
+  return () => {
+    io.disconnect();
+    if (bar) bar.remove();
+  };
 }

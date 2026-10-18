@@ -2248,4 +2248,7 @@ export default {
   "{n} rated": "{n} valoradas",
   "{n} scenes have no date.": "{n} escenas no tienen fecha.",
   "{n} × O": "{n} × O",
+  "Select all {n} found": "Seleccionar los {n} encontrados",
+  "The performers disappear from Stash. Their scenes, images and galleries stay – only the link to the performer is removed. This can't be undone.": "Los artistas desaparecen de Stash. Sus escenas, imágenes y galerías se quedan; solo se quita el vínculo con el artista. No se puede deshacer.",
+  "Tick performers to delete several at once": "Marca artistas para borrar varios a la vez",
 };

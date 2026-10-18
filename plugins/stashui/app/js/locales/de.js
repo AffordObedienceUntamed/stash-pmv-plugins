@@ -2226,4 +2226,7 @@ export default {
   "{n} rated": "{n} bewertet",
   "{n} scenes have no date.": "{n} Szenen haben kein Datum.",
   "{n} × O": "{n} × O",
+  "Select all {n} found": "Alle {n} Treffer auswählen",
+  "The performers disappear from Stash. Their scenes, images and galleries stay – only the link to the performer is removed. This can't be undone.": "Die Darsteller verschwinden aus Stash. Ihre Szenen, Bilder und Galerien bleiben – nur die Verknüpfung mit dem Darsteller wird entfernt. Das lässt sich nicht rückgängig machen.",
+  "Tick performers to delete several at once": "Darsteller ankreuzen und mehrere auf einmal löschen",
 };

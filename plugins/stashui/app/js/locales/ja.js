@@ -2273,4 +2273,7 @@ export default {
   "{n} rated": "{n} 件評価済み",
   "{n} scenes have no date.": "{n} 件のシーンには日付がありません。",
   "{n} × O": "O {n} 回",
+  "Select all {n} found": "見つかった {n} 件をすべて選択",
+  "The performers disappear from Stash. Their scenes, images and galleries stay – only the link to the performer is removed. This can't be undone.": "パフォーマーは Stash から消えます。シーン・画像・ギャラリーは残り、パフォーマーとの紐付けだけが外れます。元に戻せません。",
+  "Tick performers to delete several at once": "パフォーマーを選んでまとめて削除",
 };

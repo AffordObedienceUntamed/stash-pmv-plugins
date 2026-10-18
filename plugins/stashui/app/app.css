@@ -2050,3 +2050,12 @@ html.kb-glass .kb-pm-list a:hover { background: color-mix(in srgb, var(--pink) 2
   .kb-pm-list a { grid-template-columns: 1fr auto; }
   .kb-pm-list em { grid-column: 1 / -1; }
 }
+
+/* Performers: tick several and delete them */
+.kb-perf-pick { z-index: 5; }
+.kb-perf:hover .kb-pick, .kb-perfgrid.is-selecting .kb-pick { opacity: 1; }
+.kb-perf.is-picked .kb-pick { opacity: 1; background: var(--pink); border-color: var(--pink); }
+.kb-perf.is-picked .kb-pick .kb-ic { opacity: 1; }
+.kb-perf.is-picked .kb-perf-img { box-shadow: 0 0 0 3px var(--pink); }
+.kb-perf.is-picked .kb-perf-img img { opacity: .75; }
+.kb-perfgrid.is-selecting .kb-perf { cursor: pointer; }

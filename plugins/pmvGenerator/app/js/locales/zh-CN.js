@@ -2330,4 +2330,7 @@ export default {
   "{n} rated": "{n} 个已评分",
   "{n} scenes have no date.": "{n} 个场景没有日期。",
   "{n} × O": "{n} 次 O",
+  "Select all {n} found": "选择全部 {n} 个结果",
+  "The performers disappear from Stash. Their scenes, images and galleries stay – only the link to the performer is removed. This can't be undone.": "这些演员会从 Stash 中消失。他们的场景、图片和图库会保留 – 只会移除与演员的关联。此操作无法撤销。",
+  "Tick performers to delete several at once": "勾选演员，一次删除多个",
 };

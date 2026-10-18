@@ -2308,4 +2308,7 @@ export default {
   "{n} rated": "оценено: {n}",
   "{n} scenes have no date.": "У {n} сцен нет даты.",
   "{n} × O": "{n} × O",
+  "Select all {n} found": "Выбрать все найденные ({n})",
+  "The performers disappear from Stash. Their scenes, images and galleries stay – only the link to the performer is removed. This can't be undone.": "Исполнители исчезнут из Stash. Их сцены, изображения и галереи останутся – удаляется только связь с исполнителем. Это нельзя отменить.",
+  "Tick performers to delete several at once": "Отметьте исполнителей, чтобы удалить сразу нескольких",
 };
