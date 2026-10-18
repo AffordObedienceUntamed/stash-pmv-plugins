@@ -2200,4 +2200,7 @@ export default {
   "The file name is too long for Stash to mark it for deletion – shorten the name or delete the file by hand.": "Tên tệp quá dài nên Stash không thể đánh dấu để xóa – hãy rút ngắn tên hoặc xóa tệp thủ công.",
   "Couldn't delete: {msg}": "Không thể xóa: {msg}",
   "{n} deleted, {m} couldn't be deleted – they stay selected": "Đã xóa {n}, không xóa được {m} – chúng vẫn được chọn",
+  "Look up by file hash (oshash / phash / md5)": "Tra cứu theo mã băm tệp (oshash / phash / md5)",
+  "Ask the source for the scene by its file fingerprints, not by its title": "Hỏi nguồn về cảnh theo dấu vân tay của tệp, không theo tiêu đề",
+  "The file is looked up by its hash": "Tệp được tra cứu theo mã băm",
 };

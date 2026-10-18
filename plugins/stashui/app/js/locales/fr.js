@@ -2146,4 +2146,7 @@ export default {
   "The file name is too long for Stash to mark it for deletion – shorten the name or delete the file by hand.": "Le nom du fichier est trop long pour que Stash le marque pour suppression – raccourcissez le nom ou supprimez le fichier à la main.",
   "Couldn't delete: {msg}": "Suppression impossible : {msg}",
   "{n} deleted, {m} couldn't be deleted – they stay selected": "{n} supprimés, {m} n'ont pas pu être supprimés – ils restent sélectionnés",
+  "Look up by file hash (oshash / phash / md5)": "Chercher par empreinte du fichier (oshash / phash / md5)",
+  "Ask the source for the scene by its file fingerprints, not by its title": "Demander la scène à la source par les empreintes du fichier, pas par son titre",
+  "The file is looked up by its hash": "Le fichier est cherché par son empreinte",
 };

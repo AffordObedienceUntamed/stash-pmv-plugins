@@ -2264,4 +2264,7 @@ export default {
   "The file name is too long for Stash to mark it for deletion – shorten the name or delete the file by hand.": "文件名过长，Stash 无法将其标记为待删除——请缩短文件名或手动删除该文件。",
   "Couldn't delete: {msg}": "无法删除：{msg}",
   "{n} deleted, {m} couldn't be deleted – they stay selected": "已删除 {n} 个，{m} 个无法删除——它们仍保持选中",
+  "Look up by file hash (oshash / phash / md5)": "按文件哈希查找（oshash / phash / md5）",
+  "Ask the source for the scene by its file fingerprints, not by its title": "向来源按文件指纹而不是标题查询场景",
+  "The file is looked up by its hash": "按文件哈希查找",
 };

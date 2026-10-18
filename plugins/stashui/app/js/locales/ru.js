@@ -2242,4 +2242,7 @@ export default {
   "The file name is too long for Stash to mark it for deletion – shorten the name or delete the file by hand.": "Имя файла слишком длинное: Stash не может пометить его для удаления – сократите имя или удалите файл вручную.",
   "Couldn't delete: {msg}": "Не удалось удалить: {msg}",
   "{n} deleted, {m} couldn't be deleted – they stay selected": "Удалено: {n}, не удалось удалить: {m} – они остались выбранными",
+  "Look up by file hash (oshash / phash / md5)": "Искать по хэшу файла (oshash / phash / md5)",
+  "Ask the source for the scene by its file fingerprints, not by its title": "Запрашивать сцену у источника по отпечаткам файла, а не по названию",
+  "The file is looked up by its hash": "Файл ищется по хэшу",
 };

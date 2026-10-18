@@ -2207,4 +2207,7 @@ export default {
   "The file name is too long for Stash to mark it for deletion – shorten the name or delete the file by hand.": "ファイル名が長すぎるため、Stash は削除用にマークできません – 名前を短くするか、手動でファイルを削除してください。",
   "Couldn't delete: {msg}": "削除できませんでした: {msg}",
   "{n} deleted, {m} couldn't be deleted – they stay selected": "{n} 件を削除、{m} 件は削除できませんでした – 選択されたままです",
+  "Look up by file hash (oshash / phash / md5)": "ファイルのハッシュで検索（oshash / phash / md5）",
+  "Ask the source for the scene by its file fingerprints, not by its title": "タイトルではなくファイルのフィンガープリントで、ソースにシーンを問い合わせます",
+  "The file is looked up by its hash": "ファイルのハッシュで検索します",
 };

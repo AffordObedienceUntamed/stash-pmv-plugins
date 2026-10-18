@@ -4,6 +4,16 @@
 
 export const CHANGES = [
   {
+    v: "3.96.0",
+    date: "2026-10-18",
+    items: [
+      ["ui", "Edit → Fill in from the internet: a checkbox \u201cLook up by file hash (oshash / phash / md5)\u201d asks the source for the scene by its file fingerprints instead of its title (the title box is greyed out while it is ticked; the choice is remembered). (Thanks AffordObedienceUntamed!)", "编辑 → 从网上填写：新增复选框“按文件哈希查找（oshash / phash / md5）”，按文件指纹而不是标题向来源查询场景（勾选时标题框变灰；该选择会被记住）。（感谢 AffordObedienceUntamed！）"],
+      ["pmv", "Clip speed follows the music (experimental) now picks the scene for its speed, not only the spot in it, and keeps its speed maps between shows (in the browser) – from the second show on the first clips already fit the music. The speed measure copes with very fast motion; the clip info (I) shows each clip's speed. (Thanks PepegaSan!)", "“片段速度跟随音乐”（实验性）现在会按速度挑选场景，而不只是场景中的位置，并在两次放映之间保留速度图（保存在浏览器中）——从第二次放映起，开头的片段就已经符合音乐。速度测量能应对非常快的动作；片段信息（I）显示每个片段的速度。（感谢 PepegaSan！）"],
+      ["pmv", "New: Motion on the beat (experimental, off by default). The rhythm of the motion in each clip is measured and lined up with the beat – a clip comes in on a turn of the motion and plays up to 12 % faster or slower. (Thanks PepegaSan!)", "新增：动作踩点（实验性，默认关闭）。会测量每个片段中动作的节奏并与节拍对齐——片段从动作的转折点进入，播放速度最多快或慢 12 %。（感谢 PepegaSan！）"],
+      ["pmv", "No more clips from a scene's intro (studio logo, titles): picked spots start after it (your markers are not affected), and a clip that reaches the end of its scene turns back to its start instead of looping into the intro. (Thanks PepegaSan!)", "不再截取场景片头（工作室标志、标题）的片段：挑选的位置从片头之后开始（你的标记不受影响），到达场景结尾的片段会回到自己的起点，而不是循环到片头。（感谢 PepegaSan！）"],
+    ],
+  },
+  {
     v: "3.95.1",
     date: "2026-10-14",
     items: [
