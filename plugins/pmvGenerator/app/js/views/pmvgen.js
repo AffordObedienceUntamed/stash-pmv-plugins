@@ -59,6 +59,7 @@ const DEFAULTS = {
   layoutShape: {}, // clip shape per layout (layout id → all | portrait | landscape), missing = all
   bestSpots: true, // best moments instead of random
   paceMatch: false, // clip speed follows the music: fast music gets clips with fast motion (scene previews give a speed map)
+  beatSync: false, // motion on the beat: each clip's rhythm is measured while preparing and lined up with the beat (experimental)
   cleanCuts: true, // a clip's start has no scene change in the first seconds (it would cut by itself)
   smartCrop: true, // crop follows what matters
   variety: true, // same scene / performer not shortly after each other
@@ -374,6 +375,7 @@ export function render(main) {
         <div class="kb-pmvg-opts">
           ${sw("bestSpots", "Best moments instead of random", "Looks at several spots per scene (motion, skin, your markers) and takes the best one")}
           ${sw("paceMatch", "Clip speed follows the music (experimental)", "Fast, busy music gets clips with fast motion, calm music slow ones. Finds the fast and calm spots of each scene in Stash's scene previews (Tasks → Generate → Previews) – without them it measures the spot it takes")}
+          ${sw("beatSync", "Motion on the beat (experimental)", "Measures the rhythm of the motion in each clip and lines it up with the beat – a clip comes in on a turn of the motion and plays up to 12 % faster or slower. Clips take about 1 s longer to prepare; works best with steady, repeating motion, a still camera and clips that stay on for a few beats")}
           ${sw("cleanCuts", "Clean cuts", "With best moments: a clip starts where its scene runs on for the next few seconds – no hidden cut inside the clip that jumps to another scene by itself")}
           ${sw("smartCrop", "Smart crop", "The crop follows what matters in the clip instead of sticking to the center")}
         </div>
@@ -707,7 +709,7 @@ export function render(main) {
       out: [S.intro && "Intro", S.outro && "Outro", S.record && "Recording"].filter(Boolean).join(" · ") || "live only",
     };
     main.querySelectorAll("[data-tabsum]").forEach((s) => (s.textContent = tabSum[s.dataset.tabsum]));
-    const clipOpts = [S.bestSpots && "best moments", S.paceMatch && "clip speed follows the music", S.cleanCuts && "clean cuts", S.smartCrop && "smart crop", S.matchCut && "match cuts", S.sequenced && "scene timeline", S.variety && "variety"].filter(Boolean);
+    const clipOpts = [S.bestSpots && "best moments", S.paceMatch && "clip speed follows the music", S.beatSync && "motion on the beat", S.cleanCuts && "clean cuts", S.smartCrop && "smart crop", S.matchCut && "match cuts", S.sequenced && "scene timeline", S.variety && "variety"].filter(Boolean);
     const src = { scene: "Scenes", image: "Images", both: "Scenes + images", marker: "Markers" }[S.source];
     const where = (S.folders.length ? `from ${S.folders.length === 1 ? "1 folder" : S.folders.length + " folders"}` : "from all folders") + (S.xfolders.length ? `, without ${S.xfolders.length === 1 ? "1 folder" : S.xfolders.length + " folders"}` : "");
     const plName = S.clipFrom === "playlist" ? (pls.find((p) => p.id === S.clipList) || {}).name : null;
@@ -2108,6 +2110,115 @@ async function spriteSpots(s, dur, heat) {
   return list.slice().sort(() => Math.random() - 0.5).sort((x, y) => y.score - x.score + (Math.random() - 0.5) * 0.4);
 }
 
+// ---------- Motion on the beat ----------
+// The rhythm in a motion curve [{ t, m }] (seconds, motion per second; from frame differences)
+// → { period, turn, q }: seconds per motion pulse, a time where the motion turns (least motion – with
+// back-and-forth motion the turns are the "hits", two per movement) and how clear the rhythm is (0–1);
+// null without a clear rhythm.
+const RHYTHM_DT = 1 / 30;
+function rhythmOf(pts) {
+  if (pts.length < 30) return null;
+  // Evenly spaced (frames can be dropped or come at 24/25/60 fps)
+  const t0 = pts[0].t;
+  const n = Math.floor((pts[pts.length - 1].t - t0) / RHYTHM_DT) + 1;
+  const x = new Float64Array(n);
+  for (let i = 0, j = 0; i < n; i++) {
+    const t = t0 + i * RHYTHM_DT;
+    while (j < pts.length - 2 && pts[j + 1].t < t) j++;
+    const a = pts[j];
+    const b = pts[j + 1];
+    const f = b.t > a.t ? Math.min(1, Math.max(0, (t - a.t) / (b.t - a.t))) : 0;
+    x[i] = a.m + (b.m - a.m) * f;
+  }
+  const mean = x.reduce((s, v) => s + v, 0) / n;
+  for (let i = 0; i < n; i++) x[i] -= mean;
+  const sd = Math.sqrt(x.reduce((s, v) => s + v * v, 0) / n);
+  if (mean < 0.3 || sd / mean < 0.15) return null; // hardly any motion (a still picture), or motion without ups and downs
+  // Autocorrelation over 0.2–0.9 s; the shortest lag that is nearly as strong as the strongest
+  // (multiples of the period correlate too)
+  const lo = Math.round(0.2 / RHYTHM_DT);
+  const hi = Math.min(Math.round(0.9 / RHYTHM_DT), Math.floor(n * 0.6));
+  if (hi <= lo + 2) return null;
+  const corr = (L) => {
+    let s = 0;
+    let ea = 0;
+    let eb = 0;
+    for (let i = 0; i + L < n; i++) {
+      s += x[i] * x[i + L];
+      ea += x[i] * x[i];
+      eb += x[i + L] * x[i + L];
+    }
+    return ea && eb ? s / Math.sqrt(ea * eb) : 0;
+  };
+  const r = [];
+  for (let L = lo - 1; L <= hi + 1; L++) r[L] = corr(L);
+  // A peak at L, between whole frames (parabola through its neighbours)
+  const peakAt = (L) => {
+    const den = r[L - 1] - 2 * r[L] + r[L + 1];
+    return L + (den ? Math.max(-0.5, Math.min(0.5, (0.5 * (r[L - 1] - r[L + 1])) / den)) : 0);
+  };
+  // The highest of L-1…L+1 if it is a peak (a lag between two frames falls on either)
+  const peakNear = (L) => {
+    let k = L;
+    for (const j of [L - 1, L + 1]) if (r[j] != null && r[j] > r[k]) k = j;
+    return r[k - 1] != null && r[k + 1] != null && r[k] >= r[k - 1] && r[k] >= r[k + 1] ? k : -1;
+  };
+  let top = 0;
+  for (let L = lo; L <= hi; L++) top = Math.max(top, r[L]);
+  if (top < 0.35) return null;
+  let lag = -1;
+  for (let L = lo; L <= hi; L++) {
+    if (r[L] >= 0.8 * top && r[L] >= r[L - 1] && r[L] >= r[L + 1]) {
+      lag = L;
+      break;
+    }
+  }
+  if (lag < 0) return null;
+  let period = peakAt(lag) * RHYTHM_DT;
+  // Finer: the peak near twice the lag measures two periods with the same frame step (if it fits in the window).
+  // Searched a few frames around it – with a flat top the first peak can sit a frame off
+  if (2 * lag + 4 < n * 0.75) {
+    for (let L = 2 * lag - 4; L <= 2 * lag + 4; L++) r[L] = r[L] ?? corr(L);
+    let k = 2 * lag - 3;
+    for (let L = k + 1; L <= 2 * lag + 3; L++) if (r[L] > r[k]) k = L;
+    if (r[k] >= 0.25 && r[k] >= r[k - 1] && r[k] >= r[k + 1]) {
+      const p2 = (peakAt(k) * RHYTHM_DT) / 2;
+      if (Math.abs(p2 - period) < 1.6 * RHYTHM_DT) period = p2;
+    }
+  }
+  // The two halves of a back-and-forth often differ (one way faster, other light behind) – then the strongest
+  // lag is the whole movement; its half counts as well if it is a rhythm of its own
+  const h = Math.round(lag / 2);
+  const hk = h - 1 >= lo - 1 ? peakNear(h) : -1;
+  const half = hk >= lo && r[hk] >= 0.3 ? period / 2 : null;
+  // Phase from the curve's fundamental, around the middle of the stretch (a small error in the period
+  // grows towards the ends): a turn is half a pulse after where the motion is most. Taken at the pulse
+  // (the half, if there is one – at the whole movement the fundamental would point between the turns)
+  const pulse = half || period;
+  const mid = (n - 1) / 2;
+  let c = 0;
+  let s = 0;
+  for (let i = 0; i < n; i++) {
+    const w = (2 * Math.PI * (i - mid) * RHYTHM_DT) / pulse;
+    c += x[i] * Math.cos(w);
+    s += x[i] * Math.sin(w);
+  }
+  const most = Math.atan2(s, c) / (2 * Math.PI) * pulse;
+  return { period, half, turn: t0 + mid * RHYTHM_DT + most + pulse / 2, q: top };
+}
+
+// Speed factor that puts motion pulses of `period` on the beat: one pulse per beat, two, or one per two beats –
+// whichever needs the least change, at most ±12 % (more looks wrong); null if none fits
+function beatFit(period, bpm) {
+  const beat = 60 / bpm;
+  let rate = null;
+  for (const k of [1, 2, 0.5]) {
+    const f = (period * k) / beat; // > 1: play faster
+    if (f >= 0.88 && f <= 1.12 && (rate == null || Math.abs(f - 1) < Math.abs(rate - 1))) rate = f;
+  }
+  return rate;
+}
+
 // Plays a video (muted, in the pool, at `speed` – the frames keep their own times) for `secs` of it from
 // where it stands and measures every frame → [{ t, a }] in time order (a = analyzeAsync of the frame)
 async function captureFrames(v, secs, speed = 1) {
@@ -2137,6 +2248,17 @@ async function captureFrames(v, secs, speed = 1) {
   return (await Promise.all(jobs)).filter((x) => x.a && x.a.gray).sort((x, y) => x.t - y.t);
 }
 
+// Motion per second between neighbouring frames → [{ t, m }]; null on a cut (a scene change mixes two motions)
+function motionCurve(fr) {
+  const pts = [];
+  for (let i = 1; i < fr.length; i++) {
+    const dt = fr[i].t - fr[i - 1].t;
+    if (dt <= 0) continue;
+    if (isCut(fr[i - 1].a, fr[i].a)) return null;
+    pts.push({ t: (fr[i].t + fr[i - 1].t) / 2, m: motion(fr[i - 1].a, fr[i].a) / dt });
+  }
+  return pts;
+}
 const meanSpeed = (pts) => (pts && pts.length >= 5 ? pts.reduce((s, p) => s + p.m, 0) / pts.length : null);
 
 // Width of the small measuring picture analyzeAsync makes (pmvsmart's tiny(): 64 px on the long side)
@@ -2530,7 +2652,7 @@ class Generator {
     this.recent = []; // recently shown clips (variety)
     this.used = new Set();
     this.spots = new Map(); // scene → start times used (the next clip of that scene comes from elsewhere)
-    this.measuring = 0; // clips whose speed is being measured (clip speed follows the music)
+    this.measuring = 0; // clips whose motion is being measured (clip speed follows the music, motion on the beat)
     this.scanning = false; // a scene preview is being scanned for its speed map (clip speed)
     this.shown = new Set(); // all shown clips (credits)
     // RedGifs: a share of the clips (error diffusion keeps the ratio); what was shown can be saved
@@ -2723,7 +2845,7 @@ class Generator {
       const name = m.rg ? `RedGifs${m.rg.user ? " · " + m.rg.user : ""}` : m.name || m.key;
       const tags = m.tagNames && m.tagNames.length ? ` <small>tags: ${esc(m.tagNames.join(", "))}</small>` : "";
       const stage = this.nStages > 1 && m.stage != null ? ` <small>stage ${m.stage + 1}</small>` : "";
-      return `<div><b>${i + 1}</b> ${esc(name)}${m.file && m.file !== name ? ` <small>${esc(m.file)}</small>` : ""} <small>${m.w}×${m.h}</small>${tags}${stage} <span class="${bad ? "is-bad" : ""}">${esc(st)}</span></div>`;
+      return `<div><b>${i + 1}</b> ${esc(name)}${m.file && m.file !== name ? ` <small>${esc(m.file)}</small>` : ""} <small>${m.w}×${m.h}</small>${m.tempo && this.S.beatSync ? ` <small>on the beat ×${m.tempo.toFixed(2)}</small>` : ""}${tags}${stage} <span class="${bad ? "is-bad" : ""}">${esc(st)}</span></div>`;
     };
     const fails = (this.failed || []).slice(-5).reverse();
     box.innerHTML =
@@ -3315,14 +3437,21 @@ class Generator {
       }
       if (s.at == null) this.useSpot(s, start);
       await seek(start);
-      // Clip speed follows the music: measure how fast things move here (the clip plays 1.8 s of video at double
-      // speed in the pool – about 0.9 s, so the supply keeps up with fast cuts) – more exact than the map.
+      // Measure the motion here (the clip plays 1.8 s of video at double speed in the pool – about 0.9 s, so the
+      // supply keeps up with fast cuts): its speed (clip speed follows the music – more exact than the map) and
+      // its rhythm (motion on the beat: if it fits the song's tempo, the clip starts on a turn of the motion –
+      // it comes on screen on a beat – and plays a little faster or slower).
       // Not with big videos (above 1440p: decoding them along costs too much)
+      let tempo = null;
+      let pulse = null; // spacing of the motion's turns (video seconds) and one turn – onBeat keeps them on the beat
+      let turnAt = null;
       const SECS = 1.8;
-      if (this.S.paceMatch && v.videoWidth * v.videoHeight <= 2560 * 1440 && start + SECS < dur - 1 && this.measuring < 3) {
+      const sync = this.S.beatSync && this.song && this.song.bpm > 0;
+      if ((sync || this.S.paceMatch) && v.videoWidth * v.videoHeight <= 2560 * 1440 && start + SECS < dur - 1 && this.measuring < 3) {
         this.measuring++;
         try {
-          let ms = actionSpeed(await captureFrames(v, SECS, 2), v.videoWidth, v.videoHeight);
+          let fr = await captureFrames(v, SECS, 2);
+          let ms = this.S.paceMatch ? await actionSpeed(fr, v.videoWidth, v.videoHeight) : null;
           noteSpeed(ms);
           // A piece of the map is only 0.75 s of the scene: if the spot turns out far off the wanted pace,
           // the next best piece is tried, and the better of the two taken
@@ -3330,20 +3459,36 @@ class Generator {
           if (mapPick && start === mapPick.x.t && mapCands.length > 1 && ms != null && off(ms) > 0.35) {
             const alt = mapCands[1].x.t;
             await seek(alt);
-            const ms2 = actionSpeed(await captureFrames(v, SECS, 2), v.videoWidth, v.videoHeight);
+            const fr2 = await captureFrames(v, SECS, 2);
+            const ms2 = await actionSpeed(fr2, v.videoWidth, v.videoHeight);
             noteSpeed(ms2);
-            if (ms2 != null && off(ms2) < off(ms)) [start, ms] = [alt, ms2];
+            if (ms2 != null && off(ms2) < off(ms)) [start, fr, ms] = [alt, fr2, ms2];
           }
           if (ms != null) spd = ms;
+          const pts = motionCurve(fr);
+          const r = sync && pts && rhythmOf(pts);
+          if (r) {
+            let rate = beatFit(r.period, this.song.bpm);
+            if (!rate && r.half) rate = beatFit(r.half, this.song.bpm);
+            // Starts on the first turn from the start on – also when the tempo doesn't fit: with fast cuts a clip
+            // is on for a beat or two, then the motion setting in on the beat is what shows
+            // (the start of a marker clip stays where it is)
+            const step = r.half || r.period;
+            const turn = r.turn - Math.floor((r.turn - start) / step) * step;
+            if (s.at == null && turn < dur - 1) start = turn;
+            tempo = rate;
+            pulse = step;
+            turnAt = turn;
+          }
         } catch (e) {
-          /* not measurable – the speed from the map (if any) stays */
+          /* not measurable – the speed from the map (if any) stays, the clip just isn't synced */
         } finally {
           this.measuring--;
         }
         await seek(start);
       }
       const m = { kind: "video", el: v, w: v.videoWidth, h: v.videoHeight, id: s.id, key: s.key, perf: s.perf, rg: s.rg, start, name: s.name, file: s.file, url: s.url, tagNames: s.tagNames,
-        motion: mo, heat: heat ? heat(start) : null, speed: spd };
+        motion: mo, heat: heat ? heat(start) : null, tempo, pulse, turnAt, speed: spd };
       // Where the clip turns back to its start (see loop()): a marker with an end – the clip stays inside it (the
       // scene would play on into something else) – else just before the scene's end: the video would start over
       // at 0, in its intro (a spot near the end, a clip that stays on for long)
@@ -3426,6 +3571,7 @@ class Generator {
       if (outSig) s += 1.5 * matchDist(outSig, m.sig);
       if (pace != null) s += 2.5 * Math.abs((speedPct(m.speed) ?? 0.5) - pace);
       else if (rank.size) s += 1.2 * Math.abs((rank.has(i) ? rank.get(i) : 0.5) - energy);
+      if (this.S.beatSync && m.tempo) s -= 1; // motion on the beat: clips whose rhythm fits come first
       s += this.varietyPenalty(m);
       if (s < score) {
         score = s;
@@ -3437,7 +3583,10 @@ class Generator {
     m.shownAt = performance.now();
     m.zoomDir = (this.zoomFlip = !this.zoomFlip) ? 1 : -1; // zoom-in entry: alternating strong/soft (always zooming in)
     if (m.kind === "video") {
-      m.el.playbackRate = this.rate || 1;
+      // Motion on the beat: from here onBeat keeps the turns on it – the expectation starts on the turn grid
+      if (m.tempo && m.pulse) m.vExp = m.turnAt + Math.round((m.el.currentTime - m.turnAt) / m.pulse) * m.pulse;
+      m.sync = 1;
+      m.el.playbackRate = (this.rate || 1) * (m.tempo || 1);
       m.el.play().catch(() => {});
       this.watchFrames(m);
     }
@@ -4115,6 +4264,21 @@ class Generator {
     const minB = Math.max(0, Math.round(+S.minBeats || 0));
     const maxB = Math.max(0, Math.round(+S.maxBeats || 0));
     const beats = this.song.beats;
+    // Motion on the beat: hold the turns on it. The measured period is a touch off and play() starts late, so
+    // the phase drifts (~5 ms per beat per 1 % of error). Once per beat the clip's video time is compared with
+    // where the turn grid says it should be, and the playback is trimmed a little for the next beat – no image
+    // work. The error is folded to the nearest turn, so a marker clip's loop jump snaps back in too.
+    const gap = k > 0 ? beats[k] - beats[k - 1] : 60 / this.song.bpm;
+    for (const m of this.videos()) {
+      if (!m.tempo || !m.pulse || m.vExp == null || m.el.paused) continue;
+      m.vExp += gap * (this.rate || 1) * m.tempo;
+      let err = (m.el.currentTime - m.vExp) % m.pulse;
+      if (err > m.pulse / 2) err -= m.pulse;
+      else if (err < -m.pulse / 2) err += m.pulse;
+      m.vExp = m.el.currentTime - err; // whole pulses off (a loop jump) are carried, not fought
+      m.sync = Math.abs(err) < 0.01 ? 1 : Math.max(0.95, Math.min(1.05, 1 - err / (gap * (this.rate || 1) * m.tempo)));
+      m.el.playbackRate = (this.rate || 1) * (m.tempo || 1) * m.sync;
+    }
     const e = this.song.energy[k] || 0;
     const prev = this.song.energy[k - 4] || 0;
     // A drop counts once – otherwise the signal stays up for several beats in a row
@@ -4241,7 +4405,7 @@ class Generator {
     if (!hold && this.rateHold && now < this.rateHold) return;
     this.rateHold = hold ? now + hold * 1000 : 0;
     this.rate = rate;
-    this.videos().forEach((m) => (m.el.playbackRate = rate));
+    this.videos().forEach((m) => (m.el.playbackRate = rate * (m.tempo || 1) * (m.sync || 1)));
   }
 
   // Hook a clip's audio into the mix (once per clip); goes through master, so into the recording too
