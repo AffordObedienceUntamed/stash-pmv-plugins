@@ -347,4 +347,7 @@ export default {
   "Follow a niche on its page (or a #tag under a video), then “Only my niches” plays just those.": "在分区页面关注一个分区（或视频下方的 #标签），“仅我的分区”就只播放这些内容。",
   "Fill in date and creator": "填写日期和创作者",
   "Once Stash has the new videos, RedTok sets their date, the creator as the studio and the RedGifs link. Needs this page to stay open for a minute.": "Stash 获取到新视频后，RedTok 会设置其日期、以创作者作为工作室，以及 RedGifs 链接。此页面需保持打开约一分钟。",
+  "Their videos show up in For You. Tap one to stop following.": "它们的视频会出现在“为你推荐”中。点按其中一个可取消关注。",
+  "Include followed #tags in Following": "将已关注的 #标签 也放入“关注”",
+  "Off: Following only shows the creators you follow – the #tags you follow feed For You. On: their newest videos are mixed into Following (popular tags can fill it).": "关闭：“关注”只显示你关注的创作者，关注的 #标签 用于“为你推荐”。开启：它们的最新视频会混入“关注”（热门标签可能会占满）。",
 };

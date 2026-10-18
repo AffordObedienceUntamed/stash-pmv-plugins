@@ -8,7 +8,7 @@ import { call, gql, store, setAfterSet, emit, t, wait } from "./core.js";
 // ---------- settings ----------
 export const settings = Object.assign({
   base: "", scan: true, meta: true, quality: "hd", playq: "auto", fit: "auto", sound: true, volume: 1, autonext: false,
-  skipSeen: true, skipSeenMore: false, speed: 1, lang: "auto", glow: true, wide: true, space: "pause", frame: "auto", side: true,
+  skipSeen: true, skipSeenMore: false, followTags: false, speed: 1, lang: "auto", glow: true, wide: true, space: "pause", frame: "auto", side: true,
 }, store.get("settings", {}));
 delete settings.subs; delete settings.sync; // (Reddit and the RedGifs login of the older local version)
 export const saveSettings = () => store.set("settings", settings);
@@ -375,7 +375,7 @@ export function makeSource(spec) {
     },
     // newest first across everyone you follow: a few videos per creator are kept ready, the newest one goes next
     following: async () => {
-      if (!S.fx) S.fx = [...following.map((f) => ({ name: f.name, page: 0, buf: [], done: false })), ...tagFollows.map((tg) => ({ tag: tg, page: 0, buf: [], done: false }))];
+      if (!S.fx) S.fx = [...following.map((f) => ({ name: f.name, page: 0, buf: [], done: false })), ...(settings.followTags ? tagFollows : []).map((tg) => ({ tag: tg, page: 0, buf: [], done: false }))];
       if (!S.fx.length) { S.done = true; return []; }
       const out = [];
       while (out.length < 24) {

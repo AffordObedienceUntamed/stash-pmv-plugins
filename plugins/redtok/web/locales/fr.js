@@ -340,4 +340,7 @@ export default {
   "Follow a niche on its page (or a #tag under a video), then “Only my niches” plays just those.": "Suis une niche sur sa page (ou un #tag sous une vidéo), puis « Seulement mes niches » ne lit que celles-ci.",
   "Fill in date and creator": "Renseigner la date et le créateur",
   "Once Stash has the new videos, RedTok sets their date, the creator as the studio and the RedGifs link. Needs this page to stay open for a minute.": "Une fois les nouvelles vidéos dans Stash, RedTok y met la date, le créateur comme studio et le lien RedGifs. Cette page doit rester ouverte une minute.",
+  "Their videos show up in For You. Tap one to stop following.": "Leurs vidéos apparaissent dans « Pour toi ». Touche-en un pour ne plus le suivre.",
+  "Include followed #tags in Following": "Inclure les #tags suivis dans Abonnements",
+  "Off: Following only shows the creators you follow – the #tags you follow feed For You. On: their newest videos are mixed into Following (popular tags can fill it).": "Désactivé : Abonnements ne montre que les créateurs que tu suis ; les #tags suivis alimentent « Pour toi ». Activé : leurs vidéos les plus récentes sont mélangées dans Abonnements (les tags populaires peuvent le remplir).",
 };

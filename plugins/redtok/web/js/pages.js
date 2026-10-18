@@ -454,14 +454,21 @@ function pagedList(box, root, pathOf, pick, row, emptyText, cls) {
 // ---------- Explore (main view) ----------
 export function mountExplore(view) {
   const p = pageShell(view, esc(t("Explore")), { back: false });
-  p.body.innerHTML = `<button class="searchbox is-fake" data-xsearch>${ic("search")}<span>${esc(t("Search creators, niches and tags"))}</span></button><div class="xchips" data-chips></div><div class="gbox"></div>`;
+  p.body.innerHTML = `<button class="searchbox is-fake" data-xsearch>${ic("search")}<span>${esc(t("Search creators, niches and tags"))}</span></button><div class="xbar"><button class="xarr is-l" data-xarr="-1" tabindex="-1">‹</button><div class="xchips" data-chips></div><button class="xarr is-r" data-xarr="1" tabindex="-1">›</button></div><div class="gbox"></div>`;
   const chipsBox = p.body.querySelector("[data-chips]");
+  const xbar = p.body.querySelector(".xbar");
+  // (the strip scrolls sideways; make that visible and usable with a mouse: edge fade, arrows, wheel)
+  const edges = () => { xbar.classList.toggle("can-l", chipsBox.scrollLeft > 4); xbar.classList.toggle("can-r", chipsBox.scrollLeft + chipsBox.clientWidth < chipsBox.scrollWidth - 4); };
+  chipsBox.addEventListener("scroll", edges, { passive: true });
+  chipsBox.addEventListener("wheel", (e) => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && chipsBox.scrollWidth > chipsBox.clientWidth) { chipsBox.scrollLeft += e.deltaY; e.preventDefault(); } }, { passive: false });
+  if (window.ResizeObserver) new ResizeObserver(edges).observe(chipsBox);
   let pop = [], grid = null, cur = "trending";
   const base = [["trending", "Trending"], ["latest", "New"], ["top7", "Top this week"], ["top28", "Top this month"], ["top", "Top of all time"]];
   const paintChips = () => {
     const mine = [...tagFollows.map((tg) => ["t:" + tg, "#" + tg]), ...niches.map((n) => ["n:" + n.id, "#" + n.name])];
     const others = pop.filter((n) => !followsNiche(n.id)).map((n) => ["n:" + n.id, "#" + (n.name || nicheName(n.id))]);
     chipsBox.innerHTML = [...base.map(([v, l]) => [v, t(l)]), ...mine, ...others].map(([v, l]) => `<button class="chipb${v === cur ? " is-on" : ""}" data-x="${esc(v)}">${esc(l)}</button>`).join("") + `<button class="chipb is-more" data-allniches>${esc(t("All niches"))} ›</button>`;
+    requestAnimationFrame(edges);
   };
   const show = (v) => {
     cur = v;
@@ -475,6 +482,8 @@ export function mountExplore(view) {
   show("trending");
   rg("/niches/search?query=&order=subscribers&count=20&page=1").then((d) => { pop = (d.niches || []).map((n) => ({ id: n.id, name: n.name })); paintChips(); }).catch(() => {});
   view.addEventListener("click", (e) => {
+    const ar = e.target.closest("[data-xarr]");
+    if (ar) return chipsBox.scrollBy({ left: Number(ar.dataset.xarr) * Math.max(240, chipsBox.clientWidth * 0.7), behavior: "smooth" });
     if (e.target.closest("[data-xsearch]")) return openSearch();
     if (e.target.closest("[data-allniches]")) return openNicheBrowser();
     const c = e.target.closest("[data-x]");
@@ -761,7 +770,8 @@ export function openSettings(focus) {
     ${sw("scan", t("Scan into Stash"), t("After downloading, Stash scans the folders that got new videos."))}
     ${sw("meta", t("Fill in date and creator"), t("Once Stash has the new videos, RedTok sets their date, the creator as the studio and the RedGifs link. Needs this page to stay open for a minute."))}
     <h3 class="sh">${esc(t("Your feed"))}</h3>
-    <div class="set is-col"><span class="st"><b>${esc(t("Tags you follow"))}</b><small>${esc(tagFollows.length ? t("Their videos show up in For You and Following. Tap one to stop following.") : t("None. Open a #tag (tap it under a video) and press Follow."))}</small></span>${tagFollows.length ? `<div class="chips">${tagFollows.map((x) => `<button class="chipb is-x" data-untagf="${esc(x)}">#${esc(x)} ${ic("close")}</button>`).join("")}</div>` : ""}</div>
+    <div class="set is-col"><span class="st"><b>${esc(t("Tags you follow"))}</b><small>${esc(tagFollows.length ? t("Their videos show up in For You. Tap one to stop following.") : t("None. Open a #tag (tap it under a video) and press Follow."))}</small></span>${tagFollows.length ? `<div class="chips">${tagFollows.map((x) => `<button class="chipb is-x" data-untagf="${esc(x)}">#${esc(x)} ${ic("close")}</button>`).join("")}</div>` : ""}</div>
+    ${sw("followTags", t("Include followed #tags in Following"), t("Off: Following only shows the creators you follow – the #tags you follow feed For You. On: their newest videos are mixed into Following (popular tags can fill it)."))}
     <div class="set is-col"><span class="st"><b>${esc(t("Hidden creators"))}</b><small>${esc(hidden.length ? t("Their videos never show up. Tap one to show it again.") : t("None. Hide a creator from a video's share menu."))}</small></span>${hidden.length ? `<div class="chips">${hidden.map((h) => `<button class="chipb is-x" data-unhide="${esc(h)}">@${esc(h)} ${ic("close")}</button>`).join("")}</div>` : ""}</div>
     <div class="set"><span class="st"><b>${esc(t("Not interested"))}</b><small>${esc(tn(nope.length, "{n} video left out", "{n} videos left out"))}</small></span>${nope.length ? `<button class="btn is-ghost is-sm" data-resetnope>${esc(t("Reset"))}</button>` : ""}</div>
     <div class="set is-col"><span class="st"><b>${esc(t("Blocked tags"))}</b><small>${esc(blocked.length ? t("Videos with these tags or niches never show up. Tap one to unblock it.") : t("None yet. Add one below, or block a tag from a video's details."))}</small></span>${blocked.length ? `<div class="chips">${blocked.map((b) => `<button class="chipb is-x" data-unblock="${esc(b)}">#${esc(b)} ${ic("close")}</button>`).join("")}</div>` : ""}

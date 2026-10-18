@@ -345,4 +345,7 @@ export default {
   "Follow a niche on its page (or a #tag under a video), then “Only my niches” plays just those.": "Theo dõi một chủ đề trên trang của nó (hoặc một #tag dưới video), rồi “Chỉ chủ đề của tôi” sẽ chỉ phát những cái đó.",
   "Fill in date and creator": "Điền ngày và nhà sáng tạo",
   "Once Stash has the new videos, RedTok sets their date, the creator as the studio and the RedGifs link. Needs this page to stay open for a minute.": "Khi Stash đã có video mới, RedTok sẽ đặt ngày, nhà sáng tạo làm studio và liên kết RedGifs. Cần để trang này mở khoảng một phút.",
+  "Their videos show up in For You. Tap one to stop following.": "Video của chúng xuất hiện trong “Dành cho bạn”. Chạm vào một thẻ để bỏ theo dõi.",
+  "Include followed #tags in Following": "Đưa #thẻ đang theo dõi vào Đang theo dõi",
+  "Off: Following only shows the creators you follow – the #tags you follow feed For You. On: their newest videos are mixed into Following (popular tags can fill it).": "Tắt: Đang theo dõi chỉ hiện các nhà sáng tạo bạn theo dõi – các #thẻ đang theo dõi dành cho “Dành cho bạn”. Bật: video mới nhất của chúng được trộn vào Đang theo dõi (thẻ phổ biến có thể làm đầy nó).",
 };

@@ -27,7 +27,7 @@ const FEEDS = {
       ? { icon: "tag", title: t("Follow niches to see them here"), text: t("Follow a niche on its page (or a #tag under a video), then “Only my niches” plays just those."), btn: t("Explore"), fn: () => showView("explore") }
       : ({ icon: "refresh", title: t("Nothing new right now"), text: t("You've seen everything that's trending. Turn off “Skip videos you've watched” in Settings, or explore niches."), btn: t("Explore"), fn: () => showView("explore") }) },
   following: { src: () => makeSource({ t: "following" }),
-    empty: () => ({ icon: "users", title: following.length || tagFollows.length ? t("No videos from the creators you follow") : t("Follow creators to see their newest videos here"), text: following.length || tagFollows.length ? "" : t("Press the + under a creator's picture, or Follow on the page of a #tag."), btn: t("Find creators"), fn: () => showView("explore") }) },
+    empty: () => ({ icon: "users", title: following.length || (settings.followTags && tagFollows.length) ? t("No videos from the creators you follow") : t("Follow creators to see their newest videos here"), text: following.length || (settings.followTags && tagFollows.length) ? "" : t("Press the + under a creator's picture, or Follow on the page of a #tag."), btn: t("Find creators"), fn: () => showView("explore") }) },
   stash: { src: () => makeSource({ t: "stash", order: store.get("stashOrder", "random") }), sorts: ORDERS.stash, key: "stashOrder",
     empty: () => ({ icon: "film", title: t("No scenes in your Stash yet"), text: t("Once Stash has scanned videos, they play here.") }) },
 };
