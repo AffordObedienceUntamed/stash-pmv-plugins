@@ -1524,6 +1524,12 @@ a.kb-fsl-row:hover { background: var(--bg-3); }
 
 /* Advanced rating */
 .kb-adv .kb-drawer-body { display: flex; flex-direction: column; gap: 10px; }
+.kb-adv-who { display: flex; align-items: flex-start; gap: 12px; margin: 4px 0 10px; }
+.kb-adv-pic { flex: none; width: 76px; aspect-ratio: 2 / 3; object-fit: cover; border-radius: 8px; background: var(--bg-2); }
+.kb-adv-who b { display: block; margin: 2px 0 6px; font: 600 15px/1.25 var(--f-label); }
+.kb-adv-more { display: flex; flex-wrap: wrap; gap: 5px; }
+.kb-adv-thumb { display: block; width: 52px; aspect-ratio: 1; overflow: hidden; border-radius: 6px; background: var(--bg-2); }
+.kb-adv-thumb img { width: 100%; height: 100%; object-fit: cover; }
 .kb-adv-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; font: 500 14px/1.3 var(--f-label); }
 .kb-adv-badge { padding: 3px 9px; border-radius: 999px; color: #1b1400; font: 700 11.5px/1.2 var(--f-label); background: #e3b341; }
 .kb-adv-group { display: flex; flex-direction: column; gap: 6px; }

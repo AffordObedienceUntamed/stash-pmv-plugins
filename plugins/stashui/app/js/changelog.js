@@ -4,6 +4,14 @@
 
 export const CHANGES = [
   {
+    v: "3.100.0",
+    date: "2026-10-18",
+    items: [
+      ["ui", "Detailed rating: the window shows the picture and name of what you rate \u2013 for a performer also a few pictures of them from your library, to judge \u201cFace\u201d, \u201cBody\u201d \u2026 by. (Thanks JoeBiden!)", "详细评分：窗口顶部显示被评分对象的图片和名称——演员还会显示她/他在你库中的几张图片，方便判断“脸”“身材”等。（感谢 JoeBiden！）"],
+      ["ui", "Tag fields: with nothing typed, the list is for browsing \u2013 the most used tags first, up to 200 to scroll through (typing still shows the 30 best matches). (Thanks JoeBiden!)", "标签输入框：未输入时列表用于浏览——最常用的标签在前，最多 200 个可滚动查看（输入后仍显示最匹配的 30 个）。（感谢 JoeBiden！）"],
+    ],
+  },
+  {
     v: "3.99.0",
     date: "2026-10-18",
     items: [

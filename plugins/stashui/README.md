@@ -242,6 +242,7 @@ Settings → General → **Install as app**: Stash UI gets its own window and a 
 - **E key**: opens Edit on the performer, studio, gallery and tag pages and in the image viewer (also in the player).
 - **Looks filter** (Performers → Looks): the performer's own eye color, hair color, ethnicity and country as dropdowns with the values of your library.
 - **Quick keys on a card** (scene / image / gallery lists, mouse resting on the card): **E** edit, **T** tags, **D** or **Delete** delete (asks first).
+- **Detailed rating** shows the picture and name of what you rate – for a performer also a few of their pictures. **Tag fields** list the most used tags first while nothing is typed (up to 200).
 - **Sound button in Scenes**: Sound on / Muted for the hover previews sits in the Scenes toolbar as well as on the home page.
 - **Delete in the player**: the info bar has a Delete button (it asks first, with the option to delete the file too). The next video of the list or queue keeps playing instead of going back to the list.
 - **Cut clips** (player → “Cut clips”): mark start and end of the parts you want, collect them in a list and save them as new videos (separate or joined, Exact or Fast, optional “Clips” subfolder). They are scanned into Stash and take over the original's performers, tags and studio plus the tag “Clip”. Needs ffmpeg (Stash's own is used).
