@@ -2255,4 +2255,6 @@ export default {
   "Zoom in": "Приближение",
   "Style classic Stash like this interface": "Оформлять классический Stash как этот интерфейс",
   "Off: classic Stash keeps its own look (reload its page after changing this); only this interface is styled.": "Выкл.: классический Stash сохраняет свой вид (после изменения перезагрузите его страницу); оформляется только этот интерфейс.",
+  "Default image": "Картинка по умолчанию",
+  "Remove the logo – Stash shows its default image again": "Убрать логотип – Stash снова покажет картинку по умолчанию",
 };

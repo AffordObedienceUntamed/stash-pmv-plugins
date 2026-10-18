@@ -2220,4 +2220,6 @@ export default {
   "Zoom in": "ズームイン",
   "Style classic Stash like this interface": "クラシック Stash もこのインターフェースと同じ見た目にする",
   "Off: classic Stash keeps its own look (reload its page after changing this); only this interface is styled.": "オフ：クラシック Stash は元の見た目のままになります（変更後はそのページを再読み込みしてください）。このインターフェースだけがスタイルされます。",
+  "Default image": "デフォルト画像",
+  "Remove the logo – Stash shows its default image again": "ロゴを外します。Stash は再びデフォルト画像を表示します",
 };

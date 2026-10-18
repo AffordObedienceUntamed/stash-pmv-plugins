@@ -239,6 +239,7 @@ Settings → General → **Install as app**: Stash UI gets its own window and a 
 - **Image viewer**: arrow keys, a finger swipe or dragging with the mouse turn the page; the next picture is loaded before it is shown (no blank flash); Settings → Player and previews → *turning the page*: fade, slide in, zoom in or none.
 - **Versus for performers** has a gender filter (only women, only men …).
 - **Style classic Stash like this interface** (Settings → General, on by default): off, classic Stash keeps its own look and only Stash UI is styled (plugin setting *Keep classic Stash plain* does the same; a button back to Stash UI stays).
+- **E key**: opens Edit on the performer, studio, gallery and tag pages and in the image viewer (also in the player).
 - **Sound button in Scenes**: Sound on / Muted for the hover previews sits in the Scenes toolbar as well as on the home page.
 - **Delete in the player**: the info bar has a Delete button (it asks first, with the option to delete the file too). The next video of the list or queue keeps playing instead of going back to the list.
 - **Cut clips** (player → “Cut clips”): mark start and end of the parts you want, collect them in a list and save them as new videos (separate or joined, Exact or Fast, optional “Clips” subfolder). They are scanned into Stash and take over the original's performers, tags and studio plus the tag “Clip”. Needs ffmpeg (Stash's own is used).

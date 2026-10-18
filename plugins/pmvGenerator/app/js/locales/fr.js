@@ -2159,4 +2159,6 @@ export default {
   "Zoom in": "Zoom avant",
   "Style classic Stash like this interface": "Appliquer l'apparence de cette interface au Stash classique",
   "Off: classic Stash keeps its own look (reload its page after changing this); only this interface is styled.": "Désactivé : le Stash classique garde son apparence (rechargez sa page après le changement) ; seule cette interface est stylisée.",
+  "Default image": "Image par défaut",
+  "Remove the logo – Stash shows its default image again": "Retirer le logo – Stash affiche de nouveau son image par défaut",
 };

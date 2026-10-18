@@ -4,6 +4,16 @@
 
 export const CHANGES = [
   {
+    v: "3.98.0",
+    date: "2026-10-18",
+    items: [
+      ["ui", "Fix: studio \u201cFill in from the internet\u201d found no source in many Stash versions \u2013 asking for studio scrapers (which don\u2019t exist there) made the whole question fail, so not even StashDB was offered. The StashDB-style boxes are asked on their own now. (Thanks sashi!)", "修复：在许多 Stash 版本中，工作室的“从网上填写”找不到任何来源——询问（那里并不存在的）工作室刮削器会使整个查询失败，连 StashDB 都没有列出。现在单独查询 StashDB 类的来源。（感谢 sashi！）"],
+      ["ui", "The E key opens Edit on the performer, studio, gallery and tag pages and in the image viewer, like in the player. (Thanks sashi!)", "在演员、工作室、图库、标签页面以及图片查看器中，按 E 键即可打开编辑，与播放器一致。（感谢 sashi！）"],
+      ["ui", "Studio editor: the logo button \u201cRemove\u201d is now \u201cDefault image\u201d \u2013 Stash shows its default image again. (Thanks sashi!)", "工作室编辑器：标志按钮“移除”改为“默认图片”——Stash 会重新显示其默认图片。（感谢 sashi！）"],
+      ["ui", "Home \u2192 Customize \u2192 Sidebar: if the sidebar editor can\u2019t be built, the error is shown instead of an empty tab (so it can be reported).", "主页 \u2192 自定义 \u2192 侧边栏：如果无法构建侧边栏编辑器，现在会显示错误信息，而不是空白标签页（便于反馈）。"],
+    ],
+  },
+  {
     v: "3.97.0",
     date: "2026-10-18",
     items: [

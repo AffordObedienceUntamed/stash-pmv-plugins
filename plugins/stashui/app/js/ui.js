@@ -156,6 +156,22 @@ export const invNo = (kind, id) => `${{ scene: "S", image: "I", gallery: "G" }[k
 // (a big library: off until asked for – counting the folders reads the whole library)
 export const folderMode = () => store.get("folderMode") || (largeNow() ? "off" : store.get("railFolders", true) ? "all" : "page");
 
+// The E key opens the Edit button of a page (performer, studio, gallery, tag) – not while typing, with a drawer or dialog
+// open, or while the player / image viewer is on top of the page (they have their own E). → function that takes it off again
+export function editKey(root) {
+  const on = (e) => {
+    if (e.key.toLowerCase() !== "e" || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.target.closest && e.target.closest("input, textarea, select, [contenteditable]")) return;
+    if (document.querySelector(".kb-drawer, .kb-dialog") || document.body.classList.contains("kb-noscroll")) return;
+    const b = root.querySelector("[data-edit]");
+    if (!b) return;
+    e.preventDefault();
+    b.click();
+  };
+  document.addEventListener("keydown", on);
+  return () => document.removeEventListener("keydown", on);
+}
+
 export const store = {
   get(key, fallback) {
     try {

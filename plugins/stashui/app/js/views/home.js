@@ -354,7 +354,14 @@ export async function render(main) {
     const tabs = `<div class="kb-seg kb-home-tabs" role="tablist"><button type="button" role="tab" data-edtab="home" class="${editTab === "home" ? "is-on" : ""}" aria-selected="${editTab === "home"}">${t("Home page")}</button><button type="button" role="tab" data-edtab="rail" class="${editTab === "rail" ? "is-on" : ""}" aria-selected="${editTab === "rail"}">${t("Sidebar")}</button></div>`;
     if (editTab === "rail") {
       box.innerHTML = `${tabs}<div data-railed></div>`;
-      return mountRailEditor(box.querySelector("[data-railed]"));
+      try {
+        return mountRailEditor(box.querySelector("[data-railed]"));
+      } catch (e) {
+        // (say what went wrong instead of an empty tab)
+        box.querySelector("[data-railed]").innerHTML = `<p class="kb-hint kb-pe-err">${esc(e.message || String(e))}</p>`;
+        errorToast(e, "Sidebar");
+        return;
+      }
     }
     box.innerHTML = `${tabs}
       <p class="kb-hint">${t("Show or hide sections, drag them (or use the arrows) into the order you like, and add your own. Saved in this browser.")}</p>

@@ -2277,4 +2277,6 @@ export default {
   "Zoom in": "放大进入",
   "Style classic Stash like this interface": "经典 Stash 采用与本界面相同的外观",
   "Off: classic Stash keeps its own look (reload its page after changing this); only this interface is styled.": "关闭：经典 Stash 保持自己的外观（更改后请刷新其页面）；只有本界面使用此外观。",
+  "Default image": "默认图片",
+  "Remove the logo – Stash shows its default image again": "移除标志——Stash 会重新显示其默认图片",
 };

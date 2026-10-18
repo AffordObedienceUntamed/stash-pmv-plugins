@@ -279,6 +279,7 @@ export async function render(host, params) {
     else if (k === "z") setZoom(zoom > 1 ? 1 : 2.5);
     else if (k === "f") fullscreen();
     else if (k === "i") $("[data-panel]").click();
+    else if (k === "e") $("[data-edit]") && $("[data-edit]").click(); // edit
     else if (k === "delete") $("[data-delete]") && $("[data-delete]").click(); // asks first
     else if (k === "h") plc.fav().catch((err) => errorToast(err, "Favorite"));
     else if (k === "o") plc.o(1).catch((err) => errorToast(err, "O counter"));

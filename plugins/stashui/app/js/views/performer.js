@@ -4,7 +4,7 @@ import { tierNow } from "../tiers.js";
 import { largeNow } from "../scale.js";
 import { tierBadge } from "../versusx.js";
 import { critOf } from "../ratingx.js";
-import { esc, icon, errorToast, toast, plural, starsHtml, ratingClick, ratingFromInput, ratingToast, fmtDate, pop, burst, store } from "../ui.js";
+import { esc, icon, errorToast, toast, plural, starsHtml, ratingClick, ratingFromInput, ratingToast, fmtDate, pop, burst, store, editKey } from "../ui.js";
 import { t } from "../i18n.js";
 import { getPerformer, updatePerformer, gql } from "../api.js";
 import { openPerformerEditor } from "./perfedit.js";
@@ -238,7 +238,9 @@ export async function render(main, params, query) {
     setQuery({ edit: "" });
     edit(true);
   }
+  const offKey = editKey(main);
   return () => {
+    offKey();
     xhead.destroy();
     b.destroy();
   };
