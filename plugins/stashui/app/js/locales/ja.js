@@ -2222,4 +2222,7 @@ export default {
   "Off: classic Stash keeps its own look (reload its page after changing this); only this interface is styled.": "オフ：クラシック Stash は元の見た目のままになります（変更後はそのページを再読み込みしてください）。このインターフェースだけがスタイルされます。",
   "Default image": "デフォルト画像",
   "Remove the logo – Stash shows its default image again": "ロゴを外します。Stash は再びデフォルト画像を表示します",
+  "Eye color": "目の色",
+  "Hair color": "髪の色",
+  "Filter by eye color, hair color, ethnicity or country": "目の色・髪の色・民族・国で絞り込み",
 };

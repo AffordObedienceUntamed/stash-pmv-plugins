@@ -2161,4 +2161,7 @@ export default {
   "Off: classic Stash keeps its own look (reload its page after changing this); only this interface is styled.": "Désactivé : le Stash classique garde son apparence (rechargez sa page après le changement) ; seule cette interface est stylisée.",
   "Default image": "Image par défaut",
   "Remove the logo – Stash shows its default image again": "Retirer le logo – Stash affiche de nouveau son image par défaut",
+  "Eye color": "Couleur des yeux",
+  "Hair color": "Couleur des cheveux",
+  "Filter by eye color, hair color, ethnicity or country": "Filtrer par couleur des yeux, des cheveux, origine ou pays",
 };

@@ -190,6 +190,9 @@ export async function deleteWithConfirm(kind, id, then) {
   }
 }
 
+// Tags (and rating) of one or more items in the small "add / remove" form – also for a single one (the T key on a card)
+export const openQuickTags = (kind, pieces, opts = {}) => editMany(kind, pieces, opts);
+
 function editMany(kind, pieces, { onSaved }) {
   const ids = pieces.map((p) => p.id);
   const state = { rating100: undefined, add: [], remove: [], organized: "" };

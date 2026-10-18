@@ -2279,4 +2279,7 @@ export default {
   "Off: classic Stash keeps its own look (reload its page after changing this); only this interface is styled.": "关闭：经典 Stash 保持自己的外观（更改后请刷新其页面）；只有本界面使用此外观。",
   "Default image": "默认图片",
   "Remove the logo – Stash shows its default image again": "移除标志——Stash 会重新显示其默认图片",
+  "Eye color": "眼睛颜色",
+  "Hair color": "发色",
+  "Filter by eye color, hair color, ethnicity or country": "按眼睛颜色、发色、种族或国家筛选",
 };

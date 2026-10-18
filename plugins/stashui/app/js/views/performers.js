@@ -135,10 +135,12 @@ export async function render(main, params, query) {
         <select class="kb-field" data-gender aria-label="${t("Gender")}"><option value="">${t("Everyone")}</option>${GENDERS.map(([v, l]) => `<option value="${v}">${t(l)}</option>`).join("")}</select>
         <button type="button" class="kb-btn" data-critopen hidden>${icon("sliders")}<span data-crittext>${t("Criteria …")}</span></button>
         <span class="kb-seg kb-tierchips" data-tf hidden title="${t("Tier")}">${TIERS.map((x) => `<button type="button" data-tier="${x.k}" style="--tc:${x.color}">${x.k}</button>`).join("")}</span>
+        <button type="button" class="kb-btn" data-attrbtn aria-expanded="false" title="${esc(t("Filter by eye color, hair color, ethnicity or country"))}">${icon("sliders")}<span>${t("Looks")}</span></button>
         <button type="button" class="kb-btn${query.fav === "1" ? " is-on" : ""}" data-favonly aria-pressed="${query.fav === "1"}">${icon("heart")}${t("Favorites")}</button>
         <button type="button" class="kb-btn" data-new>${icon("plus")}${t("New performer")}</button>
       </div>
     </header>
+    <div class="kb-perf-attrs" data-attrs hidden></div>
     <div class="kb-perfgrid" data-list><div class="kb-loading">${t("Loading …")}</div></div>
     <div class="kb-perf-more" data-more></div>`;
   const $ = (s) => main.querySelector(s);
@@ -147,6 +149,53 @@ export async function render(main, params, query) {
   defButton($("[data-sort]"), () => "performers", () => ($("[data-sort]").value.startsWith("crit:") ? "" : $("[data-sort]").value));
   $("[data-gender]").value = query.gender || "";
   let favOnly = query.fav === "1";
+  // Looks: what the performers themselves say about eyes, hair, ethnicity and country (the "Blue Eyes" you search for may
+  // be a tag of a scene – this is the performer's own field)
+  const ATTRS = [
+    ["eye_color", "eye", "Eye color"],
+    ["hair_color", "hair", "Hair color"],
+    ["ethnicity", "eth", "Ethnicity"],
+    ["country", "country", "Country"],
+  ];
+  const looks = Object.fromEntries(ATTRS.map(([f, k]) => [f, query[k] || ""]));
+  const looksOn = () => ATTRS.some(([f]) => looks[f]);
+  let distinct = null; // field → [[value, count]] – asked once, when the panel is first opened
+  const paintLooks = async () => {
+    const box = $("[data-attrs]");
+    if (!distinct) {
+      box.innerHTML = `<span class="kb-hint">${t("Loading …")}</span>`;
+      try {
+        const d = await gql(`query PerfLooks { findPerformers(filter: { per_page: -1 }) { performers { eye_color hair_color ethnicity country } } }`, {}, { heavy: true });
+        distinct = {};
+        for (const [f] of ATTRS) {
+          const n = new Map();
+          for (const p of d.findPerformers.performers) {
+            const v = String(p[f] || "").trim();
+            if (v) n.set(v, (n.get(v) || 0) + 1);
+          }
+          distinct[f] = [...n].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+        }
+      } catch (e) {
+        box.innerHTML = `<span class="kb-hint kb-pe-err">${esc(e.message)}</span>`;
+        return;
+      }
+    }
+    box.innerHTML =
+      ATTRS.map(
+        ([f, , label]) =>
+          `<select class="kb-field" data-look="${f}" aria-label="${esc(t(label))}"><option value="">${t(label)}</option>${(distinct[f] || [])
+            .map(([v, n]) => `<option value="${esc(v)}"${looks[f] === v ? " selected" : ""}>${esc(f === "country" ? countryOf(v) : v)} (${n})</option>`)
+            .join("")}</select>`,
+      ).join("") + (looksOn() ? `<button type="button" class="kb-btn is-ghost" data-looksclear>${t("Clear")}</button>` : "");
+  };
+  const showLooks = (on) => {
+    const box = $("[data-attrs]");
+    box.hidden = !on;
+    $("[data-attrbtn]").setAttribute("aria-expanded", String(on));
+    $("[data-attrbtn]").classList.toggle("is-on", on || looksOn());
+    if (on) paintLooks();
+  };
+  if (looksOn()) showLooks(true);
   let tiers = (query.tier || "").split(",").filter(Boolean);
   let crit = query.crit || "";
   let critAll = null; // sorted by a criterion: everything that matches, fetched once and ordered here
@@ -214,6 +263,7 @@ export async function render(main, params, query) {
     if (tagF && tagF.key === "tag") f.tags = { value: [tagF.id], modifier: "INCLUDES" };
     if (tagF && tagF.key === "scenetag") f.scenes_filter = { tags: { value: [tagF.id], modifier: "INCLUDES" } };
     if (favOnly) f.filter_favorites = true;
+    for (const [fld] of ATTRS) if (looks[fld]) f[fld] = { value: looks[fld], modifier: "EQUALS" };
     const g = $("[data-gender]").value;
     if (g) f.gender = { value: g, modifier: "EQUALS" };
     return f;
@@ -255,7 +305,7 @@ export async function render(main, params, query) {
       list = list.concat(r.performers);
       $("[data-sub]").textContent = plural(total, "performer", "performers");
       if (!list.length) {
-        const filtered = q || favOnly || $("[data-gender]").value;
+        const filtered = q || favOnly || $("[data-gender]").value || looksOn();
         $("[data-list]").innerHTML = filtered
           ? `<div class="kb-empty"><b>${t("No performer found")}</b><p>${t("Try another search or filter.")}</p></div>`
           : `<div class="kb-empty"><b>${t("No performers yet")}</b><p>${t("Stash can fill them in from StashDB: Tasks → Identify (or the scene tagger in classic Stash). Or add one yourself with “New performer”.")}</p></div>`;
@@ -283,12 +333,28 @@ export async function render(main, params, query) {
   io.observe($("[data-more]"));
 
   const reload = () => {
-    setQuery({ q: $("[data-q]").value.trim(), sort: $("[data-sort]").value === ((getDef("performers").startsWith("crit:") ? "" : getDef("performers")) || "name") ? "" : $("[data-sort]").value, gender: $("[data-gender]").value, fav: favOnly ? "1" : "" });
+    setQuery({ q: $("[data-q]").value.trim(), sort: $("[data-sort]").value === ((getDef("performers").startsWith("crit:") ? "" : getDef("performers")) || "name") ? "" : $("[data-sort]").value, gender: $("[data-gender]").value, fav: favOnly ? "1" : "", ...Object.fromEntries(ATTRS.map(([f, k]) => [k, looks[f]])) });
     load(true);
   };
   $("[data-q]").addEventListener("input", debounce(reload, 250));
   $("[data-sort]").onchange = reload;
   $("[data-gender]").onchange = reload;
+  $("[data-attrbtn]").onclick = () => showLooks($("[data-attrs]").hidden);
+  $("[data-attrs]").addEventListener("change", (e) => {
+    const sel = e.target.closest("[data-look]");
+    if (!sel) return;
+    looks[sel.dataset.look] = sel.value;
+    $("[data-attrbtn]").classList.toggle("is-on", looksOn() || !$("[data-attrs]").hidden);
+    paintLooks();
+    reload();
+  });
+  $("[data-attrs]").addEventListener("click", (e) => {
+    if (!e.target.closest("[data-looksclear]")) return;
+    ATTRS.forEach(([f]) => (looks[f] = ""));
+    paintLooks();
+    $("[data-attrbtn]").classList.toggle("is-on", !$("[data-attrs]").hidden);
+    reload();
+  });
   $("[data-favonly]").onclick = (e) => {
     favOnly = !favOnly;
     e.currentTarget.classList.toggle("is-on", favOnly);

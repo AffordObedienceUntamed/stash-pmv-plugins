@@ -2215,4 +2215,7 @@ export default {
   "Off: classic Stash keeps its own look (reload its page after changing this); only this interface is styled.": "Tắt: Stash cổ điển giữ giao diện riêng (hãy tải lại trang của nó sau khi đổi); chỉ giao diện này được tạo kiểu.",
   "Default image": "Ảnh mặc định",
   "Remove the logo – Stash shows its default image again": "Gỡ logo – Stash lại hiện ảnh mặc định",
+  "Eye color": "Màu mắt",
+  "Hair color": "Màu tóc",
+  "Filter by eye color, hair color, ethnicity or country": "Lọc theo màu mắt, màu tóc, sắc tộc hoặc quốc gia",
 };

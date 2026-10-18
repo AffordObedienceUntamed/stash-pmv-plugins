@@ -4,6 +4,15 @@
 
 export const CHANGES = [
   {
+    v: "3.99.0",
+    date: "2026-10-18",
+    items: [
+      ["ui", "Performers: a \u201cLooks\u201d button opens filters for the performer\u2019s own eye color, hair color, ethnicity and country (the values your library has, with counts) \u2013 for \u201cblue eyes\u201d without relying on a tag. They stay in the address and combine with the other filters. (Thanks JoeBiden!)", "演员：新增“外貌”按钮，可按演员自身的眼睛颜色、发色、种族和国家筛选（列出你库中已有的值及数量）——不必再依赖标签来找“蓝眼睛”。筛选保存在地址中，可与其他筛选组合。（感谢 JoeBiden！）"],
+      ["ui", "Quick keys on the card under the mouse (scene, image and gallery lists): E edit, T tags (add / remove), D or Delete delete \u2013 each asks or opens a form first. (Thanks JoeBiden!)", "鼠标所指卡片上的快捷键（场景、图片、图库列表）：E 编辑，T 标签（添加/移除），D 或 Delete 删除——都会先询问或打开表单。（感谢 JoeBiden！）"],
+      ["ui", "Editing a performer from the internet: the found pictures are bigger, and the mouse resting on one shows it large beside the drawer. (Thanks JoeBiden!)", "从网上编辑演员：找到的图片更大，鼠标停在某张图片上时会在抽屉旁显示大图。（感谢 JoeBiden！）"],
+    ],
+  },
+  {
     v: "3.98.0",
     date: "2026-10-18",
     items: [
