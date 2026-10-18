@@ -2282,4 +2282,9 @@ export default {
   "Eye color": "眼睛颜色",
   "Hair color": "发色",
   "Filter by eye color, hair color, ethnicity or country": "按眼睛颜色、发色、种族或国家筛选",
+  "Show file": "显示文件",
+  "Show the file in Explorer / Finder on the computer Stash runs on (if that isn't this one, the path is copied)": "在运行 Stash 的电脑上用资源管理器（Explorer / Finder）显示该文件（若不是本机，则复制路径）",
+  "Opened in the file manager": "已在文件管理器中打开",
+  "Can't open it from here – the path is copied": "无法从这里打开 – 路径已复制",
+  "File path": "文件路径",
 };

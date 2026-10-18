@@ -59,6 +59,11 @@ Called through Stash's `runPluginOperation` (interface: raw):
       args:   {"mode": "funscript_save_variant", "scene_id": "12", "label": "Soft", "content": "<funscript text>"}
       output: {"path", "name"}
 
+* mode "reveal": shows a file in the file manager of the computer Stash runs on (Explorer /select, Finder -R, xdg-open
+  on the folder). Only files inside a library folder.
+      args:   {"mode": "reveal", "path": "<full file path>"}
+      output: {"opened": true} or {"opened": false, "why": "outside" | "missing"}
+
 * modes "phone_status" / "phone_start" / "phone_stop": "Phone upload". phoneup.py (next to this file) is a small
   receiver in the home network: the phone opens its page (QR code in Stash UI), picks photos and videos from the
   gallery and they are written into one folder inside a library folder. One receiver at a time; its port, token and
@@ -1141,6 +1146,27 @@ def cut_job(spec_path):
     save()
 
 
+def reveal(stash, args):
+    """Show a file in the computer's file manager (Explorer / Finder). Only files inside a library folder of Stash, and only
+    on the machine Stash runs on – otherwise {"opened": false, "why": ...} and the page copies the path instead."""
+    path = str(args.get("path") or "")
+    if not path:
+        raise ValueError("no path")
+    roots, _ = libraries(stash)
+    if not inside(path, roots):
+        return {"opened": False, "why": "outside"}
+    if not os.path.exists(path):
+        return {"opened": False, "why": "missing"}
+    real = os.path.realpath(path)
+    if os.name == "nt":
+        subprocess.Popen(["explorer", "/select," + os.path.normpath(real)], creationflags=0x08000000, close_fds=True)
+    elif sys.platform == "darwin":
+        subprocess.Popen(["open", "-R", real], close_fds=True)
+    else:
+        subprocess.Popen(["xdg-open", os.path.dirname(real)], close_fds=True, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    return {"opened": True}
+
+
 def main():
     if len(sys.argv) > 2 and sys.argv[1] == "--cutjob":
         return cut_job(sys.argv[2])
@@ -1174,6 +1200,8 @@ def main():
             out = clip_cut(Stash(data.get("server_connection")), args)
         elif mode == "clip_status":
             out = clip_status(None, args)
+        elif mode == "reveal":
+            out = reveal(Stash(data.get("server_connection")), args)
         elif mode == "phone_status":
             out = phone_status(Stash(data.get("server_connection")), args)
         elif mode == "phone_start":

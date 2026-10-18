@@ -2218,4 +2218,9 @@ export default {
   "Eye color": "Màu mắt",
   "Hair color": "Màu tóc",
   "Filter by eye color, hair color, ethnicity or country": "Lọc theo màu mắt, màu tóc, sắc tộc hoặc quốc gia",
+  "Show file": "Hiển thị tệp",
+  "Show the file in Explorer / Finder on the computer Stash runs on (if that isn't this one, the path is copied)": "Hiển thị tệp trong Explorer / Finder trên máy chạy Stash (nếu không phải máy này, đường dẫn sẽ được sao chép)",
+  "Opened in the file manager": "Đã mở trong trình quản lý tệp",
+  "Can't open it from here – the path is copied": "Không thể mở từ đây – đường dẫn đã được sao chép",
+  "File path": "Đường dẫn tệp",
 };

@@ -4,6 +4,14 @@
 
 export const CHANGES = [
   {
+    v: "3.101.0",
+    date: "2026-10-19",
+    items: [
+      ["ui", "Fix: the image viewer no longer flickers when you turn the page (also from a gallery). Before, the whole viewer faded in again over the page with every picture and the controls popped back up; now only the picture changes, and controls that were hidden stay hidden. The page-turning animations \u201cslide\u201d and \u201czoom\u201d no longer dip to black. (Thanks ufousox007!)", "修复：图片查看器翻页（包括从图库打开时）不再闪烁。以前每翻一张，整个查看器都会在页面上重新淡入，控制栏也会重新弹出；现在只有图片本身切换，已隐藏的控制栏保持隐藏。“滑入”和“放大进入”翻页动画也不再变黑闪烁。（感谢 ufousox007！）"],
+      ["ui", "New: a \u201cShow file\u201d button in the info bar (scenes, images, galleries) opens the file in Explorer / Finder with the file selected \u2013 when Stash runs on the same computer. Otherwise (other computer, phone) the path is copied. Only files inside your library folders. (Thanks Ghboon!)", "新增：信息栏（场景、图片、图库）中的“显示文件”按钮，可在资源管理器 / Finder 中打开并选中该文件——前提是 Stash 运行在同一台电脑上；否则（其他电脑、手机）会复制文件路径。仅限库文件夹内的文件。（感谢 Ghboon！）"],
+    ],
+  },
+  {
     v: "3.100.0",
     date: "2026-10-18",
     items: [

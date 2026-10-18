@@ -2178,4 +2178,9 @@ export default {
   "Eye color": "Augenfarbe",
   "Hair color": "Haarfarbe",
   "Filter by eye color, hair color, ethnicity or country": "Nach Augenfarbe, Haarfarbe, Herkunft oder Land filtern",
+  "Show file": "Datei zeigen",
+  "Show the file in Explorer / Finder on the computer Stash runs on (if that isn't this one, the path is copied)": "Zeigt die Datei im Explorer / Finder auf dem Computer, auf dem Stash läuft (ist es nicht dieser, wird der Pfad kopiert)",
+  "Opened in the file manager": "Im Dateimanager geöffnet",
+  "Can't open it from here – the path is copied": "Von hier nicht zu öffnen – der Pfad wurde kopiert",
+  "File path": "Dateipfad",
 };

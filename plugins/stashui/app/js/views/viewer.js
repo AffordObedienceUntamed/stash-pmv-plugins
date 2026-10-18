@@ -67,7 +67,14 @@ export async function render(host, params) {
   const $ = (s) => host.querySelector(s);
   const img = $(".kb-img");
   const canvas = $("[data-canvas]");
-  if (anim !== "none") {
+  // Stepping from one picture to the next: the frame (bars, panel) just stays – it must not fade in again, and the
+  // controls keep their state (hidden stays hidden). A plain fade of the already loaded picture would only dip to dark.
+  const stepping = !!dirIn;
+  if (stepping) {
+    stage.classList.add("is-stepping");
+    if (app.viewerIdle) stage.classList.add("is-idle");
+  }
+  if (anim !== "none" && !(stepping && anim === "fade")) {
     img.style.setProperty("--dir", dirIn || 1);
     img.classList.add("kb-in-" + (anim === "slide" && !dirIn ? "fade" : anim)); // (opened from a list: no side to come from)
   }
@@ -238,7 +245,7 @@ export async function render(host, params) {
     idle = setTimeout(() => stage.classList.add("is-idle"), 2400);
   };
   stage.addEventListener("pointermove", wake);
-  wake();
+  if (!(stepping && app.viewerIdle)) wake();
 
   // ---------- Placard ----------
   const side = $("[data-side]");
@@ -295,6 +302,8 @@ export async function render(host, params) {
 
   return () => {
     document.removeEventListener("keydown", onKey);
+    clearTimeout(idle);
+    app.viewerIdle = stage.classList.contains("is-idle"); // (the next picture keeps it)
     app.slideshowRunning = slideKeep && !!slideTimer;
     clearInterval(slideTimer);
     if (isVid) {

@@ -2225,4 +2225,9 @@ export default {
   "Eye color": "目の色",
   "Hair color": "髪の色",
   "Filter by eye color, hair color, ethnicity or country": "目の色・髪の色・民族・国で絞り込み",
+  "Show file": "ファイルを表示",
+  "Show the file in Explorer / Finder on the computer Stash runs on (if that isn't this one, the path is copied)": "Stash が動いているコンピューターの Explorer / Finder でファイルを表示します（そこでない場合はパスをコピー）",
+  "Opened in the file manager": "ファイルマネージャーで開きました",
+  "Can't open it from here – the path is copied": "ここからは開けません – パスをコピーしました",
+  "File path": "ファイルパス",
 };
