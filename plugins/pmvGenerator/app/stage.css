@@ -163,6 +163,14 @@
 /* Image viewer */
 .kb-canvas { position: absolute; inset: 0; display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); place-items: center; overflow: hidden; touch-action: none; } /* one cell the size of the screen – so max-width/height 100 % mean the screen, not the picture */
 .kb-img { max-width: 100%; max-height: 100%; object-fit: contain; transform-origin: center; transition: transform .12s ease-out; user-select: none; }
+/* page turning in the image viewer (Settings → Player): the new picture comes in */
+@keyframes kb-in-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes kb-in-slide { from { opacity: 0; transform: translateX(calc(var(--dir, 1) * 7%)); } to { opacity: 1; transform: none; } }
+@keyframes kb-in-zoom { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: none; } }
+.kb-img.kb-in-fade { animation: kb-in-fade .28s ease-out; }
+.kb-img.kb-in-slide { animation: kb-in-slide .26s cubic-bezier(.2, .8, .2, 1); }
+.kb-img.kb-in-zoom { animation: kb-in-zoom .3s cubic-bezier(.2, .8, .2, 1); }
+@media (prefers-reduced-motion: reduce) { .kb-img.kb-in-fade, .kb-img.kb-in-slide, .kb-img.kb-in-zoom { animation: none; } }
 .kb-stage.is-zoomed .kb-canvas { cursor: grab; }
 .kb-stage.is-zoomed .kb-canvas:active { cursor: grabbing; }
 .kb-nav-arrow {

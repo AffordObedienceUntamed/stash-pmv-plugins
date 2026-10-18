@@ -47,6 +47,7 @@ const KINDS = {
     open: (id, x) => (x ? `scene/${x.scene.id}?t=${Math.floor(x.seconds || 0)}` : "versus/ranking"),
   },
 };
+const VGENDERS = [["FEMALE", "Female"], ["MALE", "Male"], ["TRANSGENDER_FEMALE", "Trans female"], ["TRANSGENDER_MALE", "Trans male"], ["NON_BINARY", "Non-binary"], ["INTERSEX", "Intersex"]];
 const MODES = [
   ["fair", "Fair matches", "Similar strength, the least played first"],
   ["champ", "Winner stays", "The winner stays on – how long a streak?"],
@@ -113,7 +114,7 @@ const parseVs = (txt) => {
 };
 
 export function render(main, params = {}) {
-  const S = Object.assign({ kind: "scene", mode: "fair", tags: [], xtags: [] }, store.get("versusView", {}));
+  const S = Object.assign({ kind: "scene", mode: "fair", tags: [], xtags: [], gender: "" }, store.get("versusView", {}));
   const saveView = () => store.set("versusView", S);
   // { scene: { id: [elo, wins, losses] }, image: …, performer: …, votes, day, dayVotes, bestStreak }
   // This browser keeps a copy (starts at once); Stash has the real thing – written a few seconds after
@@ -227,10 +228,13 @@ export function render(main, params = {}) {
 
   // ---------- Loading ----------
   function filter() {
-    if (!S.tags.length && !S.xtags.length) return {};
-    const tags = { value: S.tags, modifier: "INCLUDES", depth: 0 };
-    if (S.xtags.length) tags.excludes = S.xtags;
-    return { tags };
+    const f = {};
+    if (S.tags.length || S.xtags.length) {
+      f.tags = { value: S.tags, modifier: "INCLUDES", depth: 0 };
+      if (S.xtags.length) f.tags.excludes = S.xtags;
+    }
+    if (S.kind === "performer" && S.gender) f.gender = { value: S.gender, modifier: "EQUALS" }; // (performers only: show only women …)
+    return f;
   }
   // (moments have tags too – the same filter works)
   async function loadPool() {
@@ -278,6 +282,7 @@ export function render(main, params = {}) {
         <div class="kb-seg" data-mode>${MODES.map(([m, l, h]) => `<button type="button" data-v="${m}" title="${esc(t(h))}">${t(l)}</button>`).join("")}</div>
         <div class="kb-vs-filter" data-tags></div>
         <div class="kb-vs-filter kb-vs-xtags" data-xtags></div>
+        ${S.kind === "performer" ? `<select class="kb-field kb-vs-gender" data-gender aria-label="${esc(t("Gender"))}"><option value="">${t("Everyone")}</option>${VGENDERS.map(([v, l]) => `<option value="${v}"${S.gender === v ? " selected" : ""}>${t(l)}</option>`).join("")}</select>` : ""}
       </div>
       <div class="kb-vs-arena" data-arena><div class="kb-loading">${t("Loading …")}</div></div>
       <div class="kb-vs-foot">
@@ -318,6 +323,12 @@ export function render(main, params = {}) {
         reset();
       },
     });
+    const gsel = body.querySelector("[data-gender]");
+    if (gsel) gsel.onchange = () => {
+      S.gender = gsel.value;
+      saveView();
+      reset();
+    };
     body.querySelector("[data-skip]").onclick = () => showNext();
     body.querySelector("[data-undo]").onclick = () => undoLast();
     body.querySelector("[data-fs]").onclick = () => fullscreen();

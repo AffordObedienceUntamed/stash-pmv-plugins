@@ -1327,6 +1327,7 @@ html.kb-glass .kb-rail-ghead { border-color: var(--glass-edge); background: tran
 .kb-vs-filter { flex: 1 1 260px; min-width: 200px; }
 .kb-vs-filter.kb-tagpick { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px; }
 .kb-vs-filter .kb-chips { display: contents; }
+.kb-vs-gender { flex: 0 0 auto; width: auto; min-width: 140px; }
 .kb-vs-filter .kb-field { flex: 1 1 140px; width: auto; min-width: 140px; }
 .kb-vs-xtags .kb-chip { background: rgba(255, 62, 138, .14); color: var(--text); box-shadow: inset 3px 0 0 var(--pink); text-decoration: line-through; text-decoration-color: rgba(255, 62, 138, .8); }
 .kb-vs-xtags .kb-chip button { text-decoration: none; }

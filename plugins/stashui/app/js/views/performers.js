@@ -91,7 +91,7 @@ export function performerCard(p) {
   const sub = [p.scene_count ? plural(p.scene_count, "scene", "scenes") : "", age ? t("{n} years", { n: age }) : ""].filter(Boolean).join(" · ");
   return `<a class="kb-perf" href="#/performer/${p.id}" data-pid="${p.id}">
     <span class="kb-perf-img"><img alt="" loading="lazy" src="${esc(p.image_path || "")}">
-      <button type="button" class="kb-perf-fav${p.favorite ? " is-on" : ""}" data-pfav title="${t("Favorite")}">${icon("heart")}</button>
+      <button type="button" class="kb-perf-fav${p.favorite ? " is-on" : ""}" data-pfav title="${p.favorite ? t("Remove from favorites") : t("Add to favorites")}">${icon("heart")}</button>
       ${tierNow("performer", p.id) ? `<span class="kb-tierpos">${tierBadge(tierNow("performer", p.id))}</span>` : ""}
       ${p.o_counter ? `<span class="kb-perf-o">${icon("drop")}${p.o_counter}</span>` : ""}</span>
     <b>${esc(p.name)}${p.disambiguation ? ` <small>(${esc(p.disambiguation)})</small>` : ""}</b>
@@ -110,6 +110,7 @@ export async function toggleCardFav(btn, list) {
     await updatePerformer({ id: p.id, favorite: on });
     p.favorite = on;
     btn.classList.toggle("is-on", on);
+    btn.title = on ? t("Remove from favorites") : t("Add to favorites");
     if (on) {
       pop(btn, 1.5);
       burst(btn, "heart", 6);

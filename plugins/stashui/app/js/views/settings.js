@@ -378,6 +378,9 @@ function renderPlayerUi(body) {
   body.innerHTML = `<form class="kb-set-form" data-form>
       <label class="kb-set"><span class="kb-set-label"><b>${t("At the end of a video")}</b><small>${t("The same as the button in the player bar – a click there cycles through these.")}</small></span>
         <select class="kb-field" data-pmode>${[["order", "In order"], ["shuffle", "Random order"], ["one", "Repeat this video"], ["all", "Repeat all"], ["stop", "Stop at the end"]].map(([v, l]) => `<option value="${v}"${mode === v ? " selected" : ""}>${t(l)}</option>`).join("")}</select></label>
+      <label class="kb-set"><span class="kb-set-label"><b>${t("Image viewer: turning the page")}</b><small>${t("How the next picture comes in. Arrow keys, a swipe (finger or dragging with the mouse) and the arrows on the sides all turn the page.")}</small></span>
+        <select class="kb-field" data-vanim>${[["fade", "Fade"], ["slide", "Slide in"], ["zoom", "Zoom in"], ["none", "None"]].map(([v, l]) => `<option value="${v}"${(store.get("viewer", {}).anim || "fade") === v ? " selected" : ""}>${t(l)}</option>`).join("")}</select></label>
+      ${sw("data-autoplay", player.autoplay !== false, "Start playing when a scene opens", "Off: opening a scene shows the first picture and waits for the play button. Going on to the next video from the player always plays.")}
       ${sw("data-randstart", !!player.randomStart, "Start at a random spot", "Every scene starts somewhere in the middle – for browsing around. Your resume points in Stash stay as they are.")}
       <label class="kb-set"><span class="kb-set-label"><b>${t("Mouse wheel on the video")}</b><small>${t("Turn the wheel over the picture to change the volume or to jump (5 s per notch); hold Shift for the other one.")}</small></span>
         <select class="kb-field" data-wheel>${[["volume", "Volume"], ["seek", "Jump forward / back"], ["off", "Off"]].map(([v, l]) => `<option value="${v}"${(player.wheel || "volume") === v ? " selected" : ""}>${t(l)}</option>`).join("")}</select></label>
@@ -408,6 +411,8 @@ function renderPlayerUi(body) {
   body.querySelector("[data-wheel]").onchange = (e) => setPlayer({ wheel: e.target.value });
   body.querySelector("[data-wheelrev]").onchange = (e) => setPlayer({ wheelRev: e.target.checked });
   body.querySelector("[data-fspanel]").onchange = (e) => setPlayer({ fsPanel: e.target.checked });
+  body.querySelector("[data-vanim]").onchange = (e) => store.set("viewer", Object.assign(store.get("viewer", { panel: false, interval: 5 }), { anim: e.target.value }));
+  body.querySelector("[data-autoplay]").onchange = (e) => setPlayer({ autoplay: e.target.checked });
   body.querySelector("[data-randstart]").onchange = (e) => setPlayer({ randomStart: e.target.checked });
   body.querySelector("[data-psound]").onchange = (e) => store.set("previewSound", e.target.checked);
 
@@ -472,6 +477,8 @@ async function renderApp(body) {
         <select class="kb-field" data-dsp="vsMedia">${[["auto", "Automatic"], ["preview", "Preview clips"], ["full", "Whole video"]].map(([v, l]) => `<option value="${v}"${store.get("vsMedia", "auto") === v ? " selected" : ""}>${t(l)}</option>`).join("")}</select></label>
       <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("This interface as home page")}</b><small>${t("Opening Stash goes straight to this interface. Off = classic Stash stays the home page.")}</small></span>
         <span class="kb-switch"><input type="checkbox" data-home${cfg.keepClassicHome ? "" : " checked"}><i></i></span></label>
+      <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("Style classic Stash like this interface")}</b><small>${t("Off: classic Stash keeps its own look (reload its page after changing this); only this interface is styled.")}</small></span>
+        <span class="kb-switch"><input type="checkbox" data-plainclassic${cfg.plainClassic ? "" : " checked"}><i></i></span></label>
       <div class="kb-set"><div class="kb-set-label"><b>${t("Install as app")}</b><small data-installhint></small></div><button type="button" class="kb-btn" data-install hidden>${icon("phone")}${t("Install")}</button></div>
       <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("Studio on scenes")}</b><small>${t("Shows the studio's logo (or its name) in the corner of scene thumbnails.")}</small></span>
         <span class="kb-switch"><input type="checkbox" data-studiologo${store.get("studioLogos", false) ? " checked" : ""}><i></i></span></label>
@@ -596,6 +603,15 @@ async function renderApp(body) {
   langSel.onchange = () => {
     choose(langSel.value);
     location.reload();
+  };
+  body.querySelector("[data-plainclassic]").onchange = async (e) => {
+    try {
+      await setPluginConfig("stashui", { plainClassic: !e.target.checked });
+      localStorage.setItem("stashui.plainClassic", String(!e.target.checked));
+      toast(t("Saved"), "ok");
+    } catch (err) {
+      errorToast(err, "Save");
+    }
   };
   body.querySelector("[data-home]").onchange = async (e) => {
     try {

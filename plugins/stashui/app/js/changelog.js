@@ -4,6 +4,18 @@
 
 export const CHANGES = [
   {
+    v: "3.97.0",
+    date: "2026-10-18",
+    items: [
+      ["ui", "New: Settings \u2192 Player \u2192 \u201cStart playing when a scene opens\u201d. Off, a scene waits for the play button; going on to the next video from the player still plays. (Thanks pr0nNDal!)", "新增：设置 \u2192 播放器 \u2192 \u201c打开场景时自动播放\u201d。关闭后，场景会等待你点击播放按钮；从播放器继续到下一个视频时仍会自动播放。（感谢 pr0nNDal！）"],
+      ["ui", "New: Settings \u2192 General \u2192 \u201cStyle classic Stash like this interface\u201d. Off, classic Stash keeps its own look and only Stash UI is styled (the button back to Stash UI stays). (Thanks ufousox007!)", "新增：设置 \u2192 常规 \u2192 \u201c经典 Stash 采用与本界面相同的外观\u201d。关闭后，经典 Stash 保持自己的外观，只有 Stash UI 使用此外观（返回 Stash UI 的按钮保留）。（感谢 ufousox007！）"],
+      ["ui", "Image viewer: dragging with the mouse turns the page like a swipe (the picture follows the mouse), the next picture is loaded before it is shown (no blank flash between two images), and Settings \u2192 Player has a page-turning animation: fade, slide in, zoom in or none. Arrow keys and finger swipes worked before. (Thanks ufousox007!)", "图片查看器：用鼠标拖动即可像滑动一样翻页（图片跟随鼠标），下一张图片会先加载好再显示（两张图片之间不再闪白），设置 \u2192 播放器中新增翻页动画：淡入、滑入、放大进入或无。方向键和手指滑动此前已可用。（感谢 ufousox007！）"],
+      ["ui", "Versus: performers can be filtered by gender (only women \u2026). (Thanks Ghboon!)", "对战：演员可按性别筛选（只看女性\u2026）。（感谢 Ghboon！）"],
+      ["ui", "Fix: when every duplicate group was hidden, the \u201cShow x hidden groups again\u201d button disappeared \u2013 it stays now. (Thanks Ghboon!)", "修复：隐藏了全部重复组后，“重新显示 x 个已隐藏的组”按钮会消失——现在会保留。（感谢 Ghboon！）"],
+      ["ui", "The favorite button on a performer says what a click does: \u201cAdd to favorites\u201d / \u201cRemove from favorites\u201d (also the heart on the cards). (Thanks sashi!)", "演员页的收藏按钮现在直接说明点击的效果：“加入收藏”/“从收藏中移除”（演员卡片上的心形也一样）。（感谢 sashi！）"],
+    ],
+  },
+  {
     v: "3.96.0",
     date: "2026-10-18",
     items: [

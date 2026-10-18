@@ -75,7 +75,7 @@ export async function render(main, params, query) {
         <p class="kb-sub">${[p.scene_count ? plural(p.scene_count, "scene", "scenes") : "", p.image_count ? plural(p.image_count, "image", "images") : "", p.gallery_count ? plural(p.gallery_count, "gallery", "galleries") : ""].filter(Boolean).join(t(", ")) || t("Nothing with this performer yet")}</p>
         <div class="kb-plc-acts">
           <div data-rate>${starsHtml(p.rating100, true)}</div>
-          <button class="kb-plc-btn${p.favorite ? " is-on" : ""}" data-fav><span class="kb-dotmini"></span>${p.favorite ? t("Favorite") : t("Add to favorites")}</button>
+          <button class="kb-plc-btn${p.favorite ? " is-on" : ""}" data-fav><span class="kb-dotmini"></span>${p.favorite ? t("Remove from favorites") : t("Add to favorites")}</button>
           <button class="kb-plc-btn" data-advrate title="${t("Rate by several criteria – Stash's rating follows")}">★+ ${t("Detailed")}</button>
           ${p.o_counter ? `<span class="kb-plc-btn is-static" title="${t("O counter")}">${icon("drop")}${p.o_counter}</span>` : ""}
           <button class="kb-plc-btn" data-edit>${icon("edit")}${t("Edit")}</button>
@@ -214,7 +214,7 @@ export async function render(main, params, query) {
       await updatePerformer({ id: p.id, favorite: on });
       p.favorite = on;
       btn.classList.toggle("is-on", on);
-      btn.innerHTML = `<span class="kb-dotmini"></span>${on ? t("Favorite") : t("Add to favorites")}`;
+      btn.innerHTML = `<span class="kb-dotmini"></span>${on ? t("Remove from favorites") : t("Add to favorites")}`;
       const heart = btn.querySelector(".kb-dotmini");
       if (on) {
         pop(heart, 1.8);

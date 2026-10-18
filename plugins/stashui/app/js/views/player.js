@@ -416,7 +416,13 @@ export async function render(host, params, query = {}) {
     mark.hidden = false;
     mark.style.left = (resumeAt / dur) * 100 + "%";
   }
-  v.play().catch(() => ($("[data-bigplay]").hidden = false));
+  // Settings → Player → "Start playing when a scene opens": off = it waits for a click (the big play button).
+  // Going on from the player itself (next, up next, similar) always plays – you were watching.
+  const autoplay = store.get("player", {}).autoplay !== false || !!app.keepPlaying;
+  app.keepPlaying = false;
+  let held = !autoplay;
+  if (autoplay) v.play().catch(() => ($("[data-bigplay]").hidden = false));
+  else $("[data-bigplay]").hidden = false;
 
   // ---------- History ----------
   const watch = watchRecorder(x.id, dur);
@@ -569,7 +575,8 @@ export async function render(host, params, query = {}) {
   // ---------- Controls ----------
   function syncPlay() {
     $("[data-play]").innerHTML = icon(v.paused ? "play" : "pause");
-    $("[data-bigplay]").hidden = !v.paused || v.currentTime > 0.5 ? true : false;
+    if (!v.paused) held = false;
+    $("[data-bigplay]").hidden = !v.paused || (v.currentTime > 0.5 && !held) ? true : false;
     stage.classList.toggle("is-paused", v.paused);
   }
   function syncVol() {
@@ -856,6 +863,7 @@ export async function render(host, params, query = {}) {
     openScene(it.id);
   }
   function openScene(id) {
+    app.keepPlaying = true; // (the next scene plays on its own even when "Start playing when a scene opens" is off)
     go("scene/" + id, true);
   }
   v.addEventListener("ended", () => {
