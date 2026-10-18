@@ -484,6 +484,14 @@ async function renderApp(body) {
         <span class="kb-switch"><input type="checkbox" data-studiologo${store.get("studioLogos", false) ? " checked" : ""}><i></i></span></label>
       <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("Resolution on scene cards")}</b><small>${t("Shows 1080p, 720p … next to the length in the corner of scene thumbnails (after the next page load).")}</small></span>
         <span class="kb-switch"><input type="checkbox" data-cardres${store.get("cardRes", false) ? " checked" : ""}><i></i></span></label>
+      ${[
+        ["badgeRating", "Rating badge", "Where the rating sits on a thumbnail. Automatic: only on the card view (bottom left).", [["auto", "Automatic"], ["off", "Hidden"]]],
+        ["badgeTier", "Tier badge", "Where the tier (S–F) sits on a thumbnail. Automatic: top left.", [["auto", "Automatic"], ["off", "Hidden"]]],
+        ["badgeStamp", "Length badge", "Where the length (and resolution) sits on a thumbnail. Automatic: top right.", [["auto", "Automatic"], ["off", "Hidden"]]],
+      ].map(([k, label, hint, first]) => `<label class="kb-set"><span class="kb-set-label"><b>${t(label)}</b><small>${t(hint)} ${t("Takes effect when a list is loaded again.")}</small></span>
+        <select class="kb-field" data-dsp="${k}">${[...first, ["tl", "Top left"], ["tr", "Top right"], ["bl", "Bottom left"], ["br", "Bottom right"]].map(([v, l]) => `<option value="${v}"${store.get(k, "auto") === v ? " selected" : ""}>${t(l)}</option>`).join("")}</select></label>`).join("")}
+      <label class="kb-set"><span class="kb-set-label"><b>${t("Rating badge: colour")}</b><small>${t("The colour can follow the rating – from red (low) to green (high).")}</small></span>
+        <select class="kb-field" data-dsp="ratingStyle">${[["plain", "Dark"], ["tint", "Coloured text"], ["fill", "Filled with the colour"]].map(([v, l]) => `<option value="${v}"${store.get("ratingStyle", "plain") === v ? " selected" : ""}>${t(l)}</option>`).join("")}</select></label>
       <label class="kb-set"><span class="kb-set-label"><b>${t("Studio logo: corner")}</b><small>${t("Where the logo sits on a thumbnail.")}</small></span>
         <select class="kb-field" data-dsp="studioPos">${[["bl", "Bottom left"], ["br", "Bottom right"], ["tl", "Top left"], ["tr", "Top right"]].map(([v, l]) => `<option value="${v}"${store.get("studioPos", "bl") === v ? " selected" : ""}>${t(l)}</option>`).join("")}</select></label>
       <label class="kb-set"><span class="kb-set-label"><b>${t("Studio logo: size")}</b><small>${t("How big the logo is.")}</small></span>

@@ -4,6 +4,15 @@
 
 export const CHANGES = [
   {
+    v: "3.103.0",
+    date: "2026-10-19",
+    items: [
+      ["ui", "Performer page: two new buttons. “Statistics” shows what the library holds of the performer – scenes, watched and not yet, plays, watch time, total length and size, average rating, scenes per year, top tags, who they often appear with, studios, resolutions, most watched and best rated. “Missing scenes” asks StashDB (or another stash-box the performer is linked to) for the performer’s scenes and lists those the library doesn’t have yet – with a link to each, and “Show all” to see the ones you have too (matched by StashDB id, or by title and date). The stash-box is asked through the plugin’s backend with the key Stash already has; the key never reaches the page. (Thanks ufousox007!)", "演员页面：新增两个按钮。“统计”显示资料库中该演员的内容 – 场景数、已看和未看、播放次数、观看时间、总时长和大小、平均评分、每年场景数、常用标签、经常同台的演员、工作室、分辨率、观看最多和评分最高的场景。“缺失的场景”会向 StashDB（或该演员关联的其他 stash-box）查询该演员的场景，列出资料库里还没有的 – 每个都有链接，点“显示全部”还能看到已有的（按 StashDB ID 或标题和日期匹配）。查询由插件后端使用 Stash 已有的密钥完成，密钥不会传到页面。（感谢 ufousox007！）"],
+      ["ui", "Badges on thumbnails: the rating, the tier and the length (with resolution) can each sit in any corner or be hidden (Settings → This interface). The rating badge now also shows on the normal thumbnails if you choose a corner, and its colour can follow the value – dark as before, coloured text, or filled – from red (low) to green (high). Several badges in one corner stack next to each other. (Thanks ufousox007!)", "缩略图徽章：评分、等级和时长（含分辨率）都可以放在任意角落或隐藏（设置 → 本界面）。选择一个角落后，评分徽章也会显示在普通缩略图上，其颜色可随评分变化 – 深色（同以前）、彩色文字或颜色填充 – 从红色（低）到绿色（高）。同一角落的多个徽章会并排显示。（感谢 ufousox007！）"],
+      ["ui", "Fix: the performer card that opens over a performer in the scene’s info bar was see-through in the glass look, so the text behind it showed and was hard to read. It is frosted again and much more opaque. (Thanks ufousox007!)", "修复：在液态玻璃样式下，场景信息栏中演员卡片是透明的，后面的文字透出来很难读。现在重新有磨砂效果，而且更不透明。（感谢 ufousox007！）"],
+    ],
+  },
+  {
     v: "3.102.0",
     date: "2026-10-19",
     items: [

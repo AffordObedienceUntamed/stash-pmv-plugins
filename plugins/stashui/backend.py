@@ -85,6 +85,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 
@@ -1169,6 +1170,64 @@ def reveal(stash, args):
     return {"opened": True}
 
 
+def box_scenes(stash, args):
+    """One page (up to 100) of the scenes a stash-box (StashDB …) lists for a performer – the performer page uses it to
+    show which scenes the library is missing. The box is asked with the API key Stash has for it (read here, never sent
+    to the page) and only if it is one of the stash-boxes set up in Stash."""
+    endpoint = str(args.get("endpoint") or "").strip()
+    pid = str(args.get("performer") or "").strip()
+    page = max(1, int(args.get("page") or 1))
+    if not endpoint or not pid:
+        raise ValueError("endpoint and performer needed")
+    boxes = stash.gql("query { configuration { general { stashBoxes { endpoint name api_key } } } }")["configuration"]["general"].get("stashBoxes") or []
+    box = next((b for b in boxes if str(b.get("endpoint") or "").rstrip("/") == endpoint.rstrip("/")), None)
+    if not box:
+        raise ValueError("This stash-box isn't set up in Stash (Settings → Metadata Providers)")
+    if not re.match(r"^https?://", endpoint, re.I):
+        raise ValueError("bad stash-box address")
+    headers = {"Content-Type": "application/json", "User-Agent": "Stash-UI-plugin"}
+    if box.get("api_key"):
+        headers["ApiKey"] = str(box["api_key"])
+    # the field names differ a little between stash-box versions: try the likely ones
+    fields = [
+        "id title release_date duration studio { id name } performers { performer { id name } }",
+        "id title date duration studio { id name } performers { performer { id name } }",
+        "id title release_date studio { id name } performers { performer { id name } }",
+    ]
+    last = None
+    for fl in fields:
+        for ordered in (True, False):
+            inp = {"performers": {"value": [pid], "modifier": "INCLUDES"}, "page": page, "per_page": 100}
+            if ordered:
+                inp.update({"sort": "DATE", "direction": "DESC"})
+            body = json.dumps({"query": "query($i: SceneQueryInput!) { queryScenes(input: $i) { count scenes { " + fl + " } } }", "variables": {"i": inp}}).encode()
+            req = urllib.request.Request(endpoint, body, headers, method="POST")
+            try:
+                with urllib.request.urlopen(req, timeout=40) as res:
+                    d = json.load(res)
+            except urllib.error.HTTPError as e:
+                try:
+                    d = json.load(e)
+                except Exception:  # noqa: BLE001
+                    raise RuntimeError(f"{box.get('name') or endpoint}: HTTP {e.code}")
+            if d.get("errors"):
+                last = "; ".join(str(x.get("message", "")) for x in d["errors"])
+                continue  # another field set / without the sort
+            q = (d.get("data") or {}).get("queryScenes") or {}
+            out = []
+            for x in q.get("scenes") or []:
+                out.append({
+                    "id": x.get("id"),
+                    "title": x.get("title") or "",
+                    "date": x.get("release_date") or x.get("date") or "",
+                    "duration": x.get("duration") or 0,
+                    "studio": (x.get("studio") or {}).get("name") or "",
+                    "performers": [((q2 or {}).get("performer") or {}).get("name") or "" for q2 in (x.get("performers") or [])],
+                })
+            return {"count": q.get("count") or 0, "page": page, "scenes": out, "name": box.get("name") or ""}
+    raise RuntimeError(f"{box.get('name') or endpoint}: {last or 'no answer'}")
+
+
 def main():
     if len(sys.argv) > 2 and sys.argv[1] == "--cutjob":
         return cut_job(sys.argv[2])
@@ -1204,6 +1263,8 @@ def main():
             out = clip_status(None, args)
         elif mode == "reveal":
             out = reveal(Stash(data.get("server_connection")), args)
+        elif mode == "box_scenes":
+            out = box_scenes(Stash(data.get("server_connection")), args)
         elif mode == "phone_status":
             out = phone_status(Stash(data.get("server_connection")), args)
         elif mode == "phone_start":

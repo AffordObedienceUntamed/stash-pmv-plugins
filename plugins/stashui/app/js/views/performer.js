@@ -36,6 +36,7 @@ async function stashIdLinks(id) {
 }
 
 import { mountSlots } from "../ext.js";
+import { mountPerfPanel } from "./perfstats.js";
 
 export async function render(main, params, query) {
   const p = await getPerformer(params.id);
@@ -80,6 +81,8 @@ export async function render(main, params, query) {
           ${p.o_counter ? `<span class="kb-plc-btn is-static" title="${t("O counter")}">${icon("drop")}${p.o_counter}</span>` : ""}
           <button class="kb-plc-btn" data-edit>${icon("edit")}${t("Edit")}</button>
           <button class="kb-plc-btn" data-addmedia title="${t("Link scenes, images and galleries to this performer")}">${icon("plus")}${t("Add scenes and images")}</button>
+          <button class="kb-plc-btn" data-pstats title="${t("What the library holds of this performer: scenes per year, watch time, rating, tags …")}">${icon("chart")}${t("Statistics")}</button>
+          <button class="kb-plc-btn" data-pmiss title="${t("Scenes this performer has on StashDB (or another stash-box) that the library doesn't have")}">${icon("search")}${t("Missing scenes")}</button>
         </div>
         ${facts.length ? `<dl class="kb-facts">${facts.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join("")}</dl>` : ""}
         ${critOf("performer", p) ? `<div class="kb-critlist" title="${t("Detailed rating")}">${critOf("performer", p).map((c) => `<span class="kb-critchip"><b>${esc(t(c.name))}</b><i style="--v:${c.score * 20}%"></i><em>${c.score}</em></span>`).join("")}</div>` : ""}
@@ -89,6 +92,7 @@ export async function render(main, params, query) {
         ${p.details ? `<p class="kb-lead kb-perf-details">${esc(p.details)}</p>` : ""}
       </div>
     </header>
+    <section class="kb-pst-panel" data-perfpanel hidden></section>
     <div data-taglink></div>
     <section data-browser></section>`;
   stashIdLinks(p.id).then((list) => {
@@ -239,8 +243,10 @@ export async function render(main, params, query) {
     edit(true);
   }
   const offKey = editKey(main);
+  const offPanel = mountPerfPanel(main, p);
   return () => {
     offKey();
+    offPanel();
     xhead.destroy();
     b.destroy();
   };
