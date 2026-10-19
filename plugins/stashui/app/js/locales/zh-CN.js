@@ -2396,4 +2396,8 @@ export default {
   "Adds the hour and minute to those dates.": "在这些日期后加上时和分。",
   "Today": "今天",
   "Yesterday": "昨天",
+  "Time format": "时间格式",
+  "How the time of day is written when “With the time” is on.": "开启“显示具体时间”后，时间的写法。",
+  "24-hour (14:25)": "24 小时制（14:25）",
+  "12-hour (2:25 PM)": "12 小时制（2:25 PM）",
 };

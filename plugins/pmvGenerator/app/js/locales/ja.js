@@ -2339,4 +2339,8 @@ export default {
   "Adds the hour and minute to those dates.": "これらの日付に時と分を付けます。",
   "Today": "今日",
   "Yesterday": "昨日",
+  "Time format": "時刻の形式",
+  "How the time of day is written when “With the time” is on.": "「時刻も表示」がオンのときの時刻の書き方です。",
+  "24-hour (14:25)": "24 時間表示（14:25）",
+  "12-hour (2:25 PM)": "12 時間表示（2:25 PM）",
 };

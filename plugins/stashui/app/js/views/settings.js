@@ -495,6 +495,8 @@ async function renderApp(body) {
         <select class="kb-field" data-cistyle>${[["date", "Exact date"], ["days", "Days ago"]].map(([v, l]) => `<option value="${v}"${cardInfo().style === v ? " selected" : ""}>${t(l)}</option>`).join("")}</select></label>
       <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("With the time")}</b><small>${t("Adds the hour and minute to those dates.")}</small></span>
         <span class="kb-switch"><input type="checkbox" data-cihour${cardInfo().hour ? " checked" : ""}><i></i></span></label>
+      <label class="kb-set"><span class="kb-set-label"><b>${t("Time format")}</b><small>${t("How the time of day is written when “With the time” is on.")}</small></span>
+        <select class="kb-field" data-ciclock>${[["auto", "Automatic"], ["24", "24-hour (14:25)"], ["12", "12-hour (2:25 PM)"]].map(([v, l]) => `<option value="${v}"${cardInfo().clock === v ? " selected" : ""}>${t(l)}</option>`).join("")}</select></label>
       ${[
         ["badgeRating", "Rating badge", "Where the rating sits on a thumbnail. Automatic: only on the card view (bottom left).", [["auto", "Automatic"], ["off", "Hidden"]]],
         ["badgeTier", "Tier badge", "Where the tier (S–F) sits on a thumbnail. Automatic: top left.", [["auto", "Automatic"], ["off", "Hidden"]]],
@@ -636,6 +638,7 @@ async function renderApp(body) {
   };
   body.querySelector("[data-cistyle]").onchange = (e) => setCardInfo({ style: e.target.value });
   body.querySelector("[data-cihour]").onchange = (e) => setCardInfo({ hour: e.target.checked });
+  body.querySelector("[data-ciclock]").onchange = (e) => setCardInfo({ clock: e.target.value });
   body.querySelector("[data-cardres]").onchange = (e) => {
     store.set("cardRes", e.target.checked);
     toast(t("Saved"), "ok");

@@ -2332,4 +2332,8 @@ export default {
   "Adds the hour and minute to those dates.": "Thêm giờ và phút vào các ngày đó.",
   "Today": "Hôm nay",
   "Yesterday": "Hôm qua",
+  "Time format": "Định dạng giờ",
+  "How the time of day is written when “With the time” is on.": "Cách ghi giờ khi bật “Kèm giờ”.",
+  "24-hour (14:25)": "24 giờ (14:25)",
+  "12-hour (2:25 PM)": "12 giờ (2:25 PM)",
 };

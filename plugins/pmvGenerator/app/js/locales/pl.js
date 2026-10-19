@@ -2337,4 +2337,8 @@ export default {
   "Adds the hour and minute to those dates.": "Dodaje godzinę i minuty do tych dat.",
   "Today": "Dzisiaj",
   "Yesterday": "Wczoraj",
+  "Time format": "Format godziny",
+  "How the time of day is written when “With the time” is on.": "Jak zapisana jest godzina, gdy włączone jest „Z godziną”.",
+  "24-hour (14:25)": "24-godzinny (14:25)",
+  "12-hour (2:25 PM)": "12-godzinny (2:25 PM)",
 };

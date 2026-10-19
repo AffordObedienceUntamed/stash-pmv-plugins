@@ -164,7 +164,7 @@ function cardOverlays(p) {
 
 // Settings → This interface → "Info on scene cards": extra lines under the date. Times can be shown as a date ("12 Oct 2026")
 // or as days ago ("3 days ago"), each with or without the time of day.
-export const CARD_INFO = { watched: true, added: false, time: false, size: false, style: "date", hour: false };
+export const CARD_INFO = { watched: true, added: false, time: false, size: false, style: "date", hour: false, clock: "auto" };
 export const cardInfo = () => Object.assign({}, CARD_INFO, store.get("cardInfo", {}));
 export function cardStamp(iso, o) {
   const d = new Date(iso);
@@ -178,17 +178,20 @@ export function cardStamp(iso, o) {
     const n = Math.round((a - b) / 864e5);
     s = n <= 0 ? t("Today") : n === 1 ? t("Yesterday") : t("{n} days ago", { n });
   } else s = fmtDate(iso);
-  return o.hour ? `${s}, ${d.toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit" })}` : s;
+  return o.hour ? `${s}, ${clockOf(d, o)}` : s;
 }
+// The time of day: 24-hour (14:25), 12-hour (2:25 PM) or whatever the language uses ("auto")
+const clockOf = (d, o) => d.toLocaleTimeString(locale(), o.clock === "12" ? { hour: "numeric", minute: "2-digit", hour12: true } : o.clock === "24" ? { hour: "2-digit", minute: "2-digit", hourCycle: "h23" } : { hour: "2-digit", minute: "2-digit" });
+const fullStamp = (iso, o) => (iso ? `${fmtDate(iso)}, ${clockOf(new Date(iso), o)}` : "");
 function cardFacts(x) {
   const o = cardInfo();
   const rows = [];
   const row = (label, value, title) => value && rows.push(`<div class="kb-scard-fact"${title ? ` title="${esc(title)}"` : ""}><span>${esc(t(label))}</span> ${esc(value)}</div>`);
   if (o.watched) {
-    if (x.last_played_at) row("Last watched", cardStamp(x.last_played_at, o), new Date(x.last_played_at).toLocaleString(locale()));
+    if (x.last_played_at) row("Last watched", cardStamp(x.last_played_at, o), fullStamp(x.last_played_at, o));
     else row("Last watched", t("Never watched"));
   }
-  if (o.added) row("Added", cardStamp(x.created_at, o), x.created_at ? new Date(x.created_at).toLocaleString(locale()) : "");
+  if (o.added) row("Added", cardStamp(x.created_at, o), fullStamp(x.created_at, o));
   if (o.time && x.play_duration > 0) row("Watch time", fmtDuration(x.play_duration));
   if (o.size && x.files && x.files[0]) row("File size", fmtBytes(x.files[0].size));
   return rows.length ? `<div class="kb-scard-facts">${rows.join("")}</div>` : "";

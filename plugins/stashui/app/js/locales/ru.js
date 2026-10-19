@@ -2374,4 +2374,8 @@ export default {
   "Adds the hour and minute to those dates.": "Добавляет часы и минуты к этим датам.",
   "Today": "Сегодня",
   "Yesterday": "Вчера",
+  "Time format": "Формат времени",
+  "How the time of day is written when “With the time” is on.": "Как записывается время, когда включено «Со временем».",
+  "24-hour (14:25)": "24-часовой (14:25)",
+  "12-hour (2:25 PM)": "12-часовой (2:25 PM)",
 };

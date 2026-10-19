@@ -7,6 +7,13 @@
 
 export const CHANGES = [
   {
+    v: "3.112.1",
+    date: "2026-10-19",
+    items: [
+      ["ui", "Scene cards: you can now choose how the time of day is written – 24-hour (14:25), 12-hour with AM/PM (2:25 PM) or automatic (what your language uses). Settings → This interface → “Time format”; it applies when “With the time” is on.", "场景卡片：现在可以选择时间的写法——24 小时制（14:25）、带 AM/PM 的 12 小时制（2:25 PM）或自动（按所选语言）。设置 → 本界面 →“时间格式”；开启“显示具体时间”后生效。", "settings::Time format"],
+    ],
+  },
+  {
     v: "3.112.0",
     date: "2026-10-19",
     items: [

@@ -2278,4 +2278,8 @@ export default {
   "Adds the hour and minute to those dates.": "Ajoute l'heure et les minutes à ces dates.",
   "Today": "Aujourd'hui",
   "Yesterday": "Hier",
+  "Time format": "Format de l'heure",
+  "How the time of day is written when “With the time” is on.": "Façon d'écrire l'heure quand « Avec l'heure » est activé.",
+  "24-hour (14:25)": "24 heures (14:25)",
+  "12-hour (2:25 PM)": "12 heures (2:25 PM)",
 };
