@@ -349,10 +349,11 @@ export function promptDialog({ title, label, value = "", ok = t("OK") }) {
 }
 
 // Drawer from the right. render(body) fills the content; returns close().
-export function openDrawer({ title, body, foot, onClose }) {
+// light: the page behind isn't dimmed or blurred (the E / T keys on a card – you keep looking at what you tag)
+export function openDrawer({ title, body, foot, onClose, light }) {
   const wrap = document.createElement("div");
   wrap.innerHTML = `
-    <div class="kb-scrim"></div>
+    <div class="kb-scrim${light ? " is-clear" : ""}"></div>
     <aside class="kb-drawer" role="dialog" aria-modal="true" aria-label="${esc(title)}">
       <div class="kb-drawer-head"><h2>${esc(title)}</h2><button class="kb-btn is-icon is-ghost" data-close aria-label="${t("Close")}">${icon("close")}</button></div>
       <div class="kb-drawer-body">${body || ""}</div>

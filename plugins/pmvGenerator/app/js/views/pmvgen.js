@@ -86,6 +86,13 @@ const DEFAULTS = {
   minBeats: 0, // a clip stays at least this many beats before its field is cut again (0 = off)
   maxBeats: 0, // … and is replaced after at most this many beats (0 = off)
   reshuffleEach: false, // several songs / Plex: new clips for every new song
+  autoStart: false, // starts by itself as soon as it can (a Plex playlist is set / a song has been picked)
+  mWheel: "off", // mouse wheel while it plays: off | song (next / previous song) | volume (song volume)
+  mWheelRev: false, // … the other way round
+  mMid: false, // a click in the middle of the picture pauses / plays
+  mSides: false, // a click on the left / right third of the picture changes the song volume
+  mSidesRev: false, // … left = louder, right = quieter
+  mShuffle: false, // the middle mouse button reshuffles the clips
   introEach: false, // several songs / Plex: intro and outro come again for every song
   recSplit: false, // several songs: one recording per song
   edge: "off", // rim of the picture: off | blur | motion | lens
@@ -606,6 +613,19 @@ export function render(main) {
             </div>
             <span class="kb-lab-t">Recording quality</span>
             <div class="kb-seg" data-seg="quality"><button type="button" data-v="720">720p</button><button type="button" data-v="1080">1080p</button></div>
+            </div>
+            <div class="kb-pmvg-group">
+              <div class="kb-pmvg-grouphead"><b>Mouse and start</b><small>Control the show without the bar</small></div>
+            <div class="kb-pmvg-opts">
+              ${sw("autoStart", "Start by itself", "Starts as soon as it can – when the page opens with a Plex playlist set, or right after you pick a song – with the settings as you left them")}
+              ${sw("mMid", "Click the middle: play / pause", "A click on the middle third of the picture")}
+              ${sw("mSides", "Click the sides: song volume", "Left third quieter, right third louder (10 % per click)")}
+              ${sw("mSidesRev", "Sides the other way round", "Left louder, right quieter")}
+              ${sw("mShuffle", "Middle mouse button: new clips", "Same as the R key")}
+              ${sw("mWheelRev", "Reverse the wheel", "Turns it round: wheel down = previous song / louder, wheel up = next song / quieter")}
+            </div>
+            <span class="kb-lab-t">Mouse wheel</span>
+            <div class="kb-seg" data-seg="mWheel"><button type="button" data-v="off">Off</button><button type="button" data-v="song" title="Wheel down = next song, up = previous (only with several songs)">Next / previous song</button><button type="button" data-v="volume">Song volume</button></div>
             </div>
           </div>
         </div>
@@ -1430,11 +1450,16 @@ export function render(main) {
 
   const canStart = () =>
     S.mode === "tpl" ? !!tpl : S.mode === "plex" ? !!plex && (S.plexWhat !== "list" || !!S.plexList) : S.mode === "live" ? !!(liveConn && liveSt && liveSt.running) : !!song;
+  var autoDone = false; // "Start by itself": once per visit of the page
   function paintStart() {
     if (starting) return;
     const ok = canStart();
     const b = $("[data-start]");
     b.disabled = !ok;
+    if (ok && S.autoStart && !autoDone && !waiting) {
+      autoDone = true;
+      setTimeout(() => canStart() && !starting && startRun(), 900);
+    }
     const label =
       S.mode === "tpl"
         ? ok ? "Rebuild with my clips" : "Pick a PMV first"
@@ -1448,7 +1473,7 @@ export function render(main) {
 
   // ---------- My settings (presets) ----------
   // Everything about clips, cutting, effects, look and sound – not the music source or the title
-  const NOT_IN_PRESET = ["collapsed", "glass", "v", "mode", "title", "shuffle", "plexWhat", "plexList", "plexSync", "plexSyncs", "liveApp"];
+  const NOT_IN_PRESET = ["autoStart", "mWheel", "mWheelRev", "mMid", "mSides", "mSidesRev", "mShuffle", "collapsed", "glass", "v", "mode", "title", "shuffle", "plexWhat", "plexList", "plexSync", "plexSyncs", "liveApp"];
   // Kept in Stash (this plugin's settings), not in the browser: browser storage for localhost:9999 is
   // shared by Stash and every plugin and can be full – saving then failed without a word. This way
   // they're also there in every browser. Stored as one JSON text so Stash leaves the names alone.
@@ -2914,6 +2939,37 @@ class Generator {
       e.preventDefault();
     };
     document.addEventListener("keydown", this.onKey);
+    // The mouse alone (second monitor): clicks in the middle / on the sides, middle button, wheel – each one is a switch in Output
+    const onBar = (e) => e.target.closest(".kb-pmvg-hud, .kb-pmvg-end, .kb-pmvg-info, button, input, a");
+    el.addEventListener("click", (e) => {
+      if (this.done || onBar(e)) return;
+      const r = this.stage.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width;
+      if (x > 1 / 3 && x < 2 / 3) {
+        if (this.S.mMid && !this.outside) this.togglePause();
+      } else if (this.S.mSides && !this.outside) this.nudgeVolume(x >= 2 / 3 !== !!this.S.mSidesRev ? 10 : -10);
+    });
+    el.addEventListener("mousedown", (e) => e.button === 1 && this.S.mShuffle && e.preventDefault()); // (no auto-scroll cursor)
+    el.addEventListener("auxclick", (e) => {
+      if (e.button !== 1 || !this.S.mShuffle || this.done || onBar(e)) return;
+      e.preventDefault();
+      this.reshuffle();
+    });
+    el.addEventListener(
+      "wheel",
+      (e) => {
+        const mode = this.S.mWheel;
+        if (!mode || mode === "off" || this.done || onBar(e)) return;
+        e.preventDefault();
+        const dir = (e.deltaY > 0 ? 1 : -1) * (this.S.mWheelRev ? -1 : 1); // 1 = wheel "down"
+        if (mode === "volume") return this.nudgeVolume(-dir * 5);
+        const now = performance.now();
+        if (now - (this.wheelAt || 0) < 700) return; // one notch = one song
+        this.wheelAt = now;
+        if (this.music && this.music.type === "list") this.skip(dir);
+      },
+      { passive: false },
+    );
     this.stage.dataset.view = this.S.view || "contain";
     let resizeT = 0;
     this.onResize = () => {
@@ -3030,6 +3086,13 @@ class Generator {
     saved.voiceMode = this.S.voiceMode;
     saved.fx = Object.assign({}, saved.fx, { voice: !!this.S.fx.voice });
     store.set("pmvgen", saved);
+  }
+
+  nudgeVolume(d) {
+    if (this.outside) return;
+    const v = Math.max(0, Math.min(100, Math.round(((this.S.songVol ?? 100) + d) / 5) * 5));
+    this.setVolume("songVol", v);
+    toast(`Song volume ${v} %`, "ok");
   }
 
   setVolume(key, v) {

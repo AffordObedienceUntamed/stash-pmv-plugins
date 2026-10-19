@@ -7,7 +7,7 @@ import { findPerformers, updatePerformer, createPerformer, destroyPerformers, gq
 import { go, setQuery } from "../main.js";
 import { ensureTiers, hasTiers, tierNow } from "../tiers.js";
 import { restrictIds, critInfo, parseCrit, critStr, critText, sortByCrit, openCritFilter } from "../ratingx.js";
-import { findIds } from "../api.js";
+import { findIds, lookTokens } from "../api.js";
 import { TIERS, tierBadge } from "../versusx.js";
 import { tagPicker } from "./tagpicker.js";
 
@@ -22,6 +22,7 @@ const SORTS = [
   ["local:ethnicity", "Ethnicity (A–Z)"],
   ["local:hair_color", "Hair color (A–Z)"],
   ["local:eye_color", "Eye color (A–Z)"],
+  ["local:fake_tits", "Natural / enhanced (A–Z)"],
   ["height:DESC", "Tallest first"],
   ["height:ASC", "Shortest first"],
   ["weight:DESC", "Heaviest first"],
@@ -164,6 +165,7 @@ export async function render(main, params, query) {
     ["hair_color", "hair", "Hair color"],
     ["ethnicity", "eth", "Ethnicity"],
     ["country", "country", "Country"],
+    ["fake_tits", "body", "Natural or enhanced"],
   ];
   const looks = Object.fromEntries(ATTRS.map(([f, k]) => [f, query[k] || ""]));
   const looksOn = () => ATTRS.some(([f]) => looks[f]);
@@ -173,13 +175,12 @@ export async function render(main, params, query) {
     if (!distinct) {
       box.innerHTML = `<span class="kb-hint">${t("Loading …")}</span>`;
       try {
-        const d = await gql(`query PerfLooks { findPerformers(filter: { per_page: -1 }) { performers { eye_color hair_color ethnicity country } } }`, {}, { heavy: true });
+        const d = await gql(`query PerfLooks { findPerformers(filter: { per_page: -1 }) { performers { eye_color hair_color ethnicity country fake_tits } } }`, {}, { heavy: true });
         distinct = {};
         for (const [f] of ATTRS) {
           const n = new Map();
           for (const p of d.findPerformers.performers) {
-            const v = String(p[f] || "").trim();
-            if (v) n.set(v, (n.get(v) || 0) + 1);
+            for (const v of lookTokens(f, p[f])) n.set(v, (n.get(v) || 0) + 1);
           }
           distinct[f] = [...n].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
         }
@@ -302,7 +303,7 @@ export async function render(main, params, query) {
     }
     if (tagF && tagF.key === "scenetag") f.scenes_filter = { tags: { value: [tagF.id], modifier: "INCLUDES" } };
     if (favOnly) f.filter_favorites = true;
-    for (const [fld] of ATTRS) if (looks[fld]) f[fld] = { value: looks[fld], modifier: "EQUALS" };
+    for (const [fld] of ATTRS) if (looks[fld]) f[fld] = { value: looks[fld], modifier: fld === "ethnicity" ? "INCLUDES" : "EQUALS" }; // ethnicity: a performer may name several
     const g = $("[data-gender]").value;
     if (g) f.gender = { value: g, modifier: "EQUALS" };
     return f;

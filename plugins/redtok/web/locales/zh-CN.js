@@ -354,4 +354,10 @@ export default {
   "Off by default: it can add many new tags to your Stash tag list. On: the tags RedGifs shows for a saved video are put on its scene (missing ones are created).": "默认关闭：可能会向你的 Stash 标签列表添加很多新标签。开启后：RedGifs 为已保存视频显示的标签会加到对应场景上（缺少的会新建）。",
   "Add the creator as a performer": "把创作者添加为表演者",
   "Off by default. On: the creator becomes a performer in Stash (created if missing, with their RedGifs link) and is put on the scene.": "默认关闭。开启后：创作者会成为 Stash 中的表演者（缺少时新建，并附带其 RedGifs 链接），并加到该场景上。",
+  "Sync between devices": "在设备之间同步",
+  "Follows, niches, #tags, likes, saved, hidden and blocked are kept in Stash and shared with every device that opens this Stash with this switch on. The newer change wins; watch history and settings stay on each device.": "关注、细分类、#标签、点赞、已保存、已隐藏和已屏蔽的内容保存在 Stash 中，并与所有开启此开关、打开该 Stash 的设备共享。以较新的更改为准；观看历史和设置保留在各设备上。",
+  "Last synced: {time}": "上次同步：{time}",
+  "Synced – reloading": "已同步——正在重新加载",
+  "Sync is on": "同步已开启",
+  "Sync didn't work – {e}": "同步失败——{e}",
 };

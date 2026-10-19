@@ -352,4 +352,10 @@ export default {
   "Off by default: it can add many new tags to your Stash tag list. On: the tags RedGifs shows for a saved video are put on its scene (missing ones are created).": "Mặc định tắt: có thể thêm rất nhiều thẻ mới vào danh sách thẻ Stash của bạn. Bật: các thẻ RedGifs hiển thị cho video đã lưu sẽ được gắn vào cảnh của nó (thẻ chưa có sẽ được tạo).",
   "Add the creator as a performer": "Thêm người sáng tạo làm diễn viên",
   "Off by default. On: the creator becomes a performer in Stash (created if missing, with their RedGifs link) and is put on the scene.": "Mặc định tắt. Bật: người sáng tạo trở thành diễn viên trong Stash (được tạo nếu chưa có, kèm liên kết RedGifs) và được gắn vào cảnh.",
+  "Sync between devices": "Đồng bộ giữa các thiết bị",
+  "Follows, niches, #tags, likes, saved, hidden and blocked are kept in Stash and shared with every device that opens this Stash with this switch on. The newer change wins; watch history and settings stay on each device.": "Theo dõi, ngách, #thẻ, lượt thích, đã lưu, đã ẩn và đã chặn được giữ trong Stash và chia sẻ với mọi thiết bị mở Stash này khi bật công tắc. Thay đổi mới hơn sẽ thắng; lịch sử xem và cài đặt vẫn ở từng thiết bị.",
+  "Last synced: {time}": "Đồng bộ lần cuối: {time}",
+  "Synced – reloading": "Đã đồng bộ – đang tải lại",
+  "Sync is on": "Đã bật đồng bộ",
+  "Sync didn't work – {e}": "Đồng bộ không được – {e}",
 };

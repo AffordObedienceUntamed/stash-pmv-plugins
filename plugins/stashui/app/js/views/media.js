@@ -736,8 +736,8 @@ export function mediaBrowser(host, opts) {
     const piece = hang && hang.pieces.find((p) => p.kind + ":" + p.id === key);
     if (!piece || piece.kind !== kind) return;
     e.preventDefault();
-    if (k === "e") openEditor(kind, [piece], { onSaved: () => refreshItems([piece.id]), onDeleted: () => hang.remove([key]) });
-    else if (k === "t") openQuickTags(kind, [piece], { onSaved: () => refreshItems([piece.id]) });
+    if (k === "e") openEditor(kind, [piece], { onSaved: () => refreshItems([piece.id]), onDeleted: () => hang.remove([key]), quick: true });
+    else if (k === "t") openQuickTags(kind, [piece], { onSaved: () => refreshItems([piece.id]), quick: true });
     else deleteWithConfirm(kind, piece.id, () => hang.remove([key]));
   };
   document.addEventListener("keydown", onQuickKey);

@@ -624,6 +624,7 @@ html.kb-glass .kb-tagcard:hover { box-shadow: var(--glass-shadow), 0 0 0 2px var
 
 /* ---------- Drawers (edit) and dialogs ---------- */
 
+.kb-scrim.is-clear, html.kb-fx .kb-scrim.is-clear { background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; }
 .kb-scrim { position: fixed; inset: 0; z-index: 60; background: rgba(16, 5, 14, .65); animation: kb-fade .2s ease; }
 @keyframes kb-fade { from { opacity: 0; } }
 .kb-drawer {

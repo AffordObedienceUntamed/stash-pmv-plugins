@@ -353,4 +353,10 @@ export default {
   "Off by default: it can add many new tags to your Stash tag list. On: the tags RedGifs shows for a saved video are put on its scene (missing ones are created).": "初期設定はオフ：Stashのタグ一覧に新しいタグが大量に増えることがあります。オンにすると、保存した動画にRedGifsが表示するタグがそのシーンに付きます（無いタグは作成されます）。",
   "Add the creator as a performer": "クリエイターを出演者として追加",
   "Off by default. On: the creator becomes a performer in Stash (created if missing, with their RedGifs link) and is put on the scene.": "初期設定はオフ。オンにすると、クリエイターがStashの出演者になり（無ければRedGifsのリンク付きで作成）、そのシーンに付きます。",
+  "Sync between devices": "デバイス間で同期",
+  "Follows, niches, #tags, likes, saved, hidden and blocked are kept in Stash and shared with every device that opens this Stash with this switch on. The newer change wins; watch history and settings stay on each device.": "フォロー、ニッチ、#タグ、いいね、保存、非表示、ブロックは Stash に保存され、このスイッチをオンにして同じ Stash を開くすべてのデバイスで共有されます。新しい変更が優先され、視聴履歴と設定は各デバイスに残ります。",
+  "Last synced: {time}": "最終同期：{time}",
+  "Synced – reloading": "同期しました – 再読み込み中",
+  "Sync is on": "同期をオンにしました",
+  "Sync didn't work – {e}": "同期できませんでした – {e}",
 };

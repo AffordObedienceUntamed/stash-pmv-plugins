@@ -356,4 +356,10 @@ export default {
   "Off by default: it can add many new tags to your Stash tag list. On: the tags RedGifs shows for a saved video are put on its scene (missing ones are created).": "Domyślnie wyłączone: może dodać wiele nowych tagów do listy tagów Stash. Włączone: tagi, które RedGifs pokazuje przy zapisanym wideo, trafiają na jego scenę (brakujące są tworzone).",
   "Add the creator as a performer": "Dodaj twórcę jako performera",
   "Off by default. On: the creator becomes a performer in Stash (created if missing, with their RedGifs link) and is put on the scene.": "Domyślnie wyłączone. Włączone: twórca zostaje performerem w Stash (tworzony, jeśli go brak, z linkiem do RedGifs) i trafia na scenę.",
+  "Sync between devices": "Synchronizuj między urządzeniami",
+  "Follows, niches, #tags, likes, saved, hidden and blocked are kept in Stash and shared with every device that opens this Stash with this switch on. The newer change wins; watch history and settings stay on each device.": "Obserwowani, nisze, #tagi, polubienia, zapisane, ukryte i zablokowane są trzymane w Stash i współdzielone z każdym urządzeniem, które otwiera ten Stash z włączonym przełącznikiem. Wygrywa nowsza zmiana; historia i ustawienia zostają na każdym urządzeniu.",
+  "Last synced: {time}": "Ostatnia synchronizacja: {time}",
+  "Synced – reloading": "Zsynchronizowano – przeładowuję",
+  "Sync is on": "Synchronizacja włączona",
+  "Sync didn't work – {e}": "Synchronizacja nie powiodła się – {e}",
 };

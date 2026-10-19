@@ -159,6 +159,15 @@ export async function findTags(q, perPage, sort) {
 }
 
 // Performers. Career fields are left out: Stash 0.31 has career_start/career_end, older versions career_length.
+// A performer's own ethnicity can name several ("Caucasian, Asian", "Black / White", "Latina & Asian"): the single values
+// of such a text; other fields stay as they are
+export function lookTokens(field, value) {
+  const v = String(value || "").trim();
+  if (!v) return [];
+  if (field !== "ethnicity") return [v];
+  return [...new Set(v.split(/\s*(?:,|;|\/|&|\+|and)\s*/i).map((x) => x.trim()).filter(Boolean))];
+}
+
 export const F_PERFORMER = `id name disambiguation alias_list gender birthdate death_date country ethnicity eye_color hair_color height_cm weight
   measurements tattoos piercings details urls favorite rating100 o_counter scene_count image_count gallery_count image_path created_at
   tags { id name }`;

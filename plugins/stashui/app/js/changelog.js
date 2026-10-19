@@ -7,6 +7,17 @@
 
 export const CHANGES = [
   {
+    v: "3.110.0",
+    date: "2026-10-19",
+    items: [
+      ["ui", "Performers: the “Looks” filter now has a “Natural or enhanced” dropdown, and a performer who names several ethnicities (“Caucasian, Asian”) shows up under each one – pick “Asian” and you get all of them. A new sort order “Natural / enhanced (A–Z)”. Statistics has a new card “Your performers”: how many performers (and scenes) per ethnicity, eye color, hair color or natural/enhanced – a click opens the Performers list with that filter. (Thanks JoeBiden!)", "演员：“外貌”筛选新增“自然或丰胸”下拉框；填写多个种族（如“Caucasian, Asian”）的演员会出现在每个种族下——选“Asian”即可找到全部。新增排序“自然/丰胸（A–Z）”。统计页新增“你的演员”卡片：按种族、眼睛颜色、发色或自然/丰胸统计演员（及场景）数量——点击即打开带该筛选的演员列表。（感谢 JoeBiden！）", "stats::[data-looks]"],
+      ["ui", "E and T on a card (the key under the mouse): the page behind is no longer dimmed or blurred, and the cursor is already in the tags field – type, Enter, done. (Thanks JoeBiden!)", "在卡片上按 E / T（鼠标所指的卡片）：背景页面不再变暗或模糊，光标已在标签栏——输入、回车即可。（感谢 JoeBiden！）"],
+      ["ui", "Home → Continue watching: select scenes and use “Remove from Continue watching” in the bar – they stay off the list until you watch them again. Your watch history is untouched. (Thanks Sunset-1982!)", "首页 → 继续观看：选中场景，在底部栏点“从继续观看中移除”——在你再次观看之前它们不再出现。观看历史不受影响。（感谢 Sunset-1982！）"],
+      ["ui", "Photo cutter (performer photos): turn the picture left or right and change brightness and contrast before cutting – for a vertical frame that lies on its side. (Thanks JoeBiden!)", "照片裁剪（演员照片）：裁剪前可向左/向右旋转图片并调整亮度和对比度——适合横躺的竖向画面。（感谢 JoeBiden！）"],
+      ["pmv", "Mouse control while the show plays (Output → Mouse and start): click the middle = play / pause, click the left / right side = song volume (reversible), middle mouse button = new clips, mouse wheel = next / previous song or song volume (reversible). “Start by itself” opens the show as soon as it can. All off by default. (Thanks abverbaerba!)", "播放时的鼠标控制（输出 → 鼠标与启动）：点击中间 = 播放/暂停，点击左/右侧 = 歌曲音量（可反向），鼠标中键 = 换新片段，滚轮 = 下一首/上一首或歌曲音量（可反向）。“自动开始”会在条件满足时立即开始。默认全部关闭。（感谢 abverbaerba！）"],
+    ],
+  },
+  {
     v: "3.109.0",
     date: "2026-10-19",
     items: [

@@ -4,11 +4,12 @@
 
 import "./boot.js"; // (first: it may fill the browser storage from the backup)
 import { call, gql, store, setAfterSet, emit, t, wait } from "./core.js";
+import { touch, push, syncOn } from "./sync.js";
 
 // ---------- settings ----------
 export const settings = Object.assign({
   base: "", scan: true, meta: true, metaTags: false, metaPerf: false, quality: "hd", playq: "auto", fit: "auto", sound: true, volume: 1, autonext: false,
-  skipSeen: true, skipSeenMore: false, followTags: false, speed: 1, lang: "auto", glow: true, wide: true, space: "pause", frame: "auto", side: true,
+  skipSeen: true, skipSeenMore: false, syncDev: false, followTags: false, speed: 1, lang: "auto", glow: true, wide: true, space: "pause", frame: "auto", side: true,
 }, store.get("settings", {}));
 delete settings.subs; delete settings.sync; // (Reddit and the RedGifs login of the older local version)
 export const saveSettings = () => store.set("settings", settings);
@@ -493,7 +494,13 @@ const bkEntries = () => {
   return o;
 };
 let bkTimer = 0, bkLast = "";
-setAfterSet(() => { clearTimeout(bkTimer); bkTimer = setTimeout(bkSave, 6000); });
+let syncTimer = 0;
+setAfterSet((k) => {
+  clearTimeout(bkTimer); bkTimer = setTimeout(bkSave, 6000);
+  if (!syncOn()) return;
+  touch(k);
+  clearTimeout(syncTimer); syncTimer = setTimeout(() => push().catch(() => {}), 2500);
+});
 export async function bkSave() {
   const e = bkEntries();
   const body = JSON.stringify(e);

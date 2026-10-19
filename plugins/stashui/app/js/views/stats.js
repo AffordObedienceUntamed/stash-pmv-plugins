@@ -6,7 +6,7 @@
 import { esc, icon, fmtNum, fmtBytes, store, toast } from "../ui.js";
 import { loadStandings } from "../standings.js";
 import { t, locale } from "../i18n.js";
-import { gql, stats } from "../api.js";
+import { gql, stats, lookTokens } from "../api.js";
 import { isLarge } from "../scale.js";
 
 const PERIODS = [
@@ -202,6 +202,7 @@ export async function render(main) {
       <div class="kb-st-head"><h2>${t("When you watch")}</h2><p class="kb-hint" data-rhythm-note></p></div>
       <div class="kb-st-rhythm"><div data-wd></div><div data-hr></div></div>
     </section>
+    <section class="kb-card kb-st-card" data-looks></section>
     <section class="kb-card kb-st-card" data-lib></section>
     <p class="kb-hint">${t("Stash keeps only when a play happened, not how long it lasted – a play's length is estimated from the scene's total watch time. Plays under a minute count as quick looks.")}</p>`;
 
@@ -451,6 +452,56 @@ export async function render(main) {
 
   // ---------- Library ----------
   const addedCache = new Map(); // period → how many scenes were added in it (a count each – not every scene)
+  // The performers of the library by what they say about themselves (ethnicity, eyes, hair, natural or enhanced).
+  // A performer who names several ethnicities counts once under each. Click a value: the Performers list with that filter.
+  const LOOKS = [
+    ["ethnicity", "Ethnicity", "eth"],
+    ["eye_color", "Eye color", "eye"],
+    ["hair_color", "Hair color", "hair"],
+    ["fake_tits", "Natural or enhanced", "body"],
+  ];
+  let looksData = null;
+  async function paintLooks() {
+    const el = body.querySelector("[data-looks]");
+    if (!looksData) {
+      el.innerHTML = `<h2>${t("Your performers")}</h2><p class="kb-hint">${t("Loading …")}</p>`;
+      try {
+        const d = await gql(`query StatsLooks { findPerformers(filter: { per_page: -1 }) { performers { ethnicity eye_color hair_color fake_tits scene_count } } }`, {}, { heavy: true });
+        looksData = d.findPerformers.performers;
+      } catch (e) {
+        el.hidden = true;
+        return;
+      }
+    }
+    const sel = LOOKS.find((x) => x[0] === store.get("statsLook", "ethnicity")) || LOOKS[0];
+    const [fld, , key] = sel;
+    const m = new Map();
+    let mixed = 0;
+    let blank = 0;
+    for (const p of looksData) {
+      const tk = lookTokens(fld, p[fld]);
+      if (!tk.length) blank++;
+      if (tk.length > 1) mixed++;
+      for (const v of tk) {
+        const o = m.get(v) || { v: 0, sc: 0 };
+        o.v++;
+        o.sc += p.scene_count || 0;
+        m.set(v, o);
+      }
+    }
+    const list = [...m].sort((a, b) => b[1].v - a[1].v || a[0].localeCompare(b[0]));
+    el.hidden = !list.length;
+    el.innerHTML = `<div class="kb-st-head"><h2>${t("Your performers")}</h2>
+        <div class="kb-seg" data-looktab>${LOOKS.map(([f, label]) => `<button type="button" class="kb-btn is-ghost${f === fld ? " is-on" : ""}" data-f="${f}">${t(label)}</button>`).join("")}</div></div>
+      <ol class="kb-st-list">${list.slice(0, 14).map(([name, o], i) => row(i, o, o.v, list[0][1].v, `#/performers?${key}=${encodeURIComponent(name)}`, name, null, fmtNum(o.v), "", "", t("{n} scenes", { n: fmtNum(o.sc) }))).join("")}</ol>
+      <p class="kb-hint">${t("Performers: {n}.", { n: fmtNum(looksData.length) })}${mixed ? " " + t("{n} name more than one.", { n: fmtNum(mixed) }) : ""}${blank ? " " + t("{n} without an entry.", { n: fmtNum(blank) }) : ""}</p>`;
+    el.querySelector("[data-looktab]").onclick = (e) => {
+      const b = e.target.closest("[data-f]");
+      if (!b) return;
+      store.set("statsLook", b.dataset.f);
+      paintLooks();
+    };
+  }
   async function paintLib(r) {
     const el = body.querySelector("[data-lib]");
     const pct = st.scene_count ? Math.round((st.scenes_played / st.scene_count) * 100) : 0;
@@ -569,6 +620,7 @@ export async function render(main) {
     paintChart(r);
     ["scenes", "performers", "tags", "studios", "o"].forEach((k) => paintTop(r, k));
     paintRhythm(r);
+    paintLooks();
     paintLib(r);
   }
   paintAll();

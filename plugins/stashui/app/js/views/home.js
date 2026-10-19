@@ -11,7 +11,7 @@ import { roomsHtml, fillRoomCovers, fillRoomCounts } from "./folder.js";
 import { tagPicker } from "./tagpicker.js";
 import { perfPicker, hasPerformers } from "./perfpicker.js";
 import { mountRailEditor } from "./homerail.js";
-import { track, forget, closeBar } from "../bulkbar.js";
+import { track, forget, closeBar, resumeHidden } from "../bulkbar.js";
 import { mountSlots, extensionsReady } from "../ext.js";
 
 function greeting() {
@@ -69,6 +69,7 @@ function wall(el, fetcher, rowHeight, key) {
       go((p.kind === "scene" ? "scene/" : p.kind === "image" ? "image/" : "gallery/") + p.id);
     },
     onError: (e) => errorToast(e, "Home"),
+    resumeWall: key === "resume",
   });
   track(h); // the selection bar (favorite, edit, queue, delete) works across all walls of the page
   return h;
@@ -247,7 +248,7 @@ export async function render(main) {
     if (s.id === "resume")
       return async () => {
         const r = await findItems("scene", { per_page: 12, sort: "last_played_at", direction: "DESC" }, { resume_time: { value: 5, modifier: "GREATER_THAN" } });
-        return pieces("scene", r).filter((p) => p.resume < 0.97);
+        return pieces("scene", r).filter((p) => p.resume < 0.97 && !resumeHidden(p));
       };
     if (s.id === "foryou")
       return async () => {

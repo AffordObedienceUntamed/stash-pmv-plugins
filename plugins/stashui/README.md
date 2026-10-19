@@ -249,7 +249,8 @@ Settings → General → **Install as app**: Stash UI gets its own window and a 
 - **Badges on thumbnails** (Settings → This interface): rating, tier and length badge each in any corner or hidden; the rating badge can be coloured by its value (dark / coloured text / filled, red → green).
 - **Show file**: a button in the info bar opens the file in Explorer / Finder with the file selected (Stash on the same computer; otherwise the path is copied).
 - **Tags filter** (Performers → Tags): filter the performer list by the performers' own tags – several at once, right-click a tag to leave it out, all of them or any of them. Kept in the address.
-- **Looks filter** (Performers → Looks): the performer's own eye color, hair color, ethnicity and country as dropdowns with the values of your library.
+- **Looks filter** (Performers → Looks): the performer's own eye color, hair color, ethnicity, country and natural/enhanced as dropdowns with the values of your library (a performer who names several ethnicities counts under each). The sort list has “Natural / enhanced”; Statistics has a “Your performers” card with the numbers per value, each linking to the filtered list.
+- **E / T on a card** (the one under the mouse): edit / tag without dimming the page; the cursor is in the tags field. **Continue watching**: select scenes on the home page → “Remove from Continue watching” (until you watch them again). **Photo cutter**: rotate left/right, brightness and contrast.
 - **Quick keys on a card** (scene / image / gallery lists, mouse resting on the card): **E** edit, **T** tags, **D** or **Delete** delete (asks first).
 - **Detailed rating** shows the picture and name of what you rate – for a performer also a few of their pictures. **Tag fields** list the most used tags first while nothing is typed (up to 200).
 - **Sound button in Scenes**: Sound on / Muted for the hover previews sits in the Scenes toolbar as well as on the home page.

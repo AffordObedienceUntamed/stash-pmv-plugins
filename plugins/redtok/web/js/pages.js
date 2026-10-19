@@ -10,6 +10,7 @@ import {
 import { av, tick, setSpeed, setAutoNext, setFit, setMuted, setFrame, frameName, FRAMES } from "./feed.js";
 import { enqueue, jobs, jobOf, isSaved, cancelQueued, retryFailed, clearFinished, activeJobs, ensureBase } from "./dl.js";
 import { call } from "./core.js";
+import { pull, push, lastSync } from "./sync.js";
 
 const enc = encodeURIComponent;
 export const nicheName = (slug) => String(slug || "").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -781,6 +782,7 @@ export function openSettings(focus) {
     <h3 class="sh">${esc(t("Language"))}</h3>
     ${sel("lang", t("Language"), t("Automatic follows Stash UI or Stash."), LANGS.map(([c, l]) => [c, c === "auto" ? t("Automatic") : l]))}
     <h3 class="sh">${esc(t("Your data"))}</h3>
+    ${sw("syncDev", t("Sync between devices"), t("Follows, niches, #tags, likes, saved, hidden and blocked are kept in Stash and shared with every device that opens this Stash with this switch on. The newer change wins; watch history and settings stay on each device.") + (lastSync() ? " " + t("Last synced: {time}", { time: new Date(lastSync()).toLocaleTimeString() }) : ""))}
     <div class="set is-col"><span class="st"><b>${esc(t("{a} liked · {b} followed · {c} watched · {d} saved", { a: liked.length, b: following.length, c: history.length, d: Math.max(saved.length, doneSet.size) }))}</b><small>${esc(t("All of it stays in this browser. A copy goes to a backup file next to Stash, so another browser or device gets it back by itself."))}</small></span>
       <span class="setrow"><button class="btn" data-export>${ic("down")}${esc(t("Export"))}</button><label class="btn">${ic("backup")}${esc(t("Import"))}<input type="file" accept=".json,application/json" data-import hidden></label><button class="btn is-ghost" data-clearw>${esc(t("Clear watch history"))}</button><button class="btn is-ghost" data-forget>${esc(t("Forget downloads list"))}</button></span></div>
     <h3 class="sh">${esc(t("Keyboard"))}</h3>
@@ -811,6 +813,15 @@ export function openSettings(focus) {
     settings[k] = v;
     saveSettings();
     nav.emitSettings();
+    if (k === "syncDev" && v) {
+      try {
+        const n = await pull();
+        await push();
+        if (n) { toast(t("Synced – reloading")); return setTimeout(() => location.reload(), 700); }
+        toast(t("Sync is on"));
+      } catch (x) { toast(t("Sync didn't work – {e}", { e: String((x && x.message) || x) }), true); }
+      return paint();
+    }
     if (k === "lang") { toast(t("Reloading…")); setTimeout(() => location.reload(), 500); }
     else toast(t("Saved"));
   });

@@ -291,6 +291,34 @@ def bk_load(conn):
     return {"data": None}
 
 
+def sync_get(conn):
+    d = _read(os.path.join(config_dir(conn), "backups-redtok", "sync.json"))
+    return {"keys": (d or {}).get("keys") or {}}
+
+
+def sync_put(conn, keys):
+    """The lists that sync between devices: per list the value (a JSON text) and the time of its last change; the newer one stays."""
+    if not isinstance(keys, dict):
+        raise ValueError("no data")
+    folder = os.path.join(config_dir(conn), "backups-redtok")
+    os.makedirs(folder, exist_ok=True)
+    path = os.path.join(folder, "sync.json")
+    have = (_read(path) or {}).get("keys") or {}
+    for k, e in keys.items():
+        if not isinstance(e, dict) or not isinstance(e.get("v"), str) or not isinstance(e.get("t"), (int, float)):
+            continue
+        if len(e["v"]) > 20 * 1024 * 1024:
+            continue
+        cur = have.get(str(k))
+        if cur is None or e["t"] >= cur.get("t", 0):
+            have[str(k)] = {"v": e["v"], "t": e["t"]}
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump({"at": time.strftime("%Y-%m-%dT%H:%M:%S"), "keys": have}, f)
+    os.replace(tmp, path)
+    return {"saved": True}
+
+
 def bk_save(conn, data):
     if not isinstance(data, dict):
         raise ValueError("no data")
@@ -347,6 +375,10 @@ def main():
             output = bk_load(conn)
         elif mode == "bk_save":
             output = bk_save(conn, args.get("data"))
+        elif mode == "sync_get":
+            output = sync_get(conn)
+        elif mode == "sync_put":
+            output = sync_put(conn, args.get("keys"))
         else:
             raise ValueError(f"unknown mode: {mode}")
     except urllib.error.HTTPError as e:
