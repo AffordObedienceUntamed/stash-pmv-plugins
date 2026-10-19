@@ -2306,4 +2306,6 @@ export default {
   "Filter by the performers' own tags": "Filtruj po własnych tagach performerów",
   "Match all tags": "Wszystkie tagi",
   "Match any tag": "Dowolny tag",
+  "{name} says it has {n} scenes but sent none. Try a search word – some stash-boxes can't be browsed without one.": "{name} twierdzi, że ma {n} scen, ale żadnej nie wysłał. Spróbuj wpisać szukane słowo – niektórych stash-boxów nie da się przeglądać bez niego.",
+  "{n} scenes found, but none matches “Show”. Set Show to All.": "Znaleziono {n} scen, ale żadna nie pasuje do ustawienia „Pokaż”. Ustaw Pokaż na Wszystkie.",
 };

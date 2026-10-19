@@ -2301,4 +2301,6 @@ export default {
   "Filter by the performers' own tags": "Lọc theo thẻ của chính diễn viên",
   "Match all tags": "Khớp tất cả",
   "Match any tag": "Khớp bất kỳ",
+  "{name} says it has {n} scenes but sent none. Try a search word – some stash-boxes can't be browsed without one.": "{name} báo có {n} cảnh nhưng không trả về cảnh nào. Hãy thử một từ khóa tìm kiếm – một số stash-box không thể duyệt nếu không có từ khóa.",
+  "{n} scenes found, but none matches “Show”. Set Show to All.": "Tìm thấy {n} cảnh nhưng không cảnh nào khớp với “Hiển thị”. Hãy đặt Hiển thị thành Tất cả.",
 };

@@ -1244,6 +1244,7 @@ def box_scenes(stash, args):
     # first with the cover pictures (images { url width height }), then without in case this stash-box doesn't know them
     fields = [f + " images { url width height }" for f in base_f] + base_f
     last = None
+    empty = None
     for fl in fields:
         for ordered in (True, False):
             inp = {"page": page, "per_page": per_page}
@@ -1278,7 +1279,13 @@ def box_scenes(stash, args):
                     "performers": [((q2 or {}).get("performer") or {}).get("name") or "" for q2 in (x.get("performers") or [])],
                     "image": cover_of(x.get("images")),
                 })
-            return {"count": q.get("count") or 0, "page": page, "scenes": out, "name": box.get("name") or ""}
+            res = {"count": q.get("count") or 0, "page": page, "scenes": out, "name": box.get("name") or ""}
+            if not out and res["count"] and ordered:
+                empty = res
+                continue  # says it has scenes but sent none: maybe the sort is the problem – try once without
+            return res
+    if empty:
+        return empty
     if text and not args.get("_title"):
         return box_scenes(stash, dict(args, _title=True))  # a stash-box without the `text` search: try the title filter
     raise RuntimeError(f"{box.get('name') or endpoint}: {last or 'no answer'}")

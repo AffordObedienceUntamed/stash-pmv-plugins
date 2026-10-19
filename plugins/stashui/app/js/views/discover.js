@@ -105,7 +105,11 @@ export async function render(main) {
       grid.insertAdjacentHTML("beforeend", shown.map(card).join(""));
       status();
       lazyCovers(grid, box.endpoint, null);
-      if (!grid.children.length && done) grid.innerHTML = `<p class="kb-pst-wait">${t("Nothing found.")}</p>`;
+      if (!grid.children.length && done) {
+        // say why: the box sent nothing although it counts scenes (some boxes only answer to a search word), or "Show" hides them all
+        const why = !(r.scenes || []).length && total ? t("{name} says it has {n} scenes but sent none. Try a search word – some stash-boxes can't be browsed without one.", { name: mine(), n: total }) : list.length && opt.show !== "all" ? t("{n} scenes found, but none matches “Show”. Set Show to All.", { n: list.length }) : t("Nothing found.");
+        grid.innerHTML = `<p class="kb-pst-wait">${esc(why)}</p>`;
+      }
     } catch (err) {
       if (run !== gen) return;
       done = true;

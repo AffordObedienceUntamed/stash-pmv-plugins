@@ -2343,4 +2343,6 @@ export default {
   "Filter by the performers' own tags": "Фильтр по собственным тегам исполнителей",
   "Match all tags": "Все теги",
   "Match any tag": "Любой тег",
+  "{name} says it has {n} scenes but sent none. Try a search word – some stash-boxes can't be browsed without one.": "{name} сообщает о {n} сценах, но не прислал ни одной. Попробуйте слово для поиска – некоторые stash-box нельзя просматривать без него.",
+  "{n} scenes found, but none matches “Show”. Set Show to All.": "Найдено сцен: {n}, но ни одна не подходит под «Показать». Установите «Показать» на «Все».",
 };

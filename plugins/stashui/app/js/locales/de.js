@@ -2261,4 +2261,6 @@ export default {
   "Filter by the performers' own tags": "Nach den eigenen Tags der Performer filtern",
   "Match all tags": "Alle Tags",
   "Match any tag": "Ein Tag genügt",
+  "{name} says it has {n} scenes but sent none. Try a search word – some stash-boxes can't be browsed without one.": "{name} meldet {n} Szenen, hat aber keine geschickt. Versuch ein Suchwort – manche Stash-Boxen lassen sich ohne eins nicht durchblättern.",
+  "{n} scenes found, but none matches “Show”. Set Show to All.": "{n} Szenen gefunden, aber keine passt zu „Anzeigen“. Stell Anzeigen auf Alle.",
 };

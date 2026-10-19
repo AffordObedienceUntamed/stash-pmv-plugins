@@ -2247,4 +2247,6 @@ export default {
   "Filter by the performers' own tags": "Filtrer par les tags de l'interprète",
   "Match all tags": "Tous les tags",
   "Match any tag": "Un des tags",
+  "{name} says it has {n} scenes but sent none. Try a search word – some stash-boxes can't be browsed without one.": "{name} annonce {n} scènes mais n'en a envoyé aucune. Essayez un mot de recherche – certaines stash-box ne se parcourent pas sans.",
+  "{n} scenes found, but none matches “Show”. Set Show to All.": "{n} scènes trouvées, mais aucune ne correspond à « Afficher ». Mettez Afficher sur Tout.",
 };

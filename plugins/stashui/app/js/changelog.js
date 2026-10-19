@@ -7,6 +7,13 @@
 
 export const CHANGES = [
   {
+    v: "3.108.1",
+    date: "2026-10-19",
+    items: [
+      ["ui", "Discover: when a stash-box says it has scenes but sends none (ThePornDB did this for a search without a word), the page now says so and suggests typing a search word instead of just “Nothing found.” – and it first tries the same question once more without the sort order. If “Show” hides everything, it says that too.", "发现：当某个 stash-box 声称有场景却没有返回任何内容时（ThePornDB 在不输入搜索词时就是这样），页面现在会说明情况并建议输入搜索词，而不只是显示“没有找到。”——并且会先去掉排序再问一次。如果“显示”把所有内容都隐藏了，也会提示。", "discover::[data-show]"],
+    ],
+  },
+  {
     v: "3.108.0",
     date: "2026-10-19",
     items: [
