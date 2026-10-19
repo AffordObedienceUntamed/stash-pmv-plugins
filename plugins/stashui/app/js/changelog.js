@@ -7,6 +7,13 @@
 
 export const CHANGES = [
   {
+    v: "3.109.0",
+    date: "2026-10-19",
+    items: [
+      ["ui", "Player: the picture above the timeline now stays inside the window, is a bit bigger, loads only once per scene (and ahead of the first hover), isn't shown while a finger just hovers, and has the liquid-glass look. New switch Settings → Player and previews → “Picture when hovering the timeline” (on). Scenes without timeline images show only the time, as before. A video that is played through a live transcode could freeze at the start (endless loop when jumping to 1–2 s) – fixed.", "播放器：时间轴上方的预览图现在不会超出窗口、略微放大、每个场景只加载一次（并在首次悬停前预加载）、手指悬停时不显示，并支持液态玻璃外观。新开关 设置 → 播放器与预览 →“悬停时间轴显示画面”（默认开启）。没有时间轴图片的场景和以前一样只显示时间。修复：通过实时转码播放的视频在跳到 1–2 秒时可能在开头卡住（无限循环）。", "settings::Picture when hovering the timeline"],
+    ],
+  },
+  {
     v: "3.108.2",
     date: "2026-10-19",
     items: [

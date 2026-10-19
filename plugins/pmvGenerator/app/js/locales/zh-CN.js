@@ -2368,4 +2368,6 @@ export default {
   "{name} says it has {n} scenes but sent none. Try a search word – some stash-boxes can't be browsed without one.": "{name} 称有 {n} 个场景，但没有返回任何内容。请试试搜索词——有些 stash-box 不输入搜索词就无法浏览。",
   "{n} scenes found, but none matches “Show”. Set Show to All.": "找到 {n} 个场景，但没有一个符合“显示”的设置。请把“显示”设为“全部”。",
   "What the box answered:": "该 stash-box 的回复：",
+  "Picture when hovering the timeline": "悬停时间轴显示画面",
+  "Hover the timeline in the player to see a small picture of that moment above the pointer (needs Stash's timeline images – Tasks → Generate → Timeline images). Not shown on touch screens.": "在播放器中把鼠标移到时间轴上，指针上方会显示该时刻的小画面（需要 Stash 的时间轴缩略图——任务 → 生成 → 时间轴缩略图）。触摸屏上不显示。",
 };

@@ -2344,4 +2344,6 @@ export default {
   "{name} says it has {n} scenes but sent none. Try a search word – some stash-boxes can't be browsed without one.": "{name} повідомляє про {n} сцен, але не надіслав жодної. Спробуйте слово для пошуку – деякі stash-box не можна переглядати без нього.",
   "{n} scenes found, but none matches “Show”. Set Show to All.": "Знайдено сцен: {n}, але жодна не відповідає параметру «Показати». Установіть «Показати» на «Усі».",
   "What the box answered:": "Відповідь stash-box:",
+  "Picture when hovering the timeline": "Кадр при наведенні на шкалу часу",
+  "Hover the timeline in the player to see a small picture of that moment above the pointer (needs Stash's timeline images – Tasks → Generate → Timeline images). Not shown on touch screens.": "Наведіть мишу на шкалу часу в плеєрі, і над вказівником з’явиться маленький кадр цього моменту (потрібні кадри шкали часу Stash – Завдання → Згенерувати → Кадри шкали часу). На сенсорних екранах не показується.",
 };

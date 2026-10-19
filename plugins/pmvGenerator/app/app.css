@@ -2001,6 +2001,8 @@ html.kb-glass .kb-ptg-thumb { border: 1px solid var(--glass-edge); background: v
 html.kb-glass .kb-tg-row { border-color: var(--glass-edge); background: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); }
 html.kb-glass .kb-tg-review { background: color-mix(in srgb, var(--base) 45%, transparent); }
 html.kb-glass .kb-mkpop { border-color: var(--glass-edge); box-shadow: var(--glass-shadow); }
+html.kb-glass .kb-tl-peek-img { border-color: var(--glass-edge); box-shadow: var(--glass-shadow); }
+html.kb-glass .kb-tl-peek span { color: var(--text); border: 1px solid var(--glass-edge); background: var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); }
 html.kb-glass .kb-tl-range { box-shadow: 0 0 0 1px rgba(255, 255, 255, .25); }
 /* "Make default" next to a sort control */
 .kb-defsort { white-space: nowrap; }

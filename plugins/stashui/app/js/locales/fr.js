@@ -2250,4 +2250,6 @@ export default {
   "{name} says it has {n} scenes but sent none. Try a search word – some stash-boxes can't be browsed without one.": "{name} annonce {n} scènes mais n'en a envoyé aucune. Essayez un mot de recherche – certaines stash-box ne se parcourent pas sans.",
   "{n} scenes found, but none matches “Show”. Set Show to All.": "{n} scènes trouvées, mais aucune ne correspond à « Afficher ». Mettez Afficher sur Tout.",
   "What the box answered:": "Réponse de la box :",
+  "Picture when hovering the timeline": "Image au survol de la timeline",
+  "Hover the timeline in the player to see a small picture of that moment above the pointer (needs Stash's timeline images – Tasks → Generate → Timeline images). Not shown on touch screens.": "Survolez la timeline du lecteur pour voir une petite image de ce moment au-dessus du pointeur (nécessite les images de la timeline de Stash – Tâches → Générer → Images de la timeline). Pas affichée sur les écrans tactiles.",
 };

@@ -2311,4 +2311,6 @@ export default {
   "{name} says it has {n} scenes but sent none. Try a search word – some stash-boxes can't be browsed without one.": "{name} は {n} 件のシーンがあると言っていますが、何も返してきませんでした。検索ワードを試してください。検索ワードなしでは閲覧できない stash-box もあります。",
   "{n} scenes found, but none matches “Show”. Set Show to All.": "{n} 件のシーンが見つかりましたが、「表示」の条件に合うものがありません。「表示」を「すべて」にしてください。",
   "What the box answered:": "ボックスの応答：",
+  "Picture when hovering the timeline": "タイムラインにホバーで画像表示",
+  "Hover the timeline in the player to see a small picture of that moment above the pointer (needs Stash's timeline images – Tasks → Generate → Timeline images). Not shown on touch screens.": "プレーヤーのタイムラインにマウスを乗せると、その時点の小さな画像がポインターの上に表示されます（Stash のタイムライン画像が必要です – タスク → 生成 → タイムライン画像）。タッチ画面では表示されません。",
 };

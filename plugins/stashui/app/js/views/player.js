@@ -24,10 +24,18 @@ import { videoGlow } from "../theme.js";
 import { mountSlots } from "../ext.js";
 import { BINS, watchRecorder, watchBins, motionBins, combine, peaks } from "../heat.js";
 
-// Read Stash's sprite VTT: time ranges → region in the sprite image
-async function loadSprites(vttUrl, spriteUrl) {
+// Read Stash's sprite VTT: time ranges → region in the sprite image (once per scene; the picture is fetched ahead too)
+const spriteCache = new Map();
+function loadSprites(vttUrl, spriteUrl) {
+  const key = vttUrl + "|" + spriteUrl;
+  if (!spriteCache.has(key)) spriteCache.set(key, readSprites(vttUrl, spriteUrl).then((s) => (s ? s : (spriteCache.delete(key), null))));
+  return spriteCache.get(key);
+}
+async function readSprites(vttUrl, spriteUrl) {
   try {
-    const txt = await (await fetch(vttUrl)).text();
+    const res = await fetch(vttUrl);
+    if (!res.ok) return null;
+    const txt = await res.text();
     const cues = [];
     const re = /(\d+):(\d+):(\d+)\.(\d+)\s+-->\s+(\d+):(\d+):(\d+)\.(\d+)\s*\n([^\n]+)/g;
     let m;
@@ -36,7 +44,8 @@ async function loadSprites(vttUrl, spriteUrl) {
       const xywh = (m[9].match(/#xywh=(\d+),(\d+),(\d+),(\d+)/) || []).slice(1).map(Number);
       if (xywh.length === 4) cues.push({ start: secs(m[1], m[2], m[3], m[4]), end: secs(m[5], m[6], m[7], m[8]), xywh });
     }
-    return cues.length ? { cues, url: spriteUrl } : null;
+    if (cues.length) new Image().src = spriteUrl; // load the picture now, so the first hover isn't empty
+    return cues.length ? { cues, url: spriteUrl, w: Math.max(...cues.map((c) => c.xywh[0] + c.xywh[2])) } : null;
   } catch (e) {
     return null;
   }
@@ -239,7 +248,7 @@ export async function render(host, params, query = {}) {
     srcIdx = i;
     tcOff = isLive(i) && at > 2 ? Math.floor(at) : 0;
     v.src = tcOff ? withStart(sources[i], tcOff) : sources[i];
-    if (!tcOff && at > 0) v.currentTime = at;
+    if (!tcOff && at > 0) nativeTime.set.call(v, at); // not v.currentTime: on a live stream that asks loadAt again (endless loop for 1–2 s)
     if (play) v.play().catch(() => {});
   }
   Object.defineProperty(v, "currentTime", {
@@ -540,22 +549,30 @@ export async function render(host, params, query = {}) {
     watch.seeked(at);
     toast(t("Highlight at {time}", { time: fmtDuration(at) }));
   }
+  // The picture above the pointer: the sprite tile at the time under it, scaled up a bit; stays inside the window.
+  // Without timeline images (or switched off, or touch hovering) only the time shows, as before.
+  const PEEK_W = 200;
   tl.addEventListener("pointermove", (e) => {
     const p = posFrom(e);
     const at = p * (v.duration || dur);
     const peek = $("[data-peek]");
     peek.hidden = false;
-    peek.style.left = p * 100 + "%";
     $("[data-peektime]").textContent = fmtDuration(at);
     const img = $("[data-peekimg]");
-    const cue = sprites && sprites.cues.find((c) => at >= c.start && at < c.end);
+    const r = tl.getBoundingClientRect();
+    const cue = sprites && store.get("player", {}).scrubPeek !== false && (e.pointerType !== "touch" || scrubbing) && sprites.cues.find((c) => at >= c.start && at < c.end);
     if (cue) {
       const [cx, cy, cw, ch] = cue.xywh;
+      const k = Math.max(1, Math.min(PEEK_W, r.width / 3) / cw); // small tiles are enlarged a bit, never shrunk
       img.hidden = false;
-      img.style.width = cw + "px";
-      img.style.height = ch + "px";
-      img.style.background = `url("${sprites.url}") -${cx}px -${cy}px`;
+      img.style.width = Math.round(cw * k) + "px";
+      img.style.height = Math.round(ch * k) + "px";
+      img.style.background = `url("${sprites.url}") -${Math.round(cx * k)}px -${Math.round(cy * k)}px / ${Math.round(sprites.w * k)}px auto no-repeat`;
     } else img.hidden = true;
+    const half = peek.offsetWidth / 2;
+    const lo = Math.max(half + 8 - r.left, 0);
+    const hi = Math.min(window.innerWidth - half - 8 - r.left, r.width);
+    peek.style.left = Math.max(lo, Math.min(hi, p * r.width)) + "px";
     if (scrubbing) v.currentTime = at;
   });
   tl.addEventListener("pointerleave", () => !scrubbing && ($("[data-peek]").hidden = true));

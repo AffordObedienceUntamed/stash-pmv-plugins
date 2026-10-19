@@ -2304,4 +2304,6 @@ export default {
   "{name} says it has {n} scenes but sent none. Try a search word – some stash-boxes can't be browsed without one.": "{name} báo có {n} cảnh nhưng không trả về cảnh nào. Hãy thử một từ khóa tìm kiếm – một số stash-box không thể duyệt nếu không có từ khóa.",
   "{n} scenes found, but none matches “Show”. Set Show to All.": "Tìm thấy {n} cảnh nhưng không cảnh nào khớp với “Hiển thị”. Hãy đặt Hiển thị thành Tất cả.",
   "What the box answered:": "Phản hồi của stash-box:",
+  "Picture when hovering the timeline": "Hiện ảnh khi rê chuột lên dòng thời gian",
+  "Hover the timeline in the player to see a small picture of that moment above the pointer (needs Stash's timeline images – Tasks → Generate → Timeline images). Not shown on touch screens.": "Rê chuột lên dòng thời gian trong trình phát để thấy một ảnh nhỏ của thời điểm đó phía trên con trỏ (cần ảnh dòng thời gian của Stash – Tác vụ → Tạo → Ảnh dòng thời gian). Không hiện trên màn hình cảm ứng.",
 };

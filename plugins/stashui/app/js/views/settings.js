@@ -51,7 +51,7 @@ SECTIONS.splice(SECTIONS.findIndex((x) => x.id === "classic-ui"), 0, Object.assi
 // Search: what the custom pages contain (their labels, as shown)
 const CUSTOM_ENTRIES = {
   look: ["Colors", "Liquid glass", "Effects and animations"],
-  "player-ui": ["At the end of a video", "Start at a random spot", "Mouse wheel on the video", "Reverse the wheel", "Info panel in fullscreen", "Sound in previews", "The Handy", "Connection key", "Script offset"],
+  "player-ui": ["At the end of a video", "Start at a random spot", "Mouse wheel on the video", "Reverse the wheel", "Picture when hovering the timeline", "Info panel in fullscreen", "Sound in previews", "The Handy", "Connection key", "Script offset"],
   "this-ui": ["Language", "Folder loading", "This interface as home page", "Install as app", "Studio on scenes", "Resolution on scene cards", "Other plugins in the menu", "Rating system", "Thumbnail size", "Favorites", "Backup and restore", "Reset interface settings"],
   database: ["Back up database", "Optimize database", "Clean up generated files"],
   login: ["API key"],
@@ -385,6 +385,7 @@ function renderPlayerUi(body) {
       <label class="kb-set"><span class="kb-set-label"><b>${t("Mouse wheel on the video")}</b><small>${t("Turn the wheel over the picture to change the volume or to jump (5 s per notch); hold Shift for the other one.")}</small></span>
         <select class="kb-field" data-wheel>${[["volume", "Volume"], ["seek", "Jump forward / back"], ["off", "Off"]].map(([v, l]) => `<option value="${v}"${(player.wheel || "volume") === v ? " selected" : ""}>${t(l)}</option>`).join("")}</select></label>
       ${sw("data-wheelrev", !!player.wheelRev, "Reverse the wheel", "Normally turning the wheel up makes it louder or jumps forward. Switch this on and up goes quieter / back, down louder / forward.")}
+      ${sw("data-scrubpeek", player.scrubPeek !== false, "Picture when hovering the timeline", "Hover the timeline in the player to see a small picture of that moment above the pointer (needs Stash's timeline images – Tasks → Generate → Timeline images). Not shown on touch screens.")}
       ${sw("data-fspanel", player.fsPanel !== false, "Info panel in fullscreen", "Move the mouse to the right edge in fullscreen to slide in the info panel.")}
       <div class="kb-set"><div class="kb-set-label"><b>${t("External players")}</b><small>${t("The “External player” button in a scene's info panel hands the video to a player on this device – for formats the browser can't play. Choose the ones to offer; some need a small helper installed (see below each).")}</small></div></div>
       <div class="kb-extpick" data-extpick></div>
@@ -410,6 +411,7 @@ function renderPlayerUi(body) {
   body.querySelector("[data-pmode]").onchange = (e) => setPlayer({ mode: e.target.value });
   body.querySelector("[data-wheel]").onchange = (e) => setPlayer({ wheel: e.target.value });
   body.querySelector("[data-wheelrev]").onchange = (e) => setPlayer({ wheelRev: e.target.checked });
+  body.querySelector("[data-scrubpeek]").onchange = (e) => setPlayer({ scrubPeek: e.target.checked });
   body.querySelector("[data-fspanel]").onchange = (e) => setPlayer({ fsPanel: e.target.checked });
   body.querySelector("[data-vanim]").onchange = (e) => store.set("viewer", Object.assign(store.get("viewer", { panel: false, interval: 5 }), { anim: e.target.value }));
   body.querySelector("[data-autoplay]").onchange = (e) => setPlayer({ autoplay: e.target.checked });

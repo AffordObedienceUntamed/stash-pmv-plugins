@@ -158,8 +158,8 @@
   transform: translateX(-50%);
   pointer-events: none;
 }
-.kb-tl-peek-img { border: 2px solid var(--paper); border-radius: 3px; box-shadow: 0 10px 26px rgba(0, 0, 0, .6); }
-.kb-tl-peek span { padding: 2px 7px; border-radius: 3px; color: var(--ink); font: 600 12px/1.3 var(--f-label); background: var(--paper); }
+.kb-tl-peek-img { box-sizing: content-box; border: 2px solid var(--paper); border-radius: 3px; box-shadow: 0 10px 26px rgba(0, 0, 0, .6); background-color: #000; }
+.kb-tl-peek span { white-space: nowrap; padding: 2px 7px; border-radius: 3px; color: var(--ink); font: 600 12px/1.3 var(--f-label); background: var(--paper); }
 
 /* Image viewer */
 .kb-canvas { position: absolute; inset: 0; display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); place-items: center; overflow: hidden; touch-action: none; } /* one cell the size of the screen – so max-width/height 100 % mean the screen, not the picture */
