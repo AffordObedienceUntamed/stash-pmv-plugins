@@ -2258,4 +2258,7 @@ export default {
   "{name}: {n} scenes found": "{name}: {n} Szenen gefunden",
   "running for {time}": "läuft seit {time}",
   "Finished": "Beendet",
+  "Filter by the performers' own tags": "Nach den eigenen Tags der Performer filtern",
+  "Match all tags": "Alle Tags",
+  "Match any tag": "Ein Tag genügt",
 };

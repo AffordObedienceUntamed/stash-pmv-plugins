@@ -352,4 +352,8 @@ export default {
   "Their videos show up in For You. Tap one to stop following.": "Ich filmy pojawiają się w „Dla ciebie”. Dotknij jednego, aby przestać obserwować.",
   "Include followed #tags in Following": "Uwzględnij obserwowane #tagi w „Obserwowane”",
   "Off: Following only shows the creators you follow – the #tags you follow feed For You. On: their newest videos are mixed into Following (popular tags can fill it).": "Wyłączone: „Obserwowane” pokazuje tylko twórców, których obserwujesz – obserwowane #tagi zasilają „Dla ciebie”. Włączone: ich najnowsze filmy są mieszane w „Obserwowane” (popularne tagi mogą je zapełnić).",
+  "Add RedGifs tags as Stash tags": "Dodaj tagi RedGifs jako tagi Stash",
+  "Off by default: it can add many new tags to your Stash tag list. On: the tags RedGifs shows for a saved video are put on its scene (missing ones are created).": "Domyślnie wyłączone: może dodać wiele nowych tagów do listy tagów Stash. Włączone: tagi, które RedGifs pokazuje przy zapisanym wideo, trafiają na jego scenę (brakujące są tworzone).",
+  "Add the creator as a performer": "Dodaj twórcę jako performera",
+  "Off by default. On: the creator becomes a performer in Stash (created if missing, with their RedGifs link) and is put on the scene.": "Domyślnie wyłączone. Włączone: twórca zostaje performerem w Stash (tworzony, jeśli go brak, z linkiem do RedGifs) i trafia na scenę.",
 };

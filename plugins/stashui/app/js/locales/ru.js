@@ -2340,4 +2340,7 @@ export default {
   "{name}: {n} scenes found": "{name}: найдено сцен: {n}",
   "running for {time}": "выполняется {time}",
   "Finished": "Завершено",
+  "Filter by the performers' own tags": "Фильтр по собственным тегам исполнителей",
+  "Match all tags": "Все теги",
+  "Match any tag": "Любой тег",
 };

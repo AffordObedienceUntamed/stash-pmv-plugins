@@ -2303,4 +2303,7 @@ export default {
   "{name}: {n} scenes found": "{name}: znaleziono scen: {n}",
   "running for {time}": "trwa od {time}",
   "Finished": "Zakończone",
+  "Filter by the performers' own tags": "Filtruj po własnych tagach performerów",
+  "Match all tags": "Wszystkie tagi",
+  "Match any tag": "Dowolny tag",
 };

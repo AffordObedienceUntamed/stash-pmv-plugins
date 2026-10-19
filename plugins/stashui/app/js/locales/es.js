@@ -2280,4 +2280,7 @@ export default {
   "{name}: {n} scenes found": "{name}: {n} escenas encontradas",
   "running for {time}": "en curso desde hace {time}",
   "Finished": "Terminado",
+  "Filter by the performers' own tags": "Filtrar por las etiquetas del propio artista",
+  "Match all tags": "Todas las etiquetas",
+  "Match any tag": "Cualquiera",
 };

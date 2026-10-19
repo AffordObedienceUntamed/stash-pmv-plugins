@@ -82,7 +82,7 @@ Manage → **Sharing** lets people you give a link to send you photos, videos an
 
 ## Languages
 
-Stash UI is available in **English**, **Simplified Chinese (简体中文)**, **Japanese (日本語)**, **Vietnamese (Tiếng Việt)**, **French (Français)**, **Spanish (Español)**, **German (Deutsch)**, **Polish (Polski)** and **Russian (Русский)**. By default it follows the interface language set in Stash (classic Stash → Settings → Interface → Language); you can also pick one under **Settings → This interface → Language**.
+Stash UI is available in **English**, **Simplified Chinese (简体中文)**, **Japanese (日本語)**, **Vietnamese (Tiếng Việt)**, **French (Français)**, **Spanish (Español)**, **German (Deutsch)**, **Polish (Polski)**, **Russian (Русский)** and **Ukrainian (Українська)**. By default it follows the interface language set in Stash (classic Stash → Settings → Interface → Language); you can also pick one under **Settings → This interface → Language**.
 
 ![Stash UI in Simplified Chinese](../../docs/screenshots/stashui-zh.png)
 
@@ -99,7 +99,7 @@ export default {
 
 - Anything missing simply shows in English, so partial translations work.
 - `python tools/i18n_keys.py zh-CN` (or `ja`, `de` …) lists the texts a language file is still missing.
-- Polish and Russian count 2–4 with their own form: besides `"scenes"` the file has `"scenes#few"` (see `pl.js`). Russian also uses the singular after 21, 31 … (not 11) – see `one()` in `app/js/i18n.js`.
+- Polish, Russian and Ukrainian count 2–4 with their own form: besides `"scenes"` the file has `"scenes#few"` (see `pl.js`). Russian and Ukrainian also use the singular after 21, 31 … (not 11) – see `one()` in `app/js/i18n.js`.
 - A new language: copy `zh-CN.js`, translate the values, and add it to `LANGS`, `FILES` and `match()` in `app/js/i18n.js` and to `SHARED` in `tools/build.py`.
 - Found an odd or too long wording? Open an issue or a pull request.
 
@@ -247,6 +247,7 @@ Settings → General → **Install as app**: Stash UI gets its own window and a 
 - **Performer statistics + missing scenes** (buttons on the performer page): the first counts what the library holds of the performer (watched, plays, watch time, length, size, average rating, scenes per year, top tags, co-performers, studios, resolutions, most watched, best rated); the second asks the performer’s stash-box (StashDB …) for all their scenes and lists those missing in the library (matched by StashDB id, or by title and date). The box is asked by `backend.py` (mode `box_scenes`) with the API key Stash has for it – only boxes set up in Stash, and the key never goes to the page. The list can show each scene's **cover** (fetched through the plugin, only while you scroll to it – Stash's page policy blocks pictures from other sites) and can be limited to scenes between an **oldest and a newest date**; Settings → General also chooses which **stash-box** is asked first.
 - **Badges on thumbnails** (Settings → This interface): rating, tier and length badge each in any corner or hidden; the rating badge can be coloured by its value (dark / coloured text / filled, red → green).
 - **Show file**: a button in the info bar opens the file in Explorer / Finder with the file selected (Stash on the same computer; otherwise the path is copied).
+- **Tags filter** (Performers → Tags): filter the performer list by the performers' own tags – several at once, right-click a tag to leave it out, all of them or any of them. Kept in the address.
 - **Looks filter** (Performers → Looks): the performer's own eye color, hair color, ethnicity and country as dropdowns with the values of your library.
 - **Quick keys on a card** (scene / image / gallery lists, mouse resting on the card): **E** edit, **T** tags, **D** or **Delete** delete (asks first).
 - **Detailed rating** shows the picture and name of what you rate – for a performer also a few of their pictures. **Tag fields** list the most used tags first while nothing is typed (up to 200).

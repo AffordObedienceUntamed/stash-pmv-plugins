@@ -350,4 +350,8 @@ export default {
   "Their videos show up in For You. Tap one to stop following.": "它们的视频会出现在“为你推荐”中。点按其中一个可取消关注。",
   "Include followed #tags in Following": "将已关注的 #标签 也放入“关注”",
   "Off: Following only shows the creators you follow – the #tags you follow feed For You. On: their newest videos are mixed into Following (popular tags can fill it).": "关闭：“关注”只显示你关注的创作者，关注的 #标签 用于“为你推荐”。开启：它们的最新视频会混入“关注”（热门标签可能会占满）。",
+  "Add RedGifs tags as Stash tags": "把 RedGifs 标签加为 Stash 标签",
+  "Off by default: it can add many new tags to your Stash tag list. On: the tags RedGifs shows for a saved video are put on its scene (missing ones are created).": "默认关闭：可能会向你的 Stash 标签列表添加很多新标签。开启后：RedGifs 为已保存视频显示的标签会加到对应场景上（缺少的会新建）。",
+  "Add the creator as a performer": "把创作者添加为表演者",
+  "Off by default. On: the creator becomes a performer in Stash (created if missing, with their RedGifs link) and is put on the scene.": "默认关闭。开启后：创作者会成为 Stash 中的表演者（缺少时新建，并附带其 RedGifs 链接），并加到该场景上。",
 };

@@ -7,6 +7,14 @@
 
 export const CHANGES = [
   {
+    v: "3.108.0",
+    date: "2026-10-19",
+    items: [
+      ["ui", "Performers: a new “Tags” button filters the performer list by the performers’ own tags (like classic Stash). Pick several tags, right-click a tag to leave it out, and choose whether a performer needs all of them or just one. The choice is kept in the address, so you can bookmark it. (Thanks eialici!)", "演员：新增“标签”按钮，可按演员自己的标签筛选演员列表（与经典 Stash 一样）。可选多个标签，右键点击标签表示排除，并可选择需要全部匹配还是任一匹配。所选内容会保存在地址中，方便收藏。（感谢 eialici！）", "performers::[data-tagbtn]"],
+      ["ui", "New language: Ukrainian (Українська) – translated by illuminat-ua, with the newer texts added on top. Pick it under Settings → This interface → Language (or it follows Stash’s language). (Thanks illuminat-ua!)", "新语言：乌克兰语（Українська）——由 illuminat-ua 翻译，较新的文本已补全。可在“设置 → 此界面 → 语言”中选择（也会跟随 Stash 的语言）。（感谢 illuminat-ua！）"],
+    ],
+  },
+  {
     v: "3.107.0",
     date: "2026-10-19",
     items: [

@@ -9,6 +9,7 @@ import { ensureTiers, hasTiers, tierNow } from "../tiers.js";
 import { restrictIds, critInfo, parseCrit, critStr, critText, sortByCrit, openCritFilter } from "../ratingx.js";
 import { findIds } from "../api.js";
 import { TIERS, tierBadge } from "../versusx.js";
+import { tagPicker } from "./tagpicker.js";
 
 // Value = "<Stash sort field>[:ASC|DESC]" (Stash does the sorting), or "local:<field>" for text fields Stash can't sort by:
 // those are fetched once and ordered here (empty values always last)
@@ -136,12 +137,17 @@ export async function render(main, params, query) {
         <select class="kb-field" data-gender aria-label="${t("Gender")}"><option value="">${t("Everyone")}</option>${GENDERS.map(([v, l]) => `<option value="${v}">${t(l)}</option>`).join("")}</select>
         <button type="button" class="kb-btn" data-critopen hidden>${icon("sliders")}<span data-crittext>${t("Criteria …")}</span></button>
         <span class="kb-seg kb-tierchips" data-tf hidden title="${t("Tier")}">${TIERS.map((x) => `<button type="button" data-tier="${x.k}" style="--tc:${x.color}">${x.k}</button>`).join("")}</span>
+        <button type="button" class="kb-btn" data-tagbtn aria-expanded="false" title="${esc(t("Filter by the performers' own tags"))}">${icon("tag")}<span>${t("Tags")}</span></button>
         <button type="button" class="kb-btn" data-attrbtn aria-expanded="false" title="${esc(t("Filter by eye color, hair color, ethnicity or country"))}">${icon("sliders")}<span>${t("Looks")}</span></button>
         <button type="button" class="kb-btn${query.fav === "1" ? " is-on" : ""}" data-favonly aria-pressed="${query.fav === "1"}">${icon("heart")}${t("Favorites")}</button>
         <button type="button" class="kb-btn" data-selmode aria-pressed="false" title="${esc(t("Tick performers to delete several at once"))}">${icon("select")}${t("Select")}</button>
         <button type="button" class="kb-btn" data-new>${icon("plus")}${t("New performer")}</button>
       </div>
     </header>
+    <div class="kb-perf-attrs kb-perf-tagp" data-tagpanel hidden>
+      <div class="kb-tagpick kb-perf-tagbox" data-tagbox></div>
+      <span class="kb-seg" data-tagmode><button type="button" data-m="all">${t("Match all tags")}</button><button type="button" data-m="any">${t("Match any tag")}</button></span>
+    </div>
     <div class="kb-perf-attrs" data-attrs hidden></div>
     <div class="kb-perfgrid" data-list><div class="kb-loading">${t("Loading …")}</div></div>
     <div class="kb-perf-more" data-more></div>`;
@@ -198,6 +204,32 @@ export async function render(main, params, query) {
     if (on) paintLooks();
   };
   if (looksOn()) showLooks(true);
+  // Tags: the performer's own tags – several at once, right-click a chip = leave out, all of them or any of them
+  let ptags = { inc: (query.ptags || "").split(",").filter(Boolean), exc: (query.ptagsx || "").split(",").filter(Boolean), any: query.ptany === "1" };
+  const tagsOn = () => ptags.inc.length > 0 || ptags.exc.length > 0;
+  let tagPick = null;
+  const paintTagMode = () => $("[data-tagmode]").querySelectorAll("[data-m]").forEach((b) => b.classList.toggle("is-on", (b.dataset.m === "any") === ptags.any));
+  const showTags = (on) => {
+    $("[data-tagpanel]").hidden = !on;
+    $("[data-tagbtn]").setAttribute("aria-expanded", String(on));
+    $("[data-tagbtn]").classList.toggle("is-on", on || tagsOn());
+    if (on && !tagPick) {
+      tagPick = tagPicker($("[data-tagbox]"), {
+        include: ptags.inc,
+        exclude: ptags.exc,
+        allowExclude: true,
+        placeholder: t("Filter by tag"),
+        onChange: (inc, exc) => {
+          ptags.inc = inc;
+          ptags.exc = exc;
+          $("[data-tagbtn]").classList.toggle("is-on", tagsOn() || !$("[data-tagpanel]").hidden);
+          reload();
+        },
+      });
+    }
+    paintTagMode();
+  };
+  if (tagsOn()) showTags(true);
   let tiers = (query.tier || "").split(",").filter(Boolean);
   let crit = query.crit || "";
   let critAll = null; // sorted by a criterion: everything that matches, fetched once and ordered here
@@ -263,6 +295,11 @@ export async function render(main, params, query) {
   function filter() {
     const f = {};
     if (tagF && tagF.key === "tag") f.tags = { value: [tagF.id], modifier: "INCLUDES" };
+    if (tagsOn()) {
+      // (a tag page's own tag counts as one more that has to match)
+      const withPage = tagF && tagF.key === "tag";
+      f.tags = { value: withPage ? [tagF.id, ...ptags.inc] : ptags.inc, excludes: ptags.exc, modifier: ptags.any && !withPage ? "INCLUDES" : "INCLUDES_ALL" };
+    }
     if (tagF && tagF.key === "scenetag") f.scenes_filter = { tags: { value: [tagF.id], modifier: "INCLUDES" } };
     if (favOnly) f.filter_favorites = true;
     for (const [fld] of ATTRS) if (looks[fld]) f[fld] = { value: looks[fld], modifier: "EQUALS" };
@@ -307,7 +344,7 @@ export async function render(main, params, query) {
       list = list.concat(r.performers);
       $("[data-sub]").textContent = plural(total, "performer", "performers");
       if (!list.length) {
-        const filtered = q || favOnly || $("[data-gender]").value || looksOn();
+        const filtered = q || favOnly || $("[data-gender]").value || looksOn() || tagsOn();
         $("[data-list]").innerHTML = filtered
           ? `<div class="kb-empty"><b>${t("No performer found")}</b><p>${t("Try another search or filter.")}</p></div>`
           : `<div class="kb-empty"><b>${t("No performers yet")}</b><p>${t("Stash can fill them in from StashDB: Tasks → Identify (or the scene tagger in classic Stash). Or add one yourself with “New performer”.")}</p></div>`;
@@ -336,12 +373,20 @@ export async function render(main, params, query) {
   io.observe($("[data-more]"));
 
   const reload = () => {
-    setQuery({ q: $("[data-q]").value.trim(), sort: $("[data-sort]").value === ((getDef("performers").startsWith("crit:") ? "" : getDef("performers")) || "name") ? "" : $("[data-sort]").value, gender: $("[data-gender]").value, fav: favOnly ? "1" : "", ...Object.fromEntries(ATTRS.map(([f, k]) => [k, looks[f]])) });
+    setQuery({ q: $("[data-q]").value.trim(), sort: $("[data-sort]").value === ((getDef("performers").startsWith("crit:") ? "" : getDef("performers")) || "name") ? "" : $("[data-sort]").value, gender: $("[data-gender]").value, fav: favOnly ? "1" : "", ptags: ptags.inc.join(","), ptagsx: ptags.exc.join(","), ptany: ptags.any && ptags.inc.length > 1 ? "1" : "", ...Object.fromEntries(ATTRS.map(([f, k]) => [k, looks[f]])) });
     load(true);
   };
   $("[data-q]").addEventListener("input", debounce(reload, 250));
   $("[data-sort]").onchange = reload;
   $("[data-gender]").onchange = reload;
+  $("[data-tagbtn]").onclick = () => showTags($("[data-tagpanel]").hidden);
+  $("[data-tagmode]").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-m]");
+    if (!b) return;
+    ptags.any = b.dataset.m === "any";
+    paintTagMode();
+    if (tagsOn()) reload();
+  });
   $("[data-attrbtn]").onclick = () => showLooks($("[data-attrs]").hidden);
   $("[data-attrs]").addEventListener("change", (e) => {
     const sel = e.target.closest("[data-look]");

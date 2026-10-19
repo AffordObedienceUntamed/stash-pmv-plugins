@@ -2298,4 +2298,7 @@ export default {
   "{name}: {n} scenes found": "{name}: tìm thấy {n} cảnh",
   "running for {time}": "đã chạy {time}",
   "Finished": "Đã xong",
+  "Filter by the performers' own tags": "Lọc theo thẻ của chính diễn viên",
+  "Match all tags": "Khớp tất cả",
+  "Match any tag": "Khớp bất kỳ",
 };

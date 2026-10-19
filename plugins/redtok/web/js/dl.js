@@ -118,12 +118,12 @@ async function scanNow() {
     toast(t("Stash is scanning the new videos"));
   } catch (e) { /* only a courtesy – Stash finds the files at its next scan */ }
   const q = metaQ.splice(0);
-  if (settings.meta && q.length) fillMeta(q).catch(() => {});
+  if ((settings.meta || settings.metaTags || settings.metaPerf) && q.length) fillMeta(q).catch(() => {});
 }
 
 // The scene of a saved video gets what RedGifs knows: date, creator (as the studio) and the link. The scan runs on its own,
 // so the scene is looked up (by its file name "<creator> - <id>") for up to ~2 minutes.
-const SCENE_Q = "query($f: SceneFilterType) { findScenes(scene_filter: $f, filter: { per_page: 1 }) { scenes { id } } }";
+const SCENE_Q = "query($f: SceneFilterType) { findScenes(scene_filter: $f, filter: { per_page: 1 }) { scenes { id tags { id } performers { id } } } }";
 const studioIds = new Map();
 async function studioFor(name) {
   if (studioIds.has(name)) return studioIds.get(name);
@@ -131,6 +131,33 @@ async function studioFor(name) {
   let id = d.findStudios.studios[0] && d.findStudios.studios[0].id;
   if (!id) id = (await gql("mutation($i: StudioCreateInput!) { studioCreate(input: $i) { id } }", { i: { name, url: `https://www.redgifs.com/users/${name}` } })).studioCreate.id;
   studioIds.set(name, id);
+  return id;
+}
+// Tags and performers (only when switched on): found by name, made when missing. Failures leave that one out.
+const tagIds = new Map(), perfIds = new Map();
+async function tagFor(name) {
+  const key = name.toLowerCase();
+  if (tagIds.has(key)) return tagIds.get(key);
+  const d = await gql("query($q: String!) { findTags(filter: { q: $q, per_page: 20 }) { tags { id name aliases } } }", { q: name });
+  const hit = d.findTags.tags.find((x) => x.name.toLowerCase() === key || (x.aliases || []).some((a) => a.toLowerCase() === key));
+  const id = hit ? hit.id : (await gql("mutation($i: TagCreateInput!) { tagCreate(input: $i) { id } }", { i: { name } })).tagCreate.id;
+  tagIds.set(key, id);
+  return id;
+}
+async function performerFor(name) {
+  const key = name.toLowerCase();
+  if (perfIds.has(key)) return perfIds.get(key);
+  const d = await gql("query($q: String!) { findPerformers(filter: { q: $q, per_page: 20 }) { performers { id name } } }", { q: name });
+  const hit = d.findPerformers.performers.find((x) => x.name.toLowerCase() === key);
+  let id = hit && hit.id;
+  if (!id) {
+    const url = `https://www.redgifs.com/users/${name}`;
+    for (const extra of [{ urls: [url] }, { url }, {}]) {
+      try { id = (await gql("mutation($i: PerformerCreateInput!) { performerCreate(input: $i) { id } }", { i: { name, ...extra } })).performerCreate.id; break; } catch (e) { /* older / newer field name – next form */ }
+    }
+    if (!id) throw new Error("performer not created");
+  }
+  perfIds.set(key, id);
   return id;
 }
 async function fillMeta(list) {
@@ -143,16 +170,30 @@ async function fillMeta(list) {
       try {
         const d = await gql(SCENE_Q, { f: { path: { value: `${g.user} - ${g.id}`, modifier: "INCLUDES" } } });
         sid = d.findScenes.scenes[0] ? d.findScenes.scenes[0].id : "";
+        it.sc = d.findScenes.scenes[0] || null;
       } catch (e) { /* try again */ }
       if (!sid && --it.left > 0) continue;
       todo.splice(todo.indexOf(it), 1);
       if (!sid) continue;
       const input = { id: sid };
-      if (g.date) input.date = new Date(g.date * 1000).toISOString().slice(0, 10);
-      if (g.desc && g.desc.length < 200) input.details = g.desc;
-      try { input.studio_id = await studioFor(g.user); } catch (e) { /* the rest still goes in */ }
+      if (settings.meta) {
+        if (g.date) input.date = new Date(g.date * 1000).toISOString().slice(0, 10);
+        if (g.desc && g.desc.length < 200) input.details = g.desc;
+        try { input.studio_id = await studioFor(g.user); } catch (e) { /* the rest still goes in */ }
+      }
+      const have = it.sc || { tags: [], performers: [] };
+      if (settings.metaTags && g.tags && g.tags.length) {
+        const ids = new Set((have.tags || []).map((x) => x.id));
+        for (const name of g.tags.slice(0, 10)) { try { ids.add(await tagFor(String(name))); } catch (e) { /* skip this tag */ } }
+        input.tag_ids = [...ids];
+      }
+      if (settings.metaPerf && g.user) {
+        const ids = new Set((have.performers || []).map((x) => x.id));
+        try { ids.add(await performerFor(g.user)); input.performer_ids = [...ids]; } catch (e) { /* no performer */ }
+      }
+      if (Object.keys(input).length < 2 && !settings.meta) continue; // nothing to set
       const link = `https://www.redgifs.com/watch/${g.id}`;
-      for (const extra of [{ urls: [link] }, { url: link }, {}]) {
+      for (const extra of settings.meta ? [{ urls: [link] }, { url: link }, {}] : [{}]) {
         try { await gql("mutation($i: SceneUpdateInput!) { sceneUpdate(input: $i) { id } }", { i: { ...input, ...extra } }); break; } catch (e) { /* older / newer field name – next form */ }
       }
     }

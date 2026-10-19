@@ -769,6 +769,8 @@ export function openSettings(focus) {
     ${sel("quality", t("Download quality"), "", [["hd", t("HD (original)")], ["sd", t("SD (smaller)")]])}
     ${sw("scan", t("Scan into Stash"), t("After downloading, Stash scans the folders that got new videos."))}
     ${sw("meta", t("Fill in date and creator"), t("Once Stash has the new videos, RedTok sets their date, the creator as the studio and the RedGifs link. Needs this page to stay open for a minute."))}
+    ${sw("metaTags", t("Add RedGifs tags as Stash tags"), t("Off by default: it can add many new tags to your Stash tag list. On: the tags RedGifs shows for a saved video are put on its scene (missing ones are created)."))}
+    ${sw("metaPerf", t("Add the creator as a performer"), t("Off by default. On: the creator becomes a performer in Stash (created if missing, with their RedGifs link) and is put on the scene."))}
     <h3 class="sh">${esc(t("Your feed"))}</h3>
     <div class="set is-col"><span class="st"><b>${esc(t("Tags you follow"))}</b><small>${esc(tagFollows.length ? t("Their videos show up in For You. Tap one to stop following.") : t("None. Open a #tag (tap it under a video) and press Follow."))}</small></span>${tagFollows.length ? `<div class="chips">${tagFollows.map((x) => `<button class="chipb is-x" data-untagf="${esc(x)}">#${esc(x)} ${ic("close")}</button>`).join("")}</div>` : ""}</div>
     ${sw("followTags", t("Include followed #tags in Following"), t("Off: Following only shows the creators you follow – the #tags you follow feed For You. On: their newest videos are mixed into Following (popular tags can fill it)."))}

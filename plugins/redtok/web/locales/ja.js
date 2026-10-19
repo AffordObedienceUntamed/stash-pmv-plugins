@@ -349,4 +349,8 @@ export default {
   "Their videos show up in For You. Tap one to stop following.": "それらの動画は「おすすめ」に表示されます。タップするとフォローを解除します。",
   "Include followed #tags in Following": "フォロー中の#タグをフォロー中に含める",
   "Off: Following only shows the creators you follow – the #tags you follow feed For You. On: their newest videos are mixed into Following (popular tags can fill it).": "オフ: 「フォロー中」にはフォローしているクリエイターだけが表示され、フォロー中の#タグは「おすすめ」に使われます。オン: それらの最新動画が「フォロー中」に混ざります（人気のタグだと埋まってしまうことがあります）。",
+  "Add RedGifs tags as Stash tags": "RedGifsのタグをStashのタグとして追加",
+  "Off by default: it can add many new tags to your Stash tag list. On: the tags RedGifs shows for a saved video are put on its scene (missing ones are created).": "初期設定はオフ：Stashのタグ一覧に新しいタグが大量に増えることがあります。オンにすると、保存した動画にRedGifsが表示するタグがそのシーンに付きます（無いタグは作成されます）。",
+  "Add the creator as a performer": "クリエイターを出演者として追加",
+  "Off by default. On: the creator becomes a performer in Stash (created if missing, with their RedGifs link) and is put on the scene.": "初期設定はオフ。オンにすると、クリエイターがStashの出演者になり（無ければRedGifsのリンク付きで作成）、そのシーンに付きます。",
 };

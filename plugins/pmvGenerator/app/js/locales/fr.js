@@ -2244,4 +2244,7 @@ export default {
   "{name}: {n} scenes found": "{name} : {n} scènes trouvées",
   "running for {time}": "en cours depuis {time}",
   "Finished": "Terminé",
+  "Filter by the performers' own tags": "Filtrer par les tags de l'interprète",
+  "Match all tags": "Tous les tags",
+  "Match any tag": "Un des tags",
 };

@@ -2305,4 +2305,7 @@ export default {
   "{name}: {n} scenes found": "{name}: {n} 件のシーンが見つかりました",
   "running for {time}": "実行中 {time}",
   "Finished": "終了",
+  "Filter by the performers' own tags": "出演者自身のタグで絞り込み",
+  "Match all tags": "すべて含む",
+  "Match any tag": "いずれかを含む",
 };

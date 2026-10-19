@@ -348,4 +348,8 @@ export default {
   "Their videos show up in For You. Tap one to stop following.": "Video của chúng xuất hiện trong “Dành cho bạn”. Chạm vào một thẻ để bỏ theo dõi.",
   "Include followed #tags in Following": "Đưa #thẻ đang theo dõi vào Đang theo dõi",
   "Off: Following only shows the creators you follow – the #tags you follow feed For You. On: their newest videos are mixed into Following (popular tags can fill it).": "Tắt: Đang theo dõi chỉ hiện các nhà sáng tạo bạn theo dõi – các #thẻ đang theo dõi dành cho “Dành cho bạn”. Bật: video mới nhất của chúng được trộn vào Đang theo dõi (thẻ phổ biến có thể làm đầy nó).",
+  "Add RedGifs tags as Stash tags": "Thêm thẻ RedGifs làm thẻ Stash",
+  "Off by default: it can add many new tags to your Stash tag list. On: the tags RedGifs shows for a saved video are put on its scene (missing ones are created).": "Mặc định tắt: có thể thêm rất nhiều thẻ mới vào danh sách thẻ Stash của bạn. Bật: các thẻ RedGifs hiển thị cho video đã lưu sẽ được gắn vào cảnh của nó (thẻ chưa có sẽ được tạo).",
+  "Add the creator as a performer": "Thêm người sáng tạo làm diễn viên",
+  "Off by default. On: the creator becomes a performer in Stash (created if missing, with their RedGifs link) and is put on the scene.": "Mặc định tắt. Bật: người sáng tạo trở thành diễn viên trong Stash (được tạo nếu chưa có, kèm liên kết RedGifs) và được gắn vào cảnh.",
 };
