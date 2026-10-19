@@ -7,6 +7,13 @@
 
 export const CHANGES = [
   {
+    v: "3.112.0",
+    date: "2026-10-19",
+    items: [
+      ["ui", "Scene cards can show more under the date: when you last watched it (or “Never watched”), when it was added, the time you watched it and the file size. Settings → This interface → “Info on scene cards”: switch each line on or off, show dates as the exact date or as “3 days ago” / “Yesterday”, with or without the time of day. Only “Last watched” is on at first.", "场景卡片可在日期下方显示更多信息：最近观看时间（或“从未观看”）、添加时间、观看时长和文件大小。设置 → 本界面 →“场景卡片上的信息”：可逐行开关，日期可显示为确切日期或“3 天前”/“昨天”，可带或不带具体时间。默认只开启“最近观看”。", "settings::Info on scene cards"],
+    ],
+  },
+  {
     v: "3.111.0",
     date: "2026-10-19",
     items: [

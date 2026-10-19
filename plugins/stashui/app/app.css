@@ -400,6 +400,9 @@ a.kb-chip:hover, button.kb-chip:hover { background: rgba(180, 140, 255, .28); }
 .kb-scard-title { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; color: var(--text); font: 700 15px/1.25 var(--f-text); }
 .kb-scard-title:hover { color: var(--pink); }
 .kb-scard-date { color: var(--text-2); font: 500 12.5px/1.2 var(--f-label); }
+.kb-scard-facts { display: grid; gap: 2px; }
+.kb-scard-fact { color: var(--text-2); font: 500 12.5px/1.25 var(--f-label); }
+.kb-scard-fact span { color: var(--text-3, var(--text-2)); opacity: .75; }
 .kb-scard-details { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; margin: 0; color: var(--text-2); font: 400 13px/1.4 var(--f-text); }
 .kb-scard-pops { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 4px; padding-top: 8px; border-top: 1px solid var(--bg-3); }
 .kb-scard-pop, .kb-scard-stat { display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 9px; border: 0; border-radius: 6px; color: var(--text); font: 600 12.5px/1 var(--f-label); background: var(--bg-3); }

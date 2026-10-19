@@ -3,6 +3,7 @@
 // Fields and types come live from Stash; unknown options end up under "More options".
 
 import { applyDisplay } from "../display.js";
+import { cardInfo } from "../pieces.js";
 import { forgetLarge, largeNow } from "../scale.js";
 import { esc, icon, toast, errorToast, store, confirmDialog, fmtDate, folderMode, ratingSystem, setRatingSystem } from "../ui.js";
 import { t, locale, LANGS, chosen, choose } from "../i18n.js";
@@ -488,6 +489,12 @@ async function renderApp(body) {
         <span class="kb-switch"><input type="checkbox" data-studiologo${store.get("studioLogos", false) ? " checked" : ""}><i></i></span></label>
       <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("Resolution on scene cards")}</b><small>${t("Shows 1080p, 720p … next to the length in the corner of scene thumbnails (after the next page load).")}</small></span>
         <span class="kb-switch"><input type="checkbox" data-cardres${store.get("cardRes", false) ? " checked" : ""}><i></i></span></label>
+      <div class="kb-set"><span class="kb-set-label"><b>${t("Info on scene cards")}</b><small>${t("Extra lines under the date when scenes are shown as cards. Click to switch each one on or off.")}</small></span>
+        <div class="kb-chips" data-cardinfo>${[["watched", "Last watched"], ["added", "Added"], ["time", "Watch time"], ["size", "File size"]].map(([k, l]) => `<button type="button" class="kb-chip${cardInfo()[k] ? " is-on" : ""}" data-ci="${k}">${t(l)}</button>`).join("")}</div></div>
+      <label class="kb-set"><span class="kb-set-label"><b>${t("Dates on scene cards")}</b><small>${t("Last watched and Added: the exact date, or how many days ago.")}</small></span>
+        <select class="kb-field" data-cistyle>${[["date", "Exact date"], ["days", "Days ago"]].map(([v, l]) => `<option value="${v}"${cardInfo().style === v ? " selected" : ""}>${t(l)}</option>`).join("")}</select></label>
+      <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("With the time")}</b><small>${t("Adds the hour and minute to those dates.")}</small></span>
+        <span class="kb-switch"><input type="checkbox" data-cihour${cardInfo().hour ? " checked" : ""}><i></i></span></label>
       ${[
         ["badgeRating", "Rating badge", "Where the rating sits on a thumbnail. Automatic: only on the card view (bottom left).", [["auto", "Automatic"], ["off", "Hidden"]]],
         ["badgeTier", "Tier badge", "Where the tier (S–F) sits on a thumbnail. Automatic: top left.", [["auto", "Automatic"], ["off", "Hidden"]]],
@@ -617,6 +624,18 @@ async function renderApp(body) {
         boxSel.value = store.get("missingBox", "");
       })
       .catch(() => {});
+  const setCardInfo = (patch) => {
+    store.set("cardInfo", Object.assign(cardInfo(), patch));
+    toast(t("Saved"), "ok");
+  };
+  body.querySelector("[data-cardinfo]").onclick = (e) => {
+    const b = e.target.closest("[data-ci]");
+    if (!b) return;
+    b.classList.toggle("is-on");
+    setCardInfo({ [b.dataset.ci]: b.classList.contains("is-on") });
+  };
+  body.querySelector("[data-cistyle]").onchange = (e) => setCardInfo({ style: e.target.value });
+  body.querySelector("[data-cihour]").onchange = (e) => setCardInfo({ hour: e.target.checked });
   body.querySelector("[data-cardres]").onchange = (e) => {
     store.set("cardRes", e.target.checked);
     toast(t("Saved"), "ok");

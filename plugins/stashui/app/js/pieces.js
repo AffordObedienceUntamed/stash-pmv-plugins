@@ -1,7 +1,7 @@
 // Common model for scenes, images and galleries ("pieces") and the salon hanging.
 
 import { esc, icon, fmtDuration, fmtRes, fmtDate, fmtBytes, invNo, plural, store, menu, errorToast, inlineSvg, ratingText } from "./ui.js";
-import { t } from "./i18n.js";
+import { t, locale } from "./i18n.js";
 import { tierNow } from "./tiers.js";
 import { tierBadge } from "./versusx.js";
 import { critOf } from "./ratingx.js";
@@ -162,6 +162,38 @@ function cardOverlays(p) {
   );
 }
 
+// Settings → This interface → "Info on scene cards": extra lines under the date. Times can be shown as a date ("12 Oct 2026")
+// or as days ago ("3 days ago"), each with or without the time of day.
+export const CARD_INFO = { watched: true, added: false, time: false, size: false, style: "date", hour: false };
+export const cardInfo = () => Object.assign({}, CARD_INFO, store.get("cardInfo", {}));
+export function cardStamp(iso, o) {
+  const d = new Date(iso);
+  if (!iso || isNaN(d)) return "";
+  let s;
+  if (o.style === "days") {
+    const a = new Date();
+    a.setHours(0, 0, 0, 0);
+    const b = new Date(d);
+    b.setHours(0, 0, 0, 0);
+    const n = Math.round((a - b) / 864e5);
+    s = n <= 0 ? t("Today") : n === 1 ? t("Yesterday") : t("{n} days ago", { n });
+  } else s = fmtDate(iso);
+  return o.hour ? `${s}, ${d.toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit" })}` : s;
+}
+function cardFacts(x) {
+  const o = cardInfo();
+  const rows = [];
+  const row = (label, value, title) => value && rows.push(`<div class="kb-scard-fact"${title ? ` title="${esc(title)}"` : ""}><span>${esc(t(label))}</span> ${esc(value)}</div>`);
+  if (o.watched) {
+    if (x.last_played_at) row("Last watched", cardStamp(x.last_played_at, o), new Date(x.last_played_at).toLocaleString(locale()));
+    else row("Last watched", t("Never watched"));
+  }
+  if (o.added) row("Added", cardStamp(x.created_at, o), x.created_at ? new Date(x.created_at).toLocaleString(locale()) : "");
+  if (o.time && x.play_duration > 0) row("Watch time", fmtDuration(x.play_duration));
+  if (o.size && x.files && x.files[0]) row("File size", fmtBytes(x.files[0].size));
+  return rows.length ? `<div class="kb-scard-facts">${rows.join("")}</div>` : "";
+}
+
 function cardBody(p) {
   const x = p.raw || {};
   const perfs = x.performers || [];
@@ -172,6 +204,7 @@ function cardBody(p) {
   return (
     `<a class="kb-scard-title" href="#/scene/${p.id}" title="${esc(p.title)}">${esc(p.title)}</a>` +
     (x.date ? `<div class="kb-scard-date">${esc(fmtDate(x.date))}</div>` : "") +
+    cardFacts(x) +
     (x.details ? `<p class="kb-scard-details">${esc(x.details)}</p>` : "") +
     `<div class="kb-scard-pops">` +
     pop("perfs", "person", perfs.length, t("Performers")) +
