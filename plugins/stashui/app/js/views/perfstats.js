@@ -118,14 +118,14 @@ async function showStats(host, p) {
 
 // ---------- Missing scenes ----------
 
-const hostOf = (u) => {
+export const hostOf = (u) => {
   try {
     return new URL(u).hostname.replace(/^www\./, "");
   } catch (e) {
     return u;
   }
 };
-const boxBase = (endpoint) => String(endpoint).replace(/\/graphql\/?$/i, "");
+export const boxBase = (endpoint) => String(endpoint).replace(/\/graphql\/?$/i, "");
 const norm = (s) => String(s || "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
 
 async function boxesOf(id) {
@@ -135,7 +135,7 @@ async function boxesOf(id) {
 }
 
 // the ids of this stash-box's scenes that the library has
-async function localBoxIds(endpoint) {
+export async function localBoxIds(endpoint) {
   const q = (filtered) => `query LocalBoxIds${filtered ? "($s: SceneFilterType)" : ""} { findScenes(filter: { per_page: -1 }${filtered ? ", scene_filter: $s" : ""}) { scenes { id stash_ids { endpoint stash_id } } } }`;
   let d;
   try {
@@ -170,7 +170,7 @@ function pumpCovers() {
         if (!coverCache.has(job.url)) coverCache.set(job.url, (await runBackend({ mode: "box_image", endpoint: job.endpoint, url: job.url })).data || "");
         if (job.img.isConnected && coverCache.get(job.url)) {
           job.img.src = coverCache.get(job.url);
-          job.img.closest(".kb-pm-cover").classList.add("is-on");
+          job.img.parentElement.classList.add("is-on");
         }
       } catch (e) {
         coverCache.set(job.url, "");
@@ -180,7 +180,7 @@ function pumpCovers() {
     })();
   }
 }
-function lazyCovers(root, endpoint) {
+export function lazyCovers(root, endpoint, scroller = root.querySelector(".kb-pm-list")) {
   const imgs = [...root.querySelectorAll("img[data-cover]")];
   if (!imgs.length) return;
   const go = (img) => {
@@ -188,12 +188,12 @@ function lazyCovers(root, endpoint) {
     img.removeAttribute("data-cover");
     if (coverCache.get(url)) {
       img.src = coverCache.get(url);
-      img.closest(".kb-pm-cover").classList.add("is-on");
+      img.parentElement.classList.add("is-on");
     } else coverQueue.push({ img, url, endpoint });
     pumpCovers();
   };
   if (!window.IntersectionObserver) return imgs.slice(0, 30).forEach(go);
-  const io = new IntersectionObserver((es) => es.forEach((e) => e.isIntersecting && (io.unobserve(e.target), go(e.target))), { root: root.querySelector(".kb-pm-list"), rootMargin: "200px" });
+  const io = new IntersectionObserver((es) => es.forEach((e) => e.isIntersecting && (io.unobserve(e.target), go(e.target))), { root: scroller, rootMargin: "300px" });
   imgs.forEach((i) => io.observe(i));
 }
 

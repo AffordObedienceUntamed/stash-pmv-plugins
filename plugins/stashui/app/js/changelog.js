@@ -7,6 +7,14 @@
 
 export const CHANGES = [
   {
+    v: "3.107.0",
+    date: "2026-10-19",
+    items: [
+      ["ui", "New: Discover (Library). Search a stash-box such as StashDB for scenes – not only what your library has. The results are cards with cover, title, studio, performers and length; scenes you already have say so and open the local scene, the others open the stash-box page. Search by title, performer or studio, sort by newest, trending or title, show only what’s missing, and pick the stash-box if you have several. (Thanks ufousox007!)", "新增：发现（资料库菜单）。在 stash-box（如 StashDB）中搜索场景，而不仅限于你的资料库。结果以卡片显示封面、标题、工作室、演员和时长；你已有的场景会标明并打开本地场景，其余的打开 stash-box 页面。可按标题、演员或工作室搜索，按最新、热门或标题排序，只显示缺失的，有多个 stash-box 时可选择其一。（感谢 ufousox007！）", "discover::[data-q]"],
+      ["ui", "Tasks: the “Running now” panel now stays at the top while you scroll through the task cards, so the progress remains in view after you press Start. It also shows what the task is doing right now and for how long it has been running, and what finished during your visit is listed underneath (done / cancelled).", "任务：“正在运行”面板现在会在你滚动任务卡片时固定在顶部，因此点击开始后进度始终可见。它还会显示任务当前在做什么、已运行多久，并在下方列出本次访问期间已结束的任务（完成/已取消）。", "tasks::[data-jobs]"],
+    ],
+  },
+  {
     v: "3.106.0",
     date: "2026-10-19",
     items: [

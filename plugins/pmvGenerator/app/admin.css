@@ -96,6 +96,12 @@
 .kb-card form > .kb-btn { margin-top: 12px; }
 
 .kb-jobs { margin-bottom: 26px; }
+.kb-jobs.is-live { position: sticky; top: 0; z-index: 6; max-height: 46vh; overflow-y: auto; margin-left: -12px; margin-right: -12px; padding: 4px 12px 8px; background: var(--bg); border-bottom: 1px solid var(--line); box-shadow: 0 10px 24px rgba(0, 0, 0, .25); }
+.kb-jobs-sub { margin: 14px 0 2px; color: var(--faint); font: 700 11px/1 var(--f-label); letter-spacing: .06em; text-transform: uppercase; }
+.kb-job.is-ended { padding: 6px 0; opacity: .75; }
+.kb-job.is-ended .kb-job-top span { color: var(--ok, #6fcf97); }
+.kb-job.is-cancelled .kb-job-top span { color: var(--faint); }
+html.kb-glass .kb-jobs.is-live { border: 1px solid var(--glass-edge); border-radius: 16px; background: var(--glass-shine), var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); box-shadow: var(--glass-shadow); }
 .kb-jobs-head { display: flex; align-items: baseline; justify-content: space-between; }
 .kb-jobs-head .kb-h2 { margin: 0 0 10px; }
 .kb-job { padding: 12px 0; border-bottom: 1px solid var(--line); }

@@ -1218,8 +1218,14 @@ def box_scenes(stash, args):
     endpoint = str(args.get("endpoint") or "").strip()
     pid = str(args.get("performer") or "").strip()
     page = max(1, int(args.get("page") or 1))
-    if not endpoint or not pid:
-        raise ValueError("endpoint and performer needed")
+    text = str(args.get("text") or "").strip()[:200]  # Discover: a free text search instead of one performer's scenes
+    sort = str(args.get("sort") or "DATE").upper()
+    if sort not in ("DATE", "TRENDING", "TITLE", "CREATED_AT", "UPDATED_AT"):
+        sort = "DATE"
+    direction = "ASC" if str(args.get("direction") or "").upper() == "ASC" else "DESC"
+    per_page = max(5, min(100, int(args.get("per_page") or 100)))
+    if not endpoint or not (pid or text or args.get("browse")):
+        raise ValueError("endpoint and performer (or a search text) needed")
     boxes = stash.gql("query { configuration { general { stashBoxes { endpoint name api_key } } } }")["configuration"]["general"].get("stashBoxes") or []
     box = next((b for b in boxes if str(b.get("endpoint") or "").rstrip("/") == endpoint.rstrip("/")), None)
     if not box:
@@ -1240,9 +1246,13 @@ def box_scenes(stash, args):
     last = None
     for fl in fields:
         for ordered in (True, False):
-            inp = {"performers": {"value": [pid], "modifier": "INCLUDES"}, "page": page, "per_page": 100}
+            inp = {"page": page, "per_page": per_page}
+            if pid:
+                inp["performers"] = {"value": [pid], "modifier": "INCLUDES"}
+            if text:
+                inp["title" if args.get("_title") else "text"] = text
             if ordered:
-                inp.update({"sort": "DATE", "direction": "DESC"})
+                inp.update({"sort": sort, "direction": direction})
             body = json.dumps({"query": "query($i: SceneQueryInput!) { queryScenes(input: $i) { count scenes { " + fl + " } } }", "variables": {"i": inp}}).encode()
             req = urllib.request.Request(endpoint, body, headers, method="POST")
             try:
@@ -1269,6 +1279,8 @@ def box_scenes(stash, args):
                     "image": cover_of(x.get("images")),
                 })
             return {"count": q.get("count") or 0, "page": page, "scenes": out, "name": box.get("name") or ""}
+    if text and not args.get("_title"):
+        return box_scenes(stash, dict(args, _title=True))  # a stash-box without the `text` search: try the title filter
     raise RuntimeError(f"{box.get('name') or endpoint}: {last or 'no answer'}")
 
 

@@ -2084,6 +2084,23 @@ html.kb-glass .kb-pm-list a:hover { background: color-mix(in srgb, var(--pink) 2
   .kb-pm-list em { grid-column: 1 / -1; }
 }
 
+/* Discover: scenes of a stash-box as cards */
+.kb-disc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: 14px; }
+.kb-disc-grid > .kb-pst-wait, .kb-disc-grid > .kb-empty { grid-column: 1 / -1; }
+.kb-disc-card { display: flex; flex-direction: column; min-width: 0; overflow: hidden; border: 1px solid var(--bg-3); border-radius: 8px; color: var(--text); background: var(--bg-2); transition: transform .15s, border-color .15s; }
+.kb-disc-card:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--pink) 60%, var(--bg-3)); }
+.kb-disc-cover { position: relative; display: block; aspect-ratio: 16 / 9; overflow: hidden; background: color-mix(in srgb, var(--text) 8%, transparent); }
+.kb-disc-cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .25s; }
+.kb-disc-cover.is-on img { opacity: 1; }
+.kb-disc-badge { position: absolute; left: 8px; bottom: 8px; padding: 2px 8px; border-radius: 999px; color: var(--ink); font: 700 11px/1.4 var(--f-label); font-style: normal; background: var(--pink); }
+.kb-disc-card.is-have .kb-disc-badge { color: var(--text); background: rgba(0, 0, 0, .6); }
+.kb-disc-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; padding: 10px 12px 12px; }
+.kb-disc-body b { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font: 600 14.5px/1.3 var(--f-text); }
+.kb-disc-body small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-2); font: 500 12px/1.3 var(--f-text); }
+.kb-disc-body .kb-disc-date { color: var(--faint); }
+html.kb-glass .kb-disc-card { border-color: var(--glass-edge); border-radius: 14px; background: var(--glass-shine), var(--glass-deep, var(--glass)); }
+html.kb-glass .kb-disc-badge { background: color-mix(in srgb, var(--pink) 85%, transparent); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); }
+
 /* Performers: tick several and delete them */
 .kb-perf-pick { z-index: 5; }
 .kb-perf:hover .kb-pick, .kb-perfgrid.is-selecting .kb-pick { opacity: 1; }
