@@ -2285,4 +2285,5 @@ export default {
   "Match any tag": "Cualquiera",
   "{name} says it has {n} scenes but sent none. Try a search word – some stash-boxes can't be browsed without one.": "{name} dice tener {n} escenas pero no envió ninguna. Prueba con una palabra de búsqueda: algunas stash-box no se pueden explorar sin ella.",
   "{n} scenes found, but none matches “Show”. Set Show to All.": "Se encontraron {n} escenas, pero ninguna coincide con «Mostrar». Pon Mostrar en Todo.",
+  "What the box answered:": "Respuesta de la box:",
 };

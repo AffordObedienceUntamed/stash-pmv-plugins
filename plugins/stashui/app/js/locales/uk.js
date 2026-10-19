@@ -2343,4 +2343,5 @@ export default {
   "Match any tag": "Будь-який тег",
   "{name} says it has {n} scenes but sent none. Try a search word – some stash-boxes can't be browsed without one.": "{name} повідомляє про {n} сцен, але не надіслав жодної. Спробуйте слово для пошуку – деякі stash-box не можна переглядати без нього.",
   "{n} scenes found, but none matches “Show”. Set Show to All.": "Знайдено сцен: {n}, але жодна не відповідає параметру «Показати». Установіть «Показати» на «Усі».",
+  "What the box answered:": "Відповідь stash-box:",
 };

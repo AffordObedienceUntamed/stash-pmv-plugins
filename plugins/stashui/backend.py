@@ -1246,8 +1246,9 @@ def box_scenes(stash, args):
     last = None
     empty = None
     for fl in fields:
-        for ordered in (True, False):
-            inp = {"page": page, "per_page": per_page}
+        for variant in ("sorted", "plain", "minimal"):
+            ordered = variant == "sorted"
+            inp = {"page": page} if variant == "minimal" else {"page": page, "per_page": per_page}
             if pid:
                 inp["performers"] = {"value": [pid], "modifier": "INCLUDES"}
             if text:
@@ -1280,12 +1281,16 @@ def box_scenes(stash, args):
                     "image": cover_of(x.get("images")),
                 })
             res = {"count": q.get("count") or 0, "page": page, "scenes": out, "name": box.get("name") or ""}
-            if not out and res["count"] and ordered:
+            if not out and res["count"] and variant != "minimal":
+                # says it has scenes but sent none: maybe the sort or the page size is the problem – try plainer questions
+                res["debug"] = json.dumps(d, ensure_ascii=False)[:400]
                 empty = res
-                continue  # says it has scenes but sent none: maybe the sort is the problem – try once without
+                continue
+            if not out and res["count"]:
+                res["debug"] = json.dumps(d, ensure_ascii=False)[:400]
             return res
-    if empty:
-        return empty
+        if empty:
+            return empty  # answered without an error, just with no scenes: other field names won't change that
     if text and not args.get("_title"):
         return box_scenes(stash, dict(args, _title=True))  # a stash-box without the `text` search: try the title filter
     raise RuntimeError(f"{box.get('name') or endpoint}: {last or 'no answer'}")

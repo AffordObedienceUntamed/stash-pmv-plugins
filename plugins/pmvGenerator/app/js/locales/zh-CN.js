@@ -2367,4 +2367,5 @@ export default {
   "Match any tag": "任一匹配",
   "{name} says it has {n} scenes but sent none. Try a search word – some stash-boxes can't be browsed without one.": "{name} 称有 {n} 个场景，但没有返回任何内容。请试试搜索词——有些 stash-box 不输入搜索词就无法浏览。",
   "{n} scenes found, but none matches “Show”. Set Show to All.": "找到 {n} 个场景，但没有一个符合“显示”的设置。请把“显示”设为“全部”。",
+  "What the box answered:": "该 stash-box 的回复：",
 };

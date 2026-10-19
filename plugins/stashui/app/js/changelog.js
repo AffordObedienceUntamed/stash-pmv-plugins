@@ -7,6 +7,13 @@
 
 export const CHANGES = [
   {
+    v: "3.108.2",
+    date: "2026-10-19",
+    items: [
+      ["ui", "Discover: if a stash-box counts scenes but sends none, the plugin now also asks it with a plainer question (no sort order, no page size), and the page shows what the box answered so the problem can be found.", "发现：如果某个 stash-box 报告有场景却不返回任何内容，插件现在还会用更简单的请求再问一次（不带排序和每页数量），页面也会显示该 stash-box 的回复，方便查找问题。"],
+    ],
+  },
+  {
     v: "3.108.1",
     date: "2026-10-19",
     items: [

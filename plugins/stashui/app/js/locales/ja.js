@@ -2310,4 +2310,5 @@ export default {
   "Match any tag": "いずれかを含む",
   "{name} says it has {n} scenes but sent none. Try a search word – some stash-boxes can't be browsed without one.": "{name} は {n} 件のシーンがあると言っていますが、何も返してきませんでした。検索ワードを試してください。検索ワードなしでは閲覧できない stash-box もあります。",
   "{n} scenes found, but none matches “Show”. Set Show to All.": "{n} 件のシーンが見つかりましたが、「表示」の条件に合うものがありません。「表示」を「すべて」にしてください。",
+  "What the box answered:": "ボックスの応答：",
 };
