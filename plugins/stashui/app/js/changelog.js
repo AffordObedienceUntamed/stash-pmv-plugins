@@ -7,6 +7,13 @@
 
 export const CHANGES = [
   {
+    v: "3.111.0",
+    date: "2026-10-19",
+    items: [
+      ["ui", "Player: new switch “Always start from the beginning” (sliders menu in the player, or Settings → Player and previews). Scenes you stopped halfway then begin at 0:00 instead of where you left off. The saved point stays in Stash untouched, and the hint at the top offers it as a button (“Resume at …”).", "播放器：新增开关“始终从头开始播放”（播放器的滑块菜单，或 设置 → 播放器和预览）。中途停止的场景会从 0:00 开始，而不是从上次停下的位置继续。保存的进度原样保留在 Stash 中，顶部提示里有“从 … 继续”按钮。", "settings::Always start from the beginning"],
+    ],
+  },
+  {
     v: "3.110.0",
     date: "2026-10-19",
     items: [

@@ -2358,4 +2358,8 @@ export default {
   "Rotate left": "Повернути вліво",
   "Rotate right": "Повернути вправо",
   "Contrast": "Контраст",
+  "Always start from the beginning": "Завжди починати з початку",
+  "Scenes you stopped halfway begin at 0:00 instead of where you left off. The saved point stays in Stash; the hint offers it as a button.": "Сцени, які ви кинули на середині, починаються з 0:00, а не з місця, де ви зупинилися. Збережена точка залишається в Stash; підказка пропонує її кнопкою.",
+  "From the next scene on: always from the beginning": "Із наступної сцени: завжди з початку",
+  "Scenes continue where you stopped again": "Сцени знову продовжуються з місця зупинки",
 };

@@ -2318,4 +2318,8 @@ export default {
   "Rotate left": "Xoay trái",
   "Rotate right": "Xoay phải",
   "Contrast": "Độ tương phản",
+  "Always start from the beginning": "Luôn phát từ đầu",
+  "Scenes you stopped halfway begin at 0:00 instead of where you left off. The saved point stays in Stash; the hint offers it as a button.": "Cảnh đã xem dở sẽ bắt đầu từ 0:00 thay vì chỗ bạn dừng. Điểm đã lưu vẫn nằm trong Stash; gợi ý có nút để quay lại đó.",
+  "From the next scene on: always from the beginning": "Từ cảnh tiếp theo: luôn phát từ đầu",
+  "Scenes continue where you stopped again": "Các cảnh lại tiếp tục từ chỗ bạn dừng",
 };

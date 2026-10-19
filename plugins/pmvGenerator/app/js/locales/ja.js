@@ -2325,4 +2325,8 @@ export default {
   "Rotate left": "左に回転",
   "Rotate right": "右に回転",
   "Contrast": "コントラスト",
+  "Always start from the beginning": "いつも最初から再生",
+  "Scenes you stopped halfway begin at 0:00 instead of where you left off. The saved point stays in Stash; the hint offers it as a button.": "途中でやめたシーンも、続きからではなく 0:00 から始まります。保存した位置は Stash に残り、ヒントのボタンで戻れます。",
+  "From the next scene on: always from the beginning": "次のシーンから：いつも最初から",
+  "Scenes continue where you stopped again": "シーンは再び続きから再生されます",
 };

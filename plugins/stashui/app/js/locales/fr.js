@@ -2264,4 +2264,8 @@ export default {
   "Rotate left": "Pivoter à gauche",
   "Rotate right": "Pivoter à droite",
   "Contrast": "Contraste",
+  "Always start from the beginning": "Toujours commencer au début",
+  "Scenes you stopped halfway begin at 0:00 instead of where you left off. The saved point stays in Stash; the hint offers it as a button.": "Les scènes arrêtées à mi-chemin commencent à 0:00 au lieu de reprendre là où vous vous étiez arrêté. Le point enregistré reste dans Stash ; l'indice le propose sous forme de bouton.",
+  "From the next scene on: always from the beginning": "À partir de la prochaine scène : toujours depuis le début",
+  "Scenes continue where you stopped again": "Les scènes reprennent à nouveau là où vous vous étiez arrêté",
 };

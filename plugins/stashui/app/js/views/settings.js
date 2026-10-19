@@ -381,7 +381,8 @@ function renderPlayerUi(body) {
       <label class="kb-set"><span class="kb-set-label"><b>${t("Image viewer: turning the page")}</b><small>${t("How the next picture comes in. Arrow keys, a swipe (finger or dragging with the mouse) and the arrows on the sides all turn the page.")}</small></span>
         <select class="kb-field" data-vanim>${[["fade", "Fade"], ["slide", "Slide in"], ["zoom", "Zoom in"], ["none", "None"]].map(([v, l]) => `<option value="${v}"${(store.get("viewer", {}).anim || "fade") === v ? " selected" : ""}>${t(l)}</option>`).join("")}</select></label>
       ${sw("data-autoplay", player.autoplay !== false, "Start playing when a scene opens", "Off: opening a scene shows the first picture and waits for the play button. Going on to the next video from the player always plays.")}
-      ${sw("data-randstart", !!player.randomStart, "Start at a random spot", "Every scene starts somewhere in the middle – for browsing around. Your resume points in Stash stay as they are.")}
+      ${sw("data-fromstart", !!player.fromStart, "Always start from the beginning", "Scenes you stopped halfway begin at 0:00 instead of where you left off. The saved point stays in Stash; the hint offers it as a button.")}
+      ${sw("data-randstart",!!player.randomStart, "Start at a random spot", "Every scene starts somewhere in the middle – for browsing around. Your resume points in Stash stay as they are.")}
       <label class="kb-set"><span class="kb-set-label"><b>${t("Mouse wheel on the video")}</b><small>${t("Turn the wheel over the picture to change the volume or to jump (5 s per notch); hold Shift for the other one.")}</small></span>
         <select class="kb-field" data-wheel>${[["volume", "Volume"], ["seek", "Jump forward / back"], ["off", "Off"]].map(([v, l]) => `<option value="${v}"${(player.wheel || "volume") === v ? " selected" : ""}>${t(l)}</option>`).join("")}</select></label>
       ${sw("data-wheelrev", !!player.wheelRev, "Reverse the wheel", "Normally turning the wheel up makes it louder or jumps forward. Switch this on and up goes quieter / back, down louder / forward.")}
@@ -415,6 +416,7 @@ function renderPlayerUi(body) {
   body.querySelector("[data-fspanel]").onchange = (e) => setPlayer({ fsPanel: e.target.checked });
   body.querySelector("[data-vanim]").onchange = (e) => store.set("viewer", Object.assign(store.get("viewer", { panel: false, interval: 5 }), { anim: e.target.value }));
   body.querySelector("[data-autoplay]").onchange = (e) => setPlayer({ autoplay: e.target.checked });
+  body.querySelector("[data-fromstart]").onchange = (e) => setPlayer({ fromStart: e.target.checked });
   body.querySelector("[data-randstart]").onchange = (e) => setPlayer({ randomStart: e.target.checked });
   body.querySelector("[data-psound]").onchange = (e) => store.set("previewSound", e.target.checked);
 

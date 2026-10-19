@@ -278,7 +278,8 @@ export async function render(host, params, query = {}) {
       (vr ? `<div class="kb-pmenu-sec"><b>VR</b><div class="kb-pmenu-speeds">${[["", t("Off"), ""], ["180", "180°", ""], ["180sbs", "180° SBS", t("180° side by side")], ["360", "360°", ""], ["360tb", "360° TB", t("360° top/bottom")], ["360sbs", "360° SBS", t("360° side by side")]].map(([m, l, title]) => `<button type="button" class="kb-chip${vr.mode === m ? " is-on" : ""}" data-vr="${m}"${title ? ` title="${esc(title)}"` : ""}>${l}</button>`).join("")}</div></div>` : "") +
       `<div class="kb-pmenu-sec"><b>${t("Speed")}</b><div class="kb-pmenu-speeds">${[0.1, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 2].map((s) => `<button type="button" class="kb-chip${v.playbackRate === s ? " is-on" : ""}" data-rate="${s}">${s}×</button>`).join("")}</div>` +
       (slowmoSupported() ? `<b title="${esc(t("Below 1× the missing pictures in between are made up on your graphics card – nothing to download"))}">${t("Smooth slow motion")}</b><div class="kb-pmenu-speeds">${[["off", "Off", ""], ["blend", "Blend", "Cross-fades the pictures – cheap, moving things leave a ghost"], ["motion", "Motion", "Follows the movement of the picture (uses the graphics card)"]].map(([m, l, h]) => `<button type="button" class="kb-chip${smoothMode() === m ? " is-on" : ""}" data-smooth="${m}"${h ? ` title="${esc(t(h))}"` : ""}>${t(l)}</button>`).join("")}</div>` : "") + `</div>` +
-      `<div class="kb-pmenu-sec"><button type="button" class="kb-pmenu-opt${prefs.randomStart ? " is-on" : ""}" data-randstart title="${esc(t("Every scene starts somewhere in the middle – for browsing around. Your resume points in Stash stay as they are."))}">${prefs.randomStart ? icon("check") : "<i></i>"}${t("Start at a random spot")}</button>` +
+      `<div class="kb-pmenu-sec"><button type="button" class="kb-pmenu-opt${prefs.fromStart ? " is-on" : ""}" data-fromstart title="${esc(t("Scenes you stopped halfway begin at 0:00 instead of where you left off. The saved point stays in Stash; the hint offers it as a button."))}">${prefs.fromStart ? icon("check") : "<i></i>"}${t("Always start from the beginning")}</button>` +
+      `<button type="button" class="kb-pmenu-opt${prefs.randomStart ? " is-on" : ""}" data-randstart title="${esc(t("Every scene starts somewhere in the middle – for browsing around. Your resume points in Stash stay as they are."))}">${prefs.randomStart ? icon("check") : "<i></i>"}${t("Start at a random spot")}</button>` +
       `<button type="button" class="kb-pmenu-opt" data-addmark>${icon("drop")}${t("Add a marker here (B)")}</button></div>` +
       (canCast ? `<div class="kb-pmenu-sec"><button type="button" class="kb-pmenu-opt${casting() ? " is-on" : ""}" data-cast>${icon("cast")}${casting() ? t("Casting – choose another device") : t("Cast to TV")}</button></div>` : "");
   }
@@ -352,7 +353,11 @@ export async function render(host, params, query = {}) {
       vr.setMode(b.dataset.vr);
       store.set("vrScenes", Object.assign(store.get("vrScenes", {}), { [x.id]: b.dataset.vr }));
     } else if (b.dataset.cast != null) return cast();
-    else if (b.dataset.randstart != null) {
+    else if (b.dataset.fromstart != null) {
+      prefs.fromStart = !prefs.fromStart;
+      savePrefs();
+      toast(prefs.fromStart ? t("From the next scene on: always from the beginning") : t("Scenes continue where you stopped again"), "ok");
+    } else if (b.dataset.randstart != null) {
       prefs.randomStart = !prefs.randomStart;
       savePrefs();
       toast(prefs.randomStart ? t("From the next scene on: a random spot") : t("Scenes start normally again"), "ok");
@@ -388,9 +393,23 @@ export async function render(host, params, query = {}) {
     prefs.randomStart && handoff == null && (randomBest.length || dur > 20)
       ? randomBest.length ? Math.max(0.01, randomBest[Math.floor(Math.random() * randomBest.length)].seconds) : dur * (0.05 + Math.random() * 0.8)
       : 0;
-  let keepResume = !!randomAt;
-  const resumeAt = !randomAt && handoff == null && x.resume_time && dur && x.resume_time > 5 && x.resume_time < dur * 0.95 ? x.resume_time : 0;
+  // "Always start from the beginning": the saved point is ignored (and left alone in Stash); the hint offers it as a button
+  const savedAt = x.resume_time && dur && x.resume_time > 5 && x.resume_time < dur * 0.95 ? x.resume_time : 0;
+  const fromBeginning = !!prefs.fromStart && !randomAt && handoff == null && !!savedAt;
+  let keepResume = !!randomAt || fromBeginning;
+  const resumeAt = !randomAt && !fromBeginning && handoff == null ? savedAt : 0;
   if (handoff != null) v.currentTime = handoff;
+  if (fromBeginning) {
+    const r = $("[data-resume]");
+    r.innerHTML = `<button class="kb-btn" data-toresume>${t("Resume at {time}", { time: fmtDuration(savedAt) })}</button>`;
+    r.hidden = false;
+    setTimeout(() => (r.hidden = true), 6000);
+    r.querySelector("[data-toresume]").onclick = () => {
+      v.currentTime = savedAt;
+      keepResume = false;
+      r.hidden = true;
+    };
+  }
   if (randomAt) {
     v.currentTime = randomAt;
     const r = $("[data-resume]");

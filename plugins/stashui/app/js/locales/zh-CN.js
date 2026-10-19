@@ -2382,4 +2382,8 @@ export default {
   "Rotate left": "向左旋转",
   "Rotate right": "向右旋转",
   "Contrast": "对比度",
+  "Always start from the beginning": "始终从头开始播放",
+  "Scenes you stopped halfway begin at 0:00 instead of where you left off. The saved point stays in Stash; the hint offers it as a button.": "中途停止的场景从 0:00 开始，而不是从上次停下的位置继续。保存的进度仍保留在 Stash 中；提示里有按钮可跳回该位置。",
+  "From the next scene on: always from the beginning": "从下一个场景起：始终从头开始",
+  "Scenes continue where you stopped again": "场景恢复为从上次停下的位置继续",
 };

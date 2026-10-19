@@ -2323,4 +2323,8 @@ export default {
   "Rotate left": "Obróć w lewo",
   "Rotate right": "Obróć w prawo",
   "Contrast": "Kontrast",
+  "Always start from the beginning": "Zawsze zaczynaj od początku",
+  "Scenes you stopped halfway begin at 0:00 instead of where you left off. The saved point stays in Stash; the hint offers it as a button.": "Sceny przerwane w połowie zaczynają się od 0:00 zamiast od miejsca, w którym skończyłeś. Zapisany punkt zostaje w Stash; podpowiedź oferuje go jako przycisk.",
+  "From the next scene on: always from the beginning": "Od następnej sceny: zawsze od początku",
+  "Scenes continue where you stopped again": "Sceny znów kontynuują od miejsca, w którym skończyłeś",
 };
