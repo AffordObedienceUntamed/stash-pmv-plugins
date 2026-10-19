@@ -1170,6 +1170,47 @@ def reveal(stash, args):
     return {"opened": True}
 
 
+def cover_of(images):
+    """The address of the cover picture of a stash-box scene: the widest landscape one, otherwise the first."""
+    best, best_w = "", -1
+    for im in images or []:
+        u = str((im or {}).get("url") or "")
+        if not re.match(r"^https?://", u, re.I):
+            continue
+        w, h = int(im.get("width") or 0), int(im.get("height") or 0)
+        k = (1 if w >= h else 0) * 100000 + min(w, 1600)
+        if k > best_w:
+            best, best_w = u, k
+    return best
+
+
+def box_image(stash, args):
+    """One cover picture of a stash-box as a data address (Stash's page policy blocks foreign pictures, so the plugin fetches it).
+    Only from a stash-box set up in Stash, and only from its own host (or a host of the same domain, https) – never an address
+    of the page's choosing."""
+    import base64
+    from urllib.parse import urlparse
+    endpoint = str(args.get("endpoint") or "").strip().rstrip("/")
+    url = str(args.get("url") or "").strip()
+    boxes = stash.gql("query { configuration { general { stashBoxes { endpoint } } } }")["configuration"]["general"].get("stashBoxes") or []
+    if not any(str(b.get("endpoint") or "").rstrip("/") == endpoint for b in boxes):
+        raise ValueError("This stash-box isn't set up in Stash")
+    eh, uh = (urlparse(endpoint).hostname or "").lower(), (urlparse(url).hostname or "").lower()
+    us = urlparse(url).scheme.lower()
+    dom = lambda h: ".".join(h.split(".")[-2:])
+    if us not in ("http", "https") or not uh or not (uh == eh or (us == "https" and dom(uh) == dom(eh) and not re.match(r"^[\d.]+$", uh))):
+        raise ValueError("picture not allowed")
+    req = urllib.request.Request(url, headers={"User-Agent": "Stash-UI-plugin", "Accept": "image/*"})
+    with urllib.request.urlopen(req, timeout=20) as res:
+        ctype = (res.headers.get("Content-Type") or "").split(";")[0].strip().lower()
+        if not ctype.startswith("image/"):
+            raise ValueError("not a picture")
+        raw = res.read(3 * 1024 * 1024 + 1)
+    if len(raw) > 3 * 1024 * 1024:
+        raise ValueError("picture too big")
+    return {"data": "data:" + ctype + ";base64," + base64.b64encode(raw).decode()}
+
+
 def box_scenes(stash, args):
     """One page (up to 100) of the scenes a stash-box (StashDB …) lists for a performer – the performer page uses it to
     show which scenes the library is missing. The box is asked with the API key Stash has for it (read here, never sent
@@ -1189,11 +1230,13 @@ def box_scenes(stash, args):
     if box.get("api_key"):
         headers["ApiKey"] = str(box["api_key"])
     # the field names differ a little between stash-box versions: try the likely ones
-    fields = [
+    base_f = [
         "id title release_date duration studio { id name } performers { performer { id name } }",
         "id title date duration studio { id name } performers { performer { id name } }",
         "id title release_date studio { id name } performers { performer { id name } }",
     ]
+    # first with the cover pictures (images { url width height }), then without in case this stash-box doesn't know them
+    fields = [f + " images { url width height }" for f in base_f] + base_f
     last = None
     for fl in fields:
         for ordered in (True, False):
@@ -1223,6 +1266,7 @@ def box_scenes(stash, args):
                     "duration": x.get("duration") or 0,
                     "studio": (x.get("studio") or {}).get("name") or "",
                     "performers": [((q2 or {}).get("performer") or {}).get("name") or "" for q2 in (x.get("performers") or [])],
+                    "image": cover_of(x.get("images")),
                 })
             return {"count": q.get("count") or 0, "page": page, "scenes": out, "name": box.get("name") or ""}
     raise RuntimeError(f"{box.get('name') or endpoint}: {last or 'no answer'}")
@@ -1263,6 +1307,8 @@ def main():
             out = clip_status(None, args)
         elif mode == "reveal":
             out = reveal(Stash(data.get("server_connection")), args)
+        elif mode == "box_image":
+            out = box_image(Stash(data.get("server_connection")), args)
         elif mode == "box_scenes":
             out = box_scenes(Stash(data.get("server_connection")), args)
         elif mode == "phone_status":

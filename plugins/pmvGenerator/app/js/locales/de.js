@@ -2236,4 +2236,13 @@ export default {
   "Your last 3 months": "Deine letzten 3 Monate",
   "Your year": "Dein Jahr",
   "Your whole history": "Dein ganzer Verlauf",
+  "Continue": "Weiter",
+  "Missing scenes: oldest date": "Fehlende Szenen: ältestes Datum",
+  "The performer page's “Missing scenes” only lists scenes from this date on. Empty = no limit.": "„Fehlende Szenen“ auf der Performer-Seite listet nur Szenen ab diesem Datum. Leer = keine Grenze.",
+  "Missing scenes: newest date": "Fehlende Szenen: neuestes Datum",
+  "… and only up to this date. Empty = no limit.": "… und nur bis zu diesem Datum. Leer = keine Grenze.",
+  "Missing scenes: stash-box": "Fehlende Szenen: Stash-Box",
+  "Which stash-box is asked first when a performer is linked to several. The ones set up in Stash (Settings → Metadata Providers) are listed.": "Welche Stash-Box zuerst gefragt wird, wenn ein Performer mit mehreren verknüpft ist. Aufgelistet sind die in Stash eingerichteten (Einstellungen → Metadaten-Anbieter).",
+  "Missing scenes: cover pictures": "Fehlende Szenen: Titelbilder",
+  "Shows the cover of each scene in the list (fetched through the plugin, only while you scroll to it).": "Zeigt das Titelbild jeder Szene in der Liste (über das Plugin geholt, erst wenn du hinscrollst).",
 };

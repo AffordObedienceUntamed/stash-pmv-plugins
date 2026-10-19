@@ -2318,4 +2318,13 @@ export default {
   "Your last 3 months": "Ваши последние 3 месяца",
   "Your year": "Ваш год",
   "Your whole history": "Вся ваша история",
+  "Continue": "Продолжить",
+  "Missing scenes: oldest date": "Недостающие сцены: самая ранняя дата",
+  "The performer page's “Missing scenes” only lists scenes from this date on. Empty = no limit.": "«Недостающие сцены» на странице исполнителя показывают только сцены начиная с этой даты. Пусто = без ограничения.",
+  "Missing scenes: newest date": "Недостающие сцены: самая поздняя дата",
+  "… and only up to this date. Empty = no limit.": "… и только до этой даты. Пусто = без ограничения.",
+  "Missing scenes: stash-box": "Недостающие сцены: stash-box",
+  "Which stash-box is asked first when a performer is linked to several. The ones set up in Stash (Settings → Metadata Providers) are listed.": "Какой stash-box опрашивается первым, если исполнитель связан с несколькими. В списке те, что настроены в Stash (Настройки → Поставщики метаданных).",
+  "Missing scenes: cover pictures": "Недостающие сцены: обложки",
+  "Shows the cover of each scene in the list (fetched through the plugin, only while you scroll to it).": "Показывает обложку каждой сцены в списке (загружается через плагин, только когда вы до неё прокрутите).",
 };

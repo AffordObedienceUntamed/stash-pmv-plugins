@@ -2281,4 +2281,13 @@ export default {
   "Your last 3 months": "Twoje ostatnie 3 miesiące",
   "Your year": "Twój rok",
   "Your whole history": "Cała twoja historia",
+  "Continue": "Kontynuuj",
+  "Missing scenes: oldest date": "Brakujące sceny: najstarsza data",
+  "The performer page's “Missing scenes” only lists scenes from this date on. Empty = no limit.": "„Brakujące sceny” na stronie wykonawcy pokazują tylko sceny od tej daty. Puste = bez limitu.",
+  "Missing scenes: newest date": "Brakujące sceny: najnowsza data",
+  "… and only up to this date. Empty = no limit.": "… i tylko do tej daty. Puste = bez limitu.",
+  "Missing scenes: stash-box": "Brakujące sceny: stash-box",
+  "Which stash-box is asked first when a performer is linked to several. The ones set up in Stash (Settings → Metadata Providers) are listed.": "Który stash-box jest pytany jako pierwszy, gdy wykonawca jest powiązany z kilkoma. Lista zawiera te skonfigurowane w Stash (Ustawienia → Dostawcy metadanych).",
+  "Missing scenes: cover pictures": "Brakujące sceny: okładki",
+  "Shows the cover of each scene in the list (fetched through the plugin, only while you scroll to it).": "Pokazuje okładkę każdej sceny na liście (pobieraną przez wtyczkę, dopiero gdy do niej przewiniesz).",
 };

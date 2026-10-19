@@ -2283,4 +2283,13 @@ export default {
   "Your last 3 months": "直近3か月",
   "Your year": "この1年",
   "Your whole history": "これまでのすべて",
+  "Continue": "続ける",
+  "Missing scenes: oldest date": "不足シーン: 最も古い日付",
+  "The performer page's “Missing scenes” only lists scenes from this date on. Empty = no limit.": "出演者ページの「不足シーン」は、この日付以降のシーンだけを表示します。空欄 = 制限なし。",
+  "Missing scenes: newest date": "不足シーン: 最も新しい日付",
+  "… and only up to this date. Empty = no limit.": "… この日付までのものだけ。空欄 = 制限なし。",
+  "Missing scenes: stash-box": "不足シーン: stash-box",
+  "Which stash-box is asked first when a performer is linked to several. The ones set up in Stash (Settings → Metadata Providers) are listed.": "出演者が複数の stash-box にリンクされているとき、最初に問い合わせるもの。Stash で設定済みのもの（設定 → メタデータプロバイダー）が一覧に出ます。",
+  "Missing scenes: cover pictures": "不足シーン: カバー画像",
+  "Shows the cover of each scene in the list (fetched through the plugin, only while you scroll to it).": "リストの各シーンのカバーを表示します（プラグイン経由で取得し、スクロールして見えたときだけ読み込みます）。",
 };

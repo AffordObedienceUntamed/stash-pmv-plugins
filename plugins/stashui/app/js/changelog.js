@@ -7,6 +7,15 @@
 
 export const CHANGES = [
   {
+    v: "3.106.0",
+    date: "2026-10-19",
+    items: [
+      ["ui", "Missing scenes (performer page): every scene now shows its cover picture (loaded through the plugin while you scroll), and you can limit the list to scenes from an oldest to a newest date – in the list itself and in Settings → General, where you also pick which stash-box is asked first and can switch the covers off. (Thanks ufousox007!)", "缺失场景（演员页面）：每个场景现在都会显示封面图片（滚动到时通过插件加载），并且可以把列表限制在最早到最晚日期之间的场景 – 在列表中以及“设置 → 常规”里都可以设置，在那里还可以选择优先询问哪个 stash-box，也可以关闭封面。（感谢 ufousox007！）", "performer/@performer::[data-pmiss]"],
+      ["ui", "Card view: the studio logo follows Settings → General → Studio logo: corner and size now (top right as before if you never set it), and on a phone the cards no longer reach past the right edge of the screen.", "卡片视图：工作室标志现在会遵循“设置 → 常规 → 工作室标志：位置/大小”（如果你没设置过，仍在右上角）；在手机上，卡片也不再超出屏幕右边缘。"],
+      ["ui", "Versus (Chinese): the button on the ranking page that goes back to the duels now says “继续” (Continue) instead of “播放” (Play).", "对决（中文）：排行榜页面上返回对决的按钮现在显示“继续”，而不是“播放”。"],
+    ],
+  },
+  {
     v: "3.105.2",
     date: "2026-10-19",
     items: [

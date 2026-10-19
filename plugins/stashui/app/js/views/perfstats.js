@@ -3,7 +3,7 @@
 // stash-box page – StashDB … – lists that the library doesn't have; asked through Stash UI's backend, which uses the
 // API key Stash has for that box, so no key ever reaches the page).
 
-import { esc, icon, fmtNum, fmtBytes, fmtDuration, fmtDate, ratingText, errorToast } from "../ui.js";
+import { esc, icon, fmtNum, fmtBytes, fmtDuration, fmtDate, ratingText, errorToast, store } from "../ui.js";
 import { t } from "../i18n.js";
 import { gql } from "../api.js";
 import { runBackend } from "../interactive.js";
@@ -148,6 +148,55 @@ async function localBoxIds(endpoint) {
   return map;
 }
 
+// Settings → This interface → Missing scenes: oldest / newest date to list, the stash-box to ask first, covers on/off
+const dateOk = (v) => (/^\d{4}(-\d{2}(-\d{2})?)?$/.test(String(v || "")) ? String(v) : "");
+const inRange = (x, from, to) => {
+  if (!from && !to) return true;
+  const d = String(x.date || "");
+  if (!d) return false;
+  return (!from || d >= from) && (!to || d <= to + "\uffff");
+};
+
+// the cover pictures come through the backend (Stash's page policy blocks pictures from other sites), only when they scroll into view
+const coverCache = new Map();
+let coverBusy = 0;
+const coverQueue = [];
+function pumpCovers() {
+  while (coverBusy < 3 && coverQueue.length) {
+    const job = coverQueue.shift();
+    coverBusy++;
+    (async () => {
+      try {
+        if (!coverCache.has(job.url)) coverCache.set(job.url, (await runBackend({ mode: "box_image", endpoint: job.endpoint, url: job.url })).data || "");
+        if (job.img.isConnected && coverCache.get(job.url)) {
+          job.img.src = coverCache.get(job.url);
+          job.img.closest(".kb-pm-cover").classList.add("is-on");
+        }
+      } catch (e) {
+        coverCache.set(job.url, "");
+      }
+      coverBusy--;
+      pumpCovers();
+    })();
+  }
+}
+function lazyCovers(root, endpoint) {
+  const imgs = [...root.querySelectorAll("img[data-cover]")];
+  if (!imgs.length) return;
+  const go = (img) => {
+    const url = img.dataset.cover;
+    img.removeAttribute("data-cover");
+    if (coverCache.get(url)) {
+      img.src = coverCache.get(url);
+      img.closest(".kb-pm-cover").classList.add("is-on");
+    } else coverQueue.push({ img, url, endpoint });
+    pumpCovers();
+  };
+  if (!window.IntersectionObserver) return imgs.slice(0, 30).forEach(go);
+  const io = new IntersectionObserver((es) => es.forEach((e) => e.isIntersecting && (io.unobserve(e.target), go(e.target))), { root: root.querySelector(".kb-pm-list"), rootMargin: "200px" });
+  imgs.forEach((i) => io.observe(i));
+}
+
 async function showMissing(host, p, state) {
   host.innerHTML = `<p class="kb-pst-wait">${t("Looking up the stash-box links of this performer …")}</p>`;
   let boxes = state.boxes;
@@ -156,7 +205,7 @@ async function showMissing(host, p, state) {
     host.innerHTML = `<p class="kb-pst-wait">${t("This performer isn't linked to a stash-box (StashDB …) yet. Use Edit → “Fill in from the internet” to link one, then come back.")}</p>`;
     return;
   }
-  const box = boxes.find((b) => b.endpoint === state.endpoint) || boxes[0];
+  const box = boxes.find((b) => b.endpoint === state.endpoint) || boxes.find((b) => b.endpoint === store.get("missingBox", "")) || boxes[0];
   state.endpoint = box.endpoint;
   const head = `<div class="kb-pst-bar">${boxes.length > 1 ? `<select class="kb-field" data-pmbox>${boxes.map((b) => `<option value="${esc(b.endpoint)}"${b.endpoint === box.endpoint ? " selected" : ""}>${esc(b.name)}</option>`).join("")}</select>` : ""}<span data-pmstat></span></div>`;
   host.innerHTML = head + `<div data-pmbody></div>`;
@@ -203,18 +252,24 @@ async function showMissing(host, p, state) {
     }
   }
   const all = state.result;
-  const miss = all.filter((x) => !x.local);
+  const from = dateOk(store.get("missingFrom", ""));
+  const to = dateOk(store.get("missingTo", ""));
+  const covers = store.get("missingCovers", true) !== false;
+  const inside = all.filter((x) => inRange(x, from, to));
+  const miss = inside.filter((x) => !x.local);
   const only = state.only !== false;
-  stat.textContent = t("{name}: {n} scenes · {have} in your library · {miss} missing", { name: box.name, n: all.length, have: all.length - miss.length, miss: miss.length });
-  const shown = (only ? miss : all).slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  stat.textContent = t("{name}: {n} scenes · {have} in your library · {miss} missing", { name: box.name, n: inside.length, have: inside.length - miss.length, miss: miss.length });
+  const shown = (only ? miss : inside).slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
   const toggle = `<button type="button" class="kb-btn is-ghost" data-pmonly>${only ? t("Show all") : t("Only missing")}</button>`;
-  body.innerHTML = `<div class="kb-pst-bar">${toggle}</div>` + (shown.length
-    ? `<ul class="kb-pm-list">${shown
+  const range = `<label class="kb-lab">${t("From")} <input type="date" class="kb-field" data-pmfrom value="${esc(/^\d{4}-\d{2}-\d{2}$/.test(from) ? from : "")}"></label><label class="kb-lab">${t("To")} <input type="date" class="kb-field" data-pmto value="${esc(/^\d{4}-\d{2}-\d{2}$/.test(to) ? to : "")}"></label>`;
+  body.innerHTML = `<div class="kb-pst-bar">${toggle}${range}</div>` + (shown.length
+    ? `<ul class="kb-pm-list${covers ? " has-covers" : ""}">${shown
         .map((x) => {
           const sub = [x.studio, x.performers.filter((n) => n && n !== p.name).slice(0, 3).join(", "), x.duration ? fmtDuration(x.duration) : ""].filter(Boolean).join(" · ");
           const href = x.local ? `#/scene/${x.local}` : `${boxBase(box.endpoint)}/scenes/${encodeURIComponent(x.id)}`;
+          const cover = covers ? `<span class="kb-pm-cover">${x.image ? `<img alt="" data-cover="${esc(x.image)}">` : ""}</span>` : "";
           return `<li class="${x.local ? "is-have" : ""}"><a href="${esc(href)}"${x.local ? "" : ' target="_blank" rel="noopener noreferrer"'}>
-            <em>${x.date ? esc(fmtDate(x.date)) : "–"}</em><span><b>${esc(x.title || x.id)}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</span>
+            ${cover}<em>${x.date ? esc(fmtDate(x.date)) : "–"}</em><span><b>${esc(x.title || x.id)}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</span>
             <i>${x.local ? (x.via === "title" ? t("In your library (same title)") : t("In your library")) : t("Missing")}</i></a></li>`;
         })
         .join("")}</ul>`
@@ -223,6 +278,13 @@ async function showMissing(host, p, state) {
     state.only = !only;
     showMissing(host, p, state);
   };
+  const setRange = (key) => (e) => {
+    store.set(key, e.target.value);
+    showMissing(host, p, state);
+  };
+  body.querySelector("[data-pmfrom]").onchange = setRange("missingFrom");
+  body.querySelector("[data-pmto]").onchange = setRange("missingTo");
+  if (covers) lazyCovers(body, box.endpoint);
 }
 
 // Buttons [data-pstats] / [data-pmiss] of the performer page open the panel `host`; the active one closes it again

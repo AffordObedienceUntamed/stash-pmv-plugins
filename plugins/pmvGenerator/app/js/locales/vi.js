@@ -2276,4 +2276,13 @@ export default {
   "Your last 3 months": "3 tháng gần đây của bạn",
   "Your year": "Năm của bạn",
   "Your whole history": "Toàn bộ lịch sử của bạn",
+  "Continue": "Tiếp tục",
+  "Missing scenes: oldest date": "Cảnh còn thiếu: ngày cũ nhất",
+  "The performer page's “Missing scenes” only lists scenes from this date on. Empty = no limit.": "“Cảnh còn thiếu” ở trang diễn viên chỉ liệt kê các cảnh từ ngày này trở đi. Để trống = không giới hạn.",
+  "Missing scenes: newest date": "Cảnh còn thiếu: ngày mới nhất",
+  "… and only up to this date. Empty = no limit.": "… và chỉ đến ngày này. Để trống = không giới hạn.",
+  "Missing scenes: stash-box": "Cảnh còn thiếu: stash-box",
+  "Which stash-box is asked first when a performer is linked to several. The ones set up in Stash (Settings → Metadata Providers) are listed.": "stash-box nào được hỏi trước khi diễn viên liên kết với nhiều hộp. Liệt kê những hộp đã thiết lập trong Stash (Cài đặt → Nhà cung cấp metadata).",
+  "Missing scenes: cover pictures": "Cảnh còn thiếu: ảnh bìa",
+  "Shows the cover of each scene in the list (fetched through the plugin, only while you scroll to it).": "Hiện ảnh bìa của từng cảnh trong danh sách (lấy qua plugin, chỉ khi bạn cuộn tới).",
 };

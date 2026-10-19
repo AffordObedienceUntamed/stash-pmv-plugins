@@ -174,7 +174,7 @@ export function render(main, params = {}) {
       <button type="button" class="kb-btn is-ghost" data-vx="snaps" title="${t("Snapshots of the standings")}">${icon("copies")}${t("Snapshots")}</button>
       <button type="button" class="kb-btn is-ghost" data-vx="log">${icon("logs")}${t("Log")}</button>
       <button type="button" class="kb-btn is-ghost" data-vx="opts">${icon("sliders")}${t("Options")}</button>
-      <a class="kb-btn${ranking ? " is-primary" : ""}" href="#/${ranking ? "versus" : "versus/ranking"}">${icon(ranking ? "bolt" : "trophy")}${ranking ? t("Play") : t("Ranking")}</a>
+      <a class="kb-btn${ranking ? " is-primary" : ""}" href="#/${ranking ? "versus" : "versus/ranking"}">${icon(ranking ? "bolt" : "trophy")}${ranking ? t("Continue") : t("Ranking")}</a>
     </div></header>
     <div class="kb-vs" data-body></div>`;
   const $ = (q) => main.querySelector(q);

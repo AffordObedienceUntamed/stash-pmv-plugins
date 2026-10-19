@@ -2258,4 +2258,13 @@ export default {
   "Your last 3 months": "Tus últimos 3 meses",
   "Your year": "Tu año",
   "Your whole history": "Todo tu historial",
+  "Continue": "Continuar",
+  "Missing scenes: oldest date": "Escenas que faltan: fecha más antigua",
+  "The performer page's “Missing scenes” only lists scenes from this date on. Empty = no limit.": "Las «Escenas que faltan» de la página del intérprete solo listan escenas desde esta fecha. Vacío = sin límite.",
+  "Missing scenes: newest date": "Escenas que faltan: fecha más reciente",
+  "… and only up to this date. Empty = no limit.": "… y solo hasta esta fecha. Vacío = sin límite.",
+  "Missing scenes: stash-box": "Escenas que faltan: stash-box",
+  "Which stash-box is asked first when a performer is linked to several. The ones set up in Stash (Settings → Metadata Providers) are listed.": "Qué stash-box se consulta primero cuando alguien está vinculado a varias. Se listan las configuradas en Stash (Ajustes → Proveedores de metadatos).",
+  "Missing scenes: cover pictures": "Escenas que faltan: portadas",
+  "Shows the cover of each scene in the list (fetched through the plugin, only while you scroll to it).": "Muestra la portada de cada escena en la lista (se obtiene mediante el plugin, solo al desplazarte hasta ella).",
 };

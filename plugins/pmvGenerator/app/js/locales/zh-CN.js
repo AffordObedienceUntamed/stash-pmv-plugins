@@ -2340,4 +2340,13 @@ export default {
   "Your last 3 months": "你的最近三个月",
   "Your year": "你的这一年",
   "Your whole history": "你的全部历史",
+  "Continue": "继续",
+  "Missing scenes: oldest date": "缺失场景：最早日期",
+  "The performer page's “Missing scenes” only lists scenes from this date on. Empty = no limit.": "演员页面的“缺失场景”只列出从这个日期开始的场景。留空 = 不限制。",
+  "Missing scenes: newest date": "缺失场景：最晚日期",
+  "… and only up to this date. Empty = no limit.": "… 并且只到这个日期为止。留空 = 不限制。",
+  "Missing scenes: stash-box": "缺失场景：stash-box",
+  "Which stash-box is asked first when a performer is linked to several. The ones set up in Stash (Settings → Metadata Providers) are listed.": "演员关联多个 stash-box 时优先询问哪一个。列表中是 Stash 里已设置的（设置 → 元数据提供者）。",
+  "Missing scenes: cover pictures": "缺失场景：封面图片",
+  "Shows the cover of each scene in the list (fetched through the plugin, only while you scroll to it).": "在列表中显示每个场景的封面（通过插件获取，只在滚动到时才加载）。",
 };

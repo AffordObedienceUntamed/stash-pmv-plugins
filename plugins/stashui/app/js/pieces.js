@@ -156,7 +156,7 @@ function cardOverlays(p) {
   const logo = x.studio && x.studio.image_path && !/default=true/.test(x.studio.image_path);
   return (
     `<div class="kb-scard-over">` +
-    (x.studio ? `<a class="kb-scard-studio${logo ? "" : " is-name"}" href="#/studio/${x.studio.id}" title="${esc(x.studio.name)}">${logo ? `<img alt="${esc(x.studio.name)}" loading="lazy" src="${esc(x.studio.image_path)}">` : esc(x.studio.name)}</a>` : "") +
+    (x.studio ? `<a class="kb-scard-studio at-${["tl", "tr", "bl", "br"].includes(store.get("studioPos", null)) ? store.get("studioPos", null) : "tr"}${logo ? "" : " is-name"}" href="#/studio/${x.studio.id}" title="${esc(x.studio.name)}">${logo ? `<img alt="${esc(x.studio.name)}" loading="lazy" src="${esc(x.studio.image_path)}">` : esc(x.studio.name)}</a>` : "") +
     (x.rating100 && badgePos("badgeRating") === "auto" ? ratingBadge(x.rating100, " kb-scard-rating") : "") +
     `</div>`
   );
