@@ -499,7 +499,7 @@ html.kb-glass .kb-crop-h { background: rgba(255, 255, 255, .9); border-color: va
 html.kb-glass .kb-cut-crop { background: rgba(180, 140, 255, .26); }
 
 /* O clip: the chosen clip next to the video from the moment of an O */
-.kb-oclip { position: absolute; z-index: 2; width: max(var(--ow, 32%), 120px); aspect-ratio: 16 / 9; overflow: hidden; border-radius: 10px; background: #000; box-shadow: 0 8px 28px rgba(0, 0, 0, .55), 0 0 0 2px var(--pink); pointer-events: none; animation: kb-oc-in .25s ease; }
+.kb-oclip { position: absolute; z-index: 2; width: max(calc(var(--ow, 32%) * min(1, max(var(--oa, 1.7778) / 1.7778, .6))), 96px); aspect-ratio: var(--oa, 1.7778); overflow: hidden; border-radius: 10px; background: #000; box-shadow: 0 8px 28px rgba(0, 0, 0, .55), 0 0 0 2px var(--pink); pointer-events: none; animation: kb-oc-in .25s ease; }
 .kb-oclip[hidden] { display: none; }
 .kb-oclip[data-pos="tl"] { left: 14px; top: 64px; }
 .kb-oclip[data-pos="tr"] { right: 14px; top: 64px; }

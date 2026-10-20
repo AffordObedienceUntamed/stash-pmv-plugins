@@ -148,6 +148,8 @@ export function createOPlayer({ screen, video, scene }) {
         "loadedmetadata",
         () => {
           if (loadedKey !== k) return;
+          // the window takes the clip's own shape (a 9:16 clip gets no black bars; it is made narrower so it doesn't grow tall)
+          if (ov.videoWidth && ov.videoHeight) el.style.setProperty("--oa", (ov.videoWidth / ov.videoHeight).toFixed(4));
           ready = true;
           tick();
         },

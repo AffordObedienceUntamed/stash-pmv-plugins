@@ -7,6 +7,13 @@
 
 export const CHANGES = [
   {
+    v: "3.113.1",
+    date: "2026-10-20",
+    items: [
+      ["ui", "O clip window: it now takes the shape of the clip. A 9:16 clip no longer sits in a 16:9 window with thick black bars – the window becomes tall and a little narrower instead.", "O 片段窗口：现在会采用片段本身的形状。9:16 的片段不再放在带粗黑边的 16:9 窗口里，窗口会变成竖向并略窄。", "scene/@scene::.kb-omoments"],
+    ],
+  },
+  {
     v: "3.113.0",
     date: "2026-10-20",
     items: [
