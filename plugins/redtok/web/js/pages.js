@@ -5,7 +5,7 @@ import { $, esc, t, tn, fmt, ago, mmss, ic, toast, nav, on, modal, pushLayer, cl
 import {
   settings, saveSettings, makeSource, listSource, ORDERS, orderOf, rg, takeUsers, userOf, userPic, users,
   liked, following, niches, hidden, nope, blocked, history, saved, doneSet, isFollowing, setFollow, followsNiche, setNiche, tagFollows, followsTag, setFollowTag, isHidden, setHidden, setNope,
-  isBlockedTag, setBlockedTag, stashMark, stashDelete, DELETE_TAG, unlikeMany, clearHistory, removeFromHistory, forgetDownloads, exportData, importData, stashPerformer, usingBackend,
+  algo, isBlockedTag, setBlockedTag, stashMark, stashDelete, DELETE_TAG, unlikeMany, clearHistory, removeFromHistory, forgetDownloads, exportData, importData, stashPerformer, usingBackend,
 } from "./data.js";
 import { av, tick, setSpeed, setAutoNext, setFit, setMuted, setFrame, frameName, FRAMES } from "./feed.js";
 import { enqueue, jobs, jobOf, isSaved, cancelQueued, retryFailed, clearFinished, activeJobs, ensureBase } from "./dl.js";
@@ -674,9 +674,9 @@ export function openShare(g, F) {
       if (a === "dl") { close(); return saved ? toast(t("Already saved")) : running ? toast(t("Already downloading")) : enqueue([g]); }
       if (a === "nope") {
         close();
-        setNope(g.id, true);
+        setNope(g.id, true, g);
         F && F.go(1);
-        return toast(t("You'll see fewer videos like this"), false, { label: t("Undo"), fn: () => setNope(g.id, false) });
+        return toast(t("You'll see fewer videos like this"), false, { label: t("Undo"), fn: () => setNope(g.id, false, g) });
       }
       if (a === "mark") {
         close();
@@ -715,6 +715,29 @@ function blockSheet(g) {
 }
 
 // ---------- about one video: who, when, niches and tags ----------
+// why the For You algorithm picked it: [kind, name] from algo.js
+const whyText = ([k, v]) => k === "t" ? t("Because you like #{t}", { t: algo.nameOf("t:" + v) })
+  : k === "n" ? t("Because you like #{t}", { t: nicheName(v) })
+  : k === "u" ? t("You like videos from @{u}", { u: v })
+  : k === "x" ? t("Something different to try")
+  : k === "f" ? t("New on RedGifs")
+  : k === "r" ? t("Trending right now") : t("Picked for you");
+
+// what the algorithm learned, as chips you can tap away (Settings → Your feed)
+function tasteHtml() {
+  const chip = (key, label) => `<button class="chipb is-x is-taste" data-forgetf="${esc(key)}">${esc(label)} ${ic("close")}</button>`;
+  const lab = (key) => (key[0] === "u" ? "@" + key.slice(2) : key[0] === "n" ? "#" + nicheName(key.slice(2)) : "#" + algo.nameOf(key));
+  const withKey = (pre, list) => list.map(([k, w]) => [pre + k, w]);
+  const likes = [...withKey("t:", algo.top("t:", 12)), ...withKey("n:", algo.top("n:", 10))].sort((a, b) => b[1] - a[1]).slice(0, 16);
+  const people = withKey("u:", algo.top("u:", 8));
+  const less = [...withKey("t:", algo.worst("t:", 6)), ...withKey("n:", algo.worst("n:", 4)), ...withKey("u:", algo.worst("u:", 4))].sort((a, b) => a[1] - b[1]);
+  const empty = !likes.length && !people.length && !less.length;
+  return `<div class="set is-col"><span class="st"><b>${esc(t("What RedTok learned"))}</b><small>${esc(empty ? t("Nothing yet – watch, like and skip a few videos and this fills up.") : t("The strongest come first. Tap one to forget it."))}</small></span>
+    ${likes.length ? `<small class="tl">${esc(t("Topics you like"))}</small><div class="chips">${likes.map(([k]) => chip(k, lab(k))).join("")}</div>` : ""}
+    ${people.length ? `<small class="tl">${esc(t("Creators you like"))}</small><div class="chips">${people.map(([k]) => chip(k, lab(k))).join("")}</div>` : ""}
+    ${less.length ? `<small class="tl">${esc(t("Fewer of these"))}</small><div class="chips">${less.map(([k]) => chip(k, lab(k))).join("")}</div>` : ""}
+    ${empty ? "" : `<span class="setrow"><button class="btn is-ghost is-sm" data-forgetall>${esc(t("Forget what RedTok learned"))}</button></span>`}</div>`;
+}
 export function openDetails(g) {
   const facts = [
     g.views ? [g.stash ? t("Plays") : t("Views"), fmt(g.views)] : null,
@@ -728,6 +751,7 @@ export function openDetails(g) {
   modal(`<div class="dhead" data-who>${av(pic, g.user)}<span><b>${g.stash ? "" : "@"}${esc(g.user)}${g.verified ? tick() : ""}</b><small>${esc(g.stash ? g.studio || t("My Stash") : t("Creator"))}</small></span>${g.stash ? "" : `<button class="btn ${isFollowing(g.user) ? "" : "is-red"} is-sm" data-uf="${esc(g.user)}">${esc(isFollowing(g.user) ? t("Following") : t("Follow"))}</button>`}</div>
     ${g.desc ? `<p class="ddesc">${esc(g.desc)}</p>` : ""}
     <div class="facts">${facts.map(([k, v]) => `<span><small>${esc(k)}</small><b>${esc(v)}</b></span>`).join("")}</div>
+    ${g.why ? `<div class="dwhy"><small>${esc(t("Why you see this"))}</small><b>${esc(whyText(g.why))}</b></div>` : ""}
     ${g.niches && g.niches.length ? `<h4 class="mh">${esc(t("Niches"))}</h4><div class="chips">${g.niches.map((n) => `<button class="chipb" data-dn="${esc(n)}">#${esc(nicheName(n))}</button>`).join("")}</div>` : ""}
     ${g.tags && g.tags.length ? `<h4 class="mh">${esc(t("Tags"))}</h4><div class="chips">${g.tags.map((x, k) => `<button class="chipb" data-dt="${esc(x)}"${g.tagIds ? ` data-tid="${esc(g.tagIds[k])}"` : ""}>#${esc(x)}</button>`).join("")}</div>` : ""}
     ${(g.tags && g.tags.length) || (g.niches && g.niches.length) ? `<button class="btn is-ghost is-full" data-blocktag>${esc(t("Block a tag"))}</button>` : ""}
@@ -773,6 +797,10 @@ export function openSettings(focus) {
     ${sw("metaTags", t("Add RedGifs tags as Stash tags"), t("Off by default: it can add many new tags to your Stash tag list. On: the tags RedGifs shows for a saved video are put on its scene (missing ones are created)."))}
     ${sw("metaPerf", t("Add the creator as a performer"), t("Off by default. On: the creator becomes a performer in Stash (created if missing, with their RedGifs link) and is put on the scene."))}
     <h3 class="sh">${esc(t("Your feed"))}</h3>
+    ${sw("algo", t("Smart For You"), t("For You learns from what you watch, like, save and skip, and picks the next videos from several places: your niches, #tags and creators, what's trending or new, and things to try. Off: the older, simple mix."))}
+    ${sw("learn", t("Learn from what I watch"), t("Watching a video to the end or twice counts for it, skipping it at once counts against it. Likes, saves and follows always count. Off: only those teach it."))}
+    ${sel("explore", t("Try new things"), t("How often For You shows something outside your usual taste."), [["low", t("Rarely")], ["mid", t("Sometimes")], ["high", t("Often")]])}
+    ${tasteHtml()}
     <div class="set is-col"><span class="st"><b>${esc(t("Tags you follow"))}</b><small>${esc(tagFollows.length ? t("Their videos show up in For You. Tap one to stop following.") : t("None. Open a #tag (tap it under a video) and press Follow."))}</small></span>${tagFollows.length ? `<div class="chips">${tagFollows.map((x) => `<button class="chipb is-x" data-untagf="${esc(x)}">#${esc(x)} ${ic("close")}</button>`).join("")}</div>` : ""}</div>
     ${sw("followTags", t("Include followed #tags in Following"), t("Off: Following only shows the creators you follow – the #tags you follow feed For You. On: their newest videos are mixed into Following (popular tags can fill it)."))}
     <div class="set is-col"><span class="st"><b>${esc(t("Hidden creators"))}</b><small>${esc(hidden.length ? t("Their videos never show up. Tap one to show it again.") : t("None. Hide a creator from a video's share menu."))}</small></span>${hidden.length ? `<div class="chips">${hidden.map((h) => `<button class="chipb is-x" data-unhide="${esc(h)}">@${esc(h)} ${ic("close")}</button>`).join("")}</div>` : ""}</div>
@@ -834,6 +862,9 @@ export function openSettings(focus) {
       } catch (x) { toast(String(x.message || x), true); }
       return;
     }
+    const ff = e.target.closest("[data-forgetf]");
+    if (ff) { algo.forget(ff.dataset.forgetf); return paint(); }
+    if (e.target.closest("[data-forgetall]")) return modalConfirm(t("Forget what RedTok learned?"), t("Your likes, follows and saves stay – For You starts from them again."), t("Forget"), () => { algo.reset(); algo.bootstrap({ liked, saved, history, following, niches, tagFollows }); paint(); toast(t("Forgotten")); });
     const utf = e.target.closest("[data-untagf]");
     if (utf) { setFollowTag(utf.dataset.untagf, false); return paint(); }
     const ub = e.target.closest("[data-unblock]");

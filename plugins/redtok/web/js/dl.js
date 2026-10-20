@@ -1,7 +1,7 @@
 // RedTok – downloads into a folder of your Stash library (one folder per creator), then a scan so Stash finds them.
 
 import { call, gql, t, tn, toast, emit, wait, nav } from "./core.js";
-import { settings, saveSettings, doneSet, addSaved, flushSaved } from "./data.js";
+import { settings, saveSettings, doneSet, addSaved, flushSaved, savedSignal } from "./data.js";
 
 export const jobs = [];
 const byId = new Map();
@@ -30,6 +30,7 @@ export async function enqueue(gifs, opts = {}) {
   if (!gifs.length) { toast(t("Videos from your own Stash are already on your disk")); return 0; }
   const base = await ensureBase();
   if (!base) return 0;
+  if (gifs.length <= 2) gifs.forEach(savedSignal); // (saving one on purpose tells the algorithm; a whole creator doesn't)
   let skipped = 0;
   try {
     const r = await call({ mode: "have", base, ids: gifs.map((g) => g.id) });

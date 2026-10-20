@@ -5,9 +5,12 @@
 import "./boot.js"; // (first: it may fill the browser storage from the backup)
 import { call, gql, store, setAfterSet, emit, t, wait } from "./core.js";
 import { touch, push, syncOn } from "./sync.js";
+import * as algo from "./algo.js";
+export { algo };
 
 // ---------- settings ----------
 export const settings = Object.assign({
+  algo: true, learn: true, explore: "mid", // (the For You algorithm: on, learns from what you watch, some surprises)
   base: "", scan: true, meta: true, metaTags: false, metaPerf: false, quality: "hd", playq: "auto", fit: "auto", sound: true, volume: 1, autonext: false,
   skipSeen: true, skipSeenMore: false, syncDev: false, followTags: false, speed: 1, lang: "auto", glow: true, wide: true, space: "pause", frame: "auto", side: true,
 }, store.get("settings", {}));
@@ -173,6 +176,7 @@ export function setLiked(g, on) {
   if (on === isLiked(g.id)) return on;
   liked = on ? [...liked, slim(g)] : liked.filter((x) => x.id !== g.id);
   store.set("liked", liked);
+  if (on) { algo.signal(g, 3); algo.rewardArm(g._src, true); } else algo.signal(g, -2.5);
   emit("liked", { id: g.id, on });
   return on;
 }
@@ -187,6 +191,7 @@ export function setFollow(name, on) {
   if (on === isFollowing(name)) return on;
   following = on ? [...following, { name, img: userPic(name) }] : following.filter((f) => low(f.name) !== low(name));
   store.set("following", following);
+  algo.addFeature("u:" + algo.key(name), on ? 4 : -2);
   emit("follow", { name, on });
   return on;
 }
@@ -195,6 +200,7 @@ export function setNiche(n, on) {
   if (on === followsNiche(n.id)) return on;
   niches = on ? [...niches, { id: n.id, name: n.name || n.id, img: n.img || "" }] : niches.filter((x) => x.id !== n.id);
   store.set("niches", niches);
+  algo.addFeature("n:" + algo.key(n.id), on ? 5 : -2);
   emit("niches", {});
   return on;
 }
@@ -205,6 +211,7 @@ export function setFollowTag(tag, on) {
   if (!tag || on === followsTag(tag)) return on;
   tagFollows = on ? [...tagFollows, tag] : tagFollows.filter((x) => low(x) !== low(tag));
   store.set("tagFollows", tagFollows);
+  algo.addFeature("t:" + algo.key(tag), on ? 5 : -2);
   emit("tagfollows", { tag, on });
   return on;
 }
@@ -212,11 +219,28 @@ export const isHidden = (name) => hidden.some((h) => low(h) === low(name));
 export function setHidden(name, on) {
   hidden = on ? [...new Set([...hidden, name])] : hidden.filter((h) => low(h) !== low(name));
   store.set("hidden", hidden);
+  if (on) algo.forget("u:" + algo.key(name));
   emit("hidden", { name, on });
 }
-export function setNope(id, on) {
+// g (when given) teaches the algorithm: "not interested" is a strong no for its tags and a mild one for the creator
+export function setNope(id, on, g) {
   nope = on ? [...nope.filter((x) => x !== id), id].slice(-5000) : nope.filter((x) => x !== id);
   store.set("nope", nope);
+  if (g && !g.stash) {
+    algo.signal(g, on ? -3.5 : 3.5, { user: 0.4 });
+    if (on) algo.rewardArm(g._src, false);
+  }
+}
+// a video you saved on purpose (one or two at a time – not a whole creator) says a lot about your taste
+export function savedSignal(g) {
+  if (!g || g.stash) return;
+  algo.signal(g, 3.5);
+  algo.rewardArm(g._src, true);
+}
+// you stopped watching a video: played = seconds really played; neg = skipping may count against it (only in For You)
+export function viewed(g, played, neg) {
+  if (!settings.learn || !g || g.stash) return;
+  algo.view(g, played, neg);
 }
 const norm1 = (s) => String(s || "").replace(/^#/, "").replace(/\s+/g, "").toLowerCase();
 export const isBlockedTag = (tag) => blocked.some((b) => norm1(b) === norm1(tag));
@@ -327,9 +351,123 @@ export function makeSource(spec) {
     st.done = !(d.gifs || []).length || st.page >= Math.min(d.pages || 1, 100);
     return (d.gifs || []).map(norm).filter(Boolean);
   };
+  // ---------- the For You algorithm (see algo.js): ask several sources, rank what comes back, hand out a few at a time ----------
+  const LEVEL = { low: 0.1, mid: 0.2, high: 0.35 };
+  const eligible = (g, ns) => !S.ids.has(g.id) && !isHidden(g.user) && !ns.has(g.id) && !hasBlocked(g) && !(settings.skipSeen && seen.has(g.id));
+  // [[name, weight]] of what you like most, with what you follow always in
+  const withFollows = (top, names, floor) => {
+    const m = new Map(top);
+    names.forEach((n) => m.set(n, Math.max(m.get(n) || 0, floor)));
+    return [...m.entries()];
+  };
+  const ask = {
+    // a page of trending or new videos
+    async trend(st) { return askSearch(st, "trend", Math.random() < 0.25 ? "top7" : "trending"); },
+    async fresh(st) { return askSearch(st, "fresh", "latest"); },
+    async niche(st, w) {
+      for (let k = 0; k < 3; k++) {
+        const id = algo.draw(w.n)[0];
+        const order = Math.random() < 0.25 ? "latest" : "hot";
+        const c = (S.np[id + "|" + order] = S.np[id + "|" + order] || { page: 0 });
+        if (!id || c.done) continue;
+        return nichePage(c, id, order);
+      }
+      return [];
+    },
+    async tag(st, w) {
+      for (let k = 0; k < 3; k++) {
+        const tg = algo.draw(w.t)[0];
+        const c = (S.tp[tg] = S.tp[tg] || { page: 0 });
+        if (!tg || c.done) continue;
+        return tagPage(c, algo.nameOf("t:" + tg));
+      }
+      return [];
+    },
+    async creator(st, w) {
+      for (let k = 0; k < 3; k++) {
+        const name = algo.draw(w.u)[0];
+        const order = Math.random() < 0.5 ? "trending" : "recent";
+        const c = (S.cp[name + "|" + order] = S.cp[name + "|" + order] || { page: 0 });
+        if (!name || c.done) continue;
+        const d = await rg(`/users/${enc(name)}/search?order=${order}&count=20&page=${c.page + 1}`);
+        c.page++;
+        takeUsers(d);
+        c.done = !(d.gifs || []).length || c.page >= (d.pages || 1);
+        return (d.gifs || []).map(norm).filter(Boolean);
+      }
+      return [];
+    },
+    // something next to your taste: a tag that shows up together with what you like, or a popular niche you haven't touched
+    async explore(st) {
+      const adj = new Map();
+      [...liked.slice(-60), ...history.slice(0, 60), ...st.pool.slice(0, 80)].forEach((g) => {
+        const fs = [...(g.tags || []).map((x) => "t:" + algo.key(x)), ...(g.niches || []).map((x) => "n:" + algo.key(x))];
+        if (!fs.some((f) => algo.eff(f) > 1)) return;
+        (g.tags || []).forEach((x) => { const k = "t:" + algo.key(x); if (!algo.known(k) && !isBlockedTag(x)) adj.set(x, (adj.get(x) || 0) + 1); });
+      });
+      if (adj.size && Math.random() < 0.55) {
+        const tg = algo.draw([...adj.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15), 1)[0];
+        const c = (S.tp["x:" + tg] = S.tp["x:" + tg] || { page: 0 });
+        if (tg && !c.done) return tagPage(c, tg);
+      }
+      if (!st.uni) {
+        const d = await rg(`/niches/search?query=&order=subscribers&count=40&page=${1 + Math.floor(Math.random() * 3)}`);
+        st.uni = (d.niches || []).map((n) => n.id).filter(Boolean);
+      }
+      const fresh = st.uni.filter((id) => !algo.known("n:" + algo.key(id)) && !isBlockedTag(id) && !(S.np[id + "|hot"] || {}).done);
+      if (!fresh.length) { st.uni = null; return []; }
+      const id = fresh[Math.floor(Math.random() * fresh.length)];
+      return nichePage((S.np[id + "|hot"] = S.np[id + "|hot"] || { page: 0 }), id, "hot");
+    },
+  };
+  // (trending and new keep a page counter of their own; it starts somewhere in the first pages so the top isn't the same every time)
+  async function askSearch(st, key, order) {
+    if (st.cur[key] == null) st.cur[key] = Math.floor(Math.random() * 3);
+    st.cur[key] = (st.cur[key] % 60) + 1;
+    const r = await gifPage(`/gifs/search?order=${order}&count=40&page=${st.cur[key]}&type=g`);
+    return r.list;
+  }
+  // fill the pool: five slots, given to the sources by the bandit
+  async function refill(st) {
+    algo.bootstrap({ liked, saved, history, following, niches, tagFollows });
+    const w = {
+      n: withFollows(algo.top("n:", 14), niches.map((n) => algo.key(n.id)), 3),
+      t: withFollows(algo.top("t:", 24), tagFollows.map(algo.key), 3),
+      u: algo.top("u:", 18, 1.5),
+    };
+    const have = { niche: w.n.length > 0, tag: w.t.length > 0, creator: w.u.length > 0, trend: true, fresh: true, explore: true };
+    const arms = algo.pickArms(5, settings.explore, have);
+    let err = null;
+    const now = Date.now();
+    const lists = await Promise.all(arms.map((a) => ask[a](st, w).then((l) => l.map((g) => Object.assign(g, { _src: a, __at: now }))).catch((e) => { err = e; return []; })));
+    const ns = nopeSet(), inPool = new Set(st.pool.map((g) => g.id));
+    let got = 0;
+    lists.flat().forEach((g) => {
+      if (inPool.has(g.id) || !eligible(g, ns)) return;
+      inPool.add(g.id);
+      st.pool.push(g);
+      got++;
+    });
+    if (!got && !st.pool.length && err) throw err; // (RedGifs slowing down or offline: say so – don't end your feed)
+    return got;
+  }
+  const smart = async () => {
+    const st = (S.sm = S.sm || { pool: [], cur: {}, uni: null });
+    S.np = S.np || {}; S.tp = S.tp || {}; S.cp = S.cp || {};
+    const ns = nopeSet(), now = Date.now();
+    st.pool = st.pool.filter((g) => now - g.__at < 20 * 60e3 && eligible(g, ns));
+    if (st.pool.length < 45) await refill(st);
+    S.done = false; // (a source ending doesn't end your feed)
+    const batch = algo.sequence(st.pool, 10, S.items.slice(-8), { explore: LEVEL[settings.explore] || 0.2 });
+    st.pool.sort((a, b) => (b.__b ? b.__b.s : 0) - (a.__b ? a.__b.s : 0));
+    if (st.pool.length > 150) st.pool.length = 150;
+    return batch;
+  };
+
   const LOAD = {
     foryou: async () => {
       const o = orderOf(spec);
+      if (o === "foryou" && settings.algo) return smart();
       // "My niches": only what you follow – the niches (and #tags), a few at a time, mixed; ends when all are through
       if (o === "mine") {
         S.np = S.np || {};

@@ -443,6 +443,10 @@ body.has-page #dlpill { left: auto; right: 16px; }
 .facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; margin: 16px 0 4px; }
 .facts span { display: flex; flex-direction: column; padding: 10px 12px; border-radius: 10px; background: var(--panel-2); }
 .facts small { color: var(--faint); font-size: 12px; }
+.dwhy { display: flex; flex-direction: column; margin: 8px 0 4px; padding: 10px 12px; border-radius: 10px; background: var(--panel-2); }
+.dwhy small { color: var(--faint); font-size: 12px; }
+.dwhy b { font-size: 15px; }
+.tl { display: block; margin: 10px 0 6px; color: var(--faint); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
 .facts b { font-size: 15px; }
 .mh { margin: 18px 0 8px; font-size: 14px; color: var(--text-2); }
 
