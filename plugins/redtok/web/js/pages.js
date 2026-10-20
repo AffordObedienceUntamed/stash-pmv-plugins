@@ -5,7 +5,7 @@ import { $, esc, t, tn, fmt, ago, mmss, ic, toast, nav, on, modal, pushLayer, cl
 import {
   settings, saveSettings, makeSource, listSource, ORDERS, orderOf, rg, takeUsers, userOf, userPic, users,
   liked, following, niches, hidden, nope, blocked, history, saved, doneSet, isFollowing, setFollow, followsNiche, setNiche, tagFollows, followsTag, setFollowTag, isHidden, setHidden, setNope,
-  algo, isBlockedTag, setBlockedTag, stashMark, stashDelete, DELETE_TAG, unlikeMany, clearHistory, removeFromHistory, forgetDownloads, exportData, importData, stashPerformer, usingBackend,
+  algo, scanTaste, isBlockedTag, setBlockedTag, stashMark, stashDelete, DELETE_TAG, unlikeMany, clearHistory, removeFromHistory, forgetDownloads, exportData, importData, stashPerformer, usingBackend,
 } from "./data.js";
 import { av, tick, setSpeed, setAutoNext, setFit, setMuted, setFrame, frameName, FRAMES } from "./feed.js";
 import { enqueue, jobs, jobOf, isSaved, cancelQueued, retryFailed, clearFinished, activeJobs, ensureBase } from "./dl.js";
@@ -736,7 +736,7 @@ function tasteHtml() {
     ${likes.length ? `<small class="tl">${esc(t("Topics you like"))}</small><div class="chips">${likes.map(([k]) => chip(k, lab(k))).join("")}</div>` : ""}
     ${people.length ? `<small class="tl">${esc(t("Creators you like"))}</small><div class="chips">${people.map(([k]) => chip(k, lab(k))).join("")}</div>` : ""}
     ${less.length ? `<small class="tl">${esc(t("Fewer of these"))}</small><div class="chips">${less.map(([k]) => chip(k, lab(k))).join("")}</div>` : ""}
-    ${empty ? "" : `<span class="setrow"><button class="btn is-ghost is-sm" data-forgetall>${esc(t("Forget what RedTok learned"))}</button></span>`}</div>`;
+    <span class="setrow"><button class="btn is-sm" data-scan>${esc(t("Scan my likes, downloads and follows"))}</button>${empty ? "" : `<button class="btn is-ghost is-sm" data-forgetall>${esc(t("Forget what RedTok learned"))}</button>`}</span></div>`;
 }
 export function openDetails(g) {
   const facts = [
@@ -861,6 +861,17 @@ export function openSettings(focus) {
         else toast(t("Couldn't find a library – type the folder"), true);
       } catch (x) { toast(String(x.message || x), true); }
       return;
+    }
+    const sc = e.target.closest("[data-scan]");
+    if (sc) {
+      return modalConfirm(t("Scan your likes, downloads and follows?"), t("RedTok reads your likes, saved videos, downloads, follows, followed niches and #tags again, asks RedGifs for the tags of older likes and downloads that have none, and looks at some top videos of the creators you follow. What it learned from watching so far is replaced. This can take a minute."), t("Scan"), async () => {
+        sc.disabled = true;
+        try {
+          const r = await scanTaste((n, m) => { sc.textContent = t("Scanning… {n} of {m}", { n, m }); });
+          paint();
+          toast(r.stopped ? t("RedGifs asks to slow down – try again in a minute") : t("Scanned {a} videos and {b} creators", { a: r.videos, b: r.creators }), r.stopped);
+        } catch (x) { sc.disabled = false; paint(); toast(String((x && x.message) || x), true); }
+      });
     }
     const ff = e.target.closest("[data-forgetf]");
     if (ff) { algo.forget(ff.dataset.forgetf); return paint(); }

@@ -380,4 +380,10 @@ export default {
   "New on RedGifs": "Nuevo en RedGifs",
   "Trending right now": "Tendencia ahora mismo",
   "Picked for you": "Elegido para ti",
+  "Scan my likes, downloads and follows": "Analizar mis me gusta, descargas y seguidos",
+  "Scan your likes, downloads and follows?": "¿Analizar tus me gusta, descargas y seguidos?",
+  "RedTok reads your likes, saved videos, downloads, follows, followed niches and #tags again, asks RedGifs for the tags of older likes and downloads that have none, and looks at some top videos of the creators you follow. What it learned from watching so far is replaced. This can take a minute.": "RedTok vuelve a leer tus me gusta, vídeos guardados, descargas, seguidos, nichos y #etiquetas seguidos, pide a RedGifs las etiquetas de los me gusta y descargas antiguos que no las tienen, y mira algunos vídeos top de los creadores que sigues. Lo aprendido hasta ahora al ver vídeos se sustituye. Puede tardar un minuto.",
+  "Scan": "Analizar",
+  "Scanning… {n} of {m}": "Analizando… {n} de {m}",
+  "Scanned {a} videos and {b} creators": "Analizados {a} vídeos y {b} creadores",
 };

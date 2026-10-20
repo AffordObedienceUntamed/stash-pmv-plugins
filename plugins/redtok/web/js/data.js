@@ -237,6 +237,47 @@ export function savedSignal(g) {
   algo.signal(g, 3.5);
   algo.rewardArm(g._src, true);
 }
+// Read everything you already have – likes, saved videos, downloads, follows, followed niches and #tags – into a fresh profile.
+// Older likes and downloads (and downloads known only by their id) often have no tags: RedGifs is asked for them (400 at most,
+// five at a time) and the answers are kept. A few top videos of every creator you follow add their topics a little.
+// progress(done, total) is called along the way. Returns { videos, creators, stopped } (stopped = RedGifs said "slow down").
+export async function scanTaste(progress) {
+  const bare = (g) => !(g.tags && g.tags.length) && !(g.niches && g.niches.length);
+  const known = new Set([...liked, ...saved].map((g) => g.id));
+  const jobs = [...liked.filter(bare), ...saved.filter(bare)].map((g) => ({ g }));
+  [...doneSet].filter((id) => !known.has(id)).slice(-300).forEach((id) => jobs.push({ id }));
+  jobs.length = Math.min(jobs.length, 400);
+  const names = following.map((f) => f.name).slice(0, 40);
+  const total = jobs.length + names.length;
+  let n = 0, stopped = false;
+  const extra = [], tick = () => progress && progress(++n, total);
+  await inPool(jobs, 5, async (j) => {
+    if (!stopped) {
+      try {
+        const f = norm((await rg(`/gifs/${enc(j.g ? j.g.id : j.id)}`)).gif);
+        if (f) { if (j.g) { j.g.tags = f.tags; j.g.niches = f.niches; if (!j.g.dur) { j.g.dur = f.dur; j.g.w = f.w; j.g.h = f.h; } } else extra.push(f); }
+      } catch (e) { if (e.status === 429) stopped = true; }
+    }
+    tick();
+  });
+  if (jobs.some((j) => j.g)) { store.set("liked", liked); store.set("saved", saved); }
+  const creators = [];
+  await inPool(names, 4, async (name) => {
+    if (!stopped) {
+      try {
+        const d = await rg(`/users/${enc(name)}/search?order=top&count=20&page=1`);
+        takeUsers(d);
+        creators.push(...(d.gifs || []).map(norm).filter(Boolean));
+      } catch (e) { if (e.status === 429) stopped = true; }
+    }
+    tick();
+  });
+  algo.reset();
+  algo.bootstrap({ liked, saved, history, following, niches, tagFollows });
+  extra.forEach((g) => algo.signal(g, 2));
+  creators.forEach((g) => algo.signal(g, 0.3, { noUser: true }));
+  return { videos: liked.length + saved.length + extra.length, creators: names.length, stopped };
+}
 // you stopped watching a video: played = seconds really played; neg = skipping may count against it (only in For You)
 export function viewed(g, played, neg) {
   if (!settings.learn || !g || g.stash) return;

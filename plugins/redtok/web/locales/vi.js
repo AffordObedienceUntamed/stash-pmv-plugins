@@ -383,4 +383,10 @@ export default {
   "New on RedGifs": "Mới trên RedGifs",
   "Trending right now": "Đang thịnh hành",
   "Picked for you": "Được chọn cho bạn",
+  "Scan my likes, downloads and follows": "Quét lượt thích, tải xuống và theo dõi của tôi",
+  "Scan your likes, downloads and follows?": "Quét lượt thích, tải xuống và theo dõi của bạn?",
+  "RedTok reads your likes, saved videos, downloads, follows, followed niches and #tags again, asks RedGifs for the tags of older likes and downloads that have none, and looks at some top videos of the creators you follow. What it learned from watching so far is replaced. This can take a minute.": "RedTok đọc lại lượt thích, video đã lưu, tải xuống, theo dõi, ngách và #thẻ bạn theo dõi, hỏi RedGifs thẻ của các lượt thích và tải xuống cũ chưa có thẻ, và xem một số video hàng đầu của các nhà sáng tạo bạn theo dõi. Những gì đã học từ việc xem cho đến nay sẽ bị thay thế. Việc này có thể mất một phút.",
+  "Scan": "Quét",
+  "Scanning… {n} of {m}": "Đang quét… {n}/{m}",
+  "Scanned {a} videos and {b} creators": "Đã quét {a} video và {b} nhà sáng tạo",
 };

@@ -385,4 +385,10 @@ export default {
   "New on RedGifs": "RedGifs 上的新内容",
   "Trending right now": "当前热门",
   "Picked for you": "为你挑选",
+  "Scan my likes, downloads and follows": "扫描我的点赞、下载和关注",
+  "Scan your likes, downloads and follows?": "要扫描你的点赞、下载和关注吗？",
+  "RedTok reads your likes, saved videos, downloads, follows, followed niches and #tags again, asks RedGifs for the tags of older likes and downloads that have none, and looks at some top videos of the creators you follow. What it learned from watching so far is replaced. This can take a minute.": "RedTok 会重新读取你的点赞、已保存视频、下载、关注、已关注的细分类别和 #标签，向 RedGifs 查询没有标签的旧点赞和下载的标签，并查看你所关注创作者的一些热门视频。此前通过观看学到的内容将被替换。这可能需要一分钟。",
+  "Scan": "扫描",
+  "Scanning… {n} of {m}": "正在扫描… {n}/{m}",
+  "Scanned {a} videos and {b} creators": "已扫描 {a} 个视频和 {b} 位创作者",
 };

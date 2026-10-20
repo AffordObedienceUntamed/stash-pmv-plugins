@@ -384,4 +384,10 @@ export default {
   "New on RedGifs": "RedGifs の新着",
   "Trending right now": "今のトレンド",
   "Picked for you": "あなたのために選びました",
+  "Scan my likes, downloads and follows": "いいね・ダウンロード・フォローをスキャン",
+  "Scan your likes, downloads and follows?": "いいね・ダウンロード・フォローをスキャンしますか？",
+  "RedTok reads your likes, saved videos, downloads, follows, followed niches and #tags again, asks RedGifs for the tags of older likes and downloads that have none, and looks at some top videos of the creators you follow. What it learned from watching so far is replaced. This can take a minute.": "RedTok は、いいね、保存した動画、ダウンロード、フォロー、フォロー中のニッチと #タグを読み直し、タグのない古いいいねやダウンロードのタグを RedGifs に問い合わせ、フォロー中のクリエイターの人気動画もいくつか確認します。これまでの視聴から学んだ内容は置き換えられます。1分ほどかかることがあります。",
+  "Scan": "スキャン",
+  "Scanning… {n} of {m}": "スキャン中… {n} / {m}",
+  "Scanned {a} videos and {b} creators": "{a} 本の動画と {b} 人のクリエイターをスキャンしました",
 };
