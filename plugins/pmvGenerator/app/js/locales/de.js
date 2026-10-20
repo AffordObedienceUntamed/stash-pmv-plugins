@@ -2362,4 +2362,11 @@ export default {
   "This video is already {s} in when the O video starts.": "Wenn das O-Video beginnt, läuft dieses Video schon {s}.",
   "This video is {s} in when it starts.": "Wenn es beginnt, läuft dieses Video schon {s}.",
   "frame": "Bild",
+  "Change the O video": "Anderes O-Video wählen",
+  "Choose the video with the O – the one that has this video running in its background.": "Wähle das Video mit dem O – das, in dessen Hintergrund dieses Video läuft.",
+  "Drag the O video's bar sideways to line it up with this video; drag the ends of a bar to trim it. Click the ruler to move the playhead; Space plays; the arrow keys step one picture.": "Zieh den Balken des O-Videos zur Seite, um ihn mit diesem Video in Deckung zu bringen; zieh an den Enden eines Balkens, um ihn zuzuschneiden. Klick aufs Lineal setzt den Abspielkopf; Leertaste spielt; Pfeiltasten gehen ein Bild weiter.",
+  "Move the O video's bar in small steps": "Den Balken des O-Videos in kleinen Schritten verschieben",
+  "Outside the bar": "Außerhalb des Balkens",
+  "Sound on/off": "Ton an/aus",
+  "To the start": "Zum Anfang",
 };

@@ -2406,4 +2406,11 @@ export default {
   "This video is already {s} in when the O video starts.": "Gdy film O się zaczyna, ten film ma już {s}.",
   "This video is {s} in when it starts.": "Gdy się zaczyna, ten film ma już {s}.",
   "frame": "klatka",
+  "Change the O video": "Zmień film O",
+  "Choose the video with the O – the one that has this video running in its background.": "Wybierz film z O – ten, w którego tle leci ten film.",
+  "Drag the O video's bar sideways to line it up with this video; drag the ends of a bar to trim it. Click the ruler to move the playhead; Space plays; the arrow keys step one picture.": "Przeciągnij pasek filmu O w bok, by dopasować go do tego filmu; przeciągnij końce paska, by go przyciąć. Kliknij linijkę, by przesunąć głowicę; spacja odtwarza; strzałki przesuwają o jedną klatkę.",
+  "Move the O video's bar in small steps": "Przesuwaj pasek filmu O małymi krokami",
+  "Outside the bar": "Poza paskiem",
+  "Sound on/off": "Dźwięk wł./wył.",
+  "To the start": "Na początek",
 };

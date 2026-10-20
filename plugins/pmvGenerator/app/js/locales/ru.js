@@ -2443,4 +2443,11 @@ export default {
   "This video is already {s} in when the O video starts.": "Когда начинается видео O, это видео уже идёт {s}.",
   "This video is {s} in when it starts.": "Когда оно начинается, это видео уже идёт {s}.",
   "frame": "кадр",
+  "Change the O video": "Выбрать другое видео O",
+  "Choose the video with the O – the one that has this video running in its background.": "Выберите видео с O – то, в фоне которого идёт это видео.",
+  "Drag the O video's bar sideways to line it up with this video; drag the ends of a bar to trim it. Click the ruler to move the playhead; Space plays; the arrow keys step one picture.": "Перетащите полосу видео O в сторону, чтобы совместить её с этим видео; тяните за концы полосы, чтобы обрезать. Щёлкните по линейке, чтобы переместить маркер; пробел – воспроизведение; стрелки – по одному кадру.",
+  "Move the O video's bar in small steps": "Сдвигать полосу видео O маленькими шагами",
+  "Outside the bar": "Вне полосы",
+  "Sound on/off": "Звук вкл./выкл.",
+  "To the start": "В начало",
 };

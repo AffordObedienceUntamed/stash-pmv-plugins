@@ -2408,4 +2408,11 @@ export default {
   "This video is already {s} in when the O video starts.": "O動画が始まるとき、この動画はすでに {s} 進んでいます。",
   "This video is {s} in when it starts.": "始まるとき、この動画は {s} まで進んでいます。",
   "frame": "フレーム",
+  "Change the O video": "O動画を変更",
+  "Choose the video with the O – the one that has this video running in its background.": "Oの動画を選んでください。背景にこの動画が流れているものです。",
+  "Drag the O video's bar sideways to line it up with this video; drag the ends of a bar to trim it. Click the ruler to move the playhead; Space plays; the arrow keys step one picture.": "O動画のバーを左右にドラッグして、この動画に合わせます。バーの端をドラッグするとトリミングできます。目盛りをクリックすると再生ヘッドが動き、スペースで再生、矢印キーで1コマずつ動きます。",
+  "Move the O video's bar in small steps": "O動画のバーを少しずつ動かす",
+  "Outside the bar": "バーの外",
+  "Sound on/off": "音 オン/オフ",
+  "To the start": "最初へ",
 };

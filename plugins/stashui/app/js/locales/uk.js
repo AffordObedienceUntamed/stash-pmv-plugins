@@ -2441,4 +2441,11 @@ export default {
   "This video is already {s} in when the O video starts.": "Коли починається відео O, це відео вже йде {s}.",
   "This video is {s} in when it starts.": "Коли воно починається, це відео вже йде {s}.",
   "frame": "кадр",
+  "Change the O video": "Обрати інше відео O",
+  "Choose the video with the O – the one that has this video running in its background.": "Оберіть відео з O – те, у тлі якого йде це відео.",
+  "Drag the O video's bar sideways to line it up with this video; drag the ends of a bar to trim it. Click the ruler to move the playhead; Space plays; the arrow keys step one picture.": "Перетягніть смугу відео O вбік, щоб сумістити її з цим відео; тягніть за кінці смуги, щоб обрізати. Клацніть по лінійці, щоб перемістити маркер; пробіл – відтворення; стрілки – по одному кадру.",
+  "Move the O video's bar in small steps": "Зсувати смугу відео O малими кроками",
+  "Outside the bar": "Поза смугою",
+  "Sound on/off": "Звук увімк./вимк.",
+  "To the start": "На початок",
 };

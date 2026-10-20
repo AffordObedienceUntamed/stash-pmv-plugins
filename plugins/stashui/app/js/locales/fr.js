@@ -2348,4 +2348,11 @@ export default {
   "This video is already {s} in when the O video starts.": "Quand la vidéo O commence, celle-ci en est déjà à {s}.",
   "This video is {s} in when it starts.": "Quand elle commence, celle-ci en est à {s}.",
   "frame": "image",
+  "Change the O video": "Changer la vidéo O",
+  "Choose the video with the O – the one that has this video running in its background.": "Choisissez la vidéo avec le O – celle qui a cette vidéo en arrière-plan.",
+  "Drag the O video's bar sideways to line it up with this video; drag the ends of a bar to trim it. Click the ruler to move the playhead; Space plays; the arrow keys step one picture.": "Faites glisser la barre de la vidéo O sur le côté pour l'aligner sur cette vidéo ; tirez les extrémités d'une barre pour la rogner. Cliquez sur la règle pour déplacer la tête de lecture ; Espace lit ; les flèches avancent d'une image.",
+  "Move the O video's bar in small steps": "Déplacer la barre de la vidéo O par petits pas",
+  "Outside the bar": "En dehors de la barre",
+  "Sound on/off": "Son activé/coupé",
+  "To the start": "Au début",
 };

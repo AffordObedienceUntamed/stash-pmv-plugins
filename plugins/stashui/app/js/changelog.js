@@ -7,6 +7,13 @@
 
 export const CHANGES = [
   {
+    v: "3.115.0",
+    date: "2026-10-20",
+    items: [
+      ["ui", "Matching the O video now works like a video editor: “Match an O video …” shows two bars on a timeline, one above the other – this video and the O video. Drag the O video's bar sideways to line it up, drag the ends of either bar to trim it, click the ruler to move the playhead, press Space to play both (the arrow keys step one picture), zoom with the slider. The O video then only plays where the two trimmed bars overlap. “Find it by the sound” still lines the bar up for you.", "对齐 O 视频现在像视频编辑器一样：“对齐 O 视频 …”会显示时间轴上上下叠放的两个条块——本视频和 O 视频。左右拖动 O 视频的条块来对齐，拖动任一条块的两端来裁剪，点击标尺移动播放头，按空格同时播放（方向键逐帧移动），用滑块缩放。之后 O 视频只在两个裁剪后条块重叠的部分播放。“通过声音查找”仍会自动帮你对齐。", "scene/@scene::.kb-omoments"],
+    ],
+  },
+  {
     v: "3.114.0",
     date: "2026-10-20",
     items: [

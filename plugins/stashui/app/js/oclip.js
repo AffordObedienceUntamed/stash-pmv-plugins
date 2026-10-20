@@ -133,7 +133,7 @@ export function createOPlayer({ screen, video, scene }) {
   };
 
   const pick = (p) => {
-    if (sync) return { scene: sync.scene, start: 0, end: sync.len || 1, title: sync.title || "" };
+    if (sync) return { scene: sync.scene, start: sync.start || 0, end: sync.end || (sync.start || 0) + (sync.len || 1), title: sync.title || "" };
     const list = clipsFor(scene.id);
     if (!list.length) return null;
     if (!chosen.has(p)) chosen.set(p, Math.floor(Math.random() * list.length));
@@ -172,6 +172,8 @@ export function createOPlayer({ screen, video, scene }) {
   function tick() {
     if (!oPrefs().show || !pts.length) return hide();
     const now = video.currentTime;
+    // a matched O video only shows where this video's bar reaches (the trimmed part)
+    if (sync && (now < (sync.from || 0) || (sync.to && now >= sync.to))) return hide();
     let hit = null;
     let ahead = null; // the next moment within a few seconds: load its clip before it is due
     for (const p of pts) {
@@ -231,7 +233,7 @@ export function createOPlayer({ screen, video, scene }) {
 
   function refresh() {
     sync = syncOf(scene.id);
-    pts = sync ? [sync.offset] : pointsOf(scene.id);
+    pts = sync ? [sync.offset + (sync.start || 0)] : pointsOf(scene.id);
     chosen.clear();
     loadedKey = "";
     ready = false;

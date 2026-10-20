@@ -2401,4 +2401,11 @@ export default {
   "This video is already {s} in when the O video starts.": "Khi video O bắt đầu, video này đã chạy được {s}.",
   "This video is {s} in when it starts.": "Khi nó bắt đầu, video này đã ở {s}.",
   "frame": "khung",
+  "Change the O video": "Đổi video O",
+  "Choose the video with the O – the one that has this video running in its background.": "Chọn video có O – video mà phía sau đang phát video này.",
+  "Drag the O video's bar sideways to line it up with this video; drag the ends of a bar to trim it. Click the ruler to move the playhead; Space plays; the arrow keys step one picture.": "Kéo thanh của video O sang hai bên để căn với video này; kéo hai đầu thanh để cắt. Bấm vào thước để di chuyển đầu phát; phím cách để phát; phím mũi tên để đi từng khung hình.",
+  "Move the O video's bar in small steps": "Dịch thanh video O từng bước nhỏ",
+  "Outside the bar": "Ngoài thanh",
+  "Sound on/off": "Bật/tắt âm thanh",
+  "To the start": "Về đầu",
 };

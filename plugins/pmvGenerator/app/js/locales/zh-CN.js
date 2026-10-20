@@ -2465,4 +2465,11 @@ export default {
   "This video is already {s} in when the O video starts.": "O 视频开始时，本视频已经播放了 {s}。",
   "This video is {s} in when it starts.": "它开始时，本视频已播放到 {s}。",
   "frame": "帧",
+  "Change the O video": "更换 O 视频",
+  "Choose the video with the O – the one that has this video running in its background.": "选择带有 O 的视频——背景里正播放着本视频的那个。",
+  "Drag the O video's bar sideways to line it up with this video; drag the ends of a bar to trim it. Click the ruler to move the playhead; Space plays; the arrow keys step one picture.": "左右拖动 O 视频的条块，使它与本视频对齐；拖动条块两端可以裁剪。点击标尺移动播放头；空格键播放；方向键逐帧移动。",
+  "Move the O video's bar in small steps": "以小步长移动 O 视频的条块",
+  "Outside the bar": "在条块之外",
+  "Sound on/off": "声音 开/关",
+  "To the start": "回到开头",
 };
