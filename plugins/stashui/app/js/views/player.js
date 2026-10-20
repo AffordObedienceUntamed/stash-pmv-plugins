@@ -22,7 +22,7 @@ import { generatePreviews } from "../genprev.js";
 import { fpsOf, stepFrame, snap, fmtExact } from "../frames.js";
 import { videoGlow } from "../theme.js";
 import { mountSlots } from "../ext.js";
-import { oData, pointsOf, addPoint, setPoint, removePoint, ownClips, clipsFor, oPrefs, setOPrefs, createOPlayer, openOPicker, refLen } from "../oclip.js";
+import { oData, syncOf, pointsOf, addPoint, setPoint, removePoint, ownClips, clipsFor, oPrefs, setOPrefs, createOPlayer, openOPicker, refLen } from "../oclip.js";
 import { BINS, watchRecorder, watchBins, motionBins, combine, peaks } from "../heat.js";
 
 // Read Stash's sprite VTT: time ranges → region in the sprite image (once per scene; the picture is fetched ahead too)
@@ -235,17 +235,29 @@ export async function render(host, params, query = {}) {
       ? `<div class="kb-oc-chosen">${eff.map((r) => `<span class="kb-chip" title="${esc(r.title || "")}">${esc(r.title || t("Clip"))} <small>${fmtDuration(refLen(r))}</small></span>`).join("")}</div>${own.length ? "" : `<p class="kb-plc-meta">${t("These play for every scene without a clip of its own.")}</p>`}`
       : `<p class="kb-plc-meta">${t("No O clip chosen yet.")}</p>`;
     const sel = (cur, opts) => opts.map(([v2, l]) => `<option value="${v2}"${cur === v2 ? " selected" : ""}>${t(l)}</option>`).join("");
-    return secHtml(
-      "omoments",
-      `${t("O moments")}<small class="kb-upsec-n">${pts.length || ""}</small>`,
-      `${rows || `<p class="kb-plc-meta">${t("Press Shift+O at the moment of an O (O itself marks it too) – the O clip then plays next to the video from there.")}</p>`}
-      <div class="kb-mkadds"><button type="button" class="kb-btn is-ghost kb-mkadd" data-omark>${icon("drop")}${t("Mark an O moment here (Shift+O)")}</button><button type="button" class="kb-btn is-ghost kb-mkadd" data-opick>${icon("film")}${t("Choose the O clip …")}</button></div>
-      ${chips}
-      <div class="kb-oset">
+    const sy = syncOf(x.id);
+    const win = `<div class="kb-oset">
         <label class="kb-cut-opt"><input type="checkbox" data-oshow${p.show ? " checked" : ""}><span>${t("Show the O clip at the O moments")}</span></label>
         <label class="kb-form-row"><span>${t("Window")}</span><select class="kb-field" data-opos>${sel(p.pos, [["tl", "Top left"], ["tr", "Top right"], ["bl", "Bottom left"], ["br", "Bottom right"]])}</select></label>
         <label class="kb-form-row"><span>${t("Size")}</span><input type="range" min="15" max="55" step="1" value="${p.size}" data-osize></label>
-      </div>`
+      </div>`;
+    return secHtml(
+      "omoments",
+      `${t("O video")}<small class="kb-upsec-n">${sy ? 1 : pts.length || ""}</small>`,
+      `<div class="kb-osync-sec">
+        ${
+          sy
+            ? `<div class="kb-oc-chosen"><span class="kb-chip" title="${esc(sy.title || "")}">${esc(sy.title || t("O video"))}</span></div><p class="kb-plc-meta">${sy.offset >= 0 ? t("Starts {s} into this video.", { s: fmtDuration(sy.offset) }) : t("This video is {s} in when it starts.", { s: fmtDuration(-sy.offset) })}</p>`
+            : `<p class="kb-plc-meta">${t("Have a video of the O with this video playing in its background? Line the two up once – then the O video plays along whenever this one plays.")}</p>`
+        }
+        <button type="button" class="kb-btn is-primary kb-mkadd" data-osync>${icon("film")}${sy ? t("Match again …") : t("Match an O video …")}</button>
+      </div>
+      ${win}
+      <details class="kb-osingle"${pts.length ? " open" : ""}><summary>${t("Single O moments (a short clip at a marked moment)")}${pts.length ? ` · ${pts.length}` : ""}</summary>
+      ${rows || `<p class="kb-plc-meta">${t("Press Shift+O at the moment of an O (O itself marks it too) – the O clip then plays next to the video from there.")}</p>`}
+      <div class="kb-mkadds"><button type="button" class="kb-btn is-ghost kb-mkadd" data-omark>${icon("drop")}${t("Mark an O moment here (Shift+O)")}</button><button type="button" class="kb-btn is-ghost kb-mkadd" data-opick>${icon("film")}${t("Choose the O clip …")}</button></div>
+      ${chips}
+      </details>`
     );
   }
 
@@ -1105,6 +1117,7 @@ export async function render(host, params, query = {}) {
     oplay.layout();
   });
   $("[data-side]").addEventListener("click", async (e) => {
+    if (e.target.closest("[data-osync]")) return oData().then(() => import("../osync.js")).then((m) => m.openOSync({ scene: x, onDone: () => (oplay.refresh(), paintMarkers()) }));
     if (e.target.closest("[data-omark]")) return markO();
     if (e.target.closest("[data-opick]")) return oData().then(() => openOPicker({ scene: x, onDone: () => (oplay.refresh(), paintMarkers()) }));
     const oset = e.target.closest("[data-oset]");

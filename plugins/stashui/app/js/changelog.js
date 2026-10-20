@@ -7,6 +7,13 @@
 
 export const CHANGES = [
   {
+    v: "3.114.0",
+    date: "2026-10-20",
+    items: [
+      ["ui", "O video that plays along: if you have a video of the O with the PMV (or any video) running in its background, line the two up once and the O video then plays in a window whenever the PMV plays. Info bar → “O video” → “Match an O video …”: both videos sit side by side – put them on a moment you can see in both and press “These two match”, or let “Find it by the sound” compare the music of the two (works to about a hundredth of a second). “Play both” checks it; −1 s … +1 frame nudge the match. The single O moments from 3.113.0 are still there, folded away below.", "一起播放的 O 视频：如果你有一个 O 的视频，背景里正播放着 PMV（或任何视频），把两者对齐一次，之后每当播放这个 PMV，O 视频就会在小窗口里同步播放。信息栏 →“O 视频”→“对齐 O 视频 …”：两个视频并排显示——把它们定位到两边都能看到的同一时刻，点“这两处对上了”；或让“通过声音查找”比较两边的音乐（精度约百分之一秒）。“同时播放”用来检查；−1 秒 … +1 帧可微调。3.113.0 的单个 O 时刻仍然保留，折叠在下方。", "scene/@scene::.kb-omoments"],
+    ],
+  },
+  {
     v: "3.113.1",
     date: "2026-10-20",
     items: [

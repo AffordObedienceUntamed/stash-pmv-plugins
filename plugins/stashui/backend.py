@@ -1178,6 +1178,80 @@ def cut_job(spec_path):
     save()
 
 
+# ---------- Match two videos by their sound (O video ↔ the video playing in its background) ----------
+# {"mode": "sync_audio", "scene_a": main video, "scene_b": O video} → {"offset", "score", "sure"}
+#   offset: the O video's own start lies this many seconds into the main video (negative: the O video started earlier and the
+#   main video is already running in it at its start). O time = main time − offset. Works on the loudness changes of the two
+#   soundtracks (beats, cuts), so it also works when the O video has voices and room noise over the music. Needs numpy.
+
+SYNC_RATE = 8000
+SYNC_HOP = 80  # 10 ms
+
+
+def sync_envelope(ffmpeg, path, max_sec):
+    import numpy as np
+    cmd = [ffmpeg, "-hide_banner", "-loglevel", "error", "-t", str(max_sec), "-i", path, "-vn", "-ac", "1", "-ar", str(SYNC_RATE), "-f", "s16le", "-"]
+    r = subprocess.run(cmd, capture_output=True, creationflags=0x08000000 if os.name == "nt" else 0)
+    if r.returncode != 0 or len(r.stdout) < SYNC_RATE * 4:
+        raise RuntimeError("no sound found in " + os.path.basename(path))
+    x = np.frombuffer(r.stdout, dtype=np.int16).astype(np.float32) / 32768.0
+    win = 1024
+    n = (len(x) - win) // SYNC_HOP
+    if n < 100:
+        raise RuntimeError("too short")
+    hann = np.hanning(win).astype(np.float32)
+    lo, hi = int(60 * win / SYNC_RATE), int(2500 * win / SYNC_RATE)  # 60 Hz – 2.5 kHz
+    flux = np.zeros(n, dtype=np.float32)
+    prev = None
+    for a in range(0, n, 4000):
+        b = min(n, a + 4000)
+        idx = np.arange(a, b)[:, None] * SYNC_HOP + np.arange(win)[None, :]
+        mag = np.log1p(40.0 * np.abs(np.fft.rfft(x[idx] * hann, axis=1))[:, lo:hi])
+        d = np.diff(mag, axis=0, prepend=(mag[:1] if prev is None else prev[None, :]))
+        flux[a:b] = np.maximum(d, 0).sum(axis=1)
+        prev = mag[-1]
+    # a calm baseline: subtract a slow average, keep what stands out
+    k = 100
+    base = np.convolve(flux, np.ones(k, dtype=np.float32) / k, mode="same")
+    f = flux - base
+    f = np.maximum(f, 0)
+    s = f.std()
+    return f / s if s > 0 else f
+
+
+def sync_audio(stash, args):
+    try:
+        import numpy as np
+    except ImportError:
+        raise RuntimeError("numpy is needed for this (pip install numpy)")
+    ffmpeg = find_ffmpeg(stash)
+    va = scene_video(stash, str(args.get("scene_a") or ""))
+    vb = scene_video(stash, str(args.get("scene_b") or ""))
+    if not (os.path.isfile(va) and os.path.isfile(vb)):
+        raise ValueError("a video file can't be reached from here")
+    a = sync_envelope(ffmpeg, va, 900)
+    b = sync_envelope(ffmpeg, vb, 3600)
+    n = 1 << int(np.ceil(np.log2(len(a) + len(b))))
+    fa, fb = np.fft.rfft(a, n), np.fft.rfft(b, n)
+    corr = np.fft.irfft(fb * np.conj(fa), n)  # corr[l] = sum a[t] * b[t + l]
+    lags = np.concatenate([np.arange(0, len(b)), np.arange(-len(a) + 1, 0)])
+    vals = np.concatenate([corr[0:len(b)], corr[n - len(a) + 1:n]])
+    # an overlap shorter than 10 s says nothing
+    ov = np.minimum(len(a), len(b) - lags)
+    ov = np.where(lags < 0, np.minimum(len(b), len(a) + lags), ov)
+    vals = np.where(ov >= 1000, vals, -1e9)
+    i = int(np.argmax(vals))
+    best = float(vals[i])
+    ok = vals > -1e8
+    mean, sd = float(vals[ok].mean()), float(vals[ok].std() or 1.0)
+    # the next best peak far away from the best one
+    far = ok & (np.abs(lags - lags[i]) > 100)
+    second = float(vals[far].max()) if far.any() else mean
+    score = (best - mean) / sd
+    ratio = best / second if second > 0 else 99.0
+    return {"offset": round(-float(lags[i]) * SYNC_HOP / SYNC_RATE, 3), "score": round(score, 1), "ratio": round(ratio, 2), "sure": bool(score > 9 and ratio > 1.25)}
+
+
 def reveal(stash, args):
     """Show a file in the computer's file manager (Explorer / Finder). Only files inside a library folder of Stash, and only
     on the machine Stash runs on – otherwise {"opened": false, "why": ...} and the page copies the path instead."""
@@ -1360,6 +1434,8 @@ def main():
             out = clip_cut(Stash(data.get("server_connection")), args)
         elif mode == "clip_status":
             out = clip_status(None, args)
+        elif mode == "sync_audio":
+            out = sync_audio(Stash(data.get("server_connection")), args)
         elif mode == "reveal":
             out = reveal(Stash(data.get("server_connection")), args)
         elif mode == "box_image":

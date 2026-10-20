@@ -42,6 +42,15 @@ function saveSoon() {
   }, 600);
 }
 const rec = (id) => data.scenes[id] || (data.scenes[id] = { points: [], clips: [] });
+// An O video that runs along with the whole video: { scene, offset, len, title } – O time = main time − offset
+export const syncOf = (id) => (data && data.scenes[id] && data.scenes[id].sync) || null;
+export function setSync(id, sync) {
+  const r = rec(id);
+  if (sync) r.sync = sync;
+  else delete r.sync;
+  if (!r.points.length && !r.clips.length && !r.sync) delete data.scenes[id];
+  saveSoon();
+}
 export const pointsOf = (id) => (data && data.scenes[id] ? data.scenes[id].points.slice().sort((a, b) => a - b) : []);
 export const ownClips = (id) => (data && data.scenes[id] ? data.scenes[id].clips : []);
 export const clipsFor = (id) => (ownClips(id).length ? ownClips(id) : (data && data.clips) || []);
@@ -64,7 +73,7 @@ export function removePoint(id, i) {
   const sorted = r.points.slice().sort((a, b) => a - b);
   sorted.splice(i, 1);
   r.points = sorted;
-  if (!r.points.length && !r.clips.length) delete data.scenes[id];
+  if (!r.points.length && !r.clips.length && !r.sync) delete data.scenes[id];
   saveSoon();
 }
 export function setClips(id, list) {
@@ -72,7 +81,7 @@ export function setClips(id, list) {
   else {
     rec(id).clips = list;
     const r = rec(id);
-    if (!r.points.length && !r.clips.length) delete data.scenes[id];
+    if (!r.points.length && !r.clips.length && !r.sync) delete data.scenes[id];
   }
   saveSoon();
 }
@@ -101,6 +110,7 @@ export function createOPlayer({ screen, video, scene }) {
   const ov = el.querySelector("video");
   const snd = el.querySelector("[data-osnd]");
   let pts = [];
+  let sync = null; // an O video that runs along with the whole video (see osync.js)
   let raf = 0;
   let loadedKey = "";
   let ready = false;
@@ -123,6 +133,7 @@ export function createOPlayer({ screen, video, scene }) {
   };
 
   const pick = (p) => {
+    if (sync) return { scene: sync.scene, start: 0, end: sync.len || 1, title: sync.title || "" };
     const list = clipsFor(scene.id);
     if (!list.length) return null;
     if (!chosen.has(p)) chosen.set(p, Math.floor(Math.random() * list.length));
@@ -191,7 +202,7 @@ export function createOPlayer({ screen, video, scene }) {
     if (!ready || loadedKey !== refKey(r)) return;
     el.querySelector("[data-otitle]").textContent = r.title || "";
     const want = r.start + (now - p);
-    if (el.hidden || Math.abs(ov.currentTime - want) > 0.45) {
+    if (el.hidden || Math.abs(ov.currentTime - want) > (sync ? 0.2 : 0.45)) {
       try {
         ov.currentTime = want;
       } catch (e) {
@@ -219,13 +230,14 @@ export function createOPlayer({ screen, video, scene }) {
   video.addEventListener("ratechange", onOther);
 
   function refresh() {
-    pts = pointsOf(scene.id);
+    sync = syncOf(scene.id);
+    pts = sync ? [sync.offset] : pointsOf(scene.id);
     chosen.clear();
     loadedKey = "";
     ready = false;
     layout();
     // warm up the first clip so the window shows up without a gap
-    const r = clipsFor(scene.id)[0];
+    const r = sync ? { scene: sync.scene } : clipsFor(scene.id)[0];
     if (r && pts.length) streamOf(r.scene).catch(() => {});
     tick();
     if (!video.paused) onPlay();
