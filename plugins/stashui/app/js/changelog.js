@@ -7,6 +7,14 @@
 
 export const CHANGES = [
   {
+    v: "3.113.0",
+    date: "2026-10-20",
+    items: [
+      ["ui", "Crop / zoom in on a video and save it as its own video: player → “Cut clips” → “Crop / zoom in”. Drag a frame on the picture (free, 16:9, 9:16, 1:1, 4:5 or like the video), “Preview the zoom” shows what you'll get, then “Add clip” and “Save clips” – the new video holds only that part of the picture (re-encoded; optionally scaled up to the original height). Every clip can have its own area; joined clips are fitted to one size. “Whole video” fills in 0:00 to the end.", "对视频裁剪 / 放大，并另存为独立视频：播放器 →“剪辑片段”→“裁剪 / 放大”。在画面上拖动方框（自由、16:9、9:16、1:1、4:5 或与视频相同），“预览放大效果”显示最终画面，然后“添加片段”并“保存片段”——新视频只包含画面的这一部分（会重新编码；可选放大到原视频高度）。每个片段可以有自己的区域；合并的片段会统一尺寸。“整个视频”会填入 0:00 到结尾。", "scene/@scene::[data-cut]"],
+      ["ui", "O moments and O clips: press Shift+O at the moment of an O in a video (the O key and button mark it too – Settings → Player has a switch). The info bar gets an “O moments” section: choose an O clip there (a marker or a part of any scene; for this scene or for every scene without its own). From each marked moment on, that clip plays in a small window over the video, in step with it (pause, jumping and speed carry over); the window can sit in any corner, be resized and has its own sound button. The moments and clips are kept in Stash's plugin settings.", "O 时刻和 O 片段：在视频中 O 发生的时刻按 Shift+O（按 O 键和按钮也会标记——设置 → 播放器里有开关）。信息栏新增“O 时刻”区域：在那里选择 O 片段（一个标记或任意场景的一段；用于这个场景，或用于所有没有自己片段的场景）。从每个标记的时刻起，该片段会在视频上的小窗口中同步播放（暂停、跳转和速度都会跟随）；窗口可放在任意角落、可调大小，并有自己的声音按钮。时刻和片段保存在 Stash 的插件设置中。", "scene/@scene::.kb-omoments"],
+    ],
+  },
+  {
     v: "3.112.1",
     date: "2026-10-19",
     items: [

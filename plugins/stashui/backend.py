@@ -1047,7 +1047,14 @@ def clip_cut(stash, args):
         a, b = float(c.get("start")), float(c.get("end"))
         if not (a >= 0 and b > a):
             raise ValueError("a clip ends before it starts")
-        clips.append({"start": a, "end": b, "name": clean_name(c.get("name") or "")})
+        clip = {"start": a, "end": b, "name": clean_name(c.get("name") or "")}
+        cr = c.get("crop")
+        if cr:  # a part of the picture (fractions of the width/height), e.g. {"x": .2, "y": .1, "w": .5, "h": .5}
+            x0, y0, w0, h0 = (max(0.0, min(1.0, float(cr.get(k)))) for k in ("x", "y", "w", "h"))
+            if w0 < 0.02 or h0 < 0.02 or x0 + w0 > 1.0005 or y0 + h0 > 1.0005:
+                raise ValueError("the cropped area doesn't fit into the picture")
+            clip["crop"] = {"x": x0, "y": y0, "w": min(w0, 1 - x0), "h": min(h0, 1 - y0)}
+        clips.append(clip)
     if not clips or len(clips) > 100:
         raise ValueError("no clips")
     base, ext = os.path.splitext(os.path.basename(video))
@@ -1056,8 +1063,13 @@ def clip_cut(stash, args):
         folder = os.path.join(folder, "Clips")
         os.makedirs(folder, exist_ok=True)
     job = secrets.token_hex(4)
-    spec = {"job": job, "video": video, "ffmpeg": find_ffmpeg(stash), "clips": clips, "precise": bool(args.get("precise")), "join": bool(args.get("join")),
-            "folder": folder, "base": base, "ext": ".mp4"}
+    def even(n, fallback=0):
+        n = int(float(n or 0))
+        return n - n % 2 if n >= 2 else fallback
+
+    spec = {"job": job, "video": video, "ffmpeg": find_ffmpeg(stash), "clips": clips, "precise": bool(args.get("precise")) or any("crop" in c for c in clips),
+            "join": bool(args.get("join")), "folder": folder, "base": base, "ext": ".mp4",
+            "upscale": bool(args.get("upscale")), "ref_w": even(args.get("ref_w")), "ref_h": even(args.get("ref_h"))}
     path = os.path.join(CUT_DIR, f"stashui-cut-{job}.json")
     with open(path, "w", encoding="utf-8") as f:
         json.dump(spec, f)
@@ -1089,6 +1101,22 @@ def unique(path):
     return p
 
 
+def crop_filter(cr, spec, any_crop):
+    """ffmpeg -vf for a cropped (zoomed-in) clip: cut the area out (even sizes for H.264), optionally scale it back up to the
+    original's height. Clips that get joined must have one size: then every part (cropped or not) is fitted into the original size."""
+    if not cr and not (spec["join"] and any_crop):
+        return ""
+    f = []
+    if cr:
+        f.append("crop=trunc(iw*{w:.5f}/2)*2:trunc(ih*{h:.5f}/2)*2:trunc(iw*{x:.5f}/2)*2:trunc(ih*{y:.5f}/2)*2".format(**cr))
+    rw, rh = spec.get("ref_w") or 0, spec.get("ref_h") or 0
+    if spec["join"] and any_crop and rw and rh:
+        f.append(f"scale={rw}:{rh}:force_original_aspect_ratio=decrease:flags=lanczos,pad={rw}:{rh}:(ow-iw)/2:(oh-ih)/2,setsar=1")
+    elif cr and spec.get("upscale") and rh:
+        f.append(f"scale=-2:'if(lt(ih,{rh}),{rh},ih)':flags=lanczos")
+    return ",".join(f)
+
+
 def cut_job(spec_path):
     with open(spec_path, encoding="utf-8") as f:
         spec = json.load(f)
@@ -1113,6 +1141,9 @@ def cut_job(spec_path):
                 label = c["name"] or f"clip {i + 1}"
                 out = unique(os.path.join(spec["folder"], f"{spec['base']} - {label}{spec['ext']}"))
             cmd = [spec["ffmpeg"], "-hide_banner", "-loglevel", "error", "-y", "-ss", f"{c['start']:.3f}", "-i", spec["video"], "-t", f"{c['end'] - c['start']:.3f}", "-map", "0:v:0", "-map", "0:a?"]
+            vf = crop_filter(c.get("crop"), spec, any("crop" in k for k in spec["clips"]))
+            if vf:
+                cmd += ["-vf", vf]
             if spec["precise"]:
                 cmd += ["-c:v", "libx264", "-preset", "veryfast", "-crf", "18", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k"]
             else:

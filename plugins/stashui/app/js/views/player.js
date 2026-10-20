@@ -22,6 +22,7 @@ import { generatePreviews } from "../genprev.js";
 import { fpsOf, stepFrame, snap, fmtExact } from "../frames.js";
 import { videoGlow } from "../theme.js";
 import { mountSlots } from "../ext.js";
+import { oData, pointsOf, addPoint, setPoint, removePoint, ownClips, clipsFor, oPrefs, setOPrefs, createOPlayer, openOPicker, refLen } from "../oclip.js";
 import { BINS, watchRecorder, watchBins, motionBins, combine, peaks } from "../heat.js";
 
 // Read Stash's sprite VTT: time ranges → region in the sprite image (once per scene; the picture is fetched ahead too)
@@ -206,6 +207,47 @@ export async function render(host, params, query = {}) {
   v.muted = prefs.muted;
   v.loop = prefs.mode === "one";
   const savePrefs = () => store.set("player", prefs);
+
+  // ---------- O moments: a chosen clip plays in a window over the picture from the moment of an O ----------
+  const oplay = createOPlayer({ screen: $(".kb-screen"), video: v, scene: x });
+  oData().then(() => host.isConnected && paintMarkers());
+  function markO(quiet) {
+    const at = snap(v.currentTime, fps);
+    oData().then(() => {
+      if (!addPoint(x.id, at)) return quiet || toast(t("There is already an O moment here"));
+      oplay.refresh();
+      paintMarkers();
+      toast(t("O moment at {time}", { time: fmtDuration(at) }), "ok");
+    });
+  }
+  function oSection() {
+    const pts = pointsOf(x.id);
+    const own = ownClips(x.id);
+    const eff = clipsFor(x.id);
+    const p = oPrefs();
+    const rows = pts
+      .map(
+        (s, i) =>
+          `<div class="kb-mkrow kb-orow"><button type="button" class="kb-mkgo" data-mkgo="${s}"><b>${fmtDuration(s)}</b><span>${t("O moment")}</span></button><button type="button" class="kb-btn is-icon is-ghost" data-oset="${i}" title="${esc(t("Move this O moment to the spot you're watching"))}">${icon("check")}</button><button type="button" class="kb-btn is-icon is-ghost kb-qdel" data-odel="${i}" title="${esc(t("Remove"))}">${icon("close")}</button></div>`
+      )
+      .join("");
+    const chips = eff.length
+      ? `<div class="kb-oc-chosen">${eff.map((r) => `<span class="kb-chip" title="${esc(r.title || "")}">${esc(r.title || t("Clip"))} <small>${fmtDuration(refLen(r))}</small></span>`).join("")}</div>${own.length ? "" : `<p class="kb-plc-meta">${t("These play for every scene without a clip of its own.")}</p>`}`
+      : `<p class="kb-plc-meta">${t("No O clip chosen yet.")}</p>`;
+    const sel = (cur, opts) => opts.map(([v2, l]) => `<option value="${v2}"${cur === v2 ? " selected" : ""}>${t(l)}</option>`).join("");
+    return secHtml(
+      "omoments",
+      `${t("O moments")}<small class="kb-upsec-n">${pts.length || ""}</small>`,
+      `${rows || `<p class="kb-plc-meta">${t("Press Shift+O at the moment of an O (O itself marks it too) – the O clip then plays next to the video from there.")}</p>`}
+      <div class="kb-mkadds"><button type="button" class="kb-btn is-ghost kb-mkadd" data-omark>${icon("drop")}${t("Mark an O moment here (Shift+O)")}</button><button type="button" class="kb-btn is-ghost kb-mkadd" data-opick>${icon("film")}${t("Choose the O clip …")}</button></div>
+      ${chips}
+      <div class="kb-oset">
+        <label class="kb-cut-opt"><input type="checkbox" data-oshow${p.show ? " checked" : ""}><span>${t("Show the O clip at the O moments")}</span></label>
+        <label class="kb-form-row"><span>${t("Window")}</span><select class="kb-field" data-opos>${sel(p.pos, [["tl", "Top left"], ["tr", "Top right"], ["bl", "Bottom left"], ["br", "Bottom right"]])}</select></label>
+        <label class="kb-form-row"><span>${t("Size")}</span><input type="range" min="15" max="55" step="1" value="${p.size}" data-osize></label>
+      </div>`
+    );
+  }
 
   // ---------- Source: direct stream, otherwise transcode ----------
   const streams = (x.sceneStreams || []).filter((s) => /mp4|webm/.test(s.mime_type || s.url));
@@ -1034,6 +1076,7 @@ export async function render(host, params, query = {}) {
         )
         .join("") + `<div class="kb-mkadds"><button type="button" class="kb-btn is-ghost kb-mkadd" data-mkadd>${icon("plus")}${t("Add a marker here (B)")}</button><button type="button" class="kb-btn is-ghost kb-mkadd" data-mkpart title="${t("A part of the video with a start, an end and its own tags")}">${icon("tag")}${t("Add a part …")}</button></div>`
     );
+    box.insertAdjacentHTML("beforeend", `<div class="kb-omoments">${oSection()}</div>`);
     paintMarks();
   }
   async function addMarker() {
@@ -1049,7 +1092,29 @@ export async function render(host, params, query = {}) {
       errorToast(e, "Marker");
     }
   }
+  $("[data-side]").addEventListener("change", (e) => {
+    if (e.target.matches("[data-oshow]")) setOPrefs({ show: e.target.checked });
+    else if (e.target.matches("[data-opos]")) setOPrefs({ pos: e.target.value });
+    else return;
+    oplay.layout();
+    oplay.refresh();
+  });
+  $("[data-side]").addEventListener("input", (e) => {
+    if (!e.target.matches("[data-osize]")) return;
+    setOPrefs({ size: Number(e.target.value) });
+    oplay.layout();
+  });
   $("[data-side]").addEventListener("click", async (e) => {
+    if (e.target.closest("[data-omark]")) return markO();
+    if (e.target.closest("[data-opick]")) return oData().then(() => openOPicker({ scene: x, onDone: () => (oplay.refresh(), paintMarkers()) }));
+    const oset = e.target.closest("[data-oset]");
+    const odel = e.target.closest("[data-odel]");
+    if (oset || odel) {
+      if (oset) setPoint(x.id, Number(oset.dataset.oset), snap(v.currentTime, fps));
+      else removePoint(x.id, Number(odel.dataset.odel));
+      oplay.refresh();
+      return paintMarkers();
+    }
     const go = e.target.closest("[data-mkgo]");
     if (go) {
       v.currentTime = Number(go.dataset.mkgo);
@@ -1258,6 +1323,7 @@ export async function render(host, params, query = {}) {
     goFolder: () => goToFolder(f.path),
     music: () => import("./music.js").then((m) => m.openMusic(x, v)),
     cut: () => import("./clipcut.js").then((m) => m.openClipCut(x, v)),
+    onO: () => oPrefs().mark !== false && markO(true),
     cover: () => frameAsCover(),
     funscript: () => addFunscript(),
   });
@@ -1784,7 +1850,7 @@ export async function render(host, params, query = {}) {
     else if (k === "p") next(-1);
     else if (k === "i") $("[data-panel]").click();
     else if (k === "h") plc.fav().catch((err) => errorToast(err, "Favorite"));
-    else if (k === "o") plc.o(1).catch((err) => errorToast(err, "O counter"));
+    else if (k === "o") (e.shiftKey ? (markO(), Promise.resolve()) : plc.o(1)).catch((err) => errorToast(err, "O counter"));
     else if (/^[1-5]$/.test(k)) plc.rate(Number(k)).catch((err) => errorToast(err, "Rating"));
     else if (/^[0-9]$/.test(k)) v.currentTime = (Number(k) / 10) * (v.duration || dur);
     else handled = false;
@@ -1813,6 +1879,7 @@ export async function render(host, params, query = {}) {
       cv.open = false;
       saveCover(x.id);
     }
+    oplay.destroy();
     if (infoSlots) infoSlots.destroy();
     if (menuSlots) menuSlots.destroy();
     document.removeEventListener("keydown", onKey);

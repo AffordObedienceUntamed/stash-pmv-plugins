@@ -7,6 +7,7 @@ import { cardInfo } from "../pieces.js";
 import { forgetLarge, largeNow } from "../scale.js";
 import { esc, icon, toast, errorToast, store, confirmDialog, fmtDate, folderMode, ratingSystem, setRatingSystem } from "../ui.js";
 import { t, locale, LANGS, chosen, choose } from "../i18n.js";
+import { oPrefs, setOPrefs } from "../oclip.js";
 import { gql, setPluginConfig } from "../api.js";
 import { typeInfo, selection, fieldHtml, readFields, unwrap, labelOf, LABELS } from "../forms.js";
 import { go } from "../main.js";
@@ -388,6 +389,8 @@ function renderPlayerUi(body) {
         <select class="kb-field" data-wheel>${[["volume", "Volume"], ["seek", "Jump forward / back"], ["off", "Off"]].map(([v, l]) => `<option value="${v}"${(player.wheel || "volume") === v ? " selected" : ""}>${t(l)}</option>`).join("")}</select></label>
       ${sw("data-wheelrev", !!player.wheelRev, "Reverse the wheel", "Normally turning the wheel up makes it louder or jumps forward. Switch this on and up goes quieter / back, down louder / forward.")}
       ${sw("data-scrubpeek", player.scrubPeek !== false, "Picture when hovering the timeline", "Hover the timeline in the player to see a small picture of that moment above the pointer (needs Stash's timeline images – Tasks → Generate → Timeline images). Not shown on touch screens.")}
+      ${sw("data-omark", oPrefs().mark !== false, "O marks the moment", "Pressing O (key or button) in the player also remembers the spot in the video. Shift+O marks it without counting an O.")}
+      ${sw("data-oshow", oPrefs().show !== false, "Show the O clip at the O moments", "From a marked O moment on, the O clip you chose plays in a small window next to the video (info bar → O moments).")}
       ${sw("data-fspanel", player.fsPanel !== false, "Info panel in fullscreen", "Move the mouse to the right edge in fullscreen to slide in the info panel.")}
       <div class="kb-set"><div class="kb-set-label"><b>${t("External players")}</b><small>${t("The “External player” button in a scene's info panel hands the video to a player on this device – for formats the browser can't play. Choose the ones to offer; some need a small helper installed (see below each).")}</small></div></div>
       <div class="kb-extpick" data-extpick></div>
@@ -414,6 +417,8 @@ function renderPlayerUi(body) {
   body.querySelector("[data-wheel]").onchange = (e) => setPlayer({ wheel: e.target.value });
   body.querySelector("[data-wheelrev]").onchange = (e) => setPlayer({ wheelRev: e.target.checked });
   body.querySelector("[data-scrubpeek]").onchange = (e) => setPlayer({ scrubPeek: e.target.checked });
+  body.querySelector("[data-omark]").onchange = (e) => setOPrefs({ mark: e.target.checked });
+  body.querySelector("[data-oshow]").onchange = (e) => setOPrefs({ show: e.target.checked });
   body.querySelector("[data-fspanel]").onchange = (e) => setPlayer({ fsPanel: e.target.checked });
   body.querySelector("[data-vanim]").onchange = (e) => store.set("viewer", Object.assign(store.get("viewer", { panel: false, interval: 5 }), { anim: e.target.value }));
   body.querySelector("[data-autoplay]").onchange = (e) => setPlayer({ autoplay: e.target.checked });

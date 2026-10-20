@@ -209,7 +209,7 @@ function bindPerfCards(host, getItem) {
 }
 
 // Binds the buttons; refresh() reloads the details and redraws the placard.
-export function bindPlacard(host, kind, getItem, { refresh, onDeleted, goFolder, music, cover, funscript, position, cut }) {
+export function bindPlacard(host, kind, getItem, { refresh, onDeleted, goFolder, music, cover, funscript, position, cut, onO }) {
   bindPerfCards(host, getItem);
   // Taking a performer off: always asks first. On touch screens the × is hidden (too easy to hit) – hold the card instead
   async function removePerf(id) {
@@ -389,6 +389,7 @@ export function bindPlacard(host, kind, getItem, { refresh, onDeleted, goFolder,
       pop(btn, 1.18);
       burst(btn.querySelector(".kb-ic") || btn, "drop");
     }
+    if (delta > 0 && onO) onO(); // (the player remembers the moment of the O)
     const n = delta > 0 ? await addO(kind, x.id) : await removeO(kind, x.id);
     x.o_counter = n;
     host.querySelector("[data-ocount]").textContent = n;
