@@ -663,6 +663,12 @@ export default {
     "Mouse wheel": "Con lăn chuột",
     "Next / previous song": "Bài sau / bài trước",
     "Wheel down = next song, up = previous (only with several songs)": "Cuộn xuống = bài sau, lên = bài trước (chỉ khi có nhiều bài)",
+    "Mouse control": "Điều khiển bằng chuột",
+    "Run the show with the mouse alone": "Điều khiển chỉ bằng chuột",
+    "Click the sides": "Bấm vào hai bên",
+    "Right third = next song, left = previous (only with several songs)": "Phần ba bên phải = bài kế, trái = bài trước (chỉ khi có nhiều bài)",
+    "Right third louder, left third quieter (5 % per click)": "Phần ba bên phải to hơn, bên trái nhỏ hơn (5 % mỗi lần bấm)",
+    "Left = next song / louder, right = previous song / quieter": "Trái = bài kế / to hơn, phải = bài trước / nhỏ hơn",
   },
   patterns: [
     ["on the beat ×([\\d.]+)", "theo nhịp ×$1"],

@@ -663,6 +663,12 @@ export default {
     "Mouse wheel": "Mausrad",
     "Next / previous song": "Nächster / voriger Song",
     "Wheel down = next song, up = previous (only with several songs)": "Nach unten = nächster Song, nach oben = voriger (nur bei mehreren Songs)",
+    "Mouse control": "Maussteuerung",
+    "Run the show with the mouse alone": "Die Show nur mit der Maus steuern",
+    "Click the sides": "Klick an die Seiten",
+    "Right third = next song, left = previous (only with several songs)": "Rechtes Drittel = nächster Song, links = vorheriger (nur mit mehreren Songs)",
+    "Right third louder, left third quieter (5 % per click)": "Rechtes Drittel lauter, linkes leiser (5 % pro Klick)",
+    "Left = next song / louder, right = previous song / quieter": "Links = nächster Song / lauter, rechts = vorheriger / leiser",
   },
   patterns: [
     ["on the beat ×([\\d.]+)", "auf dem Beat ×$1"],

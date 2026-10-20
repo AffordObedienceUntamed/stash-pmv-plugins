@@ -7,6 +7,13 @@
 
 export const CHANGES = [
   {
+    v: "3.115.1",
+    date: "2026-10-20",
+    items: [
+      ["pmv", "Mouse control in the PMV Generator, as suggested by abverbaerba: it has its own section now (between Sound and Funscript) in the order you'd use it – click the middle, middle mouse button, click the sides, mouse wheel. Clicking the sides has the same choice as the wheel – off / next-previous song / song volume – and changes the volume in 5 % steps (was 10 %). “Start by itself” moved next to the intro and outro switches.", "PMV Generator 的鼠标控制（采纳 abverbaerba 的建议）：现在有独立的区域（在“声音”和“Funscript”之间），按使用顺序排列——点击中间、鼠标中键、点击两侧、鼠标滚轮。点击两侧和滚轮一样可以选择：关闭 / 下一首-上一首 / 歌曲音量，音量每次调 5 %（原来是 10 %）。“自动开始”移到了片头和片尾开关旁边。"],
+    ],
+  },
+  {
     v: "3.115.0",
     date: "2026-10-20",
     items: [

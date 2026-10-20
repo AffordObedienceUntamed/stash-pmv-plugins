@@ -669,6 +669,12 @@ export default {
     "Mouse wheel": "鼠标滚轮",
     "Next / previous song": "下一首/上一首",
     "Wheel down = next song, up = previous (only with several songs)": "向下 = 下一首，向上 = 上一首（仅多首歌时）",
+    "Mouse control": "鼠标控制",
+    "Run the show with the mouse alone": "只用鼠标控制播放",
+    "Click the sides": "点击两侧",
+    "Right third = next song, left = previous (only with several songs)": "右三分之一 = 下一首，左 = 上一首（仅在有多首歌时）",
+    "Right third louder, left third quieter (5 % per click)": "右三分之一变大声，左三分之一变小声（每次点击 5 %）",
+    "Left = next song / louder, right = previous song / quieter": "左 = 下一首 / 更大声，右 = 上一首 / 更小声",
   },
   patterns: [
     ["on the beat ×([\\d.]+)", "踩点 ×$1"],

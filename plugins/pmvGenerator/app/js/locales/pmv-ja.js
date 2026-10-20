@@ -663,6 +663,12 @@ export default {
     "Mouse wheel": "マウスホイール",
     "Next / previous song": "次／前の曲",
     "Wheel down = next song, up = previous (only with several songs)": "下 = 次の曲、上 = 前の曲（複数曲のとき）",
+    "Mouse control": "マウス操作",
+    "Run the show with the mouse alone": "マウスだけで操作",
+    "Click the sides": "左右をクリック",
+    "Right third = next song, left = previous (only with several songs)": "右3分の1＝次の曲、左＝前の曲（複数の曲があるときのみ）",
+    "Right third louder, left third quieter (5 % per click)": "右3分の1で大きく、左3分の1で小さく（1クリックにつき5 %）",
+    "Left = next song / louder, right = previous song / quieter": "左＝次の曲／大きく、右＝前の曲／小さく",
   },
   patterns: [
     ["on the beat ×([\\d.]+)", "ビートに ×$1"],

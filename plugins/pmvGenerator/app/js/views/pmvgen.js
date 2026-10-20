@@ -90,7 +90,8 @@ const DEFAULTS = {
   mWheel: "off", // mouse wheel while it plays: off | song (next / previous song) | volume (song volume)
   mWheelRev: false, // … the other way round
   mMid: false, // a click in the middle of the picture pauses / plays
-  mSides: false, // a click on the left / right third of the picture changes the song volume
+  mSides: false, // (old on/off switch, replaced by mSidesMode)
+  mSidesMode: "", // a click on the left / right third of the picture: off | song (previous / next song) | volume (song volume)
   mSidesRev: false, // … left = louder, right = quieter
   mShuffle: false, // the middle mouse button reshuffles the clips
   introEach: false, // several songs / Plex: intro and outro come again for every song
@@ -181,6 +182,7 @@ const SECTIONS = [
   ["look", "Color & look", "Color mood, brightness and film effects"],
   ["frame", "Picture & frame", "Format, fit, seams and edges"],
   ["sound", "Sound", "Song and clip volume"],
+  ["mouse", "Mouse control", "Run the show with the mouse alone"],
   ["fs", "Funscript", "A script for The Handy that follows the song"],
   ["out", "Output", "Intro, outro and recording"],
 ];
@@ -213,6 +215,7 @@ export function render(main) {
   S.layouts = Object.assign({}, DEFAULTS.layouts, S.layouts);
   S.stages = JSON.parse(JSON.stringify(Array.isArray(S.stages) && S.stages.length >= 2 ? S.stages : DEFAULTS.stages));
   S.collapsed = Object.assign({}, S.collapsed);
+  if (!S.mSidesMode) S.mSidesMode = S.mSides ? "volume" : "off"; // (settings from before the choice existed)
   // Settings from before version 2 had "Fill" as default – people took the cropping for a bug
   if (!stored.v) S.fit = "contain";
   if (!Array.isArray(S.folders)) S.folders = [];
@@ -573,6 +576,22 @@ export function render(main) {
           </div>
         </div>
 
+        <div class="kb-pmvg-sec" data-sec="mouse">
+          ${secHead("mouse")}
+          <div class="kb-pmvg-pane" id="pmvg-pane-mouse" data-pane="mouse">
+            <div class="kb-pmvg-opts">
+              ${sw("mMid", "Click the middle: play / pause", "A click on the middle third of the picture")}
+              ${sw("mShuffle", "Middle mouse button: new clips", "Same as the R key")}
+            </div>
+            <span class="kb-lab-t">Click the sides</span>
+            <div class="kb-seg" data-seg="mSidesMode"><button type="button" data-v="off">Off</button><button type="button" data-v="song" title="Right third = next song, left = previous (only with several songs)">Next / previous song</button><button type="button" data-v="volume" title="Right third louder, left third quieter (5 % per click)">Song volume</button></div>
+            <div class="kb-pmvg-opts">${sw("mSidesRev", "Sides the other way round", "Left = next song / louder, right = previous song / quieter")}</div>
+            <span class="kb-lab-t">Mouse wheel</span>
+            <div class="kb-seg" data-seg="mWheel"><button type="button" data-v="off">Off</button><button type="button" data-v="song" title="Wheel down = next song, up = previous (only with several songs)">Next / previous song</button><button type="button" data-v="volume">Song volume</button></div>
+            <div class="kb-pmvg-opts">${sw("mWheelRev", "Reverse the wheel", "Turns it round: wheel down = previous song / louder, wheel up = next song / quieter")}</div>
+          </div>
+        </div>
+
         <div class="kb-pmvg-sec" data-sec="fs">
           ${secHead("fs")}
           <div class="kb-pmvg-pane" id="pmvg-pane-fs" data-pane="fs">
@@ -602,6 +621,7 @@ export function render(main) {
               ${sw("intro", "Intro", "Title card at the start: your title slams in, comic-SFX style")}
               ${sw("outro", "Outro", "Credits at the end: the picture fades dark, title and number of clips")}
               ${sw("introEach", "Again for every song", "With several songs or Plex: intro and outro come again for each song (the outro when a song plays to its end)")}
+              ${sw("autoStart", "Start by itself", "Starts as soon as it can – when the page opens with a Plex playlist set, or right after you pick a song – with the settings as you left them")}
             </div>
             <input class="kb-field" data-title placeholder="Title for intro/outro – empty = song name" value="${esc(S.title)}">
             </div>
@@ -613,19 +633,6 @@ export function render(main) {
             </div>
             <span class="kb-lab-t">Recording quality</span>
             <div class="kb-seg" data-seg="quality"><button type="button" data-v="720">720p</button><button type="button" data-v="1080">1080p</button></div>
-            </div>
-            <div class="kb-pmvg-group">
-              <div class="kb-pmvg-grouphead"><b>Mouse and start</b><small>Control the show without the bar</small></div>
-            <div class="kb-pmvg-opts">
-              ${sw("autoStart", "Start by itself", "Starts as soon as it can – when the page opens with a Plex playlist set, or right after you pick a song – with the settings as you left them")}
-              ${sw("mMid", "Click the middle: play / pause", "A click on the middle third of the picture")}
-              ${sw("mSides", "Click the sides: song volume", "Left third quieter, right third louder (10 % per click)")}
-              ${sw("mSidesRev", "Sides the other way round", "Left louder, right quieter")}
-              ${sw("mShuffle", "Middle mouse button: new clips", "Same as the R key")}
-              ${sw("mWheelRev", "Reverse the wheel", "Turns it round: wheel down = previous song / louder, wheel up = next song / quieter")}
-            </div>
-            <span class="kb-lab-t">Mouse wheel</span>
-            <div class="kb-seg" data-seg="mWheel"><button type="button" data-v="off">Off</button><button type="button" data-v="song" title="Wheel down = next song, up = previous (only with several songs)">Next / previous song</button><button type="button" data-v="volume">Song volume</button></div>
             </div>
           </div>
         </div>
@@ -729,6 +736,7 @@ export function render(main) {
       look: look,
       frame: `${S.format === "window" ? "window shape" : S.format} · ${S.fit === "cover" ? "fill" : "fit"}${S.soft ? " · soft seams" : ""}`,
       sound: `Song ${S.songVol} · Clips ${S.fx.voice ? S.clipVol : "off"}`,
+      mouse: [S.mMid, S.mShuffle, S.mSidesMode !== "off", S.mWheel && S.mWheel !== "off"].filter(Boolean).length ? `${[S.mMid, S.mShuffle, S.mSidesMode !== "off", S.mWheel && S.mWheel !== "off"].filter(Boolean).length} on` : "off",
       fs: S.fsOn ? `${S.fsPace === "auto" ? "follows the song" : S.fsPace} · ${S.fsSize === "auto" ? "auto size" : S.fsSize}` : "off",
       out: [S.intro && "Intro", S.outro && "Outro", S.record && "Recording"].filter(Boolean).join(" · ") || "live only",
     };
@@ -1473,7 +1481,7 @@ export function render(main) {
 
   // ---------- My settings (presets) ----------
   // Everything about clips, cutting, effects, look and sound – not the music source or the title
-  const NOT_IN_PRESET = ["autoStart", "mWheel", "mWheelRev", "mMid", "mSides", "mSidesRev", "mShuffle", "collapsed", "glass", "v", "mode", "title", "shuffle", "plexWhat", "plexList", "plexSync", "plexSyncs", "liveApp"];
+  const NOT_IN_PRESET = ["autoStart", "mWheel", "mWheelRev", "mMid", "mSides", "mSidesMode", "mSidesRev", "mShuffle", "collapsed", "glass", "v", "mode", "title", "shuffle", "plexWhat", "plexList", "plexSync", "plexSyncs", "liveApp"];
   // Kept in Stash (this plugin's settings), not in the browser: browser storage for localhost:9999 is
   // shared by Stash and every plugin and can be full – saving then failed without a word. This way
   // they're also there in every browser. Stored as one JSON text so Stash leaves the names alone.
@@ -2947,7 +2955,13 @@ class Generator {
       const x = (e.clientX - r.left) / r.width;
       if (x > 1 / 3 && x < 2 / 3) {
         if (this.S.mMid && !this.outside) this.togglePause();
-      } else if (this.S.mSides && !this.outside) this.nudgeVolume(x >= 2 / 3 !== !!this.S.mSidesRev ? 10 : -10);
+      } else {
+        const mode = this.S.mSidesMode || (this.S.mSides ? "volume" : "off");
+        if (mode === "off" || this.outside) return;
+        const fwd = x >= 2 / 3 !== !!this.S.mSidesRev; // the right third = next / louder (turned round: the left)
+        if (mode === "volume") this.nudgeVolume(fwd ? 5 : -5);
+        else if (this.music && this.music.type === "list") this.skip(fwd ? 1 : -1);
+      }
     });
     el.addEventListener("mousedown", (e) => e.button === 1 && this.S.mShuffle && e.preventDefault()); // (no auto-scroll cursor)
     el.addEventListener("auxclick", (e) => {

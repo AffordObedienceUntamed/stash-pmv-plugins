@@ -663,6 +663,12 @@ export default {
     "Mouse wheel": "Molette de la souris",
     "Next / previous song": "Morceau suivant / précédent",
     "Wheel down = next song, up = previous (only with several songs)": "Vers le bas = morceau suivant, vers le haut = précédent (avec plusieurs morceaux)",
+    "Mouse control": "Commande à la souris",
+    "Run the show with the mouse alone": "Piloter le show avec la souris seule",
+    "Click the sides": "Clic sur les côtés",
+    "Right third = next song, left = previous (only with several songs)": "Tiers droit = morceau suivant, gauche = précédent (seulement avec plusieurs morceaux)",
+    "Right third louder, left third quieter (5 % per click)": "Tiers droit plus fort, tiers gauche plus faible (5 % par clic)",
+    "Left = next song / louder, right = previous song / quieter": "Gauche = morceau suivant / plus fort, droite = précédent / plus faible",
   },
   patterns: [
     ["on the beat ×([\\d.]+)", "sur le rythme ×$1"],
