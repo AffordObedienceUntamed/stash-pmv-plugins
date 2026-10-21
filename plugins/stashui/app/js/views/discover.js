@@ -6,7 +6,7 @@ import { esc, icon, fmtDuration, fmtDate, errorToast, store, debounce } from "..
 import { t } from "../i18n.js";
 import { gql } from "../api.js";
 import { runBackend } from "../interactive.js";
-import { boxBase, localBoxIds, lazyCovers } from "./perfstats.js";
+import { boxBase, localBoxIds, lazyCovers, localPerformers, sceneHasMine, daysAgo, openBoxScene } from "./perfstats.js";
 
 const SORTS = [
   ["DATE", "Newest first"],
@@ -18,7 +18,9 @@ const PER_PAGE = 40;
 const norm = (s) => String(s || "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
 
 export async function render(main) {
-  const opt = Object.assign({ sort: "DATE", show: "all", q: "" }, store.get("discover", {}));
+  const opt = Object.assign({ sort: "DATE", show: "all", q: "", days: 0, perf: "all" }, store.get("discover", {}));
+  opt.days = Math.max(0, parseInt(opt.days, 10) || 0);
+  if (opt.perf !== "mine") opt.perf = "all";
   if (!SORTS.some((s) => s[0] === opt.sort)) opt.sort = "DATE";
   const save = () => store.set("discover", opt);
 
@@ -33,6 +35,8 @@ export async function render(main) {
         <label class="kb-search">${icon("search")}<input class="kb-field" type="search" data-q value="${esc(opt.q)}" placeholder="${t("Search title, performer, studio …")}"></label>
         <select class="kb-field" data-sort aria-label="${t("Sort order")}">${SORTS.map(([v, l]) => `<option value="${v}"${v === opt.sort ? " selected" : ""}>${t(l)}</option>`).join("")}</select>
         <select class="kb-field" data-show aria-label="${t("Show")}">${[["all", "All"], ["missing", "Only what's not in your library"], ["have", "Only what's in your library"]].map(([v, l]) => `<option value="${v}"${v === opt.show ? " selected" : ""}>${t(l)}</option>`).join("")}</select>
+        <select class="kb-field" data-perf aria-label="${t("Performers")}">${[["all", "Any performers"], ["mine", "Performers from my library"]].map(([v, l]) => `<option value="${v}"${v === opt.perf ? " selected" : ""}>${t(l)}</option>`).join("")}</select>
+        <label class="kb-lab kb-disc-days" title="${esc(t("Only scenes released in the last n days. 0 = off."))}">${t("Last (days)")} <input type="number" min="0" max="36500" class="kb-field kb-pst-days" data-days value="${opt.days || ""}" placeholder="0"></label>
       </div>
     </header>
     <div class="kb-disc-grid" data-grid></div>
@@ -70,6 +74,8 @@ export async function render(main) {
   let busy = false;
   let done = false;
   let have = new Map();
+  let mineIdx = null; // the library's performers (for "Performers from my library")
+  const byId = new Map(); // box scene id → scene (the window opens from a card)
   const seen = new Set();
   const mine = () => `${box.name || box.endpoint}`;
 
@@ -93,21 +99,28 @@ export async function render(main) {
     const mark = $("[data-more]");
     mark.innerHTML = `<span class="kb-hint">${t("Asking {name} …", { name: mine() })}</span>`;
     try {
-      const r = await runBackend({ mode: "box_scenes", endpoint: box.endpoint, text: opt.q.trim(), sort: opt.sort, direction: opt.sort === "TITLE" ? "ASC" : "DESC", page: page + 1, per_page: PER_PAGE, browse: 1 });
+      const r = await runBackend({ mode: "box_scenes", endpoint: box.endpoint, text: opt.q.trim(), sort: opt.sort, direction: opt.sort === "TITLE" ? "ASC" : "DESC", page: page + 1, per_page: PER_PAGE, browse: 1, since: opt.days ? daysAgo(opt.days + 1) : "", performers_in: opt.perf === "mine" && mineIdx ? [...mineIdx.ids.keys()] : [] });
       if (run !== gen) return;
       page++;
       total = r.count || 0;
       const list = (r.scenes || []).filter((x) => !seen.has(x.id));
-      list.forEach((x) => seen.add(x.id));
+      list.forEach((x) => (seen.add(x.id), byId.set(x.id, x)));
       loaded += (r.scenes || []).length;
       done = !(r.scenes || []).length || loaded >= total;
-      const shown = list.filter((x) => (opt.show === "missing" ? !have.has(x.id) : opt.show === "have" ? have.has(x.id) : true));
+      // the window of days is also checked here (a box without a date criterion sends everything); newest first: once a page reaches back past it, the rest is older
+      const from = opt.days ? daysAgo(opt.days) : "";
+      if (from && opt.sort === "DATE") {
+        const ds = (r.scenes || []).map((x) => x.date).filter(Boolean);
+        if (ds.length && ds.reduce((a, b) => (a < b ? a : b)) < from) done = true;
+      }
+      const shown = list.filter((x) => (opt.show === "missing" ? !have.has(x.id) : opt.show === "have" ? have.has(x.id) : true) && (!from || (x.date && x.date >= from)) && (opt.perf !== "mine" || sceneHasMine(mineIdx, x)));
       grid.insertAdjacentHTML("beforeend", shown.map(card).join(""));
       status();
       lazyCovers(grid, box.endpoint, null);
       if (!grid.children.length && done) {
         // say why: the box sent nothing although it counts scenes (some boxes only answer to a search word), or "Show" hides them all
-        const why = !(r.scenes || []).length && total ? t("{name} says it has {n} scenes but sent none. Try a search word – some stash-boxes can't be browsed without one.", { name: mine(), n: total }) : list.length && opt.show !== "all" ? t("{n} scenes found, but none matches “Show”. Set Show to All.", { n: list.length }) : t("Nothing found.");
+        const filtered = opt.show !== "all" || opt.days || opt.perf === "mine";
+        const why = !(r.scenes || []).length && total && !filtered ? t("{name} says it has {n} scenes but sent none. Try a search word – some stash-boxes can't be browsed without one.", { name: mine(), n: total }) : list.length && opt.show !== "all" && !opt.days && opt.perf !== "mine" ? t("{n} scenes found, but none matches “Show”. Set Show to All.", { n: list.length }) : filtered ? t("Nothing matches your filters (Show, Performers, Last days).") : t("Nothing found.");
         grid.innerHTML = `<p class="kb-pst-wait">${esc(why)}</p>${r.debug ? `<p class="kb-pst-wait"><small>${t("What the box answered:")} <code>${esc(r.debug)}</code></small></p>` : ""}`;
       }
     } catch (err) {
@@ -134,6 +147,7 @@ export async function render(main) {
     done = false;
     busy = false;
     seen.clear();
+    byId.clear();
     grid.innerHTML = "";
     $("[data-more]").innerHTML = "";
     sub.textContent = t("Loading …");
@@ -144,6 +158,20 @@ export async function render(main) {
       have = new Map();
     }
     if (run !== gen) return;
+    if (opt.perf === "mine" || !mineIdx) {
+      try {
+        mineIdx = await localPerformers(box.endpoint, true);
+      } catch (e) {
+        mineIdx = null;
+      }
+      if (run !== gen) return;
+    }
+    if (opt.perf === "mine" && mineIdx && !mineIdx.ids.size) {
+      // nobody in the library is linked to this stash-box: asking for "their" scenes would page through the whole box
+      sub.textContent = "";
+      grid.innerHTML = `<p class="kb-pst-wait">${t("None of your performers is linked to this stash-box yet. Open a performer → Edit → “Fill in from the internet” to link one.")}</p>`;
+      return;
+    }
     more();
   }
 
@@ -156,12 +184,22 @@ export async function render(main) {
   $("[data-q]").addEventListener("keydown", (e) => e.key === "Enter" && (e.preventDefault(), (opt.q = e.target.value), save(), start()));
   $("[data-sort]").onchange = (e) => ((opt.sort = e.target.value), save(), start());
   $("[data-show]").onchange = (e) => ((opt.show = e.target.value), save(), start());
+  $("[data-perf]").onchange = (e) => ((opt.perf = e.target.value), save(), start());
+  $("[data-days]").onchange = (e) => ((opt.days = Math.max(0, parseInt(e.target.value, 10) || 0)), (e.target.value = opt.days || ""), save(), start());
   boxSel.onchange = () => {
     box = boxes.find((b) => b.endpoint === boxSel.value) || box;
     store.set("discoverBox", box.endpoint);
     start();
   };
   main.addEventListener("click", (e) => e.target.closest("[data-loadmore]") && more());
+  // a scene the library lacks opens in a window (bigger cover, details, performers) – the library's own ones go straight to the local scene
+  grid.addEventListener("click", (e) => {
+    const a = e.target.closest("a.kb-disc-card:not(.is-have)");
+    const x = a && byId.get(a.dataset.id);
+    if (!x || e.button || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    e.preventDefault();
+    openBoxScene(x, { endpoint: box.endpoint, name: box.name });
+  });
   if (window.IntersectionObserver) {
     const io = new IntersectionObserver((es) => es.some((e) => e.isIntersecting) && more(), { rootMargin: "400px" });
     io.observe($("[data-more]"));

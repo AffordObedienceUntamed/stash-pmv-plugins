@@ -7,6 +7,13 @@
 
 export const CHANGES = [
   {
+    v: "3.116.0",
+    date: "2026-10-21",
+    items: [
+      ["ui", "Discover and Missing scenes, as suggested by ufousox007: (1) a “Last (days)” field instead of exact dates – only scenes from the last n days (Discover: released in the last n days; the performer page's Missing scenes and Settings → This interface have the same field, and it replaces the From / To dates). (2) Discover has a “Performers from my library” filter – only scenes with performers you have linked to that stash-box (together with the days field that gives “recently released by my performers”). (3) Clicking a scene you don't have opens a window with a larger cover, the details, the performers (the ones in your library link to them), the tags, a button to search your library for the title, and the one to open it on the stash-box. I could only test this against a fake stash-box – StashDB's date and performer criteria are assumed; if a box doesn't know them the page filters itself. Searching or downloading from that window isn't built yet.", "发现和缺失场景（ufousox007 的建议）：（1）用“最近（天）”字段代替确切日期 – 只显示最近 n 天内的场景（发现：最近 n 天内发布；演员页面的缺失场景以及“设置 → 此界面”里有同样的字段，它会取代“从”/“到”日期）。（2）发现新增“我资料库中的演员”筛选 – 只显示包含你已与该 stash-box 关联的演员的场景（与天数字段一起就是“我的演员最近发布的”）。（3）点击你没有的场景会打开一个窗口，包含更大的封面、详情、演员（资料库中已有的可点击跳转）、标签、在资料库中搜索该标题的按钮以及在 stash-box 上打开的按钮。这些只在模拟的 stash-box 上测试过 – StashDB 的日期和演员条件是假设的；如果某个 stash-box 不支持，页面会自己筛选。窗口里的搜索和下载功能尚未实现。", "discover::[data-days]"],
+    ],
+  },
+  {
     v: "3.115.1",
     date: "2026-10-20",
     items: [

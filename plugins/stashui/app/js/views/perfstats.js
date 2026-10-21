@@ -3,7 +3,7 @@
 // stash-box page – StashDB … – lists that the library doesn't have; asked through Stash UI's backend, which uses the
 // API key Stash has for that box, so no key ever reaches the page).
 
-import { esc, icon, fmtNum, fmtBytes, fmtDuration, fmtDate, ratingText, errorToast, store } from "../ui.js";
+import { esc, icon, fmtNum, fmtBytes, fmtDuration, fmtDate, ratingText, errorToast, store, mountOverlay } from "../ui.js";
 import { t } from "../i18n.js";
 import { gql } from "../api.js";
 import { runBackend } from "../interactive.js";
@@ -148,6 +148,100 @@ export async function localBoxIds(endpoint) {
   return map;
 }
 
+// the library's performers as the stash-box sees them: by the box's performer id (stash_ids) and, for the unlinked ones, by name / alias
+const perfCache = new Map();
+export async function localPerformers(endpoint, fresh) {
+  if (!fresh && perfCache.has(endpoint)) return perfCache.get(endpoint);
+  const ask = (alias) => gql(`query LocalBoxPerformers { findPerformers(filter: { per_page: -1 }) { performers { id name ${alias ? "alias_list " : ""}stash_ids { endpoint stash_id } } } }`, undefined, { heavy: true });
+  let d;
+  try {
+    d = await ask(true);
+  } catch (e) {
+    d = await ask(false); // a Stash without alias_list
+  }
+  const ids = new Map();
+  const names = new Map();
+  for (const p of d.findPerformers.performers) {
+    for (const x of p.stash_ids || []) if (x.endpoint === endpoint) ids.set(x.stash_id, p.id);
+    for (const n of [p.name, ...(p.alias_list || [])]) {
+      const k = norm(n);
+      if (k.length >= 5 && !names.has(k)) names.set(k, p.id);
+    }
+  }
+  const idx = { ids, names };
+  perfCache.set(endpoint, idx);
+  return idx;
+}
+// the local performer id of one performer of a stash-box scene ("" = not in the library)
+export const matchPerf = (idx, boxId, name) => (idx && ((boxId && idx.ids.get(boxId)) || idx.names.get(norm(name)))) || "";
+// only the linked ones count here (a name alone is too weak to say "this is my performer")
+export const sceneHasMine = (idx, x) => !!idx && (x.performer_ids || []).some((id) => id && idx.ids.has(id));
+
+// the day n days ago as YYYY-MM-DD (the window "only the last n days")
+export const daysAgo = (n) => {
+  const d = new Date();
+  d.setDate(d.getDate() - Math.max(0, Number(n) || 0));
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+
+// A stash-box scene in a window: bigger cover, details, the performers (with the ones the library has linked), tags and the way on
+export function openBoxScene(x, { endpoint, name }) {
+  const base = boxBase(endpoint);
+  const title = x.title || x.id;
+  const wrap = document.createElement("div");
+  const meta = [x.date ? fmtDate(x.date) : "", x.studio, x.duration ? fmtDuration(x.duration) : ""].filter(Boolean).join(" · ");
+  wrap.innerHTML = `
+    <div class="kb-scrim kb-dialog-scrim"></div>
+    <div class="kb-dialog kb-bsm" role="dialog" aria-modal="true" aria-label="${esc(title)}">
+      <button type="button" class="kb-btn is-icon is-ghost kb-bsm-x" data-close aria-label="${t("Close")}">${icon("close")}</button>
+      <span class="kb-bsm-cover">${x.image ? `<img alt="" data-cover="${esc(x.image)}">` : ""}</span>
+      <h2>${esc(title)}</h2>
+      ${meta ? `<p class="kb-bsm-meta">${esc(meta)}</p>` : ""}
+      <div class="kb-chips kb-bsm-perfs" data-perfs></div>
+      ${(x.tags || []).length ? `<div class="kb-chips kb-bsm-tags">${x.tags.map((g) => `<span class="kb-chip">${esc(g)}</span>`).join("")}</div>` : ""}
+      ${x.details ? `<p class="kb-bsm-details">${esc(x.details)}</p>` : ""}
+      <div class="kb-actions">
+        <a class="kb-btn" href="#/scenes?q=${encodeURIComponent(title)}" data-lib>${t("Search your library for this title")}</a>
+        <a class="kb-btn is-primary" href="${esc(base + "/scenes/" + encodeURIComponent(x.id))}" target="_blank" rel="noopener noreferrer">${t("Open on {name}", { name: name || hostOf(base) })}</a>
+      </div>
+    </div>`;
+  mountOverlay(wrap);
+  const onKey = (e) => {
+    if (e.key === "Escape") {
+      e.stopPropagation();
+      close();
+    }
+  };
+  const close = () => {
+    wrap.remove();
+    document.removeEventListener("keydown", onKey, true);
+  };
+  document.addEventListener("keydown", onKey, true);
+  wrap.querySelector(".kb-scrim").onclick = close;
+  wrap.querySelector("[data-close]").onclick = close;
+  wrap.querySelector("[data-lib]").addEventListener("click", close);
+  const perfs = wrap.querySelector("[data-perfs]");
+  const paint = (idx) => {
+    perfs.innerHTML = (x.performers || [])
+      .map((n, i) => {
+        if (!n) return "";
+        const bid = (x.performer_ids || [])[i];
+        const local = matchPerf(idx, bid, n);
+        return local
+          ? `<a class="kb-chip is-have" href="#/performer/${esc(local)}" title="${esc(t("In your library"))}">${esc(n)}</a>`
+          : bid
+            ? `<a class="kb-chip" href="${esc(base + "/performers/" + encodeURIComponent(bid))}" target="_blank" rel="noopener noreferrer">${esc(n)}</a>`
+            : `<span class="kb-chip">${esc(n)}</span>`;
+      })
+      .join("");
+  };
+  paint(null);
+  perfs.addEventListener("click", (e) => e.target.closest('a[href^="#/"]') && close());
+  localPerformers(endpoint).then(paint, () => {});
+  lazyCovers(wrap, endpoint, null);
+  wrap.querySelector("[data-lib]").focus();
+}
+
 // Settings → This interface → Missing scenes: oldest / newest date to list, the stash-box to ask first, covers on/off
 const dateOk = (v) => (/^\d{4}(-\d{2}(-\d{2})?)?$/.test(String(v || "")) ? String(v) : "");
 const inRange = (x, from, to) => {
@@ -252,8 +346,9 @@ async function showMissing(host, p, state) {
     }
   }
   const all = state.result;
-  const from = dateOk(store.get("missingFrom", ""));
-  const to = dateOk(store.get("missingTo", ""));
+  const days = Math.max(0, parseInt(store.get("missingDays", 0), 10) || 0);
+  const from = days ? daysAgo(days) : dateOk(store.get("missingFrom", ""));
+  const to = days ? "" : dateOk(store.get("missingTo", ""));
   const covers = store.get("missingCovers", true) !== false;
   const inside = all.filter((x) => inRange(x, from, to));
   const miss = inside.filter((x) => !x.local);
@@ -261,14 +356,15 @@ async function showMissing(host, p, state) {
   stat.textContent = t("{name}: {n} scenes · {have} in your library · {miss} missing", { name: box.name, n: inside.length, have: inside.length - miss.length, miss: miss.length });
   const shown = (only ? miss : inside).slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
   const toggle = `<button type="button" class="kb-btn is-ghost" data-pmonly>${only ? t("Show all") : t("Only missing")}</button>`;
-  const range = `<label class="kb-lab">${t("From")} <input type="date" class="kb-field" data-pmfrom value="${esc(/^\d{4}-\d{2}-\d{2}$/.test(from) ? from : "")}"></label><label class="kb-lab">${t("To")} <input type="date" class="kb-field" data-pmto value="${esc(/^\d{4}-\d{2}-\d{2}$/.test(to) ? to : "")}"></label>`;
+  const iso = (v) => (!days && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : "");
+  const range = `<label class="kb-lab" title="${esc(t("Only scenes from the last n days. 0 = off. Replaces From and To."))}">${t("Last (days)")} <input type="number" min="0" max="36500" class="kb-field kb-pst-days" data-pmdays value="${days || ""}" placeholder="0"></label><label class="kb-lab">${t("From")} <input type="date" class="kb-field" data-pmfrom value="${esc(iso(from))}"${days ? " disabled" : ""}></label><label class="kb-lab">${t("To")} <input type="date" class="kb-field" data-pmto value="${esc(iso(to))}"${days ? " disabled" : ""}></label>`;
   body.innerHTML = `<div class="kb-pst-bar">${toggle}${range}</div>` + (shown.length
     ? `<ul class="kb-pm-list${covers ? " has-covers" : ""}">${shown
         .map((x) => {
           const sub = [x.studio, x.performers.filter((n) => n && n !== p.name).slice(0, 3).join(", "), x.duration ? fmtDuration(x.duration) : ""].filter(Boolean).join(" · ");
           const href = x.local ? `#/scene/${x.local}` : `${boxBase(box.endpoint)}/scenes/${encodeURIComponent(x.id)}`;
           const cover = covers ? `<span class="kb-pm-cover">${x.image ? `<img alt="" data-cover="${esc(x.image)}">` : ""}</span>` : "";
-          return `<li class="${x.local ? "is-have" : ""}"><a href="${esc(href)}"${x.local ? "" : ' target="_blank" rel="noopener noreferrer"'}>
+          return `<li class="${x.local ? "is-have" : ""}"><a href="${esc(href)}"${x.local ? "" : ' target="_blank" rel="noopener noreferrer"'} data-bid="${esc(x.id)}">
             ${cover}<em>${x.date ? esc(fmtDate(x.date)) : "–"}</em><span><b>${esc(x.title || x.id)}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</span>
             <i>${x.local ? (x.via === "title" ? t("In your library (same title)") : t("In your library")) : t("Missing")}</i></a></li>`;
         })
@@ -282,9 +378,20 @@ async function showMissing(host, p, state) {
     store.set(key, e.target.value);
     showMissing(host, p, state);
   };
+  body.querySelector("[data-pmdays]").onchange = setRange("missingDays");
   body.querySelector("[data-pmfrom]").onchange = setRange("missingFrom");
   body.querySelector("[data-pmto]").onchange = setRange("missingTo");
   if (covers) lazyCovers(body, box.endpoint);
+  // a scene the library lacks opens in a window with the details instead of leaving for the stash-box right away
+  const list = body.querySelector(".kb-pm-list");
+  if (list)
+    list.addEventListener("click", (e) => {
+      const a = e.target.closest("a[data-bid]");
+      const x = a && all.find((s) => s.id === a.dataset.bid);
+      if (!x || x.local || e.button || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      e.preventDefault();
+      openBoxScene(x, { endpoint: box.endpoint, name: box.name });
+    });
 }
 
 // Buttons [data-pstats] / [data-pmiss] of the performer page open the panel `host`; the active one closes it again

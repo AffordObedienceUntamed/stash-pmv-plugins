@@ -518,6 +518,8 @@ async function renderApp(body) {
         <input type="date" class="kb-field" data-dsp="missingFrom" value="${esc(store.get("missingFrom", ""))}"></label>
       <label class="kb-set"><span class="kb-set-label"><b>${t("Missing scenes: newest date")}</b><small>${t("… and only up to this date. Empty = no limit.")}</small></span>
         <input type="date" class="kb-field" data-dsp="missingTo" value="${esc(store.get("missingTo", ""))}"></label>
+      <label class="kb-set"><span class="kb-set-label"><b>${t("Missing scenes: only the last days")}</b><small>${t("Only scenes from the last n days (0 = off). Replaces the oldest and newest date.")}</small></span>
+        <input type="number" min="0" max="36500" class="kb-field" data-dsp="missingDays" value="${esc(store.get("missingDays", "") || "")}" placeholder="0"></label>
       <label class="kb-set"><span class="kb-set-label"><b>${t("Missing scenes: stash-box")}</b><small>${t("Which stash-box is asked first when a performer is linked to several. The ones set up in Stash (Settings → Metadata Providers) are listed.")}</small></span>
         <select class="kb-field" data-dsp="missingBox" data-boxsel><option value="">${t("Automatic")}</option></select></label>
       <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("Missing scenes: cover pictures")}</b><small>${t("Shows the cover of each scene in the list (fetched through the plugin, only while you scroll to it).")}</small></span>

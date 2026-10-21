@@ -267,7 +267,7 @@ export function errorToast(e, what) {
 const overlayRoot = () => document.fullscreenElement || document.getElementById("overlay-root");
 // Puts a dialog / drawer in. In fullscreen it sits inside the player's own element – its clicks must not reach the
 // player (its [data-close] would close the whole player, a tap would pause it)
-function mountOverlay(wrap) {
+export function mountOverlay(wrap) {
   const root = overlayRoot();
   root.appendChild(wrap);
   if (root.id !== "overlay-root") ["click", "dblclick", "pointerdown", "pointerup", "touchstart", "touchend"].forEach((ev) => wrap.addEventListener(ev, (e) => e.stopPropagation()));

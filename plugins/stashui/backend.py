@@ -1346,8 +1346,14 @@ def box_scenes(stash, args):
         "id title date duration studio { id name } performers { performer { id name } }",
         "id title release_date studio { id name } performers { performer { id name } }",
     ]
-    # first with the cover pictures (images { url width height }), then without in case this stash-box doesn't know them
-    fields = [f + " images { url width height }" for f in base_f] + base_f
+    # first with the cover pictures, details and tags, then only the pictures, then without in case this stash-box doesn't know them
+    extras = [" images { url width height } details tags { name }", " images { url width height }", ""]
+    fields = [f + ex for ex in extras for f in base_f]
+    since = str(args.get("since") or "").strip()  # Discover: only scenes released after this day (YYYY-MM-DD)
+    if not re.match(r"^\d{4}-\d{2}-\d{2}$", since):
+        since = ""
+    only_perf = [str(x)[:64] for x in (args.get("performers_in") or []) if x][:400]  # Discover: scenes with one of these (box) performers
+    plain = bool(args.get("_plain"))
     last = None
     empty = None
     for fl in fields:
@@ -1356,6 +1362,10 @@ def box_scenes(stash, args):
             inp = {"page": page} if variant == "minimal" else {"page": page, "per_page": per_page}
             if pid:
                 inp["performers"] = {"value": [pid], "modifier": "INCLUDES"}
+            elif only_perf and not plain:
+                inp["performers"] = {"value": only_perf, "modifier": "INCLUDES"}
+            if since and not plain:
+                inp["date"] = {"value": since, "modifier": "GREATER_THAN"}
             if text:
                 inp["title" if args.get("_title") else "text"] = text
             if ordered:
@@ -1372,6 +1382,8 @@ def box_scenes(stash, args):
                     raise RuntimeError(f"{box.get('name') or endpoint}: HTTP {e.code}")
             if d.get("errors"):
                 last = "; ".join(str(x.get("message", "")) for x in d["errors"])
+                if (since or only_perf) and not plain and re.search(r"SceneQueryInput|DateCriterion|\"date\"", last):
+                    return box_scenes(stash, dict(args, _plain=True))  # this box doesn't know the date / performer criteria
                 continue  # another field set / without the sort
             q = (d.get("data") or {}).get("queryScenes") or {}
             out = []
@@ -1383,9 +1395,12 @@ def box_scenes(stash, args):
                     "duration": x.get("duration") or 0,
                     "studio": (x.get("studio") or {}).get("name") or "",
                     "performers": [((q2 or {}).get("performer") or {}).get("name") or "" for q2 in (x.get("performers") or [])],
+                    "performer_ids": [str(((q2 or {}).get("performer") or {}).get("id") or "") for q2 in (x.get("performers") or [])],
+                    "tags": [str((g or {}).get("name") or "") for g in (x.get("tags") or []) if g][:30],
+                    "details": str(x.get("details") or "")[:3000],
                     "image": cover_of(x.get("images")),
                 })
-            res = {"count": q.get("count") or 0, "page": page, "scenes": out, "name": box.get("name") or ""}
+            res = {"count": q.get("count") or 0, "page": page, "scenes": out, "name": box.get("name") or "", "client": plain and bool(since or only_perf)}
             if not out and res["count"] and variant != "minimal":
                 # says it has scenes but sent none: maybe the sort or the page size is the problem – try plainer questions
                 res["debug"] = json.dumps(d, ensure_ascii=False)[:400]
@@ -1398,6 +1413,8 @@ def box_scenes(stash, args):
             return empty  # answered without an error, just with no scenes: other field names won't change that
     if text and not args.get("_title"):
         return box_scenes(stash, dict(args, _title=True))  # a stash-box without the `text` search: try the title filter
+    if (since or only_perf) and not plain:
+        return box_scenes(stash, dict(args, _plain=True))  # a stash-box without the date / performer criteria: the page filters instead
     raise RuntimeError(f"{box.get('name') or endpoint}: {last or 'no answer'}")
 
 
