@@ -391,4 +391,10 @@ export default {
   "Scan": "扫描",
   "Scanning… {n} of {m}": "正在扫描… {n}/{m}",
   "Scanned {a} videos and {b} creators": "已扫描 {a} 个视频和 {b} 位创作者",
+  "All": "全部",
+  "Show all tags": "显示所有标签",
+  "Fewer tags": "收起标签",
+  "Tags from their newest {n} videos": "标签来自他们最新的 {n} 个视频",
+  "Keep downloading in the background": "在后台继续下载",
+  "Stash carries on downloading, scanning and filling in the details when you close this page. Needs the plugin reloaded after an update – until then the page downloads itself, as before.": "关闭此页面后，Stash 仍会继续下载、扫描并填写详细信息。更新后需要重新加载插件 – 在此之前由页面自己下载，和以前一样。",
 };

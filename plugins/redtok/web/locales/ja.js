@@ -390,4 +390,10 @@ export default {
   "Scan": "スキャン",
   "Scanning… {n} of {m}": "スキャン中… {n} / {m}",
   "Scanned {a} videos and {b} creators": "{a} 本の動画と {b} 人のクリエイターをスキャンしました",
+  "All": "すべて",
+  "Show all tags": "すべてのタグを表示",
+  "Fewer tags": "タグを減らす",
+  "Tags from their newest {n} videos": "最新の {n} 本の動画のタグ",
+  "Keep downloading in the background": "バックグラウンドでダウンロードを続ける",
+  "Stash carries on downloading, scanning and filling in the details when you close this page. Needs the plugin reloaded after an update – until then the page downloads itself, as before.": "このページを閉じても、Stash がダウンロード、スキャン、詳細の入力を続けます。更新後はプラグインの再読み込みが必要です。それまではこれまでどおりページ自身がダウンロードします。",
 };

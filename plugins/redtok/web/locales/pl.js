@@ -393,4 +393,10 @@ export default {
   "Scan": "Skanuj",
   "Scanning… {n} of {m}": "Skanowanie… {n} z {m}",
   "Scanned {a} videos and {b} creators": "Przeskanowano {a} filmów i {b} twórców",
+  "All": "Wszystkie",
+  "Show all tags": "Pokaż wszystkie tagi",
+  "Fewer tags": "Mniej tagów",
+  "Tags from their newest {n} videos": "Tagi z ich {n} najnowszych filmów",
+  "Keep downloading in the background": "Pobieraj dalej w tle",
+  "Stash carries on downloading, scanning and filling in the details when you close this page. Needs the plugin reloaded after an update – until then the page downloads itself, as before.": "Stash pobiera, skanuje i uzupełnia szczegóły nawet po zamknięciu tej strony. Po aktualizacji trzeba przeładować wtyczkę – do tego czasu strona pobiera sama, jak dotąd.",
 };

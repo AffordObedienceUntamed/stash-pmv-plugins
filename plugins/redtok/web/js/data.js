@@ -11,7 +11,7 @@ export { algo };
 // ---------- settings ----------
 export const settings = Object.assign({
   algo: true, learn: true, explore: "mid", // (the For You algorithm: on, learns from what you watch, some surprises)
-  base: "", scan: true, meta: true, metaTags: false, metaPerf: false, quality: "hd", playq: "auto", fit: "auto", sound: true, volume: 1, autonext: false,
+  base: "", bg: true, scan: true, meta: true, metaTags: false, metaPerf: false, quality: "hd", playq: "auto", fit: "auto", sound: true, volume: 1, autonext: false,
   skipSeen: true, skipSeenMore: false, syncDev: false, followTags: false, speed: 1, lang: "auto", glow: true, wide: true, space: "pause", frame: "auto", side: true,
 }, store.get("settings", {}));
 delete settings.subs; delete settings.sync; // (Reddit and the RedGifs login of the older local version)
@@ -125,6 +125,25 @@ export function norm(g) {
     dur: g.duration || 0, w: g.width || 0, h: g.height || 0, likes: g.likes || 0, views: g.views || 0, audio: !!g.hasAudio,
     tags: (g.tags || []).slice(0, 10), niches: (g.niches || []).slice(0, 12), desc: g.description || "", date: g.createDate || 0, verified: !!g.verified,
   };
+}
+// The tags a creator uses, counted over their newest videos (up to 6 pages) – the filter chips on their profile
+const tagCache = new Map();
+export async function creatorTags(name, force) {
+  const k = String(name).toLowerCase();
+  if (!force && tagCache.has(k)) return tagCache.get(k);
+  const count = new Map();
+  let seen = 0, total = null;
+  try {
+    for (let page = 1; page <= 6; page++) {
+      const d = await rg(`/users/${enc(name)}/search?order=recent&count=40&page=${page}`);
+      if (d.total != null) total = d.total;
+      for (const g of d.gifs || []) { seen++; for (const tg of g.tags || []) count.set(tg, (count.get(tg) || 0) + 1); }
+      if (!(d.gifs || []).length || page >= (d.pages || 1)) break;
+    }
+  } catch (e) { /* what we have so far */ }
+  const res = { tags: [...count].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])), seen, total };
+  if (seen) tagCache.set(k, res);
+  return res;
 }
 export const watchUrl = (g) => (g.stash ? `${location.origin}/scenes/${g.sceneId}` : `https://www.redgifs.com/watch/${g.id}`);
 
@@ -549,7 +568,7 @@ export function makeSource(spec) {
     search: () => search(orderOf(spec), spec.q),
     niche: async () => { S.st = S.st || { page: 0 }; const l = await nichePage(S.st, S.st.slug || spec.slug, orderOf(spec)); S.total = S.st.total; if (S.st.done) S.done = true; return l; },
     user: async () => {
-      const r = await gifPage(`/users/${enc(spec.name)}/search?order=${orderOf(spec)}&count=40&page=${++S.page}`);
+      const r = await gifPage(`/users/${enc(spec.name)}/search?order=${orderOf(spec)}&count=40&page=${++S.page}${spec.tag ? "&tags=" + enc(spec.tag) : ""}`);
       if (r.last || S.page >= Math.min(S.pages, 250)) S.done = true;
       return r.list;
     },

@@ -380,4 +380,10 @@ export default {
   "Scan": "Einlesen",
   "Scanning… {n} of {m}": "Lese ein … {n} von {m}",
   "Scanned {a} videos and {b} creators": "{a} Videos und {b} Creator eingelesen",
+  "All": "Alle",
+  "Show all tags": "Alle Tags zeigen",
+  "Fewer tags": "Weniger Tags",
+  "Tags from their newest {n} videos": "Tags der neuesten {n} Videos",
+  "Keep downloading in the background": "Im Hintergrund weiter herunterladen",
+  "Stash carries on downloading, scanning and filling in the details when you close this page. Needs the plugin reloaded after an update – until then the page downloads itself, as before.": "Stash lädt weiter herunter, scannt und trägt die Details ein, auch wenn du diese Seite schließt. Nach einem Update muss das Plugin neu geladen werden – bis dahin lädt die Seite selbst herunter, wie bisher.",
 };

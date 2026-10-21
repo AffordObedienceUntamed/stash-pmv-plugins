@@ -389,4 +389,10 @@ export default {
   "Scan": "Quét",
   "Scanning… {n} of {m}": "Đang quét… {n}/{m}",
   "Scanned {a} videos and {b} creators": "Đã quét {a} video và {b} nhà sáng tạo",
+  "All": "Tất cả",
+  "Show all tags": "Hiện tất cả thẻ",
+  "Fewer tags": "Ít thẻ hơn",
+  "Tags from their newest {n} videos": "Thẻ từ {n} video mới nhất của họ",
+  "Keep downloading in the background": "Tiếp tục tải ở chế độ nền",
+  "Stash carries on downloading, scanning and filling in the details when you close this page. Needs the plugin reloaded after an update – until then the page downloads itself, as before.": "Stash vẫn tiếp tục tải, quét và điền thông tin khi bạn đóng trang này. Cần tải lại plugin sau khi cập nhật – cho đến lúc đó trang tự tải như trước.",
 };

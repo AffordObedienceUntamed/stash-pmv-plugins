@@ -5,7 +5,7 @@ import { $, esc, t, tn, fmt, ago, mmss, ic, toast, nav, on, modal, pushLayer, cl
 import {
   settings, saveSettings, makeSource, listSource, ORDERS, orderOf, rg, takeUsers, userOf, userPic, users,
   liked, following, niches, hidden, nope, blocked, history, saved, doneSet, isFollowing, setFollow, followsNiche, setNiche, tagFollows, followsTag, setFollowTag, isHidden, setHidden, setNope,
-  algo, scanTaste, isBlockedTag, setBlockedTag, stashMark, stashDelete, DELETE_TAG, unlikeMany, clearHistory, removeFromHistory, forgetDownloads, exportData, importData, stashPerformer, usingBackend,
+  algo, scanTaste, creatorTags, isBlockedTag, setBlockedTag, stashMark, stashDelete, DELETE_TAG, unlikeMany, clearHistory, removeFromHistory, forgetDownloads, exportData, importData, stashPerformer, usingBackend,
 } from "./data.js";
 import { av, tick, setSpeed, setAutoNext, setFit, setMuted, setFrame, frameName, FRAMES } from "./feed.js";
 import { enqueue, jobs, jobOf, isSaved, cancelQueued, retryFailed, clearFinished, activeJobs, ensureBase } from "./dl.js";
@@ -206,12 +206,14 @@ function tabbed(p, host, list, active, mountTab) {
 // ---------- a creator ----------
 export function openProfile(name) {
   const p = openPage(`@${esc(name)}`, { right: `<button class="ph-b" data-pmore aria-label="${esc(t("More options"))}">${ic("more")}</button>` });
-  p.body.innerHTML = `<div class="phead is-center" data-user="${esc(String(name).toLowerCase())}"></div><div class="gbox"></div>`;
+  p.body.innerHTML = `<div class="phead is-center" data-user="${esc(String(name).toLowerCase())}"></div><div class="ptagbar" hidden></div><div class="gbox"></div>`;
   const head = p.body.querySelector(".phead");
-  let S = makeSource({ t: "user", name, order: "recent" });
+  let curTag = ""; // the tag of this creator the videos are narrowed to
+  const mk = (o) => makeSource({ t: "user", name, order: o, tag: curTag });
+  let S = mk("recent");
   const paint = () => {
     const u = userOf(name) || {};
-    const total = S.total != null ? S.total : u.gifs;
+    const total = curTag ? u.gifs : S.total != null ? S.total : u.gifs;
     const fol = isFollowing(name), hid = isHidden(name);
     head.innerHTML = `${av(u.profileImageUrl || userPic(name), name, "av-xl")}
       <h1>@${esc(name)}${u.verified ? tick() : ""}</h1>${u.name && u.name !== name ? `<div class="pname">${esc(u.name)}</div>` : ""}
@@ -221,11 +223,33 @@ export function openProfile(name) {
       ${u.description ? `<p class="bio">${esc(u.description)}</p>` : ""}`;
   };
   paint();
-  const grid = mountGrid(p.body.querySelector(".gbox"), S, { root: p.body, barHost: p.el, sorts: ORDERS.user, makeS: (o) => (S = makeSource({ t: "user", name, order: o })), feedTitle: "@" + name, onCount: paint, empty: { title: t("No videos"), icon: "film" } });
+  // tags of this creator (counted over their newest videos): a tap shows only the videos with that tag, like on RedGifs
+  let tg = null, allTags = false;
+  const paintTags = () => {
+    const bar = p.body.querySelector(".ptagbar");
+    if (!bar) return;
+    if (!tg || !tg.tags.length) return void (bar.hidden = true);
+    const list = allTags ? tg.tags : tg.tags.slice(0, 12);
+    if (curTag && !list.some(([x]) => x === curTag)) list.push([curTag, (tg.tags.find(([x]) => x === curTag) || [0, 0])[1]]);
+    bar.hidden = false;
+    bar.innerHTML = `<button class="chipb${curTag ? "" : " is-on"}" data-ptag="">${esc(t("All"))}</button>${list.map(([x, n]) => `<button class="chipb${curTag === x ? " is-on" : ""}" data-ptag="${esc(x)}">#${esc(x)}${n ? ` <small>${n}</small>` : ""}</button>`).join("")}${tg.tags.length > 12 ? `<button class="chipb is-more" data-ptagmore>${esc(allTags ? t("Fewer tags") : t("Show all tags"))}</button>` : ""}${tg.total && tg.seen < tg.total ? `<small class="ptagnote">${esc(t("Tags from their newest {n} videos", { n: tg.seen }))}</small>` : ""}`;
+  };
+  creatorTags(name).then((r) => { tg = r; paintTags(); }).catch(() => {});
+  const grid = mountGrid(p.body.querySelector(".gbox"), S, { root: p.body, barHost: p.el, sorts: ORDERS.user, makeS: (o) => (S = mk(o)), feedTitle: "@" + name, onCount: paint, empty: { title: t("No videos"), icon: "film" } });
   p.cleanup(() => grid.destroy());
   p.cleanup(on("follow", ({ name: n }) => String(n).toLowerCase() === String(name).toLowerCase() && paint()));
   p.cleanup(on("hidden", paint));
   p.el.addEventListener("click", (e) => {
+    const tb = e.target.closest("[data-ptag]");
+    if (tb) {
+      if (tb.dataset.ptag === curTag) return;
+      curTag = tb.dataset.ptag;
+      S = mk(orderOf(grid.S.spec));
+      grid.attach(S);
+      paintTags();
+      return paint();
+    }
+    if (e.target.closest("[data-ptagmore]")) { allTags = !allTags; return paintTags(); }
     if (e.target.closest("[data-pf]")) {
       const now = setFollow(name, !isFollowing(name));
       return toast(now ? t("Following @{u}", { u: name }) : t("Unfollowed @{u}", { u: name }));
@@ -792,6 +816,7 @@ export function openSettings(focus) {
     <div class="set is-col" data-focus="base"><span class="st"><b>${esc(t("Download folder"))}</b><small>${esc(t("Videos go into a folder per creator in here. Put it inside your Stash library, then Stash finds them."))}</small></span>
       <span class="setrow"><input type="text" data-k="base" value="${esc(settings.base)}" placeholder="${esc(t("e.g. D:\\Videos\\RedGifs"))}" spellcheck="false"><button class="btn" data-detect>${esc(t("Suggest"))}</button></span></div>
     ${sel("quality", t("Download quality"), "", [["hd", t("HD (original)")], ["sd", t("SD (smaller)")]])}
+    ${sw("bg", t("Keep downloading in the background"), t("Stash carries on downloading, scanning and filling in the details when you close this page. Needs the plugin reloaded after an update – until then the page downloads itself, as before."))}
     ${sw("scan", t("Scan into Stash"), t("After downloading, Stash scans the folders that got new videos."))}
     ${sw("meta", t("Fill in date and creator"), t("Once Stash has the new videos, RedTok sets their date, the creator as the studio and the RedGifs link. Needs this page to stay open for a minute."))}
     ${sw("metaTags", t("Add RedGifs tags as Stash tags"), t("Off by default: it can add many new tags to your Stash tag list. On: the tags RedGifs shows for a saved video are put on its scene (missing ones are created)."))}

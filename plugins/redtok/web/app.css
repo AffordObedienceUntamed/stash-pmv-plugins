@@ -625,3 +625,10 @@ body.is-clear #sidetog, html.is-full #sidetog { display: none !important; }
   #unclear { top: calc(env(safe-area-inset-top, 0px) + 12px); }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } .feed { scroll-behavior: auto; } }
+
+/* a creator's tags: tap one to see only those videos */
+.ptagbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 2px 0 10px; }
+.ptagbar .chipb { height: 30px; padding: 0 12px; font-size: 13px; }
+.ptagbar .chipb small { opacity: .6; font-size: 12px; font-weight: 500; }
+.ptagnote { margin-left: 4px; color: var(--faint); font-size: 12px; }
+@media (max-width: 760px) { .ptagbar { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding: 2px 10px 8px; } .ptagbar::-webkit-scrollbar { display: none; } .ptagnote { white-space: nowrap; } }

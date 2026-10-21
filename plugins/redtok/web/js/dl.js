@@ -14,6 +14,75 @@ export const isSaved = (id) => doneSet.has(id);
 const pickUrl = (g) => (settings.quality === "sd" ? g.sd : g.hd);
 export const activeJobs = () => jobs.filter((j) => j.state === "queued" || j.state === "run").length;
 
+// ---------- downloads in the background ----------
+// The plugin's backend has a worker of its own: the page hands the list over ("dl_add") and shows what the worker reports
+// ("dl_status"). Closing the page doesn't stop it – the worker also has Stash scan the folders and fills in the scenes.
+// An older backend (plugin not reloaded yet) doesn't know the modes: then this page downloads itself, as before.
+let bgOk = null; // null = not tried, false = this backend doesn't know it
+const bgOn = () => settings.bg !== false && bgOk !== false;
+let pollT = 0, bgRev = 0;
+const packOf = (g) => ({ id: g.id, user: g.user, url: pickUrl(g), thumb: g.thumb || g.poster || "", date: g.date || 0, desc: (g.desc || "").slice(0, 300), tags: (g.tags || []).slice(0, 10) });
+const gOf = (r) => ({ id: r.id, user: r.user, thumb: r.thumb, poster: r.thumb, hd: r.url, sd: r.url, date: r.date, desc: r.desc, tags: r.tags || [] });
+const noMode = (e) => /unknown mode/i.test(String((e && e.message) || e));
+
+function applyBg(list) {
+  let changed = false;
+  for (const r of list) {
+    let j = byId.get(r.id);
+    const fresh = !j;
+    if (fresh) {
+      // one the worker has (started before this page was opened): a finished one from long ago isn't announced again
+      j = { g: gOf(r), state: "queued", note: "", at: (r.at || 0) * 1000, bg: true, told: ["ok", "bad", "cancel"].includes(r.state) && Date.now() - (r.at || 0) * 1000 > 30 * 60e3 };
+      jobs.push(j);
+      byId.set(r.id, j);
+    } else if (!j.bg) continue; // (one this page downloads itself)
+    if (fresh || j.state !== r.state || j.note !== r.note) {
+      j.state = r.state;
+      j.note = r.note || "";
+      j.size = r.size || 0;
+      if (r.state === "ok") addSaved(j.g);
+      emit("job", { id: r.id });
+      changed = true;
+    }
+  }
+  if (changed) {
+    emit("jobs", {});
+    if (!jobs.some((j) => j.state === "queued" || j.state === "run")) finished();
+  }
+}
+
+export async function pollBg(force) {
+  clearTimeout(pollT);
+  let r = null;
+  try {
+    r = await call({ mode: "dl_status", rev: force ? 0 : bgRev });
+    bgOk = true;
+  } catch (e) {
+    if (noMode(e)) bgOk = false;
+  }
+  if (r && !r.same) { bgRev = r.rev; applyBg(r.jobs || []); }
+  const active = jobs.some((j) => j.bg && (j.state === "queued" || j.state === "run"));
+  if (r && (active || r.alive)) pollT = setTimeout(pollBg, 1500);
+  else if (!r && active && bgOk !== false) pollT = setTimeout(pollBg, 5000);
+}
+setTimeout(() => pollBg(true).catch(() => {}), 1500); // (what the worker did while this page was closed)
+
+// hands the new jobs to the worker; false = this backend can't (the page downloads them itself)
+async function handOver(fresh, base) {
+  if (!bgOn() || !fresh.length) return false;
+  try {
+    await call({ mode: "dl_add", base, items: fresh.map((j) => packOf(j.g)), opts: { scan: settings.scan, meta: settings.meta, metaTags: settings.metaTags, metaPerf: settings.metaPerf } });
+  } catch (e) {
+    if (noMode(e)) { bgOk = false; return false; }
+    fresh.forEach((j) => { j.state = "bad"; j.note = String(e.message || e).slice(0, 120); emit("job", { id: j.g.id }); });
+    return true;
+  }
+  bgOk = true;
+  fresh.forEach((j) => (j.bg = true));
+  pollBg(true);
+  return true;
+}
+
 export async function ensureBase(quiet) {
   if (settings.base) return settings.base;
   try {
@@ -45,6 +114,7 @@ export async function enqueue(gifs, opts = {}) {
   } catch (e) { /* the download itself skips what exists */ }
   if (!gifs.length) { toast(skipped === 1 ? t("Already saved") : tn(skipped, "{n} video was already there", "{n} videos were already there")); return 0; }
   let n = 0;
+  const fresh = [];
   for (const g of gifs) {
     const old = byId.get(g.id);
     if (old && (old.state === "queued" || old.state === "run")) continue;
@@ -52,10 +122,12 @@ export async function enqueue(gifs, opts = {}) {
     if (old) jobs.splice(jobs.indexOf(old), 1);
     jobs.push(j);
     byId.set(g.id, j);
+    fresh.push(j);
     emit("job", { id: g.id });
     n++;
   }
   if (!n) { toast(t("Already downloading")); return 0; }
+  await handOver(fresh, base);
   if (!opts.quiet) toast(n === 1 && !skipped ? t("Saving to your library…") : tn(n, "Downloading {n} video…", "Downloading {n} videos…") + (skipped ? " " + tn(skipped, "({n} already there)", "({n} already there)") : ""));
   clearTimeout(hideTimer);
   emit("jobs", {});
@@ -65,7 +137,7 @@ export async function enqueue(gifs, opts = {}) {
 
 function pump() {
   while (running < 3) {
-    const j = jobs.find((x) => x.state === "queued");
+    const j = jobs.find((x) => x.state === "queued" && !x.bg);
     if (!j) break;
     j.state = "run";
     running++;
@@ -202,16 +274,22 @@ async function fillMeta(list) {
 }
 
 export function cancelQueued() {
-  jobs.forEach((j) => { if (j.state === "queued") { j.state = "cancel"; emit("job", { id: j.g.id }); } });
+  const bg = jobs.some((j) => j.bg && j.state === "queued");
+  jobs.forEach((j) => { if (j.state === "queued" && !j.bg) { j.state = "cancel"; emit("job", { id: j.g.id }); } });
   emit("jobs", {});
+  if (bg) call({ mode: "dl_ctl", action: "cancel" }).then(() => pollBg(true)).catch(() => {});
 }
 export function retryFailed() {
   const bad = jobs.filter((j) => j.state === "bad");
   bad.forEach((j) => { j.state = "queued"; j.note = ""; j.told = false; emit("job", { id: j.g.id }); });
   emit("jobs", {});
+  const bg = bad.filter((j) => j.bg).map((j) => j.g.id);
+  if (bg.length) call({ mode: "dl_ctl", action: "retry", ids: bg }).then(() => pollBg(true)).catch(() => {});
   pump();
 }
 export function clearFinished() {
+  const bg = jobs.some((j) => j.bg && !["queued", "run"].includes(j.state));
   for (let i = jobs.length - 1; i >= 0; i--) if (!["queued", "run"].includes(jobs[i].state)) { byId.delete(jobs[i].g.id); jobs.splice(i, 1); }
   emit("jobs", {});
+  if (bg) call({ mode: "dl_ctl", action: "clear" }).catch(() => {});
 }
