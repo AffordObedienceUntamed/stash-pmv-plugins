@@ -120,6 +120,7 @@ export default function setup(stashui) {                // stashui.version === 2
   stashui.addListSource({ id: "myPlugin", match: ({ page, kind }) => kind === "scene", async extend(ctx) { … } });
   stashui.addRoute({ path: "library/*", title: "Audiobooks", render(el, { params, rest, query, signal }) { …; return () => {}; } });
   stashui.addNavItem({ id: "library", label: "Audiobooks", icon: "book", route: "library", group: "Library", count: async () => 42 });
+  stashui.addTheme({ id: "citypop", name: "City Pop", colors: { "--pink": "#ff7a6b", "--bg": "#0c0e30" /* … */ }, css: "stashui.css" });
   stashui.addSlot("scene.info", { id: "tool", title: "Audio tool", mount(el, ctx) { …; return () => {}; } });
 }
 ```
@@ -136,6 +137,20 @@ Everything a plugin draws is `mount(el, ctx) → cleanup`: Stash UI owns where i
 ### Pages – `addRoute`
 
 `path`: `"library"`, `"library/:id"` or `"library/*"` (`*` = the rest, as `rest`). The page lives at `#/p/<pluginId>/<path>`. `title` (shown as the page heading; the tab title too), `overlay: true` = full screen above the page with a close button, like the player (no menu – for readers and players). `render(el, { params, rest, query, signal }) → cleanup` is called on every visit and the cleanup when the page is left. `stashui.go("p/<pluginId>/library/123")` links inside the plugin's pages; Back works.
+
+### Themes – `addTheme`
+
+```js
+stashui.addTheme({
+  id: "citypop", name: "City Pop",
+  colors: { "--pink": "#ff7a6b", "--bg": "#0c0e30", "--bg-2": "#1a1848", "--bg-3": "#252262", "--base": "#0e0f33",
+            "--text": "#fff4ec", "--text-2": "#cbc3ec", "--faint": "#a39bd3", "--ok": "#6ff0e6", "--danger": "#ff7d92" },
+  css: "stashui.css",   // optional: a stylesheet in your plugin's assets folder (relative path, no `..`) – loaded while the theme is chosen
+  glass: false,         // optional: switch liquid glass on or off when the theme is picked
+});
+```
+
+The theme appears with the colour presets in Settings → Appearance (`stashui.has("theme")`). `colors` takes the interface's colour variables (`--pink` accent, `--bg`, `--bg-2`, `--bg-3`, `--base`, `--text`, `--text-2`, `--faint`, `--ok`, `--danger`); a missing one falls back to the Plum preset and values that aren't valid CSS colours are ignored. Picking the theme stores its colours like any other preset and remembers the stylesheet address; picking another preset (or "Back to default colors") removes the stylesheet again. A new version of your plugin brings new colours and stylesheet along the next time Stash UI loads, unless the person has changed colours by hand.
 
 ### Menu entries – `addNavItem`
 
@@ -186,6 +201,7 @@ The CSS variables (`--base`, `--bg`, `--bg-2`, `--bg-3`, `--text`, `--text-2`, `
 - **Mouse wheel on the picture**: changes the volume (5 % per notch); Shift + wheel jumps 5 s. Settings → Player and previews → “Mouse wheel on the video”: Volume / Jump forward / back / Off (the swap with Shift follows). **Reverse the wheel** (same page) turns the direction round: up = quieter / back, down = louder / forward. Replaces what the VideoScrollWheel plugin does in classic Stash.
 - **Own markers**: **B** (or the sliders menu) sets a marker at the current spot – a yellow pin on the timeline, **J** jumps to it like to the highlights. The info bar lists them: jump, rename, delete. They're Stash's scene markers (tag “Highlight”), so classic Stash shows them too.
 - **Frame by frame**: **,** and **.** (YouTube's keys) step one frame back / forward and stop the video; the note on the picture shows the exact time. **B** sets the marker on the frame you see, not on a rounded tenth.
+- **A–B loop**: **L** sets A where you are, a second **L** sets B and the part in between repeats, a third clears it (also in the gear menu; the part is shown on the timeline).
 - **Marker editor** (“Add a part …”, or the pencil in the marker list): times are shown to the millisecond. Under Start and End, **−1 s, −0.1, ◂| |▸, +0.1, +1 s** move the time (hold to repeat); in the field, **↑ ↓** change it by a frame, **Shift** by a second, **Alt** by a tenth. The video follows every change and stays on that frame; **,** and **.** step the video while the editor is open, **Here** takes the frame you see. The tag lists show the last 3 tags you picked for a marker on top (nothing, until you have picked some); they're kept in this browser.
 - **Previews on demand**: a new or edited marker gets its hover preview and picture made by Stash right after saving; the Markers page has **Generate missing previews**; the selection bar of Scenes / Images (and the home page) has **Generate previews** for just the selected items (Stash task `metadataGenerate` with the ids; progress under Tasks). Plain photos have no moving preview in Stash – only thumbnails, animated images and image clips do.
 - **Cover** in the info bar: pause where you like and the picture becomes the scene's cover. Try as many frames as you like: **Undo** in the message or **Old cover** next to it steps back, instantly. Stash only gets the final cover – a few seconds after the last change, or when you leave the scene (on Windows, Stash can't replace a cover file it has just written for up to 2 minutes; this way that doesn't get in the way).

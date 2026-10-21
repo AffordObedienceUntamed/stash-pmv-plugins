@@ -2482,4 +2482,11 @@ export default {
   "Search your library for this title": "在资料库中搜索此标题",
   "Missing scenes: only the last days": "缺失场景：仅最近几天",
   "Only scenes from the last n days (0 = off). Replaces the oldest and newest date.": "只显示最近 n 天内的场景（0 = 关闭）。会取代最早和最晚日期。",
+  "A {time} – press L at the end": "A 点 {time} – 到结尾处再按 L",
+  "B must come after A": "B 点必须在 A 点之后",
+  "Looping {a} – {b}": "循环播放 {a} – {b}",
+  "Loop off": "循环已关闭",
+  "A–B loop: set A here (L)": "A–B 循环：在此设置 A 点（L）",
+  "A–B loop: set B here (L)": "A–B 循环：在此设置 B 点（L）",
+  "A–B loop on – clear (L)": "A–B 循环已开启 – 点击清除（L）",
 };

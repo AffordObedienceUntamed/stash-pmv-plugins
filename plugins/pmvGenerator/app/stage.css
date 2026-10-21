@@ -782,3 +782,7 @@ html.kb-glass .kb-pmvg-take { border-color: var(--glass-edge); border-radius: 14
 .kb-pmvg-lsrow > span { display: inline-flex; align-items: center; gap: 8px; }
 .kb-pmvg-lsrow select { width: auto; min-width: 150px; }
 html.kb-glass .kb-pmvg-lsrow select { background: rgba(255, 255, 255, .08); border-color: rgba(255, 255, 255, .25); }
+
+/* A–B loop: the repeated part on the timeline (an open A is just a line) */
+.kb-tl-loop { position: absolute; top: 0; bottom: 0; min-width: 2px; border-left: 2px solid var(--pink-2, var(--pink)); border-right: 2px solid var(--pink-2, var(--pink)); background: color-mix(in srgb, var(--pink) 30%, transparent); pointer-events: none; }
+.kb-tl-loop.is-open { border-right: 0; background: none; }

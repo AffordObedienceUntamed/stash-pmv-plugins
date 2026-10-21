@@ -2418,4 +2418,11 @@ export default {
   "Search your library for this title": "Tìm tiêu đề này trong thư viện",
   "Missing scenes: only the last days": "Cảnh còn thiếu: chỉ vài ngày gần đây",
   "Only scenes from the last n days (0 = off). Replaces the oldest and newest date.": "Chỉ hiện các cảnh trong n ngày gần đây (0 = tắt). Thay cho ngày cũ nhất và mới nhất.",
+  "A {time} – press L at the end": "A {time} – nhấn L ở điểm cuối",
+  "B must come after A": "B phải nằm sau A",
+  "Looping {a} – {b}": "Đang lặp {a} – {b}",
+  "Loop off": "Đã tắt lặp",
+  "A–B loop: set A here (L)": "Lặp A–B: đặt A tại đây (L)",
+  "A–B loop: set B here (L)": "Lặp A–B: đặt B tại đây (L)",
+  "A–B loop on – clear (L)": "Lặp A–B đang bật – bấm để xóa (L)",
 };

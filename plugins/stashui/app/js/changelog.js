@@ -7,6 +7,14 @@
 
 export const CHANGES = [
   {
+    v: "3.117.0",
+    date: "2026-10-21",
+    items: [
+      ["ui", "A–B loop in the player, as suggested by Blueocean15: press L where the part should start (A), press L again where it should end (B) and that part repeats. The third press clears it. The gear menu has the same entry, and the repeated part is shown on the timeline.", "播放器新增 A–B 循环（Blueocean15 的建议）：在要开始的位置按 L（A 点），在结束的位置再按一次 L（B 点），这一段就会重复播放。第三次按下则清除。齿轮菜单里也有同样的条目，重复的部分会显示在时间轴上。", "scene/@scene::[data-menubtn]"],
+      ["ui", "Themes from other plugins: an extension module can call stashui.addTheme({ id, name, colors, css, glass }) and the theme shows up next to the colour presets in Settings → Appearance. Picking it sets the colours, loads the plugin's stylesheet and switches liquid glass on or off if the theme says so; picking another preset removes it again. (Thanks CandyBoudoir – for plugin authors: see the README.)", "来自其他插件的主题：扩展模块可以调用 stashui.addTheme({ id, name, colors, css, glass })，主题就会出现在“设置 → 外观”的配色预设旁边。选择它会设置颜色、加载插件的样式表，并按主题的要求开启或关闭液态玻璃；选择其他预设则会移除它。（感谢 CandyBoudoir – 插件作者请看 README。）", "settings/look::[data-theme]"],
+    ],
+  },
+  {
     v: "3.116.0",
     date: "2026-10-21",
     items: [

@@ -2365,4 +2365,11 @@ export default {
   "Search your library for this title": "Chercher ce titre dans votre bibliothèque",
   "Missing scenes: only the last days": "Scènes manquantes : seulement les derniers jours",
   "Only scenes from the last n days (0 = off). Replaces the oldest and newest date.": "Uniquement les scènes de ces n derniers jours (0 = désactivé). Remplace la date la plus ancienne et la plus récente.",
+  "A {time} – press L at the end": "A {time} – appuyez sur L à la fin",
+  "B must come after A": "B doit venir après A",
+  "Looping {a} – {b}": "Lecture en boucle {a} – {b}",
+  "Loop off": "Boucle désactivée",
+  "A–B loop: set A here (L)": "Boucle A–B : placer A ici (L)",
+  "A–B loop: set B here (L)": "Boucle A–B : placer B ici (L)",
+  "A–B loop on – clear (L)": "Boucle A–B active – effacer (L)",
 };

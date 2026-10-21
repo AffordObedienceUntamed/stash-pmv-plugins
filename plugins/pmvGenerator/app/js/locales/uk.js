@@ -2458,4 +2458,11 @@ export default {
   "Search your library for this title": "Знайти цю назву в бібліотеці",
   "Missing scenes: only the last days": "Відсутні сцени: лише останні дні",
   "Only scenes from the last n days (0 = off). Replaces the oldest and newest date.": "Лише сцени за останні n днів (0 = вимкнено). Замінює найранішу та найпізнішу дату.",
+  "A {time} – press L at the end": "A {time} – натисніть L в кінці",
+  "B must come after A": "B має бути після A",
+  "Looping {a} – {b}": "Повтор {a} – {b}",
+  "Loop off": "Повтор вимкнено",
+  "A–B loop: set A here (L)": "Цикл A–B: поставити A тут (L)",
+  "A–B loop: set B here (L)": "Цикл A–B: поставити B тут (L)",
+  "A–B loop on – clear (L)": "Цикл A–B увімкнено – скинути (L)",
 };

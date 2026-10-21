@@ -169,6 +169,7 @@ export async function render(host, params, query = {}) {
             ${x.interactive && x.paths.interactive_heatmap ? `<img class="kb-tl-fs" src="${esc(x.paths.interactive_heatmap)}" alt="" title="${t("Funscript – how intense it gets")}" onerror="this.remove()">` : ""}
             <div class="kb-tl-buf" data-buf></div>
             <div class="kb-tl-played" data-played></div>
+            <div class="kb-tl-loop" data-loop hidden></div>
             <div class="kb-tl-resume" data-resmark hidden></div>
             <div class="kb-tl-knob" data-knob></div>
             <div class="kb-tl-hls" data-hls></div>
@@ -334,6 +335,7 @@ export async function render(host, params, query = {}) {
       (slowmoSupported() ? `<b title="${esc(t("Below 1× the missing pictures in between are made up on your graphics card – nothing to download"))}">${t("Smooth slow motion")}</b><div class="kb-pmenu-speeds">${[["off", "Off", ""], ["blend", "Blend", "Cross-fades the pictures – cheap, moving things leave a ghost"], ["motion", "Motion", "Follows the movement of the picture (uses the graphics card)"]].map(([m, l, h]) => `<button type="button" class="kb-chip${smoothMode() === m ? " is-on" : ""}" data-smooth="${m}"${h ? ` title="${esc(t(h))}"` : ""}>${t(l)}</button>`).join("")}</div>` : "") + `</div>` +
       `<div class="kb-pmenu-sec"><button type="button" class="kb-pmenu-opt${prefs.fromStart ? " is-on" : ""}" data-fromstart title="${esc(t("Scenes you stopped halfway begin at 0:00 instead of where you left off. The saved point stays in Stash; the hint offers it as a button."))}">${prefs.fromStart ? icon("check") : "<i></i>"}${t("Always start from the beginning")}</button>` +
       `<button type="button" class="kb-pmenu-opt${prefs.randomStart ? " is-on" : ""}" data-randstart title="${esc(t("Every scene starts somewhere in the middle – for browsing around. Your resume points in Stash stay as they are."))}">${prefs.randomStart ? icon("check") : "<i></i>"}${t("Start at a random spot")}</button>` +
+      `<button type="button" class="kb-pmenu-opt${loop && loop.b != null ? " is-on" : ""}" data-loop>${loop && loop.b != null ? icon("check") : "<i></i>"}${loop ? (loop.b == null ? t("A–B loop: set B here (L)") : t("A–B loop on – clear (L)")) : t("A–B loop: set A here (L)")}</button>` +
       `<button type="button" class="kb-pmenu-opt" data-addmark>${icon("drop")}${t("Add a marker here (B)")}</button></div>` +
       (canCast ? `<div class="kb-pmenu-sec"><button type="button" class="kb-pmenu-opt${casting() ? " is-on" : ""}" data-cast>${icon("cast")}${casting() ? t("Casting – choose another device") : t("Cast to TV")}</button></div>` : "");
   }
@@ -416,6 +418,7 @@ export async function render(host, params, query = {}) {
       savePrefs();
       toast(prefs.randomStart ? t("From the next scene on: a random spot") : t("Scenes start normally again"), "ok");
     }
+    else if (b.dataset.loop != null) toggleLoop();
     else if (b.dataset.addmark != null) {
       closeMenu();
       return addMarker();
@@ -1814,6 +1817,42 @@ export async function render(host, params, query = {}) {
   }
   const skipBy = (s) => seekTo(v.currentTime + s, s < 0 ? `−${-s} s` : `+${s} s`);
 
+  // A–B loop (key L, gear menu): the first press sets A, the second sets B and the part between repeats, the third clears it
+  let loop = null; // { a, b } – b stays null until it is set
+  let loopT = 0;
+  function paintLoop() {
+    const el = $("[data-loop]");
+    if (!el) return;
+    const total = v.duration || dur;
+    el.hidden = !loop || !total;
+    if (el.hidden) return;
+    el.classList.toggle("is-open", loop.b == null);
+    el.style.left = (loop.a / total) * 100 + "%";
+    el.style.width = loop.b == null ? "" : ((loop.b - loop.a) / total) * 100 + "%";
+  }
+  function toggleLoop() {
+    const at = v.currentTime;
+    if (!loop) {
+      loop = { a: at, b: null };
+      flash(t("A {time} – press L at the end", { time: fmtExact(snap(at, fps)) }));
+    } else if (loop.b == null) {
+      if (at - loop.a < 0.3) return flash(t("B must come after A"));
+      loop.b = at;
+      flash(t("Looping {a} – {b}", { a: fmtExact(snap(loop.a, fps)), b: fmtExact(snap(at, fps)) }));
+      loopT = setInterval(() => {
+        if (loop && loop.b != null && !v.paused && v.currentTime >= loop.b) {
+          v.currentTime = loop.a;
+          watch.seeked(v.currentTime);
+        }
+      }, 40);
+    } else {
+      clearInterval(loopT);
+      loop = null;
+      flash(t("Loop off"));
+    }
+    paintLoop();
+  }
+
   // Mouse wheel on the picture: volume or seeking (Settings → Player and previews); Shift swaps the two
   let wheelAt = 0;
   stage.addEventListener(
@@ -1856,6 +1895,7 @@ export async function render(host, params, query = {}) {
     else if (k === "f") fullscreen();
     else if (k === "x") toMini();
     else if (k === "b") addMarker();
+    else if (k === "l") toggleLoop();
     else if (k === "e") host.querySelector("[data-edit]") && host.querySelector("[data-edit]").click(); // edit
     else if (k === "r") host.querySelector("[data-advrate]") && host.querySelector("[data-advrate]").click(); // the detailed rating
     else if (k === "delete") host.querySelector("[data-delete]") && host.querySelector("[data-delete]").click(); // asks first
@@ -1896,6 +1936,7 @@ export async function render(host, params, query = {}) {
     if (infoSlots) infoSlots.destroy();
     if (menuSlots) menuSlots.destroy();
     document.removeEventListener("keydown", onKey);
+    clearInterval(loopT);
     window.removeEventListener("stash:queue-changed", onQueue);
     document.removeEventListener("fullscreenchange", onFsChange);
     document.removeEventListener("pointerdown", onDocDown, true);

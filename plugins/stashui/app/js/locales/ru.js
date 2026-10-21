@@ -2460,4 +2460,11 @@ export default {
   "Search your library for this title": "Найти это название в библиотеке",
   "Missing scenes: only the last days": "Отсутствующие сцены: только последние дни",
   "Only scenes from the last n days (0 = off). Replaces the oldest and newest date.": "Только сцены за последние n дней (0 = выключено). Заменяет самую раннюю и самую позднюю дату.",
+  "A {time} – press L at the end": "A {time} – нажмите L в конце",
+  "B must come after A": "B должна быть после A",
+  "Looping {a} – {b}": "Повтор {a} – {b}",
+  "Loop off": "Повтор выключен",
+  "A–B loop: set A here (L)": "Цикл A–B: поставить A здесь (L)",
+  "A–B loop: set B here (L)": "Цикл A–B: поставить B здесь (L)",
+  "A–B loop on – clear (L)": "Цикл A–B включён – сбросить (L)",
 };

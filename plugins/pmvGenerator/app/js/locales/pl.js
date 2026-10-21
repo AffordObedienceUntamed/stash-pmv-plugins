@@ -2423,4 +2423,11 @@ export default {
   "Search your library for this title": "Szukaj tego tytułu w bibliotece",
   "Missing scenes: only the last days": "Brakujące sceny: tylko ostatnie dni",
   "Only scenes from the last n days (0 = off). Replaces the oldest and newest date.": "Tylko sceny z ostatnich n dni (0 = wyłączone). Zastępuje najstarszą i najnowszą datę.",
+  "A {time} – press L at the end": "A {time} – naciśnij L na końcu",
+  "B must come after A": "B musi być po A",
+  "Looping {a} – {b}": "Pętla {a} – {b}",
+  "Loop off": "Pętla wyłączona",
+  "A–B loop: set A here (L)": "Pętla A–B: ustaw A tutaj (L)",
+  "A–B loop: set B here (L)": "Pętla A–B: ustaw B tutaj (L)",
+  "A–B loop on – clear (L)": "Pętla A–B włączona – wyczyść (L)",
 };

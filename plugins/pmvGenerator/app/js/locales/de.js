@@ -2379,4 +2379,11 @@ export default {
   "Search your library for this title": "Diesen Titel in deiner Bibliothek suchen",
   "Missing scenes: only the last days": "Fehlende Szenen: nur die letzten Tage",
   "Only scenes from the last n days (0 = off). Replaces the oldest and newest date.": "Nur Szenen aus den letzten n Tagen (0 = aus). Ersetzt das älteste und das neueste Datum.",
+  "A {time} – press L at the end": "A {time} – am Ende L drücken",
+  "B must come after A": "B muss nach A kommen",
+  "Looping {a} – {b}": "Schleife {a} – {b}",
+  "Loop off": "Schleife aus",
+  "A–B loop: set A here (L)": "A–B-Schleife: A hier setzen (L)",
+  "A–B loop: set B here (L)": "A–B-Schleife: B hier setzen (L)",
+  "A–B loop on – clear (L)": "A–B-Schleife an – löschen (L)",
 };

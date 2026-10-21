@@ -2425,4 +2425,11 @@ export default {
   "Search your library for this title": "このタイトルをライブラリで検索",
   "Missing scenes: only the last days": "不足シーン：直近の日数のみ",
   "Only scenes from the last n days (0 = off). Replaces the oldest and newest date.": "直近 n 日以内のシーンだけを表示します（0 = オフ）。最も古い日付と最も新しい日付より優先されます。",
+  "A {time} – press L at the end": "A {time} – 終点でもう一度 L を押します",
+  "B must come after A": "B は A より後にしてください",
+  "Looping {a} – {b}": "ループ再生 {a} – {b}",
+  "Loop off": "ループ解除",
+  "A–B loop: set A here (L)": "A–B ループ：ここを A にする（L）",
+  "A–B loop: set B here (L)": "A–B ループ：ここを B にする（L）",
+  "A–B loop on – clear (L)": "A–B ループ オン – 解除（L）",
 };
