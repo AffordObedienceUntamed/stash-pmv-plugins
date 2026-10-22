@@ -9,7 +9,7 @@ import { runBackend } from "../interactive.js";
 import { parseTime } from "../audiox.js";
 import { createCropper } from "../cropbox.js";
 
-const fmt = (sec) => {
+export const fmt = (sec) => {
   sec = Math.max(0, sec || 0);
   const h = Math.floor(sec / 3600);
   const m = Math.floor((sec % 3600) / 60);
@@ -46,7 +46,7 @@ export function openClipCut(x, video) {
       </div>`
           : ""
       }
-      <div class="kb-cut-add"><button class="kb-btn is-primary" data-add>${icon("plus")}${t("Add clip")}</button><button class="kb-btn is-ghost" data-whole title="${esc(t("Start at 0:00, end at the end of the video"))}">${t("Whole video")}</button><span class="kb-hint">${t("The whole video is {d}.", { d: esc(fmtDuration(dur)) })}</span></div>
+      <div class="kb-cut-add"><button class="kb-btn is-primary" data-add>${icon("plus")}${t("Add clip")}</button><button class="kb-btn is-ghost" data-whole title="${esc(t("Start at 0:00, end at the end of the video"))}">${t("Whole video")}</button><button class="kb-btn is-ghost" data-mkclips title="${esc(t("Make clips from the markers of this video – with their own end, or a length you choose"))}">${t("Clips from markers")}</button><span class="kb-hint">${t("The whole video is {d}.", { d: esc(fmtDuration(dur)) })}</span></div>
       <div class="kb-cut-list" data-list></div>
       <div class="kb-cut-opts">
         <label class="kb-cut-opt"><input type="radio" name="kb-cut-q" value="fast" data-q${opts.precise ? "" : " checked"}><span><b>${t("Fast")}</b> ${t("– no re-encoding, same quality; the start snaps to the nearest earlier keyframe (can be a second or two off)")}</span></label>
@@ -139,6 +139,7 @@ export function openClipCut(x, video) {
     }
   };
   video && video.addEventListener("timeupdate", onTime);
+  $("[data-mkclips]").onclick = () => import("./markerclips.js").then((m) => m.openMarkerClips({ sceneId: x.id }));
   $("[data-whole]").onclick = () => {
     $("[data-from]").value = fmt(0);
     $("[data-to]").value = fmt(dur);
@@ -233,7 +234,8 @@ export function openClipCut(x, video) {
 }
 
 // Scan the new files, then give the scenes the original's performers, tags and studio, plus the tag "Clip"
-async function intoStash(x, files, o) {
+// extra (optional): per file { tagIds } – more tags for that file's scene (used by clips from markers)
+export async function intoStash(x, files, o, extra) {
   const job = (await gql(`mutation($i: ScanMetadataInput!) { metadataScan(input: $i) }`, { i: { paths: files } })).metadataScan;
   for (let i = 0; i < 150; i++) {
     await new Promise((r) => setTimeout(r, 1500));
@@ -249,7 +251,7 @@ async function intoStash(x, files, o) {
   // (comparing the file names loosely: case and accents' form don't matter), and say so if one never showed up
   const norm = (n) => String(n).normalize("NFC").toLowerCase();
   const missing = [];
-  for (const f of files) {
+  for (const [fi, f] of files.entries()) {
     const base = f.split(/[\\/]/).pop();
     let sc = null;
     for (let i = 0; i < 30 && !sc; i++) {
@@ -265,7 +267,7 @@ async function intoStash(x, files, o) {
     const input = {
       id: sc.id,
       performer_ids: (x.performers || []).map((p) => p.id),
-      tag_ids: [...new Set([...(x.tags || []).map((tg) => tg.id), tagId])],
+      tag_ids: [...new Set([...(x.tags || []).map((tg) => tg.id), tagId, ...((extra && extra[fi] && extra[fi].tagIds) || [])])],
       title: base.replace(/\.[^.]+$/, ""),
     };
     if (x.studio) input.studio_id = x.studio.id;

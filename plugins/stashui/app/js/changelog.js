@@ -7,6 +7,13 @@
 
 export const CHANGES = [
   {
+    v: "3.118.0",
+    date: "2026-10-22",
+    items: [
+      ["ui", "Clips from markers: the Markers page has a “Make clips” button (it takes everything the search and tag filter show), and Cut clips in the player has “Clips from markers” for that video. A marker that has a start and an end becomes a clip as it is. For markers without an end you choose “take the next 20 seconds” (5/10/20/30/60 or any number, optionally stopping at the next marker of the same video) or leave them out – and in the list you can type the end of any marker yourself (1:25, or +15 for 15 seconds after the start) or untick the ones you don't want. Clips are saved like in Cut clips (Fast or Exact, joined per video, “Clips” subfolder) and can take over the video's performers/tags/studio plus the marker's own tags.", "用标记制作片段：标记页面新增“Make clips”按钮（处理搜索和标签筛选当前显示的所有标记），播放器里的“Cut clips”也有针对该视频的“Clips from markers”。有开始和结束时间的标记直接变成片段；没有结束时间的标记可以选择“取之后 20 秒”（5/10/20/30/60 秒或任意数字，可选在同一视频的下一个标记处停止），或者跳过 – 在列表中还可以自己输入任意标记的结束时间（1:25，或 +15 表示开始后 15 秒），也可以取消勾选不要的标记。片段的保存方式与“Cut clips”相同（快速或精确、按视频合并、“Clips”子文件夹），并可沿用该视频的演员/标签/工作室以及标记自己的标签。", "markers::[data-mkclips]"],
+    ],
+  },
+  {
     v: "3.117.0",
     date: "2026-10-21",
     items: [
