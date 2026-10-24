@@ -23,8 +23,12 @@ export const forgetStashFilters = () => cache.clear();
 const ids = (list) => (Array.isArray(list) ? list : []).map((x) => String(x && typeof x === "object" ? x.id : x)).filter((x) => x && x !== "undefined");
 const NULLISH = new Set(["IS_NULL", "NOT_NULL"]);
 const BOOL = new Set(["organized", "interactive", "performer_favorite", "ignore_auto_tag", "favorite"]);
-const FLAG_STRING = new Set(["has_markers", "is_missing"]); // asked as "true" / "false"
+const FLAG_STRING = new Set(["has_markers"]); // asked as "true" / "false"
 const INT = (v) => (v === "" || v == null || isNaN(Number(v)) ? null : Math.round(Number(v)));
+// Stash saves the resolution as its label ("1080p"), GraphQL wants the enum (Stash's utils/resolution.ts)
+const RESOLUTION = { "144p": "VERY_LOW", "240p": "LOW", "360p": "R360P", "480p": "STANDARD", "540p": "WEB_HD", "720p": "STANDARD_HD", "1080p": "FULL_HD", "1440p": "QUAD_HD", "1920p": "VR_HD", "4k": "FOUR_K", "5k": "FIVE_K", "6k": "SIX_K", "7k": "SEVEN_K", "8k": "EIGHT_K", huge: "HUGE" };
+const RESOLUTION_KEYS = new Set(["resolution", "average_resolution"]);
+const DUPLICATE_FLAGS = ["duplicated", "phash", "url", "stash_id", "title"]; // DuplicationCriterionInput
 
 // One saved criterion → the GraphQL criterion (undefined = can't be turned)
 function criterion(key, c) {
@@ -36,6 +40,19 @@ function criterion(key, c) {
     return b == null ? undefined : b;
   }
   if (FLAG_STRING.has(key)) return typeof v === "boolean" || v === "true" || v === "false" ? String(v) : undefined;
+  if (key === "is_missing") return typeof v === "string" && v ? v : undefined; // the missing field ("title", "studio" …)
+  if (RESOLUTION_KEYS.has(key)) {
+    const e = typeof v === "string" ? RESOLUTION[v.toLowerCase()] || (Object.values(RESOLUTION).includes(v) ? v : null) : null;
+    return e ? { value: e, modifier: modifier || "EQUALS" } : undefined;
+  }
+  if (key === "duplicated") {
+    // { phash: true, title: false, … }; an old filter saved "true" (= phash duplicates), as Stash reads it
+    if (v === "true" || v === "false" || typeof v === "boolean") return { phash: String(v) === "true" };
+    const out = {};
+    for (const f of DUPLICATE_FLAGS) if (v && typeof v[f] === "boolean") out[f] = v[f];
+    if (v && INT(v.distance) != null) out.distance = INT(v.distance);
+    return Object.keys(out).length ? out : undefined;
+  }
   if (v && typeof v === "object" && !Array.isArray(v) && Array.isArray(v.items)) {
     // tags, performers, studios …: chosen items (+ excluded ones), tags and studios with the depth
     const out = { value: ids(v.items), modifier: modifier || "INCLUDES" };
@@ -58,7 +75,7 @@ function criterion(key, c) {
   }
   if (NULLISH.has(modifier)) return { modifier, value: typeof v === "number" ? 0 : "" };
   if (typeof v === "number") return { value: Math.round(v), modifier: modifier || "EQUALS" };
-  if (typeof v === "string") return { value: v, modifier: modifier || (key === "resolution" ? "EQUALS" : "INCLUDES") };
+  if (typeof v === "string") return { value: v, modifier: modifier || "INCLUDES" };
   return undefined;
 }
 
