@@ -7,7 +7,7 @@ import { t } from "../i18n.js";
 import { gql, routeSignal } from "../api.js";
 import { mediaBrowser } from "./media.js";
 import { openStudioEditor } from "./studioedit.js";
-import { go } from "../main.js";
+import { go, setQuery } from "../main.js";
 
 const SORTS = [
   ["name", "Alphabetical"],

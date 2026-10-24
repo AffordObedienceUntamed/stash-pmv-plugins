@@ -7,6 +7,14 @@
 
 export const CHANGES = [
   {
+    v: "3.119.1",
+    date: "2026-10-24",
+    items: [
+      ["ui", "Fixed: searching on the Studios page did nothing (“setQuery is not defined”) – thanks to ByteCrunch for the exact fix.", "修复：工作室页面的搜索无效（“setQuery is not defined”）——感谢 ByteCrunch 给出的准确修复。", "studios::[data-q]"],
+      ["ui", "Saved filters from the classic Stash UI now work with a resolution (“1080p”), “is missing” and “duplicated” criteria – before, a resolution made the whole list fail and the other two were skipped (pull request by PepegaSan).", "经典 Stash 界面保存的筛选器现在支持分辨率（如“1080p”）、“缺失项”和“重复”条件——此前分辨率会让整个列表出错，另外两项被忽略（PepegaSan 的 pull request）。"],
+    ],
+  },
+  {
     v: "3.119.0",
     date: "2026-10-23",
     items: [
