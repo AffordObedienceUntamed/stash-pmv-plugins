@@ -119,6 +119,7 @@ export function placardHtml(kind, x) {
         ${kind === "scene" ? `<button class="kb-plc-btn" data-cover title="${t("Use the frame you're looking at as the scene's cover")}">${icon("image")}${t("Cover")}</button>` : ""}
         ${kind === "scene" ? `<button class="kb-plc-btn" data-funscript title="${esc(x.interactive ? t("This scene has a funscript – choose another one to replace it") : t("Give this scene a funscript (for The Handy) – it's put next to the video"))}">${icon("plug")}${x.interactive ? t("Funscript ✓") : t("Funscript")}</button>` : ""}
         ${kind === "scene" ? `<button class="kb-plc-btn" data-cut title="${t("Cut parts out of this video and save them as new videos")}">${icon("scissors")}${t("Cut clips")}</button>` : ""}
+        ${kind === "scene" ? `<button class="kb-plc-btn" data-gif title="${t("Make an animated GIF of a part of this video")}">${icon("film")}${t("GIF")}</button>` : ""}
         ${kind === "scene" && app.pmvPlugin !== null ? `<button class="kb-plc-btn" data-music title="${t("Use the music in the PMV Generator, or save it as a sound file")}">${icon("music")}${t("Music")}</button>` : ""}
       </div>
       ${info.path ? `<p class="kb-plc-path">${esc(info.path)}</p>` : ""}
@@ -209,7 +210,7 @@ function bindPerfCards(host, getItem) {
 }
 
 // Binds the buttons; refresh() reloads the details and redraws the placard.
-export function bindPlacard(host, kind, getItem, { refresh, onDeleted, goFolder, music, cover, funscript, position, cut, onO }) {
+export function bindPlacard(host, kind, getItem, { refresh, onDeleted, goFolder, music, cover, funscript, position, cut, gif, onO }) {
   bindPerfCards(host, getItem);
   // Taking a performer off: always asks first. On touch screens the × is hidden (too easy to hit) – hold the card instead
   async function removePerf(id) {
@@ -331,6 +332,7 @@ export function bindPlacard(host, kind, getItem, { refresh, onDeleted, goFolder,
         return pk.focus();
       }
       if (e.target.closest("[data-cut]")) return cut && cut();
+      if (e.target.closest("[data-gif]")) return gif && gif();
       if (e.target.closest("[data-music]")) return music && music();
       if (e.target.closest("[data-cover]")) return cover && cover();
       if (e.target.closest("[data-funscript]")) return funscript && funscript();

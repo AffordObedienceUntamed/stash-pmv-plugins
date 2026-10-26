@@ -7,6 +7,13 @@
 
 export const CHANGES = [
   {
+    v: "3.123.0",
+    date: "2026-10-26",
+    items: [
+      ["ui", "GIF maker: in a scene's info panel, “GIF” opens a window to make an animated GIF of a part of the video – Start/End from the video you're watching (“Here”) or a length from the current time (3 / 5 / 8 / 12 s), width, pictures per second, speed, quality, an optional crop, and “Play this part” to look at it first. The GIF is saved next to the video (or in a “Clips” folder) and can be added to Stash as an image with the scene's performers, tags and studio. Needs ffmpeg (as Cut clips does); after the update use “Reload plugins”.", "GIF 制作：在场景信息面板中点“GIF”，可把视频的一部分制作成动画 GIF——开始/结束取自正在播放的视频（“此处”），或选择从当前时间起的长度（3 / 5 / 8 / 12 秒），还可设置宽度、每秒画面数、速度、质量、可选裁剪，并可先“播放此部分”预览。GIF 保存在视频旁（或“Clips”文件夹），并可连同场景的演员、标签和工作室一起作为图片添加到 Stash。需要 ffmpeg（与“剪辑片段”相同）；更新后请“Reload plugins”。", "scene/@scene::[data-gif]"],
+    ],
+  },
+  {
     v: "3.122.0",
     date: "2026-10-26",
     items: [

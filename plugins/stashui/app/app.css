@@ -2222,3 +2222,9 @@ html.kb-glass .kb-qtag { border-color: var(--glass-edge); background: var(--glas
 .kb-ed-prog a { color: var(--text); text-decoration: underline; }
 @media (max-width: 900px) { .kb-ed { grid-template-columns: minmax(0, 1fr); } .kb-ed-add { position: static; max-height: 360px; } .kb-ed-seg { flex-wrap: wrap; } }
 html.kb-glass .kb-ed-hit, html.kb-glass .kb-ed-seg, html.kb-glass .kb-ed-out { border-color: var(--glass-edge); background: var(--glass-shine), var(--glass); }
+
+/* ── GIF maker ── */
+.kb-gif-len { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 4px 0 10px; }
+.kb-gif-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
+.kb-gif-grid .kb-form-row { margin: 0; }
+.kb-gif [data-estimate].is-warn { color: #ffb86b; }

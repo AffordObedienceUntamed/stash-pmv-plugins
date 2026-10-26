@@ -59,6 +59,11 @@ Called through Stash's `runPluginOperation` (interface: raw):
       args:   {"mode": "funscript_save_variant", "scene_id": "12", "label": "Soft", "content": "<funscript text>"}
       output: {"path", "name"}
 
+* mode "gif_make": a part of a scene as an animated GIF (width, fps, speed, quality, optional crop), rendered by ffmpeg in its own
+  process; "clip_status" says how far it is.
+      args:   {"mode": "gif_make", "scene_id", "start", "end", "width", "fps", "speed", "quality": "small"|"good"|"best", "loop", "crop", "folder", "name"}
+      output: {"job"}
+
 * mode "edit_render": the Editor – pieces of several scenes, one after the other (trimmed, faster / slower, fading), as one new
   video, rendered by ffmpeg in its own process; "clip_status" says how far it is.
       args:   {"mode": "edit_render", "items": [{"scene_id", "start", "end", "speed"}], "name", "w", "h", "fps", "fade", "audio": "keep"|"mute",
@@ -1192,6 +1197,104 @@ def cut_job(spec_path):
     save()
 
 
+# ---------- GIF maker: a part of a scene as an animated GIF ----------
+# {"mode": "gif_make", "scene_id", "start", "end", "width", "fps", "speed", "quality": "small"|"good"|"best", "loop": bool, "crop": {x,y,w,h},
+#  "folder": "Clips"|"", "name"} → {"job"}; "clip_status" says how far it is ({"state", "pct", "files", "error"}).
+
+def gif_make(stash, args):
+    sid = str(args.get("scene_id") or "")
+    video = scene_video(stash, sid)
+    if not os.path.isfile(video):
+        raise ValueError(f"the video file can't be reached from here: {video}")
+    a, b = float(args.get("start")), float(args.get("end"))
+    if not (a >= 0 and b > a + 0.2):
+        raise ValueError("the end must be after the start")
+    if b - a > 60:
+        raise ValueError("a GIF can be 60 seconds long at most")
+    spec = {"job": secrets.token_hex(4), "ffmpeg": find_ffmpeg(stash), "video": video, "start": a, "end": b,
+            "width": max(120, min(1920, int(args.get("width") or 480))), "fps": max(5, min(30, int(args.get("fps") or 15))),
+            "speed": max(0.25, min(4.0, float(args.get("speed") or 1.0))), "quality": args.get("quality") if args.get("quality") in ("small", "good", "best") else "good",
+            "loop": bool(args.get("loop", True))}
+    cr = args.get("crop")
+    if cr:
+        x0, y0, w0, h0 = (max(0.0, min(1.0, float(cr.get(k)))) for k in ("x", "y", "w", "h"))
+        if w0 < 0.02 or h0 < 0.02 or x0 + w0 > 1.0005 or y0 + h0 > 1.0005:
+            raise ValueError("the cropped area doesn't fit into the picture")
+        spec["crop"] = {"x": x0, "y": y0, "w": min(w0, 1 - x0), "h": min(h0, 1 - y0)}
+    folder = os.path.dirname(video)
+    if args.get("folder") == "Clips":
+        folder = os.path.join(folder, "Clips")
+        os.makedirs(folder, exist_ok=True)
+    base = os.path.splitext(os.path.basename(video))[0]
+    name = clean_name(args.get("name") or "") or f"{base} - GIF {int(a // 60)}-{int(a % 60):02d}"
+    spec["out"] = unique(os.path.join(folder, name + ".gif"))
+    path = os.path.join(CUT_DIR, f"stashui-gif-{spec['job']}.json")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(spec, f)
+    flags = (0x08000000 | 0x00000200) if os.name == "nt" else 0
+    subprocess.Popen([sys.executable, os.path.abspath(__file__), "--gifjob", path], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=flags)
+    return {"job": spec["job"]}
+
+
+def gif_job(spec_path):
+    with open(spec_path, encoding="utf-8") as f:
+        spec = json.load(f)
+    st = {"state": "running", "i": 0, "n": 1, "pct": 0, "files": [], "error": ""}
+    sp = cut_status_path(spec["job"])
+
+    def save():
+        with open(sp + ".tmp", "w", encoding="utf-8") as f:
+            json.dump(st, f)
+        os.replace(sp + ".tmp", sp)
+
+    save()
+    flags = 0x08000000 if os.name == "nt" else 0
+    try:
+        span = spec["end"] - spec["start"]
+        vf = []
+        cr = spec.get("crop")
+        if cr:
+            vf.append("crop=trunc(iw*{w:.5f}/2)*2:trunc(ih*{h:.5f}/2)*2:trunc(iw*{x:.5f}/2)*2:trunc(ih*{y:.5f}/2)*2".format(**cr))
+        if spec["speed"] != 1:
+            vf.append(f"setpts=PTS/{spec['speed']:.4f}")
+        vf.append(f"fps={spec['fps']}")
+        vf.append(f"scale='min({spec['width']},iw)':-1:flags=lanczos")
+        # the palette is made from the picture itself (much better colours than the default palette)
+        q = spec["quality"]
+        gen = "palettegen=max_colors=" + ("128:stats_mode=diff" if q == "small" else "256:stats_mode=diff" if q == "good" else "256:stats_mode=full")
+        use = "paletteuse=dither=" + ("bayer:bayer_scale=5:diff_mode=rectangle" if q == "small" else "bayer:bayer_scale=3:diff_mode=rectangle" if q == "good" else "sierra2_4a")
+        graph = ",".join(vf) + f",split[a][b];[a]{gen}[p];[b][p]{use}"
+        cmd = [spec["ffmpeg"], "-hide_banner", "-loglevel", "error", "-y", "-progress", "pipe:1", "-nostats", "-ss", f"{spec['start']:.3f}", "-t", f"{span:.3f}", "-i", spec["video"],
+               "-an", "-filter_complex", graph, "-loop", "0" if spec["loop"] else "-1", spec["out"]]
+        total = span / spec["speed"]
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, creationflags=flags)
+        last = 0.0
+        for line in proc.stdout:
+            line = line.strip()
+            if line.startswith("out_time_us=") or line.startswith("out_time_ms="):
+                try:
+                    t_out = int(line.split("=", 1)[1]) / 1e6
+                except ValueError:
+                    continue
+                if time.time() - last > 0.5:
+                    st["pct"] = max(0, min(99, int(100 * t_out / total))) if total > 0 else 0
+                    save()
+                    last = time.time()
+        err = proc.stderr.read()
+        proc.wait()
+        if proc.returncode != 0 or not os.path.isfile(spec["out"]):
+            raise RuntimeError((err or "ffmpeg failed").strip().splitlines()[-1] if (err or "").strip() else "ffmpeg failed")
+        st["files"].append(spec["out"])
+        st["size"] = os.path.getsize(spec["out"])
+        st["pct"] = 100
+        st["state"] = "done"
+        st["i"] = 1
+    except Exception as e:  # noqa: BLE001
+        st["state"] = "error"
+        st["error"] = str(e)
+    save()
+
+
 # ---------- Editor: pieces of several scenes, in a row, as one new video ----------
 # {"mode": "edit_render", "items": [{"scene_id", "start", "end", "speed"}], "name", "w", "h", "fps", "fade", "audio": "keep"|"mute",
 #  "folder": "Clips"|""} → {"job"}; "clip_status" says how far it is ({"state", "pct", "files", "error"}).
@@ -1776,6 +1879,8 @@ def main():
         return cut_job(sys.argv[2])
     if len(sys.argv) > 2 and sys.argv[1] == "--editjob":
         return edit_job(sys.argv[2])
+    if len(sys.argv) > 2 and sys.argv[1] == "--gifjob":
+        return gif_job(sys.argv[2])
     data = json.loads(sys.stdin.read() or "{}")
     args = data.get("args") or {}
     mode = str(args.get("mode") or "")
@@ -1816,6 +1921,8 @@ def main():
             out = box_images(Stash(data.get("server_connection")), args)
         elif mode == "box_scenes":
             out = box_scenes(Stash(data.get("server_connection")), args)
+        elif mode == "gif_make":
+            out = gif_make(Stash(data.get("server_connection")), args)
         elif mode == "edit_render":
             out = edit_render(Stash(data.get("server_connection")), args)
         elif mode == "box_gql":

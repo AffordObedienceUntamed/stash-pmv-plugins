@@ -1339,6 +1339,7 @@ export async function render(host, params, query = {}) {
     goFolder: () => goToFolder(f.path),
     music: () => import("./music.js").then((m) => m.openMusic(x, v)),
     cut: () => import("./clipcut.js").then((m) => m.openClipCut(x, v)),
+    gif: () => import("./gifmaker.js").then((m) => m.openGifMaker(x, v)),
     onO: () => oPrefs().mark !== false && markO(true),
     cover: () => frameAsCover(),
     funscript: () => addFunscript(),
