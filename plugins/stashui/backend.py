@@ -59,6 +59,9 @@ Called through Stash's `runPluginOperation` (interface: raw):
       args:   {"mode": "funscript_save_variant", "scene_id": "12", "label": "Soft", "content": "<funscript text>"}
       output: {"path", "name"}
 
+* mode "clips_dir_check": is a folder usable for all new clips / GIFs / edits (Settings → This interface)? {"path"} → {"ok", "created",
+  "in_library", "why"}. With the setting "clipsDir" (plugin settings) every new clip, GIF and edit is saved there, together.
+
 * mode "gif_make": a part of a scene as an animated GIF (width, fps, speed, quality, optional crop), rendered by ffmpeg in its own
   process; "clip_status" says how far it is.
       args:   {"mode": "gif_make", "scene_id", "start", "end", "width", "fps", "speed", "quality": "small"|"good"|"best", "loop", "crop", "folder", "name",
@@ -1078,10 +1081,7 @@ def clip_cut(stash, args):
     if not clips or len(clips) > 100:
         raise ValueError("no clips")
     base, ext = os.path.splitext(os.path.basename(video))
-    folder = os.path.dirname(video)
-    if args.get("folder") == "Clips":
-        folder = os.path.join(folder, "Clips")
-        os.makedirs(folder, exist_ok=True)
+    folder = out_folder(stash, video, args.get("folder"))
     job = secrets.token_hex(4)
     def even(n, fallback=0):
         n = int(float(n or 0))
@@ -1096,6 +1096,51 @@ def clip_cut(stash, args):
     flags = (0x08000000 | 0x00000200) if os.name == "nt" else 0
     subprocess.Popen([sys.executable, os.path.abspath(__file__), "--cutjob", path], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=flags)
     return {"job": job}
+
+
+def clips_dir_setting(stash):
+    """The one folder for all new clips and GIFs (Settings → This interface), or "" = next to each original."""
+    try:
+        plugins = stash.gql("query { configuration { plugins } }")["configuration"].get("plugins") or {}
+        return str((plugins.get("stashui") or {}).get("clipsDir") or "").strip()
+    except Exception:  # noqa: BLE001
+        return ""
+
+
+def out_folder(stash, video, folder_arg):
+    """Where a new clip / GIF / edit goes: the one folder of the setting if there is one (all of them end up together),
+    else the folder of the original – in a subfolder "Clips" if asked for."""
+    d = clips_dir_setting(stash)
+    if d:
+        if not os.path.isabs(d):
+            raise ValueError("The folder for new clips (Settings) has to be a full path")
+        os.makedirs(d, exist_ok=True)
+        return d
+    folder = os.path.dirname(video)
+    if folder_arg == "Clips":
+        folder = os.path.join(folder, "Clips")
+        os.makedirs(folder, exist_ok=True)
+    return folder
+
+
+def clips_dir_check(stash, args):
+    """Is this folder usable for new clips? {"path"} → {"ok", "created", "in_library", "why"}."""
+    d = str(args.get("path") or "").strip()
+    if not d:
+        return {"ok": True, "empty": True}
+    if not os.path.isabs(d):
+        return {"ok": False, "why": "relative"}
+    created = not os.path.isdir(d)
+    try:
+        os.makedirs(d, exist_ok=True)
+        probe = os.path.join(d, ".stashui-write-test")
+        with open(probe, "w") as f:
+            f.write("x")
+        os.remove(probe)
+    except OSError as e:
+        return {"ok": False, "why": str(e.strerror or e)}
+    roots, _ = libraries(stash)
+    return {"ok": True, "created": created, "in_library": inside(d, roots)}
 
 
 def cut_status_path(job):
@@ -1224,10 +1269,7 @@ def gif_make(stash, args):
         if w0 < 0.02 or h0 < 0.02 or x0 + w0 > 1.0005 or y0 + h0 > 1.0005:
             raise ValueError("the cropped area doesn't fit into the picture")
         spec["crop"] = {"x": x0, "y": y0, "w": min(w0, 1 - x0), "h": min(h0, 1 - y0)}
-    folder = os.path.dirname(video)
-    if args.get("folder") == "Clips":
-        folder = os.path.join(folder, "Clips")
-        os.makedirs(folder, exist_ok=True)
+    folder = out_folder(stash, video, args.get("folder"))
     base = os.path.splitext(os.path.basename(video))[0]
     name = clean_name(args.get("name") or "") or f"{base} - GIF {int(a // 60)}-{int(a % 60):02d}"
     spec["out"] = unique(os.path.join(folder, name + ".gif"))
@@ -1402,10 +1444,7 @@ def edit_render(stash, args):
         return n - n % 2
 
     w, h = even(args.get("w"), 160, 3840), even(args.get("h"), 160, 2160)
-    folder = os.path.dirname(items[0]["path"])
-    if args.get("folder") == "Clips":
-        folder = os.path.join(folder, "Clips")
-        os.makedirs(folder, exist_ok=True)
+    folder = out_folder(stash, items[0]["path"], args.get("folder"))
     name = clean_name(args.get("name") or "") or "Edit"
     job = secrets.token_hex(4)
     spec = {"job": job, "ffmpeg": ffmpeg, "items": items, "w": w, "h": h, "fps": max(10, min(60, int(args.get("fps") or 30))),
@@ -1986,6 +2025,8 @@ def main():
             out = box_images(Stash(data.get("server_connection")), args)
         elif mode == "box_scenes":
             out = box_scenes(Stash(data.get("server_connection")), args)
+        elif mode == "clips_dir_check":
+            out = clips_dir_check(Stash(data.get("server_connection")), args)
         elif mode == "gif_make":
             out = gif_make(Stash(data.get("server_connection")), args)
         elif mode == "edit_render":

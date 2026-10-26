@@ -8,6 +8,7 @@ import { gql } from "../api.js";
 import { runBackend } from "../interactive.js";
 import { parseTime } from "../audiox.js";
 import { intoStash } from "./clipcut.js";
+import { applyClipsDir } from "../clipsdir.js";
 
 const ft = (sec) => {
   sec = Math.max(0, Number(sec) || 0);
@@ -70,6 +71,7 @@ export async function render(main) {
     </div>`;
   const $ = (s) => main.querySelector(s);
   const video = $("[data-video]");
+  applyClipsDir($("[data-folder]"));
 
   // ---- the list of pieces ----
   const len = (it) => Math.max(0, (it.end - it.start) / it.speed);

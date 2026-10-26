@@ -8,6 +8,7 @@ import { gql } from "../api.js";
 import { runBackend } from "../interactive.js";
 import { parseTime } from "../audiox.js";
 import { createCropper } from "../cropbox.js";
+import { applyClipsDir } from "../clipsdir.js";
 
 export const fmt = (sec) => {
   sec = Math.max(0, sec || 0);
@@ -67,6 +68,7 @@ export function openClipCut(x, video) {
   const $ = (s) => el.querySelector(s);
   if (el.previousElementSibling) el.previousElementSibling.style.display = "none"; // (the scrim) the video stays usable
   el.classList.add("kb-cut");
+  applyClipsDir($("[data-sub]"));
 
   const now = () => (video ? video.currentTime : 0);
   el.querySelectorAll("[data-here]").forEach((b) => (b.onclick = () => ($(b.dataset.here === "from" ? "[data-from]" : "[data-to]").value = fmt(now()))));

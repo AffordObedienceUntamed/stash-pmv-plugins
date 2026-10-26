@@ -7,6 +7,7 @@ import { esc, icon, toast, errorToast, openDrawer, store } from "../ui.js";
 import { t } from "../i18n.js";
 import { gql } from "../api.js";
 import { runBackend } from "../interactive.js";
+import { applyClipsDir } from "../clipsdir.js";
 import { parseTime } from "../audiox.js";
 import { fmt, intoStash } from "./clipcut.js";
 
@@ -69,6 +70,7 @@ export async function openMarkerClips({ q = "", tags = [], sceneId = null } = {}
   });
   const el = d.el;
   el.classList.add("kb-mkc");
+  applyClipsDir(el.querySelector("[data-sub]"));
   const $ = (s) => el.querySelector(s);
 
   const nextStart = (i) => {

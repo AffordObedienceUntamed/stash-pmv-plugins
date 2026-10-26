@@ -7,6 +7,13 @@
 
 export const CHANGES = [
   {
+    v: "3.124.0",
+    date: "2026-10-26",
+    items: [
+      ["ui", "One folder for everything you make: Settings → This interface → “Folder for new clips and GIFs”. Every clip (Cut clips, clips from markers), GIF and edit is then saved there, all together, instead of next to each original or in a “Clips” subfolder per video. Give a full path (it is made if it doesn't exist); it should lie inside a library folder so Stash finds the files – the setting tells you if it doesn't. The dialogs say where the files go. Empty = as before. After the update use “Reload plugins”.", "所有成品放进同一个文件夹：设置 → 此界面 →“新片段和 GIF 的文件夹”。之后每个片段（剪辑片段、标记片段）、GIF 和剪辑都会集中保存到那里，而不是各自原视频旁边或每个视频的“Clips”子文件夹。请填写完整路径（不存在时会创建）；它应位于某个库文件夹内，这样 Stash 才能找到文件——否则设置会提示你。各对话框会说明文件保存的位置。留空 = 与以前一样。更新后请“Reload plugins”。", "settings::Folder for new clips and GIFs"],
+    ],
+  },
+  {
     v: "3.123.1",
     date: "2026-10-26",
     items: [

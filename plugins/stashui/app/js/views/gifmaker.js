@@ -9,6 +9,7 @@ import { runBackend } from "../interactive.js";
 import { parseTime } from "../audiox.js";
 import { createCropper } from "../cropbox.js";
 import { fmt } from "./clipcut.js";
+import { applyClipsDir } from "../clipsdir.js";
 
 const WIDTHS = [[320, "320 px"], [480, "480 px"], [640, "640 px"], [800, "800 px"], [1280, "1280 px"]];
 const FPS = [10, 12, 15, 20, 25];
@@ -81,6 +82,7 @@ export function openGifMaker(x, video) {
   const $ = (s) => el.querySelector(s);
   if (el.previousElementSibling) el.previousElementSibling.style.display = "none"; // (the scrim) the video stays usable
   el.classList.add("kb-cut", "kb-gif");
+  applyClipsDir($("[data-sub]"));
 
   const range = () => [parseTime($("[data-from]").value), parseTime($("[data-to]").value)];
   const estimate = () => {
