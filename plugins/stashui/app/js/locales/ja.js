@@ -2542,4 +2542,8 @@ export default {
   "That isn't a full path (like E:\\Stash\\Clips).": "フルパスではありません（例：E:\\Stash\\Clips）。",
   "This folder can't be used: {why}": "このフォルダは使えません：{why}",
   "next to each original": "それぞれの元の動画の横",
+  "Beginning": "先頭",
+  "Current time": "現在の時刻",
+  "Length:": "長さ：",
+  "Start from:": "開始位置：",
 };

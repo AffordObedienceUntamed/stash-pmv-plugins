@@ -2577,4 +2577,8 @@ export default {
   "That isn't a full path (like E:\\Stash\\Clips).": "Это не полный путь (например, E:\\Stash\\Clips).",
   "This folder can't be used: {why}": "Эту папку нельзя использовать: {why}",
   "next to each original": "рядом с каждым оригиналом",
+  "Beginning": "Начало",
+  "Current time": "Текущее время",
+  "Length:": "Длина:",
+  "Start from:": "Начать с:",
 };

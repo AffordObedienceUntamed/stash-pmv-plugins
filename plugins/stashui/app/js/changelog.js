@@ -7,6 +7,13 @@
 
 export const CHANGES = [
   {
+    v: "3.124.1",
+    date: "2026-10-26",
+    items: [
+      ["ui", "GIF maker: no typing needed. A video of up to 60 seconds is taken from the beginning to the end right away (and “Whole video” does it again); for longer ones choose where the length buttons start – “Beginning” or “Current time” – and press 3 / 5 / 8 / 12 s.", "GIF 制作：无需输入。60 秒以内的视频会直接从头到尾选中（“整个视频”按钮可再次选中）；更长的视频可选择长度按钮的起点——“开头”或“当前时间”——然后点 3 / 5 / 8 / 12 秒。", "scene/@scene::[data-gif]"],
+    ],
+  },
+  {
     v: "3.124.0",
     date: "2026-10-26",
     items: [

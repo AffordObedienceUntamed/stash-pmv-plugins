@@ -2535,4 +2535,8 @@ export default {
   "That isn't a full path (like E:\\Stash\\Clips).": "Đây không phải đường dẫn đầy đủ (ví dụ E:\\Stash\\Clips).",
   "This folder can't be used: {why}": "Không dùng được thư mục này: {why}",
   "next to each original": "cạnh từng bản gốc",
+  "Beginning": "Đầu video",
+  "Current time": "Thời điểm hiện tại",
+  "Length:": "Độ dài:",
+  "Start from:": "Bắt đầu từ:",
 };

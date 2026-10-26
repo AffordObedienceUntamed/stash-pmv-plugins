@@ -2540,4 +2540,8 @@ export default {
   "That isn't a full path (like E:\\Stash\\Clips).": "To nie jest pełna ścieżka (jak E:\\Stash\\Clips).",
   "This folder can't be used: {why}": "Tego folderu nie można użyć: {why}",
   "next to each original": "obok każdego oryginału",
+  "Beginning": "Początek",
+  "Current time": "Bieżący czas",
+  "Length:": "Długość:",
+  "Start from:": "Zacznij od:",
 };

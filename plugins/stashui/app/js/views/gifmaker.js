@@ -26,16 +26,19 @@ export function openGifMaker(x, video) {
   let busy = false;
   const cropKey = "gifCrop." + x.id;
   const now = () => (video ? video.currentTime : 0);
+  const short = dur > 0 && dur <= 60; // a GIF can be 60 seconds long at most: a video that short is taken whole
+  if (!o.fromMode) o.fromMode = short ? "start" : "now"; // where the length buttons start: the beginning of the video or the current time
 
   const d = openDrawer({
     title: t("Make a GIF"),
     body: `
       <p class="kb-hint">${t("Play or scrub the video, press “Here” at the start and the end of the part you want – or a length from the current time – and make the GIF. The video itself stays as it is.")}</p>
       <div class="kb-music-range">
-        <label class="kb-form-row"><span>${t("Start time")}</span><span class="kb-music-t"><input class="kb-field" data-from value="${fmt(Math.max(0, Math.min(now(), Math.max(0, dur - 1))))}"><button type="button" class="kb-btn is-ghost" data-here="from">${t("Here")}</button></span></label>
-        <label class="kb-form-row"><span>${t("End")}</span><span class="kb-music-t"><input class="kb-field" data-to value="${fmt(Math.min(dur || 1e9, now() + 5))}"><button type="button" class="kb-btn is-ghost" data-here="to">${t("Here")}</button></span></label>
+        <label class="kb-form-row"><span>${t("Start time")}</span><span class="kb-music-t"><input class="kb-field" data-from value="${short ? fmt(0) : fmt(Math.max(0, Math.min(now(), Math.max(0, dur - 1))))}"><button type="button" class="kb-btn is-ghost" data-here="from">${t("Here")}</button></span></label>
+        <label class="kb-form-row"><span>${t("End")}</span><span class="kb-music-t"><input class="kb-field" data-to value="${short ? fmt(dur) : fmt(Math.min(dur || 1e9, now() + 5))}"><button type="button" class="kb-btn is-ghost" data-here="to">${t("Here")}</button></span></label>
       </div>
-      <div class="kb-gif-len"><span class="kb-hint">${t("Length from the current time:")}</span>${LENGTHS.map((n) => `<button type="button" class="kb-btn is-ghost" data-len="${n}">${n} s</button>`).join("")}<button type="button" class="kb-btn is-ghost" data-play>${icon("play")}${t("Play this part")}</button></div>
+      <div class="kb-gif-len">${short ? `<button type="button" class="kb-btn is-primary" data-whole>${t("Whole video")}</button>` : ""}<span class="kb-hint">${t("Start from:")}</span><span class="kb-seg" data-frommode><button type="button" data-fm="start">${t("Beginning")}</button><button type="button" data-fm="now">${t("Current time")}</button></span></div>
+      <div class="kb-gif-len"><span class="kb-hint">${t("Length:")}</span>${LENGTHS.map((n) => `<button type="button" class="kb-btn is-ghost" data-len="${n}">${n} s</button>`).join("")}<button type="button" class="kb-btn is-ghost" data-play>${icon("play")}${t("Play this part")}</button></div>
       <div class="kb-gif-grid">
         <label class="kb-form-row"><span>${t("Width")}</span><select class="kb-field" data-width>${WIDTHS.map(([v, l]) => `<option value="${v}"${o.width === v ? " selected" : ""}>${l}</option>`).join("")}</select></label>
         <label class="kb-form-row"><span>${t("Pictures per second")}</span><select class="kb-field" data-fps>${FPS.map((v) => `<option value="${v}"${o.fps === v ? " selected" : ""}>${v}</option>`).join("")}</select></label>
@@ -97,10 +100,26 @@ export function openGifMaker(x, video) {
     p.classList.toggle("is-warn", len > 60 || big);
   };
   el.querySelectorAll("[data-here]").forEach((b) => (b.onclick = () => (($(b.dataset.here === "from" ? "[data-from]" : "[data-to]").value = fmt(now())), estimate())));
+  const paintMode = () => el.querySelectorAll("[data-fm]").forEach((b) => b.classList.toggle("is-on", b.dataset.fm === o.fromMode));
+  el.querySelectorAll("[data-fm]").forEach(
+    (b) =>
+      (b.onclick = () => {
+        o.fromMode = b.dataset.fm;
+        paintMode();
+      }),
+  );
+  paintMode();
+  const whole = $("[data-whole]");
+  if (whole)
+    whole.onclick = () => {
+      $("[data-from]").value = fmt(0);
+      $("[data-to]").value = fmt(dur);
+      estimate();
+    };
   el.querySelectorAll("[data-len]").forEach(
     (b) =>
       (b.onclick = () => {
-        const a = now();
+        const a = o.fromMode === "start" ? 0 : now();
         $("[data-from]").value = fmt(a);
         $("[data-to]").value = fmt(dur ? Math.min(dur, a + Number(b.dataset.len)) : a + Number(b.dataset.len));
         estimate();

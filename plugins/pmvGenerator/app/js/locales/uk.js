@@ -2575,4 +2575,8 @@ export default {
   "That isn't a full path (like E:\\Stash\\Clips).": "Це не повний шлях (наприклад, E:\\Stash\\Clips).",
   "This folder can't be used: {why}": "Цю теку не можна використовувати: {why}",
   "next to each original": "поруч із кожним оригіналом",
+  "Beginning": "Початок",
+  "Current time": "Поточний час",
+  "Length:": "Тривалість:",
+  "Start from:": "Почати з:",
 };

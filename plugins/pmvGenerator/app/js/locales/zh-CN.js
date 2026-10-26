@@ -2599,4 +2599,8 @@ export default {
   "That isn't a full path (like E:\\Stash\\Clips).": "这不是完整路径（例如 E:\\Stash\\Clips）。",
   "This folder can't be used: {why}": "无法使用此文件夹：{why}",
   "next to each original": "各自原视频旁边",
+  "Beginning": "开头",
+  "Current time": "当前时间",
+  "Length:": "长度：",
+  "Start from:": "从此开始：",
 };
