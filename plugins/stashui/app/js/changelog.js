@@ -7,6 +7,17 @@
 
 export const CHANGES = [
   {
+    v: "3.122.0",
+    date: "2026-10-26",
+    items: [
+      ["pmv", "Change the moment (M, or the pencil in the bar): the show pauses and every clip of a scene on screen gets a slider and −10 / −1 / −0.1 / +0.1 / +1 / +10 s buttons to take it from another moment of its scene, as suggested by Blueocean15. “Pin this moment” keeps a moment – clips of that scene then often start there; “Back to the picked moment” undoes it.", "更改时刻（M，或栏中的铅笔）：播放会暂停，屏幕上每个场景片段都有滑块和 −10 / −1 / −0.1 / +0.1 / +1 / +10 秒按钮，可改取其场景的另一个时刻（Blueocean15 的建议）。“钉住此时刻”会记住它——该场景的片段之后常常从那里开始；“回到选中的时刻”可撤销。"],
+      ["ui", "New page Editor (menu → Watch): a simple video editor. Add pieces of any of your scenes, set where each starts and ends (and its speed), put them in order, preview it all and make ONE new video – with fades between the pieces, sound kept or off, any size – saved next to the first video and added to Stash. Suggested by xlxi.", "新页面“编辑器”（菜单 → 观看）：简单的视频编辑器。从任意场景添加片段，设置每段的开始、结束和速度，排好顺序，预览全部并生成一个新视频——可在片段间淡入淡出，保留或关闭声音，任意尺寸——保存在第一个视频旁并添加到 Stash。（xlxi 的建议）", "editor::.kb-ed"],
+      ["ui", "Press T over a card and a small tag box opens right at it: the card's tags (× removes one) and a field to add more, applied at once – no form. The tag fields have a button that opens all tags as a tree (parents → children, with counts) to pick from, as suggested by JoeBiden.", "把鼠标放在卡片上按 T，会在卡片旁打开一个小标签框：显示卡片的标签（× 移除）和添加字段，立即生效——无需表单。标签字段新增按钮，可把所有标签按树形（父级 → 子级，带数量）展开来选择（JoeBiden 的建议）。"],
+      ["ui", "Performers: typing “blue eyes”, “blonde” … in the search offers the performers' own eye color / hair color / ethnicity / country values as filters. Looks → “Attributes as tags …” writes them as tags (“Blue Eyes”, “Blonde Hair” …), so tag searches and tag pages find them too – nothing is taken away from anyone.", "演员：在搜索中输入“blue eyes”“blonde”等，会把演员自己的眼睛颜色 / 头发颜色 / 种族 / 国家值作为筛选建议。外观 →“属性转为标签 …”会把它们写成标签（“Blue Eyes”“Blonde Hair” …），这样标签搜索和标签页也能找到——不会从任何人身上移除标签。", "performers::[data-attrbtn]"],
+      ["ui", "While the mouse rests on a performer card it shows other pictures of that performer from your library, one after the other (Settings → This interface; the blur of the NSFW setting applies to every picture). The Detailed rating window shows pictures with a face tag first.", "鼠标停在演员卡片上时，会依次显示库中该演员的其他图片（设置 → 此界面；NSFW 的模糊对所有图片生效）。详细评分窗口会优先显示带脸部标签的图片。", "settings::Other pictures on performer cards"],
+    ],
+  },
+  {
     v: "3.121.0",
     date: "2026-10-26",
     items: [

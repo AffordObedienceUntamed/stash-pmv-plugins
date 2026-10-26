@@ -145,6 +145,7 @@ export async function render(main, params, query) {
         <button type="button" class="kb-btn" data-new>${icon("plus")}${t("New performer")}</button>
       </div>
     </header>
+    <div class="kb-look-hints" data-lookhints hidden></div>
     <div class="kb-perf-attrs kb-perf-tagp" data-tagpanel hidden>
       <div class="kb-tagpick kb-perf-tagbox" data-tagbox></div>
       <span class="kb-seg" data-tagmode><button type="button" data-m="all">${t("Match all tags")}</button><button type="button" data-m="any">${t("Match any tag")}</button></span>
@@ -170,20 +171,25 @@ export async function render(main, params, query) {
   const looks = Object.fromEntries(ATTRS.map(([f, k]) => [f, query[k] || ""]));
   const looksOn = () => ATTRS.some(([f]) => looks[f]);
   let distinct = null; // field → [[value, count]] – asked once, when the panel is first opened
+  const loadDistinct = async () => {
+    if (distinct) return;
+    const d = await gql(`query PerfLooks { findPerformers(filter: { per_page: -1 }) { performers { eye_color hair_color ethnicity country fake_tits } } }`, {}, { heavy: true });
+    const out = {};
+    for (const [f] of ATTRS) {
+      const n = new Map();
+      for (const p of d.findPerformers.performers) {
+        for (const v of lookTokens(f, p[f])) n.set(v, (n.get(v) || 0) + 1);
+      }
+      out[f] = [...n].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+    }
+    distinct = out;
+  };
   const paintLooks = async () => {
     const box = $("[data-attrs]");
     if (!distinct) {
       box.innerHTML = `<span class="kb-hint">${t("Loading …")}</span>`;
       try {
-        const d = await gql(`query PerfLooks { findPerformers(filter: { per_page: -1 }) { performers { eye_color hair_color ethnicity country fake_tits } } }`, {}, { heavy: true });
-        distinct = {};
-        for (const [f] of ATTRS) {
-          const n = new Map();
-          for (const p of d.findPerformers.performers) {
-            for (const v of lookTokens(f, p[f])) n.set(v, (n.get(v) || 0) + 1);
-          }
-          distinct[f] = [...n].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-        }
+        await loadDistinct();
       } catch (e) {
         box.innerHTML = `<span class="kb-hint kb-pe-err">${esc(e.message)}</span>`;
         return;
@@ -195,7 +201,7 @@ export async function render(main, params, query) {
           `<select class="kb-field" data-look="${f}" aria-label="${esc(t(label))}"><option value="">${t(label)}</option>${(distinct[f] || [])
             .map(([v, n]) => `<option value="${esc(v)}"${looks[f] === v ? " selected" : ""}>${esc(f === "country" ? countryOf(v) : v)} (${n})</option>`)
             .join("")}</select>`,
-      ).join("") + (looksOn() ? `<button type="button" class="kb-btn is-ghost" data-looksclear>${t("Clear")}</button>` : "");
+      ).join("") + (looksOn() ? `<button type="button" class="kb-btn is-ghost" data-looksclear>${t("Clear")}</button>` : "") + `<button type="button" class="kb-btn is-ghost" data-attrtags title="${esc(t("Write the performers' eye color, hair color … as tags (“Blue Eyes”)"))}">${icon("tag")}${t("Attributes as tags …")}</button>`;
   };
   const showLooks = (on) => {
     const box = $("[data-attrs]");
@@ -387,6 +393,53 @@ export async function render(main, params, query) {
     ptags.any = b.dataset.m === "any";
     paintTagMode();
     if (tagsOn()) reload();
+  });
+  // A word typed in the search that is a value of a performer's own field ("blue", "blonde", "latina" …): offered as a filter –
+  // the search itself only looks at names, so "blue eyes" would find nothing but the performers called that
+  const WORDS = new Set(["eyes", "eye", "hair", "haired", "colored", "coloured"]);
+  const hintBox = $("[data-lookhints]");
+  const lookHints = async () => {
+    const words = $("[data-q]").value.toLowerCase().split(/\s+/).filter((w) => w && !WORDS.has(w));
+    const q = words.join(" ");
+    if (q.length < 3) {
+      hintBox.hidden = true;
+      return;
+    }
+    try {
+      await loadDistinct();
+    } catch (e) {
+      return;
+    }
+    const wantEye = /\beyes?\b/i.test($("[data-q]").value);
+    const wantHair = /\bhair\b/i.test($("[data-q]").value);
+    const hits = [];
+    for (const [f, , label] of ATTRS) {
+      if (f === "fake_tits") continue;
+      for (const [v, n] of distinct[f] || []) {
+        const vv = (f === "country" ? countryOf(v) : v).toLowerCase();
+        if (vv.includes(q)) hits.push({ f, v, n, label, rank: (vv === q ? 0 : 2) + ((wantEye && f === "eye_color") || (wantHair && f === "hair_color") ? -1 : 0) });
+      }
+    }
+    hits.sort((a, b) => a.rank - b.rank || b.n - a.n);
+    const shown = hits.slice(0, 6);
+    hintBox.hidden = !shown.length;
+    hintBox.innerHTML = shown.length
+      ? `<span class="kb-hint">${t("Also a value of a performer's own field:")}</span>` + shown.map((h) => `<button type="button" class="kb-chip" data-hint="${esc(h.f)}" data-v="${esc(h.v)}">${esc(t(h.label))}: ${esc(h.f === "country" ? countryOf(h.v) : h.v)} <small>${h.n}</small></button>`).join("")
+      : "";
+  };
+  $("[data-q]").addEventListener("input", debounce(lookHints, 350));
+  hintBox.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-hint]");
+    if (!b) return;
+    looks[b.dataset.hint] = b.dataset.v;
+    $("[data-q]").value = "";
+    hintBox.hidden = true;
+    showLooks(true);
+    reload();
+  });
+  $("[data-attrs]").addEventListener("click", async (e) => {
+    if (!e.target.closest("[data-attrtags]")) return;
+    (await import("./perfattrtags.js")).openAttrTags();
   });
   $("[data-attrbtn]").onclick = () => showLooks($("[data-attrs]").hidden);
   $("[data-attrs]").addEventListener("change", (e) => {

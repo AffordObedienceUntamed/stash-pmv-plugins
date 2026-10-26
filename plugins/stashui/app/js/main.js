@@ -11,6 +11,7 @@ import { visibleRail, navIcon } from "./railcfg.js";
 
 applyTheme(); // chosen colors before anything is drawn
 initAmbient();
+import("./perfhover.js"); // performer cards: other pictures while the mouse rests on one
 import("./fx.js").then((m) => m.applyFx()); // effects layer (Settings → This interface → Effects)
 
 // Install as an app: the worker only exists so browsers offer "Install" (needs https or localhost).
@@ -33,6 +34,7 @@ const ROUTES = [
   { re: /^images$/, view: "list", params: { kind: "image" } },
   { re: /^galleries$/, view: "list", params: { kind: "gallery" } },
   { re: /^video-folders$/, view: "videofolders" },
+  { re: /^editor$/, view: "editor" },
   { re: /^discover$/, view: "discover" },
   { re: /^gallery\/(\d+)$/, view: "gallery", keys: ["id"] },
   { re: /^tags$/, view: "tags" },
@@ -130,6 +132,7 @@ const loaders = {
   list: () => import("./views/list.js"),
   gallery: () => import("./views/gallery.js"),
   videofolders: () => import("./views/videofolders.js"),
+  editor: () => import("./views/editor.js"),
   discover: () => import("./views/discover.js"),
   tags: () => import("./views/tags.js"),
   tag: () => import("./views/tag.js"),

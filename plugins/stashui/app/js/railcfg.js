@@ -28,6 +28,7 @@ export const NAV = [
     { href: "markers", label: "Markers", icon: "play", match: /^markers/ },
     { href: "history", label: "History", icon: "history", match: /^history/ },
     { href: "versus", label: "Versus", icon: "trophy", match: /^versus/ },
+    { href: "editor", label: "Editor", icon: "scissors", match: /^editor/ },
     { action: "storm", label: "Media Storm", icon: "bolt", plugin: "mediaStorm" },
     { action: "pmv", label: "PMV Generator", icon: "music", plugin: "pmvGenerator" },
   ] },

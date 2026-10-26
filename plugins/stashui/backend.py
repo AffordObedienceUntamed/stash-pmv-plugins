@@ -59,6 +59,11 @@ Called through Stash's `runPluginOperation` (interface: raw):
       args:   {"mode": "funscript_save_variant", "scene_id": "12", "label": "Soft", "content": "<funscript text>"}
       output: {"path", "name"}
 
+* mode "edit_render": the Editor – pieces of several scenes, one after the other (trimmed, faster / slower, fading), as one new
+  video, rendered by ffmpeg in its own process; "clip_status" says how far it is.
+      args:   {"mode": "edit_render", "items": [{"scene_id", "start", "end", "speed"}], "name", "w", "h", "fps", "fade", "audio": "keep"|"mute",
+               "folder": "Clips"|""}      output: {"job"}
+
 * mode "box_gql": one GraphQL question (queries only) to a stash-box set up in Stash, with the API key Stash has for it –
   for the Discover overview (stashDiscover by ufousox007). Modes "ssd_search" (Jackett) and "ssd_push" (qBittorrent) are its
   resource search and download hand-over, set up under Discover → Settings.
@@ -1187,6 +1192,136 @@ def cut_job(spec_path):
     save()
 
 
+# ---------- Editor: pieces of several scenes, in a row, as one new video ----------
+# {"mode": "edit_render", "items": [{"scene_id", "start", "end", "speed"}], "name", "w", "h", "fps", "fade", "audio": "keep"|"mute",
+#  "folder": "Clips"|""} → {"job"}; "clip_status" says how far it is ({"state", "pct", "files", "error"}).
+
+def has_audio(ffmpeg, path):
+    r = subprocess.run([ffmpeg, "-hide_banner", "-i", path], capture_output=True, text=True, creationflags=0x08000000 if os.name == "nt" else 0)
+    return " Audio:" in (r.stderr or "")
+
+
+def atempo_chain(sp):
+    out = []
+    while sp > 2.0:
+        out.append("atempo=2.0")
+        sp /= 2.0
+    while sp < 0.5:
+        out.append("atempo=0.5")
+        sp /= 0.5
+    out.append(f"atempo={sp:.4f}")
+    return ",".join(out)
+
+
+def edit_render(stash, args):
+    items = []
+    ffmpeg = find_ffmpeg(stash)
+    for c in args.get("items") or []:
+        video = scene_video(stash, str(c.get("scene_id") or ""))
+        if not os.path.isfile(video):
+            raise ValueError(f"the video file can't be reached from here: {video}")
+        a, b = float(c.get("start")), float(c.get("end"))
+        if not (a >= 0 and b > a + 0.1):
+            raise ValueError("a piece ends before it starts")
+        sp = max(0.25, min(4.0, float(c.get("speed") or 1.0)))
+        items.append({"path": video, "start": a, "end": b, "speed": sp, "audio": has_audio(ffmpeg, video)})
+    if not items or len(items) > 60:
+        raise ValueError("no pieces (or more than 60)")
+
+    def even(n, lo, hi):
+        n = int(float(n or 0))
+        n = max(lo, min(hi, n))
+        return n - n % 2
+
+    w, h = even(args.get("w"), 160, 3840), even(args.get("h"), 160, 2160)
+    folder = os.path.dirname(items[0]["path"])
+    if args.get("folder") == "Clips":
+        folder = os.path.join(folder, "Clips")
+        os.makedirs(folder, exist_ok=True)
+    name = clean_name(args.get("name") or "") or "Edit"
+    job = secrets.token_hex(4)
+    spec = {"job": job, "ffmpeg": ffmpeg, "items": items, "w": w, "h": h, "fps": max(10, min(60, int(args.get("fps") or 30))),
+            "fade": max(0.0, min(2.0, float(args.get("fade") or 0))), "keep": args.get("audio") != "mute", "out": unique(os.path.join(folder, name + ".mp4"))}
+    path = os.path.join(CUT_DIR, f"stashui-edit-{job}.json")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(spec, f)
+    flags = (0x08000000 | 0x00000200) if os.name == "nt" else 0
+    subprocess.Popen([sys.executable, os.path.abspath(__file__), "--editjob", path], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=flags)
+    return {"job": job}
+
+
+def edit_job(spec_path):
+    with open(spec_path, encoding="utf-8") as f:
+        spec = json.load(f)
+    st = {"state": "running", "i": 0, "n": 1, "pct": 0, "files": [], "error": ""}
+    sp = cut_status_path(spec["job"])
+
+    def save():
+        with open(sp + ".tmp", "w", encoding="utf-8") as f:
+            json.dump(st, f)
+        os.replace(sp + ".tmp", sp)
+
+    save()
+    flags = 0x08000000 if os.name == "nt" else 0
+    try:
+        items, w, h, fps, fade, keep = spec["items"], spec["w"], spec["h"], spec["fps"], spec["fade"], spec["keep"]
+        cmd = [spec["ffmpeg"], "-hide_banner", "-loglevel", "error", "-y", "-progress", "pipe:1", "-nostats"]
+        fc, total = [], 0.0
+        for i, it in enumerate(items):
+            span, spd = it["end"] - it["start"], it["speed"]
+            out_dur = span / spd
+            total += out_dur
+            cmd += ["-ss", f"{it['start']:.3f}", "-t", f"{span:.3f}", "-i", it["path"]]
+            v = f"[{i}:v:0]scale={w}:{h}:force_original_aspect_ratio=decrease:flags=lanczos,pad={w}:{h}:(ow-iw)/2:(oh-ih)/2:black,setsar=1,fps={fps},format=yuv420p,setpts=PTS-STARTPTS"
+            if spd != 1:
+                v += f",setpts=PTS/{spd:.4f}"
+            f_d = min(fade, out_dur / 2) if fade > 0 else 0
+            if f_d > 0:
+                v += f",fade=t=in:st=0:d={f_d:.3f},fade=t=out:st={out_dur - f_d:.3f}:d={f_d:.3f}"
+            fc.append(v + f"[v{i}]")
+            if keep:
+                if it["audio"]:
+                    a = f"[{i}:a:0]aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo"
+                    if spd != 1:
+                        a += "," + atempo_chain(spd)
+                    a += ",asetpts=PTS-STARTPTS"
+                    if f_d > 0:
+                        a += f",afade=t=in:st=0:d={f_d:.3f},afade=t=out:st={out_dur - f_d:.3f}:d={f_d:.3f}"
+                else:
+                    a = f"anullsrc=r=48000:cl=stereo,atrim=0:{out_dur:.3f},asetpts=PTS-STARTPTS"
+                fc.append(a + f"[a{i}]")
+        join = "".join(f"[v{i}]" + (f"[a{i}]" if keep else "") for i in range(len(items)))
+        fc.append(f"{join}concat=n={len(items)}:v=1:a={1 if keep else 0}[v]" + ("[a]" if keep else ""))
+        # (inline: "-filter_complex_script" is gone from newer ffmpeg versions; 60 pieces stay far below the command line limit)
+        cmd += ["-filter_complex", ";".join(fc), "-map", "[v]"] + (["-map", "[a]"] if keep else ["-an"])
+        cmd += ["-c:v", "libx264", "-preset", "veryfast", "-crf", "19", "-pix_fmt", "yuv420p"] + (["-c:a", "aac", "-b:a", "192k"] if keep else []) + ["-movflags", "+faststart", spec["out"]]
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, creationflags=flags)
+        last = 0.0
+        for line in proc.stdout:
+            line = line.strip()
+            if line.startswith("out_time_us=") or line.startswith("out_time_ms="):
+                try:
+                    t_out = int(line.split("=", 1)[1]) / 1e6
+                except ValueError:
+                    continue
+                if time.time() - last > 0.7:
+                    st["pct"] = max(0, min(99, int(100 * t_out / total))) if total > 0 else 0
+                    save()
+                    last = time.time()
+        err = proc.stderr.read()
+        proc.wait()
+        if proc.returncode != 0 or not os.path.isfile(spec["out"]):
+            raise RuntimeError((err or "ffmpeg failed").strip().splitlines()[-1] if (err or "").strip() else "ffmpeg failed")
+        st["files"].append(spec["out"])
+        st["pct"] = 100
+        st["state"] = "done"
+        st["i"] = 1
+    except Exception as e:  # noqa: BLE001
+        st["state"] = "error"
+        st["error"] = str(e)
+    save()
+
+
 # ---------- Match two videos by their sound (O video ↔ the video playing in its background) ----------
 # {"mode": "sync_audio", "scene_a": main video, "scene_b": O video} → {"offset", "score", "sure"}
 #   offset: the O video's own start lies this many seconds into the main video (negative: the O video started earlier and the
@@ -1639,6 +1774,8 @@ def ssd_push(stash, args):
 def main():
     if len(sys.argv) > 2 and sys.argv[1] == "--cutjob":
         return cut_job(sys.argv[2])
+    if len(sys.argv) > 2 and sys.argv[1] == "--editjob":
+        return edit_job(sys.argv[2])
     data = json.loads(sys.stdin.read() or "{}")
     args = data.get("args") or {}
     mode = str(args.get("mode") or "")
@@ -1679,6 +1816,8 @@ def main():
             out = box_images(Stash(data.get("server_connection")), args)
         elif mode == "box_scenes":
             out = box_scenes(Stash(data.get("server_connection")), args)
+        elif mode == "edit_render":
+            out = edit_render(Stash(data.get("server_connection")), args)
         elif mode == "box_gql":
             out = box_gql(Stash(data.get("server_connection")), args)
         elif mode == "ssd_search":

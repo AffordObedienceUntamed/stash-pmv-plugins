@@ -54,7 +54,7 @@ SECTIONS.splice(SECTIONS.findIndex((x) => x.id === "classic-ui"), 0, Object.assi
 const CUSTOM_ENTRIES = {
   look: ["Colors", "Liquid glass", "Effects and animations"],
   "player-ui": ["At the end of a video", "Start at a random spot", "Mouse wheel on the video", "Reverse the wheel", "Picture when hovering the timeline", "Info panel in fullscreen", "Sound in previews", "The Handy", "Connection key", "Script offset"],
-  "this-ui": ["Language", "Folder loading", "This interface as home page", "Install as app", "Studio on scenes", "Resolution on scene cards", "Other plugins in the menu", "Rating system", "Thumbnail size", "Favorites", "Backup and restore", "Reset interface settings"],
+  "this-ui": ["Language", "Folder loading", "This interface as home page", "Install as app", "Studio on scenes", "Resolution on scene cards", "Other pictures on performer cards", "Other plugins in the menu", "Rating system", "Thumbnail size", "Favorites", "Backup and restore", "Reset interface settings"],
   database: ["Back up database", "Optimize database", "Clean up generated files"],
   login: ["API key"],
 };
@@ -492,6 +492,8 @@ async function renderApp(body) {
       <div class="kb-set"><div class="kb-set-label"><b>${t("Install as app")}</b><small data-installhint></small></div><button type="button" class="kb-btn" data-install hidden>${icon("phone")}${t("Install")}</button></div>
       <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("Studio on scenes")}</b><small>${t("Shows the studio's logo (or its name) in the corner of scene thumbnails.")}</small></span>
         <span class="kb-switch"><input type="checkbox" data-studiologo${store.get("studioLogos", false) ? " checked" : ""}><i></i></span></label>
+      <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("Other pictures on performer cards")}</b><small>${t("While the mouse rests on a performer card, it shows other pictures of that performer from your library, one after the other. Not on touch screens.")}</small></span>
+        <span class="kb-switch"><input type="checkbox" data-perfhover${store.get("perfHover", true) !== false ? " checked" : ""}><i></i></span></label>
       <label class="kb-set kb-set-bool"><span class="kb-set-label"><b>${t("Resolution on scene cards")}</b><small>${t("Shows 1080p, 720p … next to the length in the corner of scene thumbnails (after the next page load).")}</small></span>
         <span class="kb-switch"><input type="checkbox" data-cardres${store.get("cardRes", false) ? " checked" : ""}><i></i></span></label>
       <div class="kb-set"><span class="kb-set-label"><b>${t("Info on scene cards")}</b><small>${t("Extra lines under the date when scenes are shown as cards. Click to switch each one on or off.")}</small></span>
@@ -646,6 +648,10 @@ async function renderApp(body) {
   body.querySelector("[data-cistyle]").onchange = (e) => setCardInfo({ style: e.target.value });
   body.querySelector("[data-cihour]").onchange = (e) => setCardInfo({ hour: e.target.checked });
   body.querySelector("[data-ciclock]").onchange = (e) => setCardInfo({ clock: e.target.value });
+  body.querySelector("[data-perfhover]").onchange = (e) => {
+    store.set("perfHover", e.target.checked);
+    toast(t("Saved"), "ok");
+  };
   body.querySelector("[data-cardres]").onchange = (e) => {
     store.set("cardRes", e.target.checked);
     toast(t("Saved"), "ok");

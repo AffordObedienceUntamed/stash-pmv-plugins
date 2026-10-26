@@ -53,6 +53,7 @@ SHARED = [
     "app/js/pmvsmart.js",
     "app/js/audiox.js",
     "app/js/views/tagpicker.js",
+    "app/js/views/tagbrowse.js",
     "app/js/views/perfpicker.js",
     "app/js/playlists.js",
     "app/js/standings.js",

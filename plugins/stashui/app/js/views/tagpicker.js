@@ -38,11 +38,13 @@ export function tagPicker(host, opts) {
   const known = new Map(); // id → name, so chips keep their names in "remote" mode
 
   host.innerHTML = `<div class="kb-chips" data-chips></div>
-    <input class="kb-field" type="text" placeholder="${esc(opts.placeholder || t("Add tag …"))}" autocomplete="off" spellcheck="false" aria-label="${t("Add tag")}">
+    <div class="kb-tagpick-row"><input class="kb-field" type="text" placeholder="${esc(opts.placeholder || t("Add tag …"))}" autocomplete="off" spellcheck="false" aria-label="${t("Add tag")}">
+    ${opts.browse === false ? "" : `<button type="button" class="kb-btn is-ghost is-icon kb-tagbrowse-btn" data-browse hidden title="${esc(t("Browse the tags as a tree"))}" aria-label="${esc(t("Browse the tags as a tree"))}">≡</button>`}</div>
     <div class="kb-sugg" hidden role="listbox"></div>`;
   const chips = host.querySelector("[data-chips]");
   const input = host.querySelector("input");
   const sugg = host.querySelector(".kb-sugg");
+  const browseBtn = host.querySelector("[data-browse]");
 
   const learn = (list) => list.forEach((tg) => known.set(tg.id, tg.name));
   const name = (id) => known.get(id) || (tags.find((tg) => tg.id === id) || { name: "#" + id }).name;
@@ -169,6 +171,20 @@ export function tagPicker(host, opts) {
     if (b.dataset.create != null) createFromInput();
     else if (b.dataset.i != null) add(shown[Number(b.dataset.i)]);
   });
+  if (browseBtn)
+    browseBtn.onclick = async () => {
+      const m = await import("./tagbrowse.js");
+      m.openTagBrowser({
+        tags,
+        selected: () => inc,
+        onToggle: (tg, on) => {
+          learn([tg]);
+          inc = on ? (inc.includes(tg.id) ? inc : [...inc, tg.id]) : inc.filter((x) => x !== tg.id);
+          renderChips();
+          emit();
+        },
+      });
+    };
   chips.addEventListener("click", (e) => {
     const rm = e.target.closest("[data-rm]");
     if (!rm) return;
@@ -198,6 +214,7 @@ export function tagPicker(host, opts) {
       tags = tg;
       learn(tags);
       state = "ok";
+      if (browseBtn) browseBtn.hidden = false;
       renderChips();
       if (document.activeElement === input) showSugg(); // typed while it was loading
     })

@@ -140,16 +140,32 @@ const whoHtml = (kind, item) => {
   if (!pic && !name) return "";
   return `<div class="kb-adv-who">${pic ? `<img class="kb-adv-pic" alt="" src="${esc(pic)}">` : ""}<div><b>${esc(name)}</b>${kind === "performer" ? '<div class="kb-adv-more" data-advmore></div>' : ""}</div></div>`;
 };
+// Pictures of the performer for the rating window – pictures with a face tag ("Face", "FaceCloseUp", "Face Visible" …) first, then any
+let faceTagIds = null;
+async function faceTags() {
+  if (faceTagIds) return faceTagIds;
+  try {
+    const d = await gql(`query FaceTags($f: FindFilterType, $x: TagFilterType) { findTags(filter: $f, tag_filter: $x) { tags { id } } }`, { f: { per_page: 60 }, x: { name: { value: "face", modifier: "INCLUDES" } } });
+    faceTagIds = d.findTags.tags.map((x) => x.id);
+  } catch (e) {
+    faceTagIds = [];
+  }
+  return faceTagIds;
+}
 async function loadMorePics(body, item) {
   const box = body.querySelector("[data-advmore]");
   if (!box || box.dataset.done) return;
   box.dataset.done = "1";
   try {
-    const d = await gql(`query AdvPics($f: FindFilterType, $x: ImageFilterType) { findImages(filter: $f, image_filter: $x) { images { id title paths { thumbnail image } } } }`, {
-      f: { per_page: 8, sort: "random_" + Math.floor(Math.random() * 1e8) },
-      x: { performers: { value: [item.id], modifier: "INCLUDES" } },
-    });
-    const list = d.findImages.images.filter((x) => x.paths && (x.paths.thumbnail || x.paths.image));
+    const q = `query AdvPics($f: FindFilterType, $x: ImageFilterType) { findImages(filter: $f, image_filter: $x) { images { id title paths { thumbnail image } } } }`;
+    const ask = async (extra, n) => (await gql(q, { f: { per_page: n, sort: "random_" + Math.floor(Math.random() * 1e8) }, x: Object.assign({ performers: { value: [item.id], modifier: "INCLUDES" } }, extra) })).findImages.images;
+    const faces = await faceTags();
+    let list = faces.length ? await ask({ tags: { value: faces, modifier: "INCLUDES" } }, 8).catch(() => []) : [];
+    if (list.length < 8) {
+      const seen = new Set(list.map((x) => x.id));
+      list = list.concat((await ask({}, 12)).filter((x) => !seen.has(x.id))).slice(0, 8);
+    }
+    list = list.filter((x) => x.paths && (x.paths.thumbnail || x.paths.image));
     box.innerHTML = list.map((x) => `<a href="#/image/${esc(x.id)}" target="_blank" rel="noopener" class="kb-adv-thumb"><img alt="" loading="lazy" src="${esc(x.paths.thumbnail || x.paths.image)}"></a>`).join("");
   } catch (e) {
     /* no pictures – the rating works without */

@@ -643,7 +643,7 @@ export function render(main) {
         <h2><span class="kb-pmvg-no">4</span>Go</h2>
         <ul class="kb-pmvg-sum" data-sum></ul>
         <button class="kb-btn is-primary kb-pmvg-start" data-start disabled>${icon("bolt")}Pick a song first</button>
-        <p class="kb-hint">Keys while it runs: Space pause · R new clips · F fullscreen · H hide the bar · I clip info · Esc stop</p>
+        <p class="kb-hint">Keys while it runs: Space pause · R new clips · F fullscreen · H hide the bar · I clip info · M change a clip's moment · Esc stop</p>
         <div class="kb-pmvg-presets">
           <span class="kb-lab-t">My settings</span>
           <div class="kb-pmvg-row">
@@ -2406,6 +2406,17 @@ const excludeOf = (dur, v) => {
   return s.endsWith("%") && s.length > 1 ? (parseFloat(s) / 100) * dur : parseFloat(s) || 0;
 };
 
+// Pinned moments: spots of a scene you chose by hand (Change the moment, key M) – a clip of that scene often starts at one of them
+const pinsOf = (id) => ((store.get("pmvPins", {}) || {})[id] || []).filter((x) => typeof x === "number");
+function setPins(id, list) {
+  const all = store.get("pmvPins", {}) || {};
+  const l = [...new Set(list.map((x) => Math.round(x * 10) / 10))].sort((a, b) => a - b).slice(-12);
+  if (l.length) all[id] = l;
+  else delete all[id];
+  store.set("pmvPins", all);
+}
+const fmtAt = (x) => `${Math.floor(x / 60)}:${(x % 60).toFixed(1).padStart(4, "0")}`;
+
 // Speed maps of scenes: id → [{ t, len, speed, m }] – spots of the scene and how fast it moves there (from its
 // preview, or m: measured while a clip was prepared – more exact, and scenes without a preview get a map that way).
 // Whether a scene's preview has been looked through: id → true, false (none) or a Promise while it runs
@@ -2889,6 +2900,7 @@ class Generator {
           }
           <button class="kb-btn is-icon is-ghost" data-act="reshuffle" title="New clips – the music keeps playing (R)">${icon("shuffle")}</button>
           <button class="kb-btn is-icon is-ghost" data-act="info" title="Which clips are on screen (I)">${icon("info")}</button>
+          <button class="kb-btn is-icon is-ghost" data-act="moments" title="Change the moment a clip is taken from (M)">${icon("edit")}</button>
           <button class="kb-btn is-icon is-ghost" data-act="hidebar" title="Hide this bar (H) – H brings it back">${icon("close")}</button>
           <button class="kb-btn is-icon is-ghost" data-act="full" title="Fullscreen (F)">${icon("expand")}</button>
           <button class="kb-btn is-icon is-ghost" data-act="stop" title="Stop (Esc)">${icon("stop")}</button>
@@ -2928,6 +2940,7 @@ class Generator {
       if (a === "reshuffle") this.reshuffle();
       if (a === "full") this.fullscreen();
       if (a === "info") this.toggleInfo();
+      if (a === "moments") this.openMoments();
       if (a === "hidebar") this.toggleBar();
       if (a === "stop") this.done ? this.close() : this.finish(true);
     });
@@ -2941,6 +2954,7 @@ class Generator {
       else if (e.key === "f" || e.key === "F") this.fullscreen();
       else if ((e.key === "r" || e.key === "R") && !e.repeat && !e.ctrlKey && !e.metaKey && !this.done) this.reshuffle();
       else if (e.key === "i" || e.key === "I") this.toggleInfo();
+      else if ((e.key === "m" || e.key === "M") && !e.ctrlKey && !e.metaKey && !this.done) this.openMoments();
       else if (e.key === "h" || e.key === "H") this.toggleBar();
       else if ((e.key === "d" || e.key === "D") && this.rg) this.saveOnScreen();
       else return;
@@ -2948,7 +2962,7 @@ class Generator {
     };
     document.addEventListener("keydown", this.onKey);
     // The mouse alone (second monitor): clicks in the middle / on the sides, middle button, wheel – each one is a switch in Output
-    const onBar = (e) => e.target.closest(".kb-pmvg-hud, .kb-pmvg-end, .kb-pmvg-info, button, input, a");
+    const onBar = (e) => e.target.closest(".kb-pmvg-hud, .kb-pmvg-end, .kb-pmvg-info, .kb-pmvg-moments, button, input, a");
     el.addEventListener("click", (e) => {
       if (this.done || onBar(e)) return;
       const r = this.stage.getBoundingClientRect();
@@ -3021,6 +3035,88 @@ class Generator {
     saved.hudOff = off;
     store.set("pmvgen", saved);
     if (off) toast("Bar hidden – H shows it again", "ok");
+  }
+
+  // Change the moment: where in its scene a clip starts, by hand (the show pauses while the panel is open). A moment you
+  // like can be pinned – clips of that scene then often start there.
+  openMoments() {
+    if (this.done) return;
+    if (this.momentsEl) return this.closeMoments();
+    const clips = this.videos().filter((m) => m.id != null && !m.rg && m.el && m.el.duration > 0);
+    if (!clips.length) return toast("No clip of a scene on screen yet", "warn");
+    this.momentsPaused = !this.paused;
+    if (!this.paused) this.togglePause();
+    const box = document.createElement("div");
+    box.className = "kb-pmvg-moments";
+    this.el.appendChild(box);
+    this.momentsEl = box;
+    const steps = [-10, -1, -0.1, 0.1, 1, 10];
+    const paint = () => {
+      box.innerHTML =
+        `<div class="kb-pmvg-mhead"><b>Change the moments</b><button class="kb-btn is-icon is-ghost" data-mclose aria-label="Close">${icon("close")}</button></div>` +
+        `<p class="kb-hint">Move the slider (or use the buttons) to take a clip from another moment of its scene. Pin a moment you like: clips of that scene then often start there.</p>` +
+        clips
+          .map((m, i) => {
+            const dur = m.el.duration;
+            const pins = pinsOf(m.id);
+            const pinned = pins.some((x) => Math.abs(x - m.start) < 0.25);
+            return `<div class="kb-pmvg-mrow" data-i="${i}">
+              <div class="kb-pmvg-mname"><b>${i + 1}</b> ${esc(m.name || m.key)} <small>${fmtAt(m.start)} / ${fmtAt(dur)}</small></div>
+              <input type="range" min="0" max="${Math.max(1, dur - 1).toFixed(1)}" step="0.1" value="${m.start.toFixed(1)}" data-slide aria-label="Moment">
+              <div class="kb-pmvg-mbtn">${steps.map((d) => `<button type="button" class="kb-btn is-ghost" data-step="${d}">${d > 0 ? "+" : "−"}${Math.abs(d)} s</button>`).join("")}
+                <button type="button" class="kb-btn${pinned ? " is-primary" : ""}" data-pin>${pinned ? "Pinned ✓" : "Pin this moment"}</button>
+                ${m.origStart != null && Math.abs(m.origStart - m.start) > 0.05 ? `<button type="button" class="kb-btn is-ghost" data-orig>Back to the picked moment</button>` : ""}</div>
+              ${pins.length ? `<div class="kb-pmvg-pins"><small>Pinned:</small> ${pins.map((x) => `<span class="kb-chip"><button type="button" data-go="${x}">${fmtAt(x)}</button><button type="button" data-unpin="${x}" aria-label="Remove">×</button></span>`).join("")}</div>` : ""}
+            </div>`;
+          })
+          .join("");
+    };
+    const set = (m, x, keepFocus) => {
+      const dur = m.el.duration;
+      const t = Math.max(0, Math.min(dur - 1, Math.round(x * 10) / 10));
+      if (m.origStart == null) m.origStart = m.start;
+      m.start = t;
+      if (!m.endAt || t >= m.endAt - 0.5) m.endAt = dur - 0.4;
+      m.el.currentTime = t;
+      if (!keepFocus) paint();
+      else {
+        const row = box.querySelector(`[data-i="${clips.indexOf(m)}"] .kb-pmvg-mname small`);
+        if (row) row.textContent = `${fmtAt(t)} / ${fmtAt(dur)}`;
+      }
+    };
+    box.addEventListener("input", (e) => {
+      const r = e.target.closest("[data-slide]");
+      if (r) set(clips[Number(r.closest("[data-i]").dataset.i)], Number(r.value), true);
+    });
+    box.addEventListener("change", (e) => e.target.closest("[data-slide]") && paint());
+    box.addEventListener("click", (e) => {
+      if (e.target.closest("[data-mclose]")) return this.closeMoments();
+      const row = e.target.closest("[data-i]");
+      if (!row) return;
+      const m = clips[Number(row.dataset.i)];
+      const b = e.target.closest("button");
+      if (!b) return;
+      if (b.dataset.step != null) set(m, m.start + Number(b.dataset.step));
+      else if (b.dataset.go != null) set(m, Number(b.dataset.go));
+      else if (b.dataset.orig != null) set(m, m.origStart);
+      else if (b.dataset.unpin != null) {
+        setPins(m.id, pinsOf(m.id).filter((x) => x !== Number(b.dataset.unpin)));
+        paint();
+      } else if (b.dataset.pin != null) {
+        const pins = pinsOf(m.id);
+        const near = pins.find((x) => Math.abs(x - m.start) < 0.25);
+        setPins(m.id, near != null ? pins.filter((x) => x !== near) : [...pins, m.start]);
+        paint();
+      }
+    });
+    paint();
+  }
+  closeMoments() {
+    if (!this.momentsEl) return;
+    this.momentsEl.remove();
+    this.momentsEl = null;
+    if (this.momentsPaused && this.paused && !this.done) this.togglePause();
+    this.momentsPaused = false;
   }
 
   // Clip info: what's on screen (name, file, size, state) and what had to be skipped, and why
@@ -3672,8 +3768,13 @@ class Generator {
           .sort((a, b) => a.d - b.d);
       }
       const mapPick = mapCands && mapCands[0];
+      // Pinned moments (Change the moment, key M): most of the time a clip of this scene starts at one of them
+      const pins = s.at == null ? pinsOf(s.id).filter((x) => x > 0 && x < dur - 1.5) : [];
+      const pinned = pins.length > 0 && Math.random() < 0.6;
       if (s.at != null) {
         start = Math.max(0, Math.min(s.at, dur - 1.5)); // a marker clip starts at its marker
+      } else if (pinned) {
+        start = pins[Math.floor(Math.random() * pins.length)];
       } else if (mapPick) {
         start = mapPick.x.t;
         spd = mapPick.x.speed;
@@ -3780,7 +3881,7 @@ class Generator {
             // (the start of a marker clip stays where it is)
             const step = r.half || r.period;
             const turn = r.turn - Math.floor((r.turn - start) / step) * step;
-            if (s.at == null && turn < dur - 1) start = turn;
+            if (s.at == null && !pinned && turn < dur - 1) start = turn;
             tempo = rate;
             pulse = step;
             turnAt = turn;
@@ -3793,7 +3894,7 @@ class Generator {
         await seek(start);
       }
       const m = { kind: "video", el: v, w: v.videoWidth, h: v.videoHeight, id: s.id, key: s.key, perf: s.perf, rg: s.rg, start, name: s.name, file: s.file, url: s.url, tagNames: s.tagNames,
-        motion: mo, heat: heat ? heat(start) : null, tempo, pulse, turnAt, speed: spd };
+        motion: mo, heat: heat ? heat(start) : null, tempo, pulse, turnAt, speed: spd, pinned };
       // Where the clip turns back to its start (see loop()): a marker with an end – the clip stays inside it (the
       // scene would play on into something else) – else just before the scene's end: the video would start over
       // at 0, in its intro (a spot near the end, a clip that stays on for long)
@@ -4864,6 +4965,7 @@ class Generator {
 
   stopEverything() {
     this.done = true;
+    this.closeMoments();
     if (this.fsHandy) {
       this.fsHandy.stop();
       this.fsHandy = null;
