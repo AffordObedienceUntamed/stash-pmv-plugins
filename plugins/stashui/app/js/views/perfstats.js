@@ -256,20 +256,59 @@ const inRange = (x, from, to) => {
 const coverCache = new Map();
 let coverBusy = 0;
 const coverQueue = [];
+// kept between visits (Cache API): a picture seen once comes back at once
+const coverStore = () => (window.caches ? caches.open("stashui-covers").catch(() => null) : Promise.resolve(null));
+async function storedCover(url) {
+  try {
+    const c = await coverStore();
+    const r = c && (await c.match(url));
+    return r ? await r.text() : "";
+  } catch (e) {
+    return "";
+  }
+}
+async function storeCovers(map) {
+  try {
+    const c = await coverStore();
+    if (c) for (const [u, d] of Object.entries(map)) d && (await c.put(u, new Response(d)));
+  } catch (e) {
+    /* no cache: they come again next time */
+  }
+}
+const showCover = (job) => {
+  const d = coverCache.get(job.url);
+  if (job.img.isConnected && d) {
+    job.img.src = d;
+    job.img.parentElement && job.img.parentElement.classList.add("is-on");
+  }
+};
 function pumpCovers() {
+  // up to 12 pictures of one stash-box per backend call, three calls side by side (one call per picture was slow: every call starts the backend)
   while (coverBusy < 3 && coverQueue.length) {
-    const job = coverQueue.shift();
+    const first = coverQueue[0];
+    const batch = [];
+    for (let i = 0; i < coverQueue.length && batch.length < 12; i++) if (coverQueue[i].endpoint === first.endpoint) batch.push(coverQueue[i]);
+    batch.forEach((j) => coverQueue.splice(coverQueue.indexOf(j), 1));
     coverBusy++;
     (async () => {
       try {
-        if (!coverCache.has(job.url)) coverCache.set(job.url, (await runBackend({ mode: "box_image", endpoint: job.endpoint, url: job.url })).data || "");
-        if (job.img.isConnected && coverCache.get(job.url)) {
-          job.img.src = coverCache.get(job.url);
-          job.img.parentElement.classList.add("is-on");
+        const need = [];
+        for (const j of batch) {
+          if (!coverCache.has(j.url)) {
+            const kept = await storedCover(j.url);
+            if (kept) coverCache.set(j.url, kept);
+            else if (!need.includes(j.url)) need.push(j.url);
+          }
+        }
+        if (need.length) {
+          const got = ((await runBackend({ mode: "box_images", endpoint: first.endpoint, urls: need })).data) || {};
+          need.forEach((u) => coverCache.set(u, got[u] || ""));
+          storeCovers(got);
         }
       } catch (e) {
-        coverCache.set(job.url, "");
+        batch.forEach((j) => coverCache.has(j.url) || coverCache.set(j.url, ""));
       }
+      batch.forEach(showCover);
       coverBusy--;
       pumpCovers();
     })();
@@ -408,6 +447,8 @@ export function mountPerfPanel(main, p) {
     const run = ++gen;
     if (active === which) {
       active = "";
+      state.off && state.off();
+      state.off = null;
       host.hidden = true;
       bStats.classList.remove("is-on");
       bMiss.classList.remove("is-on");
@@ -417,9 +458,18 @@ export function mountPerfPanel(main, p) {
     host.hidden = false;
     bStats.classList.toggle("is-on", which === "stats");
     bMiss.classList.toggle("is-on", which === "miss");
+    state.off && state.off();
+    state.off = null;
     try {
       if (which === "stats") await showStats(host, p);
-      else await showMissing(host, p, state);
+      else {
+        // the Discover tab of the plugin stashDiscover (by ufousox007, vendor/stashdiscover) – scenes the stash-boxes have and the library doesn't
+        host.innerHTML = `<p class="kb-pst-wait">${t("Loading …")}</p>`;
+        const off = await (await import("./ssdpage.js")).mountEntityTab(host, "performer", p.id);
+        host.querySelector(".kb-pst-wait") && host.querySelector(".kb-pst-wait").remove();
+        if (run !== gen || active !== which) off();
+        else state.off = off;
+      }
     } catch (err) {
       if (run === gen) host.innerHTML = `<p class="kb-pst-wait is-err">${esc(String(err.message || err))}</p>`;
     }
@@ -435,5 +485,8 @@ export function mountPerfPanel(main, p) {
   } catch (e) {
     /* no session storage */
   }
-  return () => gen++;
+  return () => {
+    gen++;
+    state.off && state.off();
+  };
 }

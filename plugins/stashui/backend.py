@@ -65,6 +65,9 @@ Called through Stash's `runPluginOperation` (interface: raw):
       args:   {"mode": "box_gql", "endpoint": "<stash-box>", "query": "...", "variables": {}, "timeout": 15}
       output: {"data"} | {"errors"} | {"kind": "timeout|network|auth|blocked|parse", "message"}
 
+* mode "box_images": up to 16 cover pictures of a stash-box in one call (fetched side by side): {"endpoint", "urls": [...]} →
+  {"data": {url: data address}} – "box_image" is the same for one picture.
+
 * mode "reveal": shows a file in the file manager of the computer Stash runs on (Explorer /select, Finder -R, xdg-open
   on the folder). Only files inside a library folder.
       args:   {"mode": "reveal", "path": "<full file path>"}
@@ -1295,17 +1298,10 @@ def cover_of(images):
     return best
 
 
-def box_image(stash, args):
-    """One cover picture of a stash-box as a data address (Stash's page policy blocks foreign pictures, so the plugin fetches it).
-    Only from a stash-box set up in Stash, and only from its own host (or a host of the same domain, https) – never an address
-    of the page's choosing."""
+def box_image_one(endpoint, url):
+    """One cover picture of a stash-box as a data address (checks are done by the callers)."""
     import base64
     from urllib.parse import urlparse
-    endpoint = str(args.get("endpoint") or "").strip().rstrip("/")
-    url = str(args.get("url") or "").strip()
-    boxes = stash.gql("query { configuration { general { stashBoxes { endpoint } } } }")["configuration"]["general"].get("stashBoxes") or []
-    if not any(str(b.get("endpoint") or "").rstrip("/") == endpoint for b in boxes):
-        raise ValueError("This stash-box isn't set up in Stash")
     eh, uh = (urlparse(endpoint).hostname or "").lower(), (urlparse(url).hostname or "").lower()
     us = urlparse(url).scheme.lower()
     dom = lambda h: ".".join(h.split(".")[-2:])
@@ -1319,7 +1315,38 @@ def box_image(stash, args):
         raw = res.read(3 * 1024 * 1024 + 1)
     if len(raw) > 3 * 1024 * 1024:
         raise ValueError("picture too big")
-    return {"data": "data:" + ctype + ";base64," + base64.b64encode(raw).decode()}
+    return "data:" + ctype + ";base64," + base64.b64encode(raw).decode()
+
+
+def box_image_check(stash, endpoint):
+    endpoint = str(endpoint or "").strip().rstrip("/")
+    boxes = stash.gql("query { configuration { general { stashBoxes { endpoint } } } }")["configuration"]["general"].get("stashBoxes") or []
+    if not any(str(b.get("endpoint") or "").rstrip("/") == endpoint for b in boxes):
+        raise ValueError("This stash-box isn't set up in Stash")
+    return endpoint
+
+
+def box_image(stash, args):
+    """One cover picture of a stash-box as a data address (Stash's page policy blocks foreign pictures, so the plugin fetches it).
+    Only from a stash-box set up in Stash, and only from its own host (or a host of the same domain, https) – never an address
+    of the page's choosing."""
+    endpoint = box_image_check(stash, args.get("endpoint"))
+    return {"data": box_image_one(endpoint, str(args.get("url") or "").strip())}
+
+
+def box_images(stash, args):
+    """Up to 16 cover pictures in one call, fetched side by side: {"data": {url: data address or ""}}."""
+    from concurrent.futures import ThreadPoolExecutor
+    endpoint = box_image_check(stash, args.get("endpoint"))
+    urls = [str(u).strip() for u in (args.get("urls") or [])][:16]
+
+    def one(u):
+        try:
+            return box_image_one(endpoint, u)
+        except Exception:  # noqa: BLE001
+            return ""
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        return {"data": dict(zip(urls, ex.map(one, urls)))}
 
 
 def box_scenes(stash, args):
@@ -1648,6 +1675,8 @@ def main():
             out = reveal(Stash(data.get("server_connection")), args)
         elif mode == "box_image":
             out = box_image(Stash(data.get("server_connection")), args)
+        elif mode == "box_images":
+            out = box_images(Stash(data.get("server_connection")), args)
         elif mode == "box_scenes":
             out = box_scenes(Stash(data.get("server_connection")), args)
         elif mode == "box_gql":

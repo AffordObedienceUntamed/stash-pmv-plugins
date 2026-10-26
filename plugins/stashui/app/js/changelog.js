@@ -7,6 +7,14 @@
 
 export const CHANGES = [
   {
+    v: "3.121.0",
+    date: "2026-10-26",
+    items: [
+      ["ui", "Discover: the rest of ufousox007's stashDiscover is in. The performer page's “Missing scenes” and a new “Discover” button on the studio page open his tab – new scenes of the stash-boxes that the library doesn't have, with the time window, search, sort, grid / list, and for a performer who isn't linked to a stash-box yet “find on source” (search the boxes by name and link the performer with one click). The Discover entry in the menu shows how many new releases the performers you follow have (checked when Stash UI opens, at most every six hours; Discover → Settings can mute it).", "Discover：ufousox007 的 stashDiscover 其余部分也已并入。演员页的“Missing scenes”和工作室页新增的“Discover”按钮会打开他的标签页——stash-box 上有而库里没有的新场景，带时间窗口、搜索、排序、网格/列表；尚未关联 stash-box 的演员还可以“在源上查找”（按名字搜索各个 box，一键关联）。菜单中的 Discover 会显示你关注的演员有多少新发布（打开 Stash UI 时检查，最多每六小时一次；可在 Discover → 设置 中关闭提醒）。", "performer/@performer::[data-pmiss]"],
+      ["ui", "The covers of Discover load faster: twelve pictures per request instead of one, and a picture you have seen once is kept in the browser.", "Discover 的封面加载更快：每次请求 12 张而不是 1 张，看过的图片会保存在浏览器中。"],
+    ],
+  },
+  {
     v: "3.120.0",
     date: "2026-10-26",
     items: [

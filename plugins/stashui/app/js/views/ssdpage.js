@@ -1,8 +1,8 @@
-// The Discover overview: the page of the plugin stashDiscover by ufousox007 (https://github.com/k6cc/stash-jav-tools), used with the
-// author's permission. The code lives in js/vendor/stashdiscover/ (his files, with the changes listed at their tops); this file only
-// connects it to Stash UI: the language, the plugin backend (stash-box questions with the API key Stash has for the box, Jackett,
-// qBittorrent), the plugin settings, the stylesheet, and the pictures of the stash-box (Stash's page policy blocks foreign pictures,
-// so they are fetched by the backend – like the covers of the search).
+// Discover, the way the plugin stashDiscover by ufousox007 (https://github.com/k6cc/stash-jav-tools) does it, used with the author's
+// permission: the Overview page, and the Discover tab of a performer / studio page. The code lives in js/vendor/stashdiscover/ (his files,
+// with the changes listed at their tops); this file only connects it to Stash UI: the language, the plugin backend (stash-box questions
+// with the API key Stash has for the box, Jackett, qBittorrent), the plugin settings, the stylesheets, and the pictures of the stash-box
+// (Stash's page policy blocks foreign pictures, so they are fetched by the backend – like the covers of the search).
 
 import { runBackend } from "../interactive.js";
 import { setPluginConfig } from "../api.js";
@@ -25,21 +25,21 @@ function stylesheet() {
 
 const domain = (host) => String(host || "").split(".").slice(-2).join(".");
 
-export async function mountOverview(host) {
+// his core (window.SSD) with the connections to Stash UI set; `withPage` also loads the Overview page module and the stylesheets
+export async function prepare(withPage, css = withPage) {
   window.__ssdLocale = lang;
   window.__ssdBackend = (args) => runBackend(args);
   window.__ssdSaveConfig = (key, value) => setPluginConfig("stashui", { [key]: value });
-  stylesheet();
+  if (css) stylesheet();
   await import("../vendor/stashdiscover/ssd.js");
-  await import("../vendor/stashdiscover/discover.js");
-  const SSD = window.SSD;
-  const root = document.createElement("div");
-  root.className = "ssd-dp-page";
-  host.appendChild(root);
+  if (withPage) await import("../vendor/stashdiscover/discover.js");
+  return window.SSD;
+}
+
+// pictures of the stash-box in `root` (and in his scene window on the body): not loaded by the page (blocked) but handed over by the backend
+function watchPictures(root, SSD) {
   let boxes = [];
   SSD.getStashBoxes().then((b) => (boxes = b)).catch(() => {});
-
-  // pictures of the stash-box: not loaded by the page (blocked) but handed over by the backend
   const fetchCover = (img) => {
     const url = img.getAttribute("src") || "";
     if (!/^https?:\/\//i.test(url) || img.dataset.ssdPic) return;
@@ -71,29 +71,60 @@ export async function mountOverview(host) {
     if (node.tagName === "IMG") fetchCover(node);
     else node.querySelectorAll && node.querySelectorAll("img[src]").forEach(fetchCover);
   };
+  const opts = { childList: true, subtree: true, attributes: true, attributeFilter: ["src"] };
   const mo = new MutationObserver((list) => {
     for (const m of list) {
       if (m.type === "attributes") scan(m.target);
       else m.addedNodes.forEach(scan);
     }
   });
-  mo.observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ["src"] });
+  mo.observe(root, opts);
+  scan(root);
   // pictures in the scene window (it sits on the body, not in the page)
   const mo2 = new MutationObserver((list) => {
-    for (const m of list) m.addedNodes.forEach((n) => n.nodeType === 1 && (n.matches(".ssd-modal-overlay") || n.querySelector(".ssd-modal-overlay")) && (scan(n), mo.observe(n, { childList: true, subtree: true, attributes: true, attributeFilter: ["src"] })));
+    for (const m of list) m.addedNodes.forEach((n) => n.nodeType === 1 && (n.matches(".ssd-modal-overlay") || n.querySelector(".ssd-modal-overlay")) && (scan(n), mo.observe(n, opts)));
   });
   mo2.observe(document.body, { childList: true });
-
-  const off = SSD.discoverMount(root);
   return () => {
     mo.disconnect();
     mo2.disconnect();
+    document.querySelectorAll(".ssd-modal-overlay, .ssd-performer-card, .hover-popover-content").forEach((n) => n.remove());
+  };
+}
+
+export async function mountOverview(host) {
+  const SSD = await prepare(true);
+  const root = document.createElement("div");
+  root.className = "ssd-dp-page";
+  host.appendChild(root);
+  const stopPictures = watchPictures(root, SSD);
+  const off = SSD.discoverMount(root);
+  return () => {
+    stopPictures();
     try {
       off && off();
     } catch (e) {
       /* the page is gone anyway */
     }
-    document.querySelectorAll(".ssd-modal-overlay, .ssd-performer-card, .hover-popover-content").forEach((n) => n.remove());
+    root.remove();
+  };
+}
+
+// the Discover tab of a performer / studio page (kind = "performer" | "studio"), in the panel `host`
+export async function mountEntityTab(host, kind, id) {
+  const SSD = await prepare(false, true);
+  const root = document.createElement("div");
+  root.className = "ssd-dp-page ssd-dp-entity";
+  host.appendChild(root);
+  const stopPictures = watchPictures(root, SSD);
+  const off = SSD.mountEntityTab(root, kind, id);
+  return () => {
+    stopPictures();
+    try {
+      off && off();
+    } catch (e) {
+      /* the page is gone anyway */
+    }
     root.remove();
   };
 }

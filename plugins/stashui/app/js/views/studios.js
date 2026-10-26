@@ -151,18 +151,45 @@ async function renderOne(main, id, query) {
         <nav class="kb-crumbs"><span><a href="#/studios">${t("Studios")}</a></span>${s.parent_studio ? `<span><a href="#/studio/${esc(s.parent_studio.id)}">${esc(s.parent_studio.name)}</a></span>` : ""}</nav>
         <h1 class="kb-h1">${esc(s.name)}</h1>
         <p class="kb-sub">${counts.join(" · ") || "&nbsp;"}</p>
-        <div class="kb-plc-acts">${s.rating100 ? starsHtml(s.rating100) : ""}<button class="kb-plc-btn" data-edit>${icon("edit")}${t("Edit")}</button><button class="kb-plc-btn" data-scrape>${icon("search")}${t("Fill in from the internet")}</button></div>
+        <div class="kb-plc-acts">${s.rating100 ? starsHtml(s.rating100) : ""}<button class="kb-plc-btn" data-edit>${icon("edit")}${t("Edit")}</button><button class="kb-plc-btn" data-scrape>${icon("search")}${t("Fill in from the internet")}</button><button class="kb-plc-btn" data-sdisc>${icon("feed")}${t("Discover")}</button></div>
         ${facts.length ? `<dl class="kb-facts">${facts.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`).join("")}</dl>` : ""}
         ${(s.tags || []).length ? `<div class="kb-chips">${s.tags.map((tg) => `<a class="kb-chip" href="#/tag/${esc(tg.id)}">${esc(tg.name)}</a>`).join("")}</div>` : ""}
         <div class="kb-xhead" data-xhead></div>
         ${s.details ? `<p class="kb-lead kb-perf-details">${esc(s.details)}</p>` : ""}
       </div>
     </header>
+    <section class="kb-pst-panel" data-sdpanel hidden></section>
     <section data-browser></section>`;
   const xhead = mountSlots("studio.header", main.querySelector("[data-xhead]"), { page: "studio", id, item: s }, { reload: () => go(location.hash.replace(/^#\/?/, ""), true) });
   const edit = (scrape) => openStudioEditor(id, { scrape, onSaved: () => go("studio/" + id, true), onDeleted: () => go("studios", true) });
   main.querySelector("[data-edit]").onclick = () => edit(false);
   main.querySelector("[data-scrape]").onclick = () => edit(true);
+  // the Discover tab of the plugin stashDiscover (by ufousox007): the stash-boxes' new scenes of this studio that the library doesn't have
+  const sdBtn = main.querySelector("[data-sdisc]");
+  const sdPanel = main.querySelector("[data-sdpanel]");
+  let sdOff = null;
+  let sdRun = 0;
+  sdBtn.onclick = async () => {
+    const run = ++sdRun;
+    if (!sdPanel.hidden) {
+      sdOff && sdOff();
+      sdOff = null;
+      sdPanel.hidden = true;
+      sdBtn.classList.remove("is-on");
+      return;
+    }
+    sdPanel.hidden = false;
+    sdBtn.classList.add("is-on");
+    sdPanel.innerHTML = `<p class="kb-pst-wait">${t("Loading …")}</p>`;
+    try {
+      const off = await (await import("./ssdpage.js")).mountEntityTab(sdPanel, "studio", id);
+      sdPanel.querySelector(".kb-pst-wait") && sdPanel.querySelector(".kb-pst-wait").remove();
+      if (run !== sdRun) off();
+      else sdOff = off;
+    } catch (err) {
+      sdPanel.innerHTML = `<p class="kb-pst-wait is-err">${esc(String(err.message || err))}</p>`;
+    }
+  };
   const kinds = ["scene", "image", "gallery"].filter((k) => (k === "scene" ? s.scene_count : k === "image" ? s.image_count : s.gallery_count));
   const b = mediaBrowser(main.querySelector("[data-browser]"), {
     kinds: kinds.length ? kinds : ["scene"],
@@ -176,6 +203,8 @@ async function renderOne(main, id, query) {
   const offKey = editKey(main);
   return () => {
     offKey();
+    sdRun++;
+    sdOff && sdOff();
     xhead.destroy();
     b && b.destroy && b.destroy();
   };

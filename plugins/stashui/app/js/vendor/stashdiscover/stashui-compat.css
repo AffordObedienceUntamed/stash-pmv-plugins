@@ -58,3 +58,31 @@ html.kb-glass .scene-card.grid-card.card { border-color: var(--glass-edge); bord
 html.kb-glass .scene-card .studio-overlay, html.kb-glass .scene-card .overlay-duration { -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); }
 html.kb-glass .popover.hover-popover-content { border-color: var(--glass-edge); background: var(--glass-shine), var(--glass-deep, var(--glass)); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); }
 html.kb-glass .scene-card .card-popovers .btn.minimal, html.kb-glass .ssd-search-bar .form-control, html.kb-glass .ssd-modal .form-control { border-color: var(--glass-edge); background: color-mix(in srgb, var(--text) 6%, transparent); }
+
+/* ── the toolbar of the Discover tab (performer / studio page): Stash's filtered-list-toolbar, dropdown, pagination … ── */
+.ssd-dp-entity { padding: 0; max-width: none; }
+.ssd-tab-pane { color: var(--text); }
+.ssd-tab-pane .filtered-list-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 12px; }
+.ssd-tab-pane .btn.btn-secondary, .ssd-tab-pane .btn-secondary.form-control { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 34px; padding: 0 12px; border: 1px solid var(--bg-3); border-radius: 7px; color: var(--text-2); font: 600 13px/1 var(--f-label); background: var(--bg-2); cursor: pointer; }
+.ssd-tab-pane .btn.btn-secondary:hover { color: var(--text); border-color: var(--pink); }
+.ssd-tab-pane .btn.btn-secondary.active, .ssd-tab-pane .btn.btn-secondary:disabled { color: var(--text); }
+.ssd-tab-pane .btn.btn-secondary.active { border-color: var(--pink); background: color-mix(in srgb, var(--pink) 18%, var(--bg-2)); }
+.ssd-tab-pane .btn.btn-secondary:disabled { opacity: .45; cursor: default; }
+.ssd-tab-pane .clearable-input-group { position: relative; display: flex; flex: 1 1 220px; max-width: 420px; min-width: 0; }
+.ssd-tab-pane .clearable-text-field.form-control { width: 100%; height: 34px; padding: 0 34px 0 10px; border: 1px solid var(--bg-3); border-radius: 7px; color: var(--text); font: 500 14px/1 var(--f-text); background: var(--base, var(--bg)); }
+.ssd-tab-pane .clearable-text-field-clear { position: absolute; top: 3px; right: 3px; width: 28px; height: 28px !important; padding: 0 !important; border: 0 !important; background: transparent !important; }
+.ssd-tab-pane .btn-group { position: relative; display: inline-flex; }
+.ssd-tab-pane .btn-group > .btn + .btn, .ssd-tab-pane .btn-group > .input-group-prepend + .btn { margin-left: -1px; }
+.ssd-tab-pane .input-group-prepend { display: inline-flex; }
+.ssd-tab-pane .dropdown-menu { position: absolute; top: 38px; left: 0; z-index: 30; display: none; min-width: 160px; padding: 4px; border: 1px solid var(--bg-3); border-radius: 9px; background: var(--bg-2); box-shadow: 0 12px 28px -8px rgba(0, 0, 0, .6); }
+.ssd-tab-pane .dropdown-menu.show { display: block; }
+.ssd-tab-pane .dropdown-item { display: block; padding: 7px 10px; border-radius: 6px; color: var(--text); font: 500 13px/1.2 var(--f-text); text-decoration: none; }
+.ssd-tab-pane .dropdown-item:hover, .ssd-tab-pane .dropdown-item.active { background: color-mix(in srgb, var(--pink) 22%, transparent); }
+.ssd-tab-pane .page-size-selector select { width: 74px; }
+.ssd-tab-pane .zoom-slider-container { display: inline-flex; align-items: center; width: 110px; }
+.ssd-tab-pane .zoom-slider { width: 100%; accent-color: var(--pink); }
+.ssd-tab-pane .pagination.btn-group { margin: 6px 0; }
+.ssd-tab-pane .page-count.btn { min-width: 90px; }
+.ssd-tab-pane .text-muted { color: var(--text-2); }
+html.kb-glass .ssd-tab-pane .btn.btn-secondary, html.kb-glass .ssd-tab-pane .btn-secondary.form-control, html.kb-glass .ssd-tab-pane .clearable-text-field.form-control { border-color: var(--glass-edge); background: color-mix(in srgb, var(--text) 6%, transparent); }
+html.kb-glass .ssd-tab-pane .dropdown-menu { border-color: var(--glass-edge); background: var(--glass-shine), var(--glass-deep, var(--glass)); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); }

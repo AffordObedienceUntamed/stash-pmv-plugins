@@ -582,7 +582,7 @@ export async function refreshCounts() {
     document.querySelectorAll("[data-count]").forEach((c) => {
       const k = c.dataset.count;
       if (k === "queue") c.textContent = (store.get("queue", []).length || "") + "";
-      else if (k === "jobs" || k === "share") return;
+      else if (k === "jobs" || k === "share" || k === "discover") return;
       else c.textContent = s[k] != null ? fmtNum(s[k]) : "";
     });
     const foot = document.getElementById("rail-foot");
@@ -695,7 +695,8 @@ async function init() {
   route();
   import("./jobs.js").then((m) => m.watchJobs()).catch(() => {});
   import("./autobackup.js").then((m) => m.startAutoBackup()).catch(() => {}); // the settings of this browser are copied to Stash
-  setTimeout(() => import("./shareconn.js").then((m) => m.startBadge()).catch(() => {}), 4000); // Sharing: starts the receiver again (if it was used) and shows what is waiting
+  setTimeout(() => import("./shareconn.js").then((m) => m.startBadge()).catch(() => {}), 4000);
+setTimeout(() => import("./discoverbadge.js").then((m) => m.startBadge()).catch(() => {}), 6000); // Discover: new releases of the performers you follow (from the Overview) // Sharing: starts the receiver again (if it was used) and shows what is waiting
 }
 
 init();
