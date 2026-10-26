@@ -426,5 +426,14 @@ export function mountPerfPanel(main, p) {
   };
   if (bStats) bStats.onclick = () => open("stats");
   if (bMiss) bMiss.onclick = () => open("miss");
+  // "Discover tab" of the Discover overview (stashDiscover) leaves a note: open the missing scenes of this performer right away
+  try {
+    if (bMiss && sessionStorage.getItem("SSD:dp:openTab") === String(p.id)) {
+      sessionStorage.removeItem("SSD:dp:openTab");
+      open("miss");
+    }
+  } catch (e) {
+    /* no session storage */
+  }
   return () => gen++;
 }

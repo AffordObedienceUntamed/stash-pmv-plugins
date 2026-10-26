@@ -1,0 +1,9 @@
+stashDiscover (Discover -> Overview)
+=====================================
+
+ssd.js, discover.js and stashdiscover.css come from the plugin stashDiscover 2.2.1 by ufousox007:
+https://github.com/k6cc/stash-jav-tools/tree/main/stashDiscover
+
+They are used in Stash UI with the author's permission. The changes for Stash UI are listed at the top of ssd.js and discover.js
+(no React shell, stash-box questions through Stash UI's backend, settings in Stash UI's plugin config, Jackett / downloader through
+backend modes). stashui-compat.css is Stash UI's own: it draws the Stash classes (cards, tables, popovers) the original leaves to Stash.

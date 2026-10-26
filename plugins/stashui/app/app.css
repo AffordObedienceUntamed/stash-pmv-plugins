@@ -2093,6 +2093,7 @@ html.kb-glass .kb-pm-list a:hover { background: color-mix(in srgb, var(--pink) 2
 }
 
 /* Discover: scenes of a stash-box as cards */
+.kb-disc-hub { display: flex; margin: 0 0 12px; }
 .kb-disc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: 14px; }
 .kb-disc-grid > .kb-pst-wait, .kb-disc-grid > .kb-empty { grid-column: 1 / -1; }
 .kb-disc-card { display: flex; flex-direction: column; min-width: 0; overflow: hidden; border: 1px solid var(--bg-3); border-radius: 8px; color: var(--text); background: var(--bg-2); transition: transform .15s, border-color .15s; }

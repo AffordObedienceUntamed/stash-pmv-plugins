@@ -59,6 +59,12 @@ Called through Stash's `runPluginOperation` (interface: raw):
       args:   {"mode": "funscript_save_variant", "scene_id": "12", "label": "Soft", "content": "<funscript text>"}
       output: {"path", "name"}
 
+* mode "box_gql": one GraphQL question (queries only) to a stash-box set up in Stash, with the API key Stash has for it –
+  for the Discover overview (stashDiscover by ufousox007). Modes "ssd_search" (Jackett) and "ssd_push" (qBittorrent) are its
+  resource search and download hand-over, set up under Discover → Settings.
+      args:   {"mode": "box_gql", "endpoint": "<stash-box>", "query": "...", "variables": {}, "timeout": 15}
+      output: {"data"} | {"errors"} | {"kind": "timeout|network|auth|blocked|parse", "message"}
+
 * mode "reveal": shows a file in the file manager of the computer Stash runs on (Explorer /select, Finder -R, xdg-open
   on the folder). Only files inside a library folder.
       args:   {"mode": "reveal", "path": "<full file path>"}
@@ -1418,6 +1424,191 @@ def box_scenes(stash, args):
     raise RuntimeError(f"{box.get('name') or endpoint}: {last or 'no answer'}")
 
 
+# ── Discover overview (the page is the stashDiscover plugin by ufousox007, used with the author's permission) ──
+
+def box_of(stash, endpoint):
+    boxes = stash.gql("query { configuration { general { stashBoxes { endpoint name api_key } } } }")["configuration"]["general"].get("stashBoxes") or []
+    box = next((b for b in boxes if str(b.get("endpoint") or "").rstrip("/") == str(endpoint or "").rstrip("/")), None)
+    if not box:
+        raise ValueError("This stash-box isn't set up in Stash (Settings → Metadata Providers)")
+    if not re.match(r"^https?://", str(endpoint), re.I):
+        raise ValueError("bad stash-box address")
+    return box
+
+
+def box_gql(stash, args):
+    """One GraphQL question to a stash-box set up in Stash, with the API key Stash has for it (the key stays here). Questions only –
+    nothing that changes data on the box. The answer says what went wrong in "kind" (the page shows it): timeout / network / auth /
+    blocked / parse; GraphQL errors come back as "errors"."""
+    box = box_of(stash, args.get("endpoint"))
+    query = str(args.get("query") or "")
+    if not re.match(r"^\s*(query\b|\{)", query) or re.search(r"\b(mutation|subscription)\b", query):
+        raise ValueError("only questions are allowed")
+    payload = {"query": query}
+    if isinstance(args.get("variables"), dict) and args["variables"]:
+        payload["variables"] = args["variables"]
+    headers = {"Content-Type": "application/json", "User-Agent": "Stash-UI-plugin"}
+    if box.get("api_key"):
+        headers["ApiKey"] = str(box["api_key"])
+    timeout = max(5, min(60, int(args.get("timeout") or 15)))
+    req = urllib.request.Request(str(args["endpoint"]), json.dumps(payload).encode(), headers, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as res:
+            raw = res.read()
+    except urllib.error.HTTPError as e:
+        return {"kind": "auth" if e.code in (401, 403) else "blocked", "message": f"HTTP {e.code}"}
+    except (socket.timeout, TimeoutError):
+        return {"kind": "timeout", "message": "timeout"}
+    except urllib.error.URLError as e:
+        return {"kind": "timeout" if isinstance(e.reason, (socket.timeout, TimeoutError)) else "network", "message": str(e.reason)}
+    try:
+        d = json.loads(raw.decode("utf-8", "replace"))
+    except ValueError:
+        return {"kind": "parse", "message": "non-JSON response"}
+    if d.get("errors"):
+        return {"errors": d["errors"]}
+    return {"data": d.get("data")}
+
+
+def ssd_settings(stash):
+    plugins = stash.gql("query { configuration { plugins } }")["configuration"].get("plugins") or {}
+    raw = (plugins.get("stashui") or {}).get("ssd")
+    try:
+        return (json.loads(raw) if isinstance(raw, str) else raw) or {}
+    except ValueError:
+        return {}
+
+
+def ssd_http(url, method="GET", data=None, headers=None, timeout=30):
+    h = dict(headers or {})
+    body = None
+    if data is not None:
+        body = urllib.parse.urlencode(data).encode("utf-8")
+        h.setdefault("Content-Type", "application/x-www-form-urlencoded")
+    req = urllib.request.Request(url, data=body, headers=h, method=method)
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return resp.status, resp.read().decode("utf-8", errors="replace"), dict(resp.headers)
+    except urllib.error.HTTPError as e:
+        return e.code, (e.read().decode("utf-8", errors="replace") if e.fp else ""), dict(e.headers or {})
+    except Exception as e:  # noqa: BLE001
+        return 0, str(e), {}
+
+
+def ssd_human_size(n):
+    if not n or n <= 0:
+        return "?"
+    for unit in ("B", "KB", "MB", "GB", "TB"):
+        if n < 1024:
+            return f"{n:.1f} {unit}"
+        n /= 1024
+    return f"{n:.1f} PB"
+
+
+def ssd_torznab(xml_text):
+    import xml.etree.ElementTree as ET
+    results = []
+    try:
+        root = ET.fromstring(xml_text)
+    except ET.ParseError:
+        return results
+    ns = {"torznab": "http://torznab.com/schemas/2015/feed"}
+    channel = root.find("channel")
+    if channel is None:
+        return results
+    for item in channel.findall("item"):
+        title = (item.findtext("title") or "").strip()
+        guid = (item.findtext("guid") or "").strip()
+        link = (item.findtext("link") or "").strip()
+        pub_date = (item.findtext("pubDate") or "").strip()
+        try:
+            size = int(item.findtext("size") or "0")
+        except ValueError:
+            size = 0
+        seeders = leechers = None
+        magnet = tracker = None
+        for attr in item.findall("torznab:attr", ns):
+            name, value = attr.get("name", ""), attr.get("value", "")
+            if name == "seeders":
+                try:
+                    seeders = int(value)
+                except ValueError:
+                    pass
+            elif name == "peers":
+                try:
+                    leechers = int(value)
+                except ValueError:
+                    pass
+            elif name == "magneturl":
+                magnet = value
+            elif name == "tracker":
+                tracker = value
+        if not magnet and link.startswith("magnet:"):
+            magnet = link
+        if not magnet and guid.startswith("magnet:"):
+            magnet = guid
+        if not title and magnet:
+            m = re.search(r"dn=([^&]+)", magnet)
+            if m:
+                title = urllib.parse.unquote_plus(m.group(1))
+        results.append({"title": title, "magnet": magnet or "", "link": link or guid, "size": size, "size_human": ssd_human_size(size),
+                        "seeders": seeders if seeders is not None else -1, "leechers": leechers if leechers is not None else -1,
+                        "pub_date": pub_date, "tracker": tracker or ""})
+    results.sort(key=lambda r: (bool(r["magnet"]), r["seeders"]), reverse=True)  # magnets first, then by seeders
+    return results
+
+
+def ssd_search(stash, args):
+    """Jackett (Torznab) search for a scene – the "Search Resources" button of the Discover scene window."""
+    query = str(args.get("query") or "").strip()
+    if not query:
+        raise ValueError("No search query provided.")
+    cfg = ssd_settings(stash)
+    url = str(cfg.get("jackettUrl") or "").strip().rstrip("/")
+    key = str(cfg.get("jackettApiKey") or "").strip()
+    if not url or not key:
+        raise ValueError("Jackett not configured. Set the Jackett URL and API key in Discover → Settings.")
+    if not re.match(r"^https?://", url, re.I):
+        raise ValueError("The Jackett URL has to start with http:// or https://")
+    if not url.endswith("/torznab"):
+        url = url + "/torznab" if "/api/v2." in url else url + "/api/v2.0/indexers/all/results/torznab"
+    full = f"{url}{'&' if '?' in url else '?'}apikey={urllib.parse.quote(key)}&q={urllib.parse.quote(query)}"
+    status, body, _ = ssd_http(full, timeout=30)
+    if status != 200:
+        raise RuntimeError(f"Jackett request failed (HTTP {status}): {body[:200]}")
+    results = ssd_torznab(body)
+    return {"mode": "search", "query": query, "count": len(results), "results": results[:50]}
+
+
+def ssd_push(stash, args):
+    """Hand a magnet link to qBittorrent."""
+    magnet = str(args.get("magnet") or "").strip()
+    if not magnet.startswith("magnet:"):
+        raise ValueError("No magnet link provided.")
+    cfg = ssd_settings(stash)
+    base = str(cfg.get("downloaderUrl") or "").strip().rstrip("/")
+    if not base:
+        raise ValueError("Downloader URL not configured.")
+    if not re.match(r"^https?://", base, re.I):
+        raise ValueError("The downloader URL has to start with http:// or https://")
+    status, body, headers = ssd_http(base + "/api/v2/auth/login", "POST", {"username": str(cfg.get("downloaderUsername") or ""), "password": str(cfg.get("downloaderPassword") or "")}, timeout=15)
+    if status != 200 or body.strip() != "Ok.":
+        raise RuntimeError(f"qBittorrent login failed (HTTP {status}): {body[:100]}")
+    cookie = ""
+    for k, v in headers.items():
+        if k.lower() == "set-cookie":
+            m = re.search(r"(SID=[^;]+)", v)
+            if m:
+                cookie = m.group(1)
+                break
+    if not cookie:
+        raise RuntimeError("qBittorrent login did not return a session cookie.")
+    status, body, _ = ssd_http(base + "/api/v2/torrents/add", "POST", {"urls": magnet}, {"Cookie": cookie}, timeout=15)
+    if status != 200:
+        raise RuntimeError(f"qBittorrent add failed (HTTP {status}): {body[:200]}")
+    return {"mode": "push_download", "ok": True}
+
+
 def main():
     if len(sys.argv) > 2 and sys.argv[1] == "--cutjob":
         return cut_job(sys.argv[2])
@@ -1459,6 +1650,12 @@ def main():
             out = box_image(Stash(data.get("server_connection")), args)
         elif mode == "box_scenes":
             out = box_scenes(Stash(data.get("server_connection")), args)
+        elif mode == "box_gql":
+            out = box_gql(Stash(data.get("server_connection")), args)
+        elif mode == "ssd_search":
+            out = ssd_search(Stash(data.get("server_connection")), args)
+        elif mode == "ssd_push":
+            out = ssd_push(Stash(data.get("server_connection")), args)
         elif mode == "phone_status":
             out = phone_status(Stash(data.get("server_connection")), args)
         elif mode == "phone_start":

@@ -7,6 +7,13 @@
 
 export const CHANGES = [
   {
+    v: "3.120.0",
+    date: "2026-10-26",
+    items: [
+      ["ui", "Discover has an Overview now – the page of the plugin stashDiscover by ufousox007, taken over with his permission: performers of your library with new releases, the latest scenes you don't have (max. 2 per performer), trending, upcoming, new scenes of your favourite studios and performers to discover, with pages for each, a Following list with a new-release marker, a scene window with “Add to Library” and a resource search (Jackett, qBittorrent – set up under Discover → Settings → Overview). The earlier search is the “Search” tab next to it. Needs a stash-box under Settings → Metadata Providers and performers linked to it. The page itself is bilingual (English / Chinese); after the update use “Reload plugins” in Stash.", "Discover 新增“总览”——来自 ufousox007 的插件 stashDiscover 的页面，已获作者许可并入：库内演员的新发布、你还没有的最新场景（每位演员最多 2 部）、热门、即将发布、收藏工作室的新作品和可发现的演员，各有详细页面；还有带新作标记的“关注”列表、带“加入库”和资源搜索（Jackett、qBittorrent，在 Discover → 设置 中配置）的场景窗口。原来的搜索在旁边的“Search”标签里。需要在 Stash 的元数据提供者中设置 stash-box，并将演员关联到它。该页面本身只有英文/中文；更新后请在 Stash 中“Reload plugins”。", "discover::.ssd-dp-tabs"],
+    ],
+  },
+  {
     v: "3.119.1",
     date: "2026-10-24",
     items: [

@@ -1,0 +1,2008 @@
+/* ─── stashDiscover ──────────────────────────────────────────────────────── */
+/* Grid/cards reuse Stash native .scene-card / .grid-card classes and the     */
+/* native .filtered-list-toolbar so themes apply automatically. Modal uses    */
+/* dark theme (performerMerge pattern).                                       */
+
+:root {
+  --ssd-primary: #0ca678;
+  --ssd-primary-hover: #099268;
+  --ssd-accent: #f76707;
+  --ssd-accent-hover: #e8590c;
+  --ssd-secondary: #495057;
+  --ssd-secondary-hover: #868e96;
+  --ssd-info: #1c7ed6;
+  --ssd-info-hover: #1971c2;
+  --ssd-success: #37b24d;
+  --ssd-warning: #f59f00;
+  --ssd-danger: #f03e3e;
+  --ssd-modal-bg: #2b2b2b;
+  --ssd-modal-border: #444;
+  --ssd-modal-text: #e0e0e0;
+  --ssd-modal-muted: #999;
+  --ssd-radius: 6px;
+}
+
+/* ─── Tab nav link ───────────────────────────────────────────────────────── */
+
+.ssd-nav-link {
+  cursor: pointer;
+  color: var(--ssd-modal-muted);
+  transition: color 0.15s;
+}
+.ssd-nav-link:hover { color: var(--ssd-modal-text); }
+.ssd-nav-link.active {
+  color: var(--ssd-primary) !important;
+  font-weight: 600;
+}
+
+/* ─── Toolbar ─────────────────────────────────────────────────────────────── */
+/* The filter toolbar reuses Stash native classes 1:1 (.filtered-list-toolbar, */
+/* .clearable-input-group, .sort-by-select, .page-size-selector, .zoom-slider) */
+/* so themes apply automatically — no plugin CSS needed.                        */
+
+.ssd-count-info {
+  white-space: nowrap;
+}
+
+/* Result count — sits between the filter toolbar and the card grid.
+   Matches native .paginationIndex: 14px / 21px (body font), 400, centered,
+   10px below. Color comes from the native .text-muted class (theme-aware). */
+.ssd-count-line {
+  margin: 0 4px 10px;
+  text-align: center;
+  font-size: 14px;
+  line-height: 21px;
+}
+
+/* Per-page selector: keep the native width, never squeezed by the toolbar */
+.ssd-tab-pane {
+  /* Native tab panes sit 7px lower (shared sidebar-toggle placeholder) and keep an
+     8px gap between the nav-tabs bottom border and the filter toolbar — without this
+     the toolbar overlaps and visually hides the 2px divider line. */
+  padding-top: 15px;
+}
+
+.ssd-tab-pane .page-size-selector {
+  min-width: 74px;
+  flex-shrink: 0;
+}
+.ssd-tab-pane .page-size-selector select {
+  width: 100%;
+  min-width: 64px;
+}
+
+/* ─── Buttons ─────────────────────────────────────────────────────────────── */
+
+.ssd-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+  transition: background 0.15s, opacity 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-family: inherit;
+}
+.ssd-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Trailing glyph inside a button label (external-link mark on source buttons) */
+.ssd-btn-icon { display: inline-flex; align-items: center; margin-left: 5px; }
+.ssd-btn-icon svg { display: block; width: 11px; height: 11px; }
+
+.ssd-btn-lg { padding: 6px 16px; font-size: 13px; }
+.ssd-btn-md { padding: 0 13px; font-size: 12px; height: 26px; line-height: 1; }
+.ssd-btn-sm { padding: 3px 10px; font-size: 11px; height: 22px; line-height: 1; }
+
+.ssd-btn-primary { background: var(--ssd-primary); color: #fff; }
+.ssd-btn-primary:hover:not(:disabled) { background: var(--ssd-primary-hover); }
+.ssd-btn-secondary { background: var(--ssd-secondary); color: #fff; }
+.ssd-btn-secondary:hover:not(:disabled) { background: var(--ssd-secondary-hover); }
+.ssd-btn-accent { background: var(--ssd-accent); color: #fff; }
+.ssd-btn-accent:hover:not(:disabled) { background: var(--ssd-accent-hover); }
+.ssd-btn-info { background: var(--ssd-info); color: #fff; }
+.ssd-btn-info:hover:not(:disabled) { background: var(--ssd-info-hover); }
+.ssd-btn-success { background: var(--ssd-success) !important; color: #fff; }
+.ssd-btn-danger { background: var(--ssd-danger) !important; color: #fff; }
+
+/* ─── States ─────────────────────────────────────────────────────────────── */
+
+.ssd-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--ssd-modal-border);
+  border-top-color: var(--ssd-primary);
+  border-radius: 50%;
+  animation: ssd-spin 0.8s linear infinite;
+}
+.ssd-spinner-sm {
+  width: 14px;
+  height: 14px;
+  border-width: 2px;
+  flex-shrink: 0;
+}
+@keyframes ssd-spin { to { transform: rotate(360deg); } }
+
+/* ─── Fallback state panel ─────────────────────────────────────────────────
+   Surfaces/borders are theme-neutral greys so light and dark themes both work.
+   Only the left accent bar carries colour: green = in progress / main action,
+   yellow = needs you (recoverable), red = hard failure, grey = neutral info. */
+
+.ssd-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 16px auto;
+  max-width: 720px;
+  padding: 14px 16px;
+  border: 1px solid rgba(128, 128, 128, 0.22);
+  border-left-width: 3px;
+  border-radius: var(--ssd-radius);
+  background: rgba(128, 128, 128, 0.06);
+}
+.ssd-panel--loading { border-left-color: var(--ssd-primary); }
+.ssd-panel--warn { border-left-color: var(--ssd-warning); background: rgba(245, 159, 0, 0.07); }
+.ssd-panel--danger { border-left-color: var(--ssd-danger); background: rgba(240, 62, 62, 0.07); }
+.ssd-panel--neutral { border-left-color: rgba(128, 128, 128, 0.45); }
+
+.ssd-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ssd-panel-title {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 21px;
+}
+.ssd-panel-icon {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.ssd-panel-icon svg { display: block; width: 16px; height: 16px; }
+.ssd-panel-icon--warn { color: var(--ssd-warning); }
+.ssd-panel-icon--info { color: var(--ssd-modal-muted); }
+.ssd-panel-icon--danger { color: var(--ssd-danger); }
+
+.ssd-panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ssd-panel-desc {
+  font-size: 13px;
+  line-height: 20px;
+  opacity: 0.78;
+}
+
+/* Indeterminate progress bar (scanning — activity, not a known total) */
+.ssd-progress {
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(128, 128, 128, 0.22);
+  overflow: hidden;
+}
+.ssd-progress > i {
+  display: block;
+  width: 35%;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--ssd-primary);
+  animation: ssd-progress 1.2s ease-in-out infinite;
+}
+@keyframes ssd-progress {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+
+/* Per-source rows: status dot + source name + status text */
+.ssd-src-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ssd-src-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 18px;
+}
+.ssd-src-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: rgba(128, 128, 128, 0.45);
+}
+.ssd-src-dot--ok { background: var(--ssd-success); }
+.ssd-src-dot--warn { background: var(--ssd-warning); }
+.ssd-src-name { font-weight: 600; }
+.ssd-src-status { opacity: 0.7; }
+.ssd-src-status--warn { color: var(--ssd-warning); opacity: 1; }
+
+/* Status chip — outlined on purpose: solid = action, outlined = status.
+   Height follows the small button tier (22px) so a chip and a small action
+   sit level in the same row (window row, find result rows). */
+.ssd-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border: 1px solid rgba(128, 128, 128, 0.35);
+  border-radius: 999px;
+  font-size: 11px;
+  line-height: 1;
+  white-space: nowrap;
+}
+.ssd-chip--ok { border-color: rgba(55, 178, 77, 0.55); color: var(--ssd-success); }
+.ssd-chip--muted { opacity: 0.75; }
+/* "This source already carries an ID, but a different one" — faded below the
+   plain box chip so a conflict never reads like a plain source label at a glance */
+.ssd-chip--dim { opacity: 0.38; }
+
+.ssd-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* "Unlimited time (this session)" marker above the cards. The four possible
+   items are grouped in pairs so a very narrow viewport wraps between them. */
+.ssd-window-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 4px 10px;
+}
+.ssd-window-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Partial-failure notice above the result count */
+.ssd-notice-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 4px 10px;
+  padding: 6px 10px;
+  border: 1px solid rgba(245, 159, 0, 0.4);
+  border-radius: var(--ssd-radius);
+  background: rgba(245, 159, 0, 0.08);
+  font-size: 12px;
+  line-height: 18px;
+}
+.ssd-notice-text { flex: 1 1 auto; }
+
+/* ─── "Look them up on the source" inline block ───────────────────────────── */
+
+.ssd-find {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  /* Contained column, centred in whatever holds it. Capped at 685px so the
+     search row and result rows match the empty-state panel width instead of
+     stretching across the whole pane */
+  max-width: 685px;
+  /* width:100% so the capped width also applies inside the flex panel, where
+     auto margins alone would shrink the block to its content */
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-top: 10px;
+  border-top: 1px solid rgba(128, 128, 128, 0.2);
+}
+.ssd-find-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ssd-find-row .clearable-text-field { flex: 1 1 auto; min-width: 0; }
+/* Follow the native input's height (overrides .ssd-btn-sm's fixed 22px) —
+   same rule as .ssd-search-bar, so the row reads as one control */
+.ssd-find-row .ssd-btn { align-self: stretch; height: auto; font-size: 13px; padding: 0 14px; }
+.ssd-find-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 18px;
+  opacity: 0.8;
+}
+.ssd-find-note--error { color: var(--ssd-danger); opacity: 1; }
+.ssd-find-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ssd-find-item {
+  border: 1px solid rgba(128, 128, 128, 0.2);
+  border-radius: var(--ssd-radius);
+  background: rgba(128, 128, 128, 0.05);
+  overflow: hidden;
+}
+.ssd-find-item.is-open {
+  border-color: rgba(128, 128, 128, 0.4);
+  background: rgba(128, 128, 128, 0.09);
+}
+/* Collapsed row — the whole strip is the click target (toggles the detail) */
+.ssd-find-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  cursor: pointer;
+}
+.ssd-find-main:hover { background: rgba(128, 128, 128, 0.09); }
+.ssd-find-item.is-open .ssd-find-main { background: transparent; }
+/* Triangle caret: down when collapsed, up (rotated) when expanded */
+.ssd-find-caret {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  opacity: 0.55;
+  transition: transform 0.15s;
+}
+.ssd-find-caret svg { display: block; width: 10px; height: 10px; }
+.ssd-find-item.is-open .ssd-find-caret { transform: rotate(180deg); }
+.ssd-find-flag {
+  width: 16px;
+  height: 11px;
+  border-radius: 2px;
+  vertical-align: -1px;
+  margin-right: 4px;
+}
+.ssd-find-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: rgba(128, 128, 128, 0.2);
+}
+.ssd-find-avatar--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  opacity: 0.7;
+}
+.ssd-find-info { flex: 1 1 auto; min-width: 0; }
+.ssd-find-name {
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 19px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Only the performer name is emphasised and full size; flag/gender/age are
+   small (same size as the alias line) and share the name's baseline */
+.ssd-find-name-main { font-weight: 600; }
+.ssd-find-meta { font-size: 11px; }
+.ssd-find-name .ssd-find-flag { margin-right: 0; }
+.ssd-find-sub {
+  font-size: 11px;
+  line-height: 16px;
+  opacity: 0.7;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ssd-find-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* ── Expanded detail: photo viewer (left) + fields/actions (right) ─────────── */
+
+.ssd-find-detail {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 8px;
+  border-top: 1px solid rgba(128, 128, 128, 0.2);
+}
+.ssd-find-photo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+/* Portrait skeleton keeps the layout stable before the image arrives */
+.ssd-find-photo-frame {
+  position: relative;
+  width: 132px;
+  height: 198px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: rgba(128, 128, 128, 0.14);
+}
+.ssd-find-photo-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ssd-find-photo-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 8px;
+  text-align: center;
+  font-size: 11px;
+  line-height: 15px;
+  opacity: 0.6;
+}
+.ssd-find-photo-count {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  padding: 1px 6px;
+  border-radius: 9px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 10px;
+  line-height: 14px;
+}
+.ssd-find-photo-nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  flex-shrink: 0;
+  border: 1px solid rgba(128, 128, 128, 0.35);
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.ssd-find-photo-nav:hover:not(:disabled) { background: rgba(128, 128, 128, 0.18); }
+.ssd-find-photo-nav:disabled { opacity: 0.3; cursor: default; }
+
+.ssd-find-detail-col {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ssd-find-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.ssd-find-field {
+  display: flex;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 18px;
+}
+.ssd-find-field-label {
+  flex-shrink: 0;
+  min-width: 56px;
+  opacity: 0.6;
+}
+.ssd-find-field-value { min-width: 0; word-break: break-word; }
+/* Outlined counter/tag used for hidden-item counts (+N) and numeric values */
+.ssd-find-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 4px;
+  border: 1px solid rgba(128, 128, 128, 0.45);
+  border-radius: 3px;
+  font-size: 11px;
+  line-height: 15px;
+  vertical-align: 1px;
+}
+.ssd-find-links {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.ssd-find-link { color: var(--ssd-primary); text-decoration: none; }
+.ssd-find-link:hover { text-decoration: underline; }
+.ssd-find-rowmsg { font-size: 12px; line-height: 17px; color: var(--ssd-success); }
+.ssd-find-rowmsg--error { color: var(--ssd-danger); }
+.ssd-find-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ─── Native grid cards (1:1 Stash .scene-card.grid-card) ─────────────────── */
+
+.ssd-card-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: 0 auto;
+  max-width: 2250px;
+}
+/* Native .scene-card carries 5px margins (→ 10px gap between cards) */
+.ssd-card-grid .scene-card {
+  margin: 5px;
+  cursor: pointer;
+}
+/* Native hides specs/studio on hover because the preview video fades in;
+   our cards have no video, so keep the overlays visible. */
+.ssd-card-grid .scene-card:hover .scene-specs-overlay,
+.ssd-card-grid .scene-card:hover .studio-overlay {
+  transition: none;
+}
+.ssd-card-grid .scene-card:hover .scene-specs-overlay { opacity: 1; }
+.ssd-card-grid .scene-card:hover .studio-overlay { opacity: 0.75; }
+
+/* Studio name — native .studio-overlay inherits the card's 14px; shrink it a
+   notch so long studio names take less cover space */
+.ssd-card-grid .studio-overlay { font-size: 12px; }
+
+/* ── Custom overlays on top of native .scene-card-preview ─────────────────── */
+
+/* Box source pill — bottom-left corner (native cards put duration/specs at the
+   bottom-right and studio at the top-right; the bottom-left has no fixed
+   native content). The native .scene-specs-overlay is anchored inside the
+   outer .thumbnail-section, which is 5px taller than our mount point
+   (.scene-card-preview carries margin-bottom:5px) — subtract it so the pill
+   sits on the same baseline as the native specs row. */
+.ssd-overlay-box {
+  position: absolute;
+  bottom: calc(1rem - 5px);
+  left: 0.7rem;
+  z-index: 9;
+  background: rgba(12, 166, 120, 0.92);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 3px;
+  max-width: 55%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Preview (future-dated) pill — top-left corner (the box source pill has its
+   own corner at the bottom-left, so the two never overlap) */
+.ssd-overlay-preview {
+  position: absolute;
+  top: 0.7rem;
+  left: 0.7rem;
+  z-index: 9;
+  background: rgba(121, 80, 242, 0.92);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+/* ── Refract theme compatibility ───────────────────────────────────────────
+   Refract (body.stash-liquid-glass) hides the native popover row on scene
+   cards (.card-popovers + sibling hr, display:none !important) because it
+   injects its own performer circles / tag badge — but its JS only touches
+   cards with an <a href="/scenes/..."> link, which our div+onclick cards
+   lack. Restore the badges with higher specificity (5 classes beat
+   Refract's body+3 classes). */
+.ssd-card-grid .scene-card.ssd-scene-card .card-section .card-popovers {
+  display: flex !important;
+}
+.ssd-card-grid .scene-card.ssd-scene-card .card-section hr {
+  display: block !important;
+}
+
+/* ─── Pager ──────────────────────────────────────────────────────────────── */
+
+.ssd-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 16px;
+  padding: 12px 0;
+}
+
+/* Native .page-count's padding ("5.25px 5px 5.25px 15px") plus Stash's own
+   ".pagination .btn.page-count { padding-right: 5px }" are tuned for the
+   "第X页，共Y页 ⌄" label — a bare page number needs symmetric padding
+   to stay visually centered inside the button */
+.ssd-pager .pagination .btn.page-count {
+  padding-left: 10.5px;
+  padding-right: 10.5px;
+}
+
+/* ─── Modal (dark theme — performerMerge pattern) ────────────────────────── */
+
+.ssd-modal-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(0, 0, 0, 0.75) !important;
+  z-index: 99999 !important;
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  padding: 30px 16px !important;
+}
+.ssd-modal {
+  position: relative;
+  max-width: 820px !important;
+  width: 100% !important;
+  max-height: calc(100vh - 60px) !important;
+  overflow-y: auto !important;
+  scrollbar-gutter: stable !important;
+  margin: auto 0 !important;
+  background: var(--ssd-modal-bg) !important;
+  border-radius: 8px !important;
+  color: var(--ssd-modal-text) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6) !important;
+}
+.ssd-modal-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  z-index: 10;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 4px;
+  background: #555;
+  color: #ddd;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+.ssd-modal-close:hover { background: var(--ssd-danger); color: #fff; }
+
+/* ─── Carousel (lazy load: backgroundImage on current only) ──────────────── */
+
+.ssd-carousel {
+  position: relative;
+  width: 100%;
+  background: #000;
+}
+.ssd-carousel-hero {
+  position: relative;
+  width: 100%;
+  /* JAV cover standard ratio (800x538) so the cover fills the frame edge to edge */
+  aspect-ratio: 800 / 538;
+  max-height: 560px;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: #000;
+}
+.ssd-carousel-hero-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ssd-modal-muted);
+  font-size: 14px;
+  aspect-ratio: 800 / 538;
+  background: #111;
+}
+.ssd-carousel-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+  z-index: 5;
+  line-height: 1;
+}
+.ssd-carousel-nav:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.85);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+.ssd-carousel-nav:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.ssd-carousel-prev { left: 14px; }
+.ssd-carousel-next { right: 14px; }
+.ssd-carousel-counter {
+  position: absolute;
+  bottom: 10px;
+  right: 12px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  z-index: 5;
+}
+
+/* ─── Modal sections (dividers — performerMerge pattern) ─────────────────── */
+
+.ssd-modal-section {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--ssd-modal-border);
+}
+.ssd-modal-section:last-child { border-bottom: none; }
+
+.ssd-modal-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--ssd-modal-text);
+  margin: 0 0 10px 0;
+  line-height: 1.4;
+}
+
+/* Action row */
+.ssd-action-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Meta grid */
+.ssd-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.ssd-meta-item {
+  background: #1a1a1a;
+  border-radius: 4px;
+  padding: 6px 10px;
+}
+.ssd-meta-label {
+  font-size: 10px;
+  color: var(--ssd-modal-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+.ssd-meta-value {
+  font-size: 13px;
+  color: var(--ssd-modal-text);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Code meta item: click the whole item to copy; brief text color change is
+   the only feedback — no toast, no animation */
+.ssd-code-copyable {
+  cursor: pointer;
+}
+
+.ssd-code-copyable.ssd-copied .ssd-meta-label,
+.ssd-code-copyable.ssd-copied .ssd-meta-value {
+  color: #35c46f;
+}
+
+/* Detail rows */
+.ssd-detail-row {
+  font-size: 13px;
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+.ssd-detail-label {
+  color: var(--ssd-modal-muted);
+  font-weight: 600;
+  margin-right: 6px;
+}
+.ssd-detail-link {
+  color: var(--ssd-primary);
+  text-decoration: none;
+  word-break: break-all;
+  font-size: 12px;
+  margin-right: 8px;
+}
+.ssd-detail-link:hover { text-decoration: underline; }
+
+/* Tag / performer pills (rounded background) */
+.ssd-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.ssd-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 10px;
+  border-radius: 11px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  /* Same small tier as .ssd-btn-sm (11px / 22px), weight 500 (non-clickable badge);
+     translucent fill — solid = interactive */
+  background: rgba(233, 236, 239, 0.14);
+  border: 1px solid rgba(233, 236, 239, 0.28);
+  color: #f1f3f5;
+  white-space: nowrap;
+}
+/* Clickable performer name — solid button (interactive = solid), pill radius.
+   Colors/hover/text-shadow come from .ssd-btn + .ssd-btn-info (blue on white). */
+.ssd-pill-performer {
+  border-radius: 11px;
+  max-width: 180px;
+}
+.ssd-pill-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Synopsis — full display, no inner scroll */
+.ssd-synopsis-text {
+  font-size: 13px;
+  color: var(--ssd-modal-text);
+  line-height: 1.7;
+  margin-top: 6px;
+  white-space: pre-wrap;
+}
+
+/* ─── Search section ─────────────────────────────────────────────────────── */
+
+.ssd-search-bar {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.ssd-search-bar .clearable-input-group { flex: 1; min-width: 0; margin-bottom: 0; }
+.ssd-search-bar .form-control { font-size: 13px; }
+/* Follow the input's height (overrides .ssd-btn-sm's fixed 22px) */
+.ssd-search-bar .ssd-btn { align-self: stretch; height: auto; font-size: 13px; padding: 0 14px; }
+.ssd-search-header {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ssd-modal-text);
+  margin-bottom: 10px;
+}
+.ssd-search-loading {
+  font-size: 13px;
+  color: var(--ssd-modal-muted);
+  padding: 12px 0;
+}
+.ssd-search-error {
+  font-size: 13px;
+  color: #ff8787;
+  padding: 10px 14px;
+  background: rgba(240, 62, 62, 0.1);
+  border-radius: var(--ssd-radius);
+}
+.ssd-search-empty {
+  font-size: 13px;
+  color: var(--ssd-modal-muted);
+  padding: 12px 0;
+}
+.ssd-search-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ssd-search-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  transition: border-color 0.15s;
+}
+.ssd-search-item:hover { border-color: var(--ssd-primary); }
+.ssd-search-item-info { flex: 1; min-width: 0; }
+.ssd-search-item-title {
+  font-size: 13px;
+  color: var(--ssd-modal-text);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 2px;
+}
+.ssd-search-item-meta {
+  font-size: 11px;
+  color: var(--ssd-modal-muted);
+}
+.ssd-search-item-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Search pagination */
+.ssd-search-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--ssd-modal-border);
+}
+.ssd-search-pager .ssd-count-info {
+  min-width: 100px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--ssd-modal-muted);
+}
+
+/* ─── Floating performer avatar card ─────────────────────────────────────── */
+
+.ssd-performer-card {
+  position: fixed;
+  z-index: 100000;
+  padding: 6px;
+  background: var(--ssd-modal-bg);
+  border: 1px solid var(--ssd-modal-border);
+  border-radius: 8px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+}
+.ssd-perf-avatar-wrap {
+  /* Fixed portrait skeleton (2:3) — most performer avatars fill it edge to
+     edge; other ratios are contained, never cropped. Card size never changes,
+     so the mount position is always correct. */
+  position: relative;
+  width: 96px;
+  height: 144px;
+  background: #1a1a1a;
+  border-radius: 6px;
+  line-height: 0;
+  overflow: hidden;
+}
+.ssd-perf-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  border-radius: 6px;
+}
+.ssd-perf-avatar-wrap.is-loading::after {
+  /* Spinner shown until the avatar loads */
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: rgba(255, 255, 255, 0.75);
+  border-radius: 50%;
+  animation: ssd-spin 0.7s linear infinite;
+}
+@keyframes ssd-spin {
+  to { transform: rotate(360deg); }
+}
+.ssd-perf-badge {
+  position: absolute;
+  bottom: 3px;
+  display: inline-flex;
+  align-items: center;
+  height: 16px;
+  padding: 0 3px;
+  border-radius: 3px;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  /* Dark outline fading outwards instead of a solid background */
+  text-shadow:
+    -0.5px -0.5px 0 rgba(0, 0, 0, 0.9), 0.5px -0.5px 0 rgba(0, 0, 0, 0.9),
+    -0.5px 0.5px 0 rgba(0, 0, 0, 0.9), 0.5px 0.5px 0 rgba(0, 0, 0, 0.9),
+    0 0 2px rgba(0, 0, 0, 0.7), 0 0 4px rgba(0, 0, 0, 0.45),
+    0 0 7px rgba(0, 0, 0, 0.2);
+}
+.ssd-perf-age { left: 4px; }
+.ssd-perf-flag { right: 4px; }
+.ssd-perf-flag img {
+  display: block;
+  width: 18px;
+  height: 12px;
+  border-radius: 2px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+/* ─── Notice ─────────────────────────────────────────────────────────────── */
+
+.ssd-notice {
+  padding: 8px 12px;
+  border-radius: var(--ssd-radius);
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+.ssd-notice-error {
+  background: rgba(240, 62, 62, 0.12);
+  color: #ff8787;
+  border: 1px solid rgba(240, 62, 62, 0.3);
+}
+.ssd-notice-info {
+  background: rgba(51, 154, 240, 0.1);
+  color: #74c0fc;
+  border: 1px solid rgba(51, 154, 240, 0.3);
+}
+
+/* ─── Responsive ─────────────────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .ssd-meta-grid { grid-template-columns: repeat(2, 1fr); }
+  .ssd-find-detail { flex-direction: column; }
+  .ssd-search-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .ssd-search-item-actions { justify-content: flex-end; }
+}
+
+@media (max-width: 480px) {
+  .ssd-modal-overlay { padding: 0 !important; }
+  .ssd-modal {
+    border-radius: 0 !important;
+    max-width: 100% !important;
+    max-height: 100vh !important;
+  }
+  .ssd-carousel-hero { max-height: 280px; }
+  .ssd-action-row .ssd-btn { flex: 1; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * discover.js — "发现"导航页（.ssd-dp-* 前缀）
+ * 主题跟随：颜色一律走 --sx-* token（discover.js 的 suiteTheme() 运行时从
+ * 页面采样派生并写入 .ssd-dp-page/.ssd-nav-item scope），换主题自动重算；
+ * 阴影 alpha 用 --sx-k、方案用 --sx-scheme。卡片类复用 Stash 原生
+ * .scene-card/.grid-card/.performer-card/.studio-card（设计文档 §7，硬性要求）。
+ * 自绘布局遵守 §7.2：窄屏无冲突/截断/重叠，flex-wrap 自动换行。
+ * ══════════════════════════════════════════════════════════════════════════ */
+
+.ssd-dp-page,
+.ssd-dp-page *,
+.ssd-dp-page *::before,
+.ssd-dp-page *::after {
+  box-sizing: border-box;
+}
+
+/* ─── 页面根（§3.1）──────────────────────────────────────────────────────── */
+
+.ssd-dp-page {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 1rem 4rem;
+  color: var(--sx-tx);
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  min-height: 60vh;
+}
+
+/* ─── 页头行：标题 + meta chips + 刷新 + 相对时间（§3.1.1）──────────────── */
+
+.ssd-dp-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap; /* §7.2 窄屏换行 */
+  padding-top: 0.5rem;
+}
+
+.ssd-dp-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--sx-hi);
+  margin: 0;
+}
+
+.ssd-dp-title svg {
+  width: 1.15em;
+  height: 1.15em;
+  color: var(--sx-acc);
+}
+
+.ssd-dp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--sx-tx2);
+  background: color-mix(in srgb, var(--sx-ui) 55%, transparent);
+  border: 1px solid var(--sx-line2);
+  white-space: nowrap;
+}
+
+.ssd-dp-chip b { color: var(--sx-tx); font-weight: 600; }
+
+.ssd-dp-head .ssd-dp-refresh {
+  margin-left: auto;
+}
+
+.ssd-dp-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 5px 12px;
+  border-radius: 9px;
+  border: 1px solid var(--sx-line2);
+  border-top-color: var(--sx-ui3);
+  background: linear-gradient(180deg, var(--sx-ui2), var(--sx-ui));
+  color: var(--sx-tx);
+  font-size: 12px;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, calc(0.5 * var(--sx-k)));
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap; /* 防文字被挤换行成两行 — 用户 2026-10-25 */
+  flex: none;
+}
+
+.ssd-dp-refresh:hover { color: var(--sx-hi); border-top-color: var(--sx-edge); }
+.ssd-dp-refresh:disabled { opacity: 0.5; cursor: default; }
+
+.ssd-dp-refresh svg.spinning { animation: ssd-dp-spin 0.9s linear infinite; }
+@keyframes ssd-dp-spin { to { transform: rotate(360deg); } }
+
+.ssd-dp-updated {
+  font-size: 12px;
+  color: var(--sx-tx3);
+  white-space: nowrap;
+}
+
+/* ─── 滑动开关组（§3.1.2，InsightsI18n .ins-tabs 胶囊风格）───────────────── */
+
+.ssd-dp-tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap; /* §7.2 */
+  padding: 4px;
+  border-radius: 11px;
+  background: var(--sx-bg2);
+  border: 1px solid var(--sx-deep);
+  border-bottom-color: var(--sx-ui2);
+  width: fit-content;
+  max-width: 100%;
+}
+
+.ssd-dp-tab {
+  position: relative; /* 角标定位锚 */
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: none;
+  border: 0;
+  color: var(--sx-tx1b);
+  padding: 5px 12px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: color 0.15s, background 0.15s;
+}
+
+.ssd-dp-tab svg { width: 1em; height: 1em; flex: none; }
+
+.ssd-dp-tab:hover { color: var(--sx-hi); }
+
+.ssd-dp-tab.on {
+  color: var(--sx-hi);
+  background: color-mix(in srgb, var(--sx-acc) 26%, var(--sx-ui2));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 1px 2px rgba(0, 0, 0, calc(0.4 * var(--sx-k)));
+}
+
+/* 关注 tab 未读红点（§6.4） */
+.ssd-dp-tab-dot {
+  position: absolute;
+  top: 4px;
+  right: 5px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--sx-re);
+  box-shadow: 0 0 6px var(--sx-re);
+}
+
+/* 窄屏降级：≤720px 开关组铺满、tab 均分两行（参考 ins-tabs @media） */
+@media (max-width: 720px) {
+  .ssd-dp-tabs {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: 100%;
+  }
+  .ssd-dp-tab { justify-content: center; }
+}
+
+/* ─── 筛选行（§3.1.3）────────────────────────────────────────────────────── */
+
+.ssd-dp-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* 搜索框+筛选控件作为一组横向居中 — 用户 2026-10-25 */
+  flex-wrap: wrap; /* §7.2 */
+  gap: 0.6rem;
+  padding: 6px 10px;
+  border-radius: 9px;
+  background: var(--sx-bg2);
+  border: 1px solid var(--sx-line2);
+}
+
+/* 控件组（排序/每页/视图切换/数据源） */
+.ssd-dp-tools {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.ssd-dp-toolbar input,
+.ssd-dp-toolbar select {
+  background: var(--sx-ui);
+  border: 1px solid var(--sx-line2);
+  color: var(--sx-tx);
+  border-radius: 7px;
+  padding: 4px 10px;
+  font-size: 12.5px;
+  min-width: 0;
+}
+
+.ssd-dp-toolbar input:focus,
+.ssd-dp-toolbar select:focus {
+  outline: 1px solid var(--sx-acc);
+  border-color: var(--sx-acc);
+}
+
+/* ─── 分页开关组（§3.1.4，仅钻取视图）────────────────────────────────────── */
+
+.ssd-dp-pager {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-wrap: wrap; /* §7.2 */
+}
+
+.ssd-dp-pg {
+  min-width: 30px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 7px;
+  border: 1px solid var(--sx-line2);
+  background: var(--sx-ui);
+  color: var(--sx-tx2);
+  font-size: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ssd-dp-pg:hover:not(:disabled) { color: var(--sx-hi); border-color: var(--sx-edge); }
+.ssd-dp-pg.on {
+  color: var(--sx-hi);
+  background: color-mix(in srgb, var(--sx-acc) 24%, var(--sx-ui2));
+  border-color: var(--sx-acc);
+}
+.ssd-dp-pg:disabled { opacity: 0.4; cursor: default; }
+
+/* ─── 模块段（§3.2 总览）─────────────────────────────────────────────────── */
+
+.ssd-dp-sec {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  /* 模块间隔开 — 用户 2026-10-25：总览各模块之间需要明显间隔 */
+  margin-bottom: 2.1rem;
+}
+.ssd-dp-sec:last-child { margin-bottom: 0; }
+.ssd-dp-duo { margin-bottom: 2.1rem; }
+
+.ssd-dp-sec-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+  flex-wrap: wrap; /* §7.2 */
+}
+
+.ssd-dp-sec-title {
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--sx-hi);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+}
+
+.ssd-dp-sec-title svg { width: 1em; height: 1em; color: var(--sx-acc); }
+
+.ssd-dp-sec-count { font-size: 12px; color: var(--sx-tx2); }
+
+.ssd-dp-sec-more {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: none;
+  border: 0;
+  color: var(--sx-acc);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.ssd-dp-sec-more:hover { color: var(--sx-hi); background: color-mix(in srgb, var(--sx-acc) 12%, transparent); }
+
+/* 热门/预告并排（§3.2，窄屏自动堆叠）。minmax(0,1fr)：内层场景网格的
+   min-content（卡片宽）不得撑爆列宽——纯 1fr 的最小尺寸是 auto 会被内容顶开 */
+.ssd-dp-duo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1.1rem;
+}
+
+@media (max-width: 900px) {
+  .ssd-dp-duo { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ─── 三态组件（§9.0：加载/错误/空）──────────────────────────────────────── */
+
+.ssd-dp-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 3rem 1rem;
+  border-radius: 12px;
+  background: var(--sx-bg2);
+  border: 1px solid var(--sx-line2);
+  color: var(--sx-tx2);
+  font-size: 13px;
+  text-align: center;
+}
+
+.ssd-dp-state svg { width: 26px; height: 26px; color: var(--sx-tx3); }
+
+.ssd-dp-state .ssd-dp-retry {
+  padding: 5px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--sx-re);
+  background: none;
+  color: var(--sx-re-tx);
+  cursor: pointer;
+  font-size: 12.5px;
+}
+
+.ssd-dp-state .ssd-dp-retry:hover { background: color-mix(in srgb, var(--sx-re) 16%, transparent); }
+
+/* 加载动画（四点脉冲） */
+.ssd-dp-loading-dots { display: inline-flex; gap: 5px; }
+.ssd-dp-loading-dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--sx-tx2);
+  animation: ssd-dp-pulse 1.2s ease-in-out infinite;
+}
+.ssd-dp-loading-dots i:nth-child(2) { animation-delay: 0.15s; }
+.ssd-dp-loading-dots i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes ssd-dp-pulse { 0%, 80%, 100% { opacity: 0.3; } 40% { opacity: 1; } }
+
+/* ─── 导航按钮（P1：MainNavBar 注入项 + 角标，§10）───────────────────────── */
+
+.ssd-nav-item { position: relative; }
+
+.ssd-nav-item .ssd-nav-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--sx-re);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 15px;
+  text-align: center;
+  pointer-events: none;
+  box-shadow: 0 0 5px rgba(0, 0, 0, calc(0.5 * var(--sx-k)));
+}
+
+/* ─── P4 视图实现（设计 §3/§7/§8；设计原型移植 + 扩展）── */
+
+/* 工具栏（§3.1.3 贯穿所有视图；搜索框限宽 — 用户 2026-10-23 确认）*/
+.ssd-dp-toolbar .grow {
+  flex: 0 1 300px;
+  min-width: 180px;
+  max-width: 320px;
+  padding: 7px 12px;
+  border: 1px solid var(--sx-ui3);
+  border-radius: 8px;
+  background: var(--sx-ui);
+  color: var(--sx-tx);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.ssd-dp-toolbar .grow:focus { border-color: var(--sx-acc); }
+.ssd-dp-toolbar .grow::placeholder { color: var(--sx-tx3); }
+
+.ssd-dp-tool-label {
+  color: var(--sx-tx3);
+  font-size: 12px;
+  white-space: nowrap;
+  user-select: none;
+}
+/* 数据源 label + 下拉：包裹层自身是 flex 项，需内部 gap（用户 2026-10-25 第七轮） */
+.ssd-dp-srcwrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.ssd-dp-toolbar select {
+  padding: 7px 8px;
+  border: 1px solid var(--sx-ui3);
+  border-radius: 8px;
+  background: var(--sx-ui);
+  color: var(--sx-tx);
+  font-size: 12.5px;
+  outline: none;
+  cursor: pointer;
+}
+.ssd-dp-toolbar select:focus { border-color: var(--sx-acc); }
+
+/* 网格/列表切换 */
+.ssd-dp-viewtoggle {
+  display: inline-flex;
+  border: 1px solid var(--sx-ui3);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.ssd-dp-viewtoggle button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--sx-tx3);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.ssd-dp-viewtoggle button + button { border-left: 1px solid var(--sx-ui3); }
+.ssd-dp-viewtoggle button:hover { color: var(--sx-tx); }
+.ssd-dp-viewtoggle button.on {
+  background: var(--sx-acc);
+  color: var(--sx-acc-tx);
+}
+.ssd-dp-viewtoggle svg { width: 15px; height: 15px; }
+
+/* 开关组图标 + 设置 tab 独立在右侧 */
+.ssd-dp-tab svg { width: 14px; height: 14px; flex: none; }
+.ssd-dp-tab .ssd-dp-tab-dot { margin-left: 2px; }
+.ssd-dp-tab.set { margin-left: 6px; }
+
+/* 刷新按钮旋转 */
+.ssd-dp-refresh svg.spinning { animation: ssd-dp-spin 0.9s linear infinite; }
+@keyframes ssd-dp-spin { to { transform: rotate(360deg); } }
+
+/* 模块内场景网格（复用主 JS .ssd-card-grid 的卡片类；容器改为 CSS grid）。
+   原容器的 flex-wrap + 卡片 margin:0 auto 有两个问题：a) 在 .ssd-dp-sec 的
+   flex column 里塌缩到内容宽（卡少时缩成单列）；b) 图片加载前卡的
+   aspect-ratio 链未定，卡片被瞬时拉到整行宽（trimRows 行数测量失真）。
+   grid 列结构（minmax 230px = zoom-0 标准卡宽）不依赖图片加载，布局即刻稳定 */
+.ssd-dp-page .ssd-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 10px;
+}
+.ssd-dp-page .ssd-card-grid .scene-card { margin: 0; }
+.ssd-dp-sec > .ssd-dp-grid { width: 100%; }
+.ssd-dp-grid { margin-top: 4px; }
+
+/* 迷你演员卡（§3.2 模块 1/6）*/
+.ssd-dp-grid.mini {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 10px;
+}
+.ssd-dp-mini {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--sx-ui3);
+  border-radius: 10px;
+  background: var(--sx-ui);
+  cursor: pointer;
+  overflow: visible; /* badge 凸出到卡外右上角，不能裁剪 — 用户 2026-10-25 */
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+}
+.ssd-dp-mini:hover {
+  transform: translateY(-2px);
+  border-color: var(--sx-edge);
+  box-shadow: var(--sx-sh);
+}
+.ssd-dp-mini img {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: none;
+  background: var(--sx-ui2);
+}
+.ssd-dp-mini-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sx-tx);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ssd-dp-mini-sub {
+  font-size: 11.5px;
+  color: var(--sx-tx3);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ssd-dp-mini-sub.has-unread { color: var(--sx-re-tx); font-weight: 600; }
+.ssd-dp-mini-badge {
+  position: absolute;
+  /* 骑在卡片右上角外沿（不再叠在名字行上）— 用户 2026-10-25 */
+  top: 0;
+  right: 8px;
+  transform: translateY(-50%);
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+  background: var(--sx-or); /* 醒目橙底白字 — 用户 2026-10-25 */
+  color: #fff;
+  white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+.ssd-dp-mini-badge.co { background: color-mix(in srgb, var(--sx-bl) 18%, transparent); color: var(--sx-bl-tx); }
+.ssd-dp-mini-badge.hot { background: color-mix(in srgb, var(--sx-or) 18%, transparent); color: var(--sx-or-tx); }
+.ssd-mini-heart {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  color: var(--sx-ma);
+  display: inline-flex;
+}
+.ssd-mini-heart svg { width: 13px; height: 13px; }
+
+/* 场景卡徽标（§3.2/§5）——top/left 与原生 .studio-overlay（0.7rem）同基线 */
+.ssd-overlay-days {
+  position: absolute;
+  top: 0.7rem;
+  left: 0.7rem;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--sx-gr) 85%, black 15%);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+  pointer-events: none;
+}
+.ssd-overlay-inlib {
+  position: absolute;
+  top: 0.7rem;
+  left: 0.7rem;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--sx-gr) 20%, transparent);
+  color: var(--sx-gr-tx);
+  font-size: 10.5px;
+  font-weight: 700;
+  pointer-events: none;
+  backdrop-filter: blur(3px);
+}
+/* 关注视图未读红框（§3.4）*/
+.ssd-card-new { outline: 2px solid var(--sx-re); outline-offset: -2px; border-radius: 4px; }
+
+/* 钻取视图（§3.3）*/
+
+.ssd-dp-pagerow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+.ssd-dp-pcount { color: var(--sx-tx3); font-size: 12px; }
+
+/* 工作室分组入口条（§8.2 进入点）*/
+.ssd-dp-grpstrip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 4px;
+}
+.ssd-dp-grpchip {
+  padding: 5px 12px;
+  border: 1px solid var(--sx-ui3);
+  border-radius: 999px;
+  background: var(--sx-ui);
+  color: var(--sx-tx2);
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.ssd-dp-grpchip:hover { border-color: var(--sx-acc); color: var(--sx-tx); }
+
+/* 发现演员子切换（§3.5）*/
+.ssd-dp-subtabs { margin-bottom: 14px; }
+
+/* 通用按钮（§8.1/§8.2 按钮区 + 关注视图）*/
+.ssd-dp-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1px solid var(--sx-ui3);
+  border-radius: 8px;
+  background: var(--sx-ui);
+  color: var(--sx-tx);
+  font-size: 12.5px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.ssd-dp-btn:hover { border-color: var(--sx-edge); background: var(--sx-ui2); color: var(--sx-hi); }
+.ssd-dp-btn svg { width: 13px; height: 13px; }
+.ssd-dp-btn.primary {
+  background: var(--sx-acc);
+  border-color: var(--sx-acc);
+  color: var(--sx-acc-tx);
+}
+.ssd-dp-btn.primary:hover { background: var(--sx-acc-d); border-color: var(--sx-acc-d); color: var(--sx-acc-tx); }
+.ssd-dp-btn.ghost { background: transparent; }
+.ssd-dp-btn.ghost.danger { color: var(--sx-re-tx); }
+.ssd-dp-btn.ghost.danger:hover { border-color: var(--sx-re); background: color-mix(in srgb, var(--sx-re) 10%, transparent); }
+.ssd-dp-btn.loved { border-color: var(--sx-ma); color: var(--sx-ma-tx); }
+/* 已加入/加入失败：实底白字保证可读（用户 2026-10-25 第五轮：浅字在按钮底色上难读）*/
+.ssd-dp-btn.ok { background: var(--sx-gr); border-color: var(--sx-gr); color: #fff; pointer-events: none; }
+.ssd-dp-btn.err { background: var(--sx-re); border-color: var(--sx-re); color: #fff; }
+
+/* 演员/工作室过滤视图详情区（§8.1/§8.2）*/
+.ssd-dp-pfhead {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--sx-ui3);
+  border-radius: 12px;
+  background: var(--sx-ui);
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.ssd-dp-pfavatar {
+  /* 竖版长图（2:3）— 用户 2026-10-25 */
+  width: 108px;
+  height: 162px;
+  border-radius: 12px;
+  object-fit: cover;
+  object-position: top;
+  flex: none;
+  background: var(--sx-ui2);
+}
+/* 工作室详情图（左图右文）：随容器宽度自适应并尽量铺满，按原始比例完整显示（不裁切）
+   — 用户 2026-10-25 第七轮 */
+.ssd-dp-pfavatar--studio {
+  width: clamp(240px, 32%, 460px);
+  max-width: 100%;
+  height: auto;
+  max-height: 260px;
+  object-fit: contain;
+  object-position: center;
+}
+.ssd-dp-pfinfo { min-width: 0; flex: 1 1 240px; }
+.ssd-dp-pfname {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--sx-hi);
+  line-height: 1.25;
+}
+.ssd-dp-pfmeta { color: var(--sx-tx2); font-size: 13px; margin-top: 4px; }
+.ssd-dp-pfgender:empty, .ssd-dp-pfalias:empty, .ssd-dp-pfstat:empty { display: none; }
+.ssd-dp-pfalias { color: var(--sx-tx3); }
+.ssd-dp-extbtn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--sx-ui3);
+  border-radius: 8px;
+  color: var(--sx-tx2);
+  background: var(--sx-ui2);
+  text-decoration: none;
+  transition: color 0.15s, border-color 0.15s;
+}
+.ssd-dp-extbtn:hover { color: var(--sx-acc); border-color: var(--sx-acc); }
+.ssd-dp-extbtn svg { width: 14px; height: 14px; }
+.ssd-dp-pfactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+/* 头像容器 + 国旗徽标（叠加头像左下角 — 用户 2026-10-25）*/
+.ssd-dp-pfav { position: relative; flex: none; }
+/* 国旗：与场景二级弹窗演员 popup 完全同款（用户 2026-10-25 第六轮：
+   无底色、text-shadow 描边、img 柔影，弃粗黑底边）*/
+.ssd-dp-pfflag {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  display: inline-flex;
+  align-items: center;
+  height: 16px;
+  padding: 0 3px;
+  border-radius: 3px;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.5px;
+  text-shadow:
+    -0.5px -0.5px 0 rgba(0, 0, 0, 0.9), 0.5px -0.5px 0 rgba(0, 0, 0, 0.9),
+    -0.5px 0.5px 0 rgba(0, 0, 0, 0.9), 0.5px 0.5px 0 rgba(0, 0, 0, 0.9),
+    0 0 2px rgba(0, 0, 0, 0.7), 0 0 4px rgba(0, 0, 0, 0.45),
+    0 0 7px rgba(0, 0, 0, 0.2);
+}
+.ssd-dp-pfflag img {
+  display: block;
+  width: 18px;
+  height: 12px;
+  border-radius: 2px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+/* 统计行：详情区 info 列最后一行（ssd-dp-pfmeta 派生样式 — 用户 2026-10-25 第四轮）*/
+.ssd-dp-pfstat { color: var(--sx-tx3); }
+.ssd-dp-pfsect {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--sx-tx2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 14px 0 8px;
+}
+
+/* 关注视图（§3.4）*/
+.ssd-dp-followbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.ssd-dp-fgrp {
+  border: 1px solid var(--sx-ui3);
+  border-radius: 12px;
+  background: var(--sx-ui);
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+.ssd-dp-fgrp-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  flex-wrap: wrap;
+}
+.ssd-dp-fgrp-head img {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: none;
+  background: var(--sx-ui2);
+}
+.ssd-dp-fgrp-info { min-width: 0; flex: 1 1 200px; }
+/* 整行可点展开/收起（详情、取消关注按钮除外）— 用户 2026-10-25 第七轮 */
+.ssd-dp-fgrp-head.is-toggle { cursor: pointer; }
+.ssd-dp-fgrp-head.is-toggle:hover { background: var(--sx-ui2); }
+.ssd-dp-fgrp-acts { display: flex; gap: 8px; flex-wrap: wrap; }
+.ssd-dp-fgrp-body { padding: 4px 14px 14px; }
+
+/* 演员详情弹层（§3.5）*/
+.ssd-dp-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1080;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+}
+.ssd-dp-modal {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(760px, 100%);
+  max-height: min(86vh, 900px);
+  border: 1px solid var(--sx-ui3);
+  border-radius: 14px;
+  background: var(--sx-bg2);
+  box-shadow: var(--sx-float);
+}
+/* 内容内层滚动：关闭按钮悬浮在 modal 右上角，不随内容滚出视野（用户 2026-10-25 第五轮）*/
+.ssd-dp-modal-body {
+  overflow-y: auto;
+  padding: 18px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.ssd-dp-modal-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  z-index: 2;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
+  background: var(--sx-ui);
+  color: var(--sx-tx2);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.ssd-dp-modal-close:hover { color: var(--sx-tx); background: var(--sx-ui2); }
+.ssd-dp-modal-head { margin-bottom: 12px; padding-right: 36px; }
+.ssd-dp-modal-head .ssd-dp-extbtn { position: static; }
+.ssd-dp-modal-scenes .ssd-dp-state { padding: 18px 0; }
+
+/* 窄屏降级（§7.2：自绘 UI 无冲突/无截断/无重叠）*/
+@media (max-width: 720px) {
+  .ssd-dp-toolbar .grow { flex: 1 1 100%; max-width: none; }
+  .ssd-dp-toolbar { gap: 8px; }
+  .ssd-dp-pfhead { padding: 12px; gap: 12px; }
+  .ssd-dp-pfavatar { width: 64px; height: 96px; }
+  .ssd-dp-pfavatar--studio { width: clamp(132px, 42%, 240px); height: auto; max-height: 180px; }
+  .ssd-dp-pfflag { left: 4px; bottom: 4px; padding: 0 2px; }
+  .ssd-dp-pfflag img { width: 16px; height: 11px; }
+  .ssd-dp-pfname { font-size: 17px; }
+  .ssd-dp-grid.mini { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  .ssd-dp-fgrp-head { padding: 10px; }
+  .ssd-dp-fgrp-head img { width: 44px; height: 44px; }
+  .ssd-dp-fgrp-body { padding: 2px 10px 10px; }
+  .ssd-dp-modal-overlay { padding: 10px; }
+  .ssd-dp-modal-body { padding: 14px; }
+}
+
+/* ─── 设置视图（§3.7：通用 / 总览模块开关·行数·排序）──────────────────────── */
+
+.ssd-dp-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 860px;
+}
+.ssd-dp-set-h {
+  margin: 4px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--sx-tx1b);
+}
+.ssd-dp-set-box {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 14px;
+  border: 1px solid var(--sx-ui3);
+  border-radius: 12px;
+  background: var(--sx-bg2);
+}
+.ssd-dp-setrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap; /* §7.2 窄屏：控件组换行 */
+  padding: 9px 0;
+}
+.ssd-dp-setrow + .ssd-dp-setrow { border-top: 1px solid var(--sx-line); }
+.ssd-dp-setname { font-size: 13px; color: var(--sx-tx); }
+.ssd-dp-settoggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  color: var(--sx-tx);
+  cursor: pointer;
+  user-select: none;
+  min-width: 0;
+}
+.ssd-dp-settoggle input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  accent-color: var(--sx-bl);
+  cursor: pointer;
+}
+.ssd-dp-setctl {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.ssd-dp-setsel {
+  padding: 5px 8px;
+  border: 1px solid var(--sx-ui3);
+  border-radius: 8px;
+  background: var(--sx-ui);
+  color: var(--sx-tx);
+  font-size: 12.5px;
+  outline: none;
+  cursor: pointer;
+}
+.ssd-dp-setsel:focus { border-color: var(--sx-acc); }
+.ssd-dp-btn.sm { padding: 4px 9px; font-size: 12px; }
+.ssd-dp-btn:disabled { opacity: 0.38; cursor: default; }
+.ssd-dp-btn.loading { opacity: 0.6; pointer-events: none; }
+
+@media (max-width: 720px) {
+  .ssd-dp-setrow { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .ssd-dp-setctl { align-self: flex-end; }
+}

@@ -17,7 +17,39 @@ const SORTS = [
 const PER_PAGE = 40;
 const norm = (s) => String(s || "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
 
+// Discover has two sides: the overview (the page of the plugin stashDiscover by ufousox007, see ssdpage.js) and the search of a stash-box
 export async function render(main) {
+  let view = store.get("discoverView", "overview") === "search" ? "search" : "overview";
+  main.innerHTML = `<div class="kb-disc-hub"><span class="kb-seg" role="tablist">${[["overview", "Overview"], ["search", "Search"]].map(([v, l]) => `<button type="button" role="tab" data-dv="${v}">${t(l)}</button>`).join("")}</span></div><div data-dvbody></div>`;
+  const body = main.querySelector("[data-dvbody]");
+  let stop = null;
+  let run = 0;
+  const show = async () => {
+    const mine = ++run;
+    stop && stop();
+    stop = null;
+    body.innerHTML = "";
+    main.querySelectorAll("[data-dv]").forEach((b) => b.classList.toggle("is-on", b.dataset.dv === view));
+    const host = document.createElement("div");
+    body.appendChild(host);
+    try {
+      const off = view === "overview" ? await (await import("./ssdpage.js")).mountOverview(host) : await renderSearch(host);
+      if (mine !== run) return off && off();
+      stop = off || null;
+    } catch (err) {
+      host.innerHTML = `<p class="kb-pst-wait is-err">${esc(String(err.message || err))}</p>`;
+      errorToast(err, "Discover");
+    }
+  };
+  main.querySelectorAll("[data-dv]").forEach((b) => (b.onclick = () => view !== b.dataset.dv && ((view = b.dataset.dv), store.set("discoverView", view), show())));
+  await show();
+  return () => {
+    run++;
+    stop && stop();
+  };
+}
+
+async function renderSearch(main) {
   const opt = Object.assign({ sort: "DATE", show: "all", q: "", days: 0, perf: "all" }, store.get("discover", {}));
   opt.days = Math.max(0, parseInt(opt.days, 10) || 0);
   if (opt.perf !== "mine" && opt.perf !== "women") opt.perf = "all";

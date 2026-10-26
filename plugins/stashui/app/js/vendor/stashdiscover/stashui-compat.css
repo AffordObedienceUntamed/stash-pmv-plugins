@@ -1,0 +1,60 @@
+/* Stash UI: the classes of Stash's own interface (cards, tables, popovers, buttons) that the plugin stashDiscover (by ufousox007) leaves to
+   Stash's stylesheet – Stash UI doesn't load that one, so they are drawn here, with Stash UI's colours (and Liquid Glass). */
+
+/* ── scene card (.scene-card.grid-card.card) ── */
+.ssd-dp-page { --c-bg: var(--sx-ui, var(--bg-2)); --c-edge: var(--sx-ui3, var(--bg-3)); --c-tx: var(--sx-tx, var(--text)); --c-mut: var(--sx-tx2, var(--text-2)); --c-acc: var(--pink); }
+.scene-card.grid-card.card { position: relative; display: flex; flex-direction: column; min-width: 0; overflow: hidden; border: 1px solid var(--c-edge, var(--bg-3)); border-radius: 10px; color: var(--c-tx, var(--text)); background: var(--c-bg, var(--bg-2)); transition: transform .15s, border-color .15s; }
+.scene-card.grid-card.card:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--c-acc, var(--pink)) 60%, var(--c-edge, var(--bg-3))); }
+.scene-card .video-section { position: relative; display: block; }
+.scene-card .scene-card-preview { position: relative; display: block; aspect-ratio: 16 / 9; overflow: hidden; background: color-mix(in srgb, var(--text) 8%, transparent); }
+.scene-card .scene-card-preview-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.scene-card .studio-overlay { position: absolute; top: 8px; right: 8px; z-index: 8; max-width: 70%; padding: 2px 8px; overflow: hidden; border-radius: 999px; font: 600 12px/1.5 var(--f-label); text-overflow: ellipsis; white-space: nowrap; background: rgba(0, 0, 0, .55); }
+.scene-card .studio-overlay a { color: #fff; text-decoration: none; pointer-events: none; }
+.scene-card .scene-specs-overlay { position: absolute; right: 8px; bottom: 8px; z-index: 8; }
+.scene-card .overlay-duration { display: inline-block; padding: 2px 8px; border-radius: 999px; color: #fff; font: 600 12px/1.5 var(--f-label); background: rgba(0, 0, 0, .6); }
+.scene-card .card-section { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 10px 12px 10px; }
+.scene-card .card-section-title { margin: 0; font: 600 14.5px/1.3 var(--f-text); }
+.scene-card .TruncatedText { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; }
+.scene-card .scene-card__details { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.scene-card .scene-card__date { color: var(--c-mut, var(--text-2)); font: 500 12px/1.3 var(--f-text); }
+.scene-card .scene-card__description { color: var(--c-mut, var(--text-2)); font: 400 12.5px/1.4 var(--f-text); }
+.scene-card .card-section hr { width: 100%; margin: 6px 0 2px; border: 0; border-top: 1px solid var(--c-edge, var(--bg-3)); }
+.scene-card .card-popovers { display: flex; gap: 6px; }
+.scene-card .card-popovers .btn.minimal { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 9px; border: 1px solid var(--c-edge, var(--bg-3)); border-radius: 7px; color: var(--c-mut, var(--text-2)); font: 600 12px/1 var(--f-label); background: transparent; }
+.scene-card .card-popovers .btn.minimal:hover { color: var(--c-tx, var(--text)); border-color: var(--c-acc, var(--pink)); }
+.scene-card .svg-inline--fa, .ssd-dp-page .svg-inline--fa { width: 13px; height: 13px; flex: none; }
+
+/* ── hover popover (tags / performers of a card; sits on the body) ── */
+.popover.hover-popover-content { position: absolute; z-index: 90; max-width: 320px; border: 1px solid var(--bg-3); border-radius: 10px; color: var(--text); background: var(--bg-2); box-shadow: 0 12px 32px -8px rgba(0, 0, 0, .6); }
+.popover.hover-popover-content .arrow { display: none; }
+.popover.hover-popover-content .popover-body { display: flex; flex-wrap: wrap; gap: 5px; max-height: 260px; padding: 9px; overflow: auto; }
+.popover.hover-popover-content .tag-item.badge { display: inline-block; padding: 2px 9px; border-radius: 999px; color: var(--text); font: 600 12px/1.6 var(--f-label); background: var(--bg-3); }
+.popover.hover-popover-content .performer-tag-container { display: flex; align-items: center; gap: 8px; width: 100%; }
+.popover.hover-popover-content .performer-tag { display: block; flex: none; width: 46px; }
+.popover.hover-popover-content .performer-tag img { display: block; width: 46px; height: 64px; border-radius: 6px; object-fit: cover; }
+.popover.hover-popover-content .performer-tag-container .tag-item { width: auto; }
+
+/* ── list view (.table-list.scene-table) ── */
+.ssd-scene-table { width: 100%; overflow-x: auto; }
+.ssd-scene-table table { width: 100%; border-collapse: collapse; color: var(--c-tx, var(--text)); }
+.ssd-scene-table th { padding: 8px 10px; border-bottom: 1px solid var(--c-edge, var(--bg-3)); color: var(--c-mut, var(--text-2)); font: 600 12px/1.3 var(--f-label); text-align: left; white-space: nowrap; }
+.ssd-scene-table th.border-row { display: none; }
+.ssd-scene-table td { padding: 8px 10px; border-bottom: 1px solid color-mix(in srgb, var(--c-edge, var(--bg-3)) 60%, transparent); font: 400 13px/1.4 var(--f-text); vertical-align: middle; }
+.ssd-scene-table tbody tr:hover { background: color-mix(in srgb, var(--c-acc, var(--pink)) 8%, transparent); }
+.ssd-scene-table .image-thumbnail { display: block; width: 120px; max-width: none; aspect-ratio: 16 / 9; border-radius: 6px; object-fit: cover; }
+.ssd-scene-table a { color: var(--c-tx, var(--text)); text-decoration: none; }
+.ssd-scene-table a:hover { color: var(--c-acc, var(--pink)); }
+.ssd-scene-table .ellips-data { display: block; max-width: 340px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ssd-scene-table .comma-list { display: block; max-width: 280px; margin: 0; padding: 0; overflow: hidden; list-style: none; text-overflow: ellipsis; white-space: nowrap; }
+.ssd-scene-table .comma-list li { display: inline; }
+.ssd-scene-table .comma-list li + li::before { content: ", "; }
+
+/* ── search field of the scene window (the original uses Stash's clearable input) ── */
+.ssd-search-bar .clearable-input-group { flex: 1 1 auto; min-width: 0; }
+.ssd-search-bar .form-control, .ssd-modal .form-control { width: 100%; height: 34px; padding: 0 10px; border: 1px solid var(--bg-3); border-radius: 7px; color: var(--text); font: 500 14px/1 var(--f-text); background: var(--base, var(--bg)); }
+
+/* ── Liquid Glass ── */
+html.kb-glass .scene-card.grid-card.card { border-color: var(--glass-edge); border-radius: 16px; background: var(--glass-shine), var(--glass-deep, var(--glass)); }
+html.kb-glass .scene-card .studio-overlay, html.kb-glass .scene-card .overlay-duration { -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); }
+html.kb-glass .popover.hover-popover-content { border-color: var(--glass-edge); background: var(--glass-shine), var(--glass-deep, var(--glass)); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); }
+html.kb-glass .scene-card .card-popovers .btn.minimal, html.kb-glass .ssd-search-bar .form-control, html.kb-glass .ssd-modal .form-control { border-color: var(--glass-edge); background: color-mix(in srgb, var(--text) 6%, transparent); }
