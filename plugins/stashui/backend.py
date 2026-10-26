@@ -61,7 +61,8 @@ Called through Stash's `runPluginOperation` (interface: raw):
 
 * mode "gif_make": a part of a scene as an animated GIF (width, fps, speed, quality, optional crop), rendered by ffmpeg in its own
   process; "clip_status" says how far it is.
-      args:   {"mode": "gif_make", "scene_id", "start", "end", "width", "fps", "speed", "quality": "small"|"good"|"best", "loop", "crop", "folder", "name"}
+      args:   {"mode": "gif_make", "scene_id", "start", "end", "width", "fps", "speed", "quality": "small"|"good"|"best", "loop", "crop", "folder", "name",
+               "target_mb": keep it under this size – width / fps / quality are then the most it may use and the best that fits is picked}
       output: {"job"}
 
 * mode "edit_render": the Editor – pieces of several scenes, one after the other (trimmed, faster / slower, fading), as one new
@@ -1215,6 +1216,8 @@ def gif_make(stash, args):
             "width": max(120, min(1920, int(args.get("width") or 480))), "fps": max(5, min(30, int(args.get("fps") or 15))),
             "speed": max(0.25, min(4.0, float(args.get("speed") or 1.0))), "quality": args.get("quality") if args.get("quality") in ("small", "good", "best") else "good",
             "loop": bool(args.get("loop", True))}
+    if args.get("target_mb"):  # "keep it under n MB": the job picks the best width / pictures per second / colours that fit
+        spec["target"] = int(max(0.2, min(200.0, float(args["target_mb"]))) * 1024 * 1024)
     cr = args.get("crop")
     if cr:
         x0, y0, w0, h0 = (max(0.0, min(1.0, float(cr.get(k)))) for k in ("x", "y", "w", "h"))
@@ -1236,10 +1239,54 @@ def gif_make(stash, args):
     return {"job": spec["job"]}
 
 
+# the settings a size limit chooses from, best looking first: (width, pictures per second, quality)
+GIF_LADDER = [(1280, 20, "good"), (960, 20, "good"), (800, 20, "good"), (800, 15, "good"), (640, 15, "good"), (560, 15, "good"), (480, 15, "good"), (480, 12, "good"),
+              (400, 12, "good"), (360, 12, "small"), (320, 12, "small"), (320, 10, "small"), (280, 10, "small"), (240, 10, "small"), (200, 10, "small"), (160, 8, "small")]
+
+
+def gif_graph(spec, width, fps, quality):
+    vf = []
+    cr = spec.get("crop")
+    if cr:
+        vf.append("crop=trunc(iw*{w:.5f}/2)*2:trunc(ih*{h:.5f}/2)*2:trunc(iw*{x:.5f}/2)*2:trunc(ih*{y:.5f}/2)*2".format(**cr))
+    if spec["speed"] != 1:
+        vf.append(f"setpts=PTS/{spec['speed']:.4f}")
+    vf.append(f"fps={fps}")
+    vf.append(f"scale='min({width},iw)':-1:flags=lanczos")
+    # the palette is made from the picture itself (much better colours than the default palette)
+    gen = "palettegen=max_colors=" + ("128:stats_mode=diff" if quality == "small" else "256:stats_mode=diff" if quality == "good" else "256:stats_mode=full")
+    use = "paletteuse=dither=" + ("bayer:bayer_scale=5:diff_mode=rectangle" if quality == "small" else "bayer:bayer_scale=3:diff_mode=rectangle" if quality == "good" else "sierra2_4a")
+    return ",".join(vf) + f",split[a][b];[a]{gen}[p];[b][p]{use}"
+
+
+def gif_encode(spec, out, width, fps, quality, start, span, on_progress=None):
+    """One encode of `span` seconds from `start` → size of the file."""
+    cmd = [spec["ffmpeg"], "-hide_banner", "-loglevel", "error", "-y", "-progress", "pipe:1", "-nostats", "-ss", f"{start:.3f}", "-t", f"{span:.3f}", "-i", spec["video"],
+           "-an", "-filter_complex", gif_graph(spec, width, fps, quality), "-loop", "0" if spec["loop"] else "-1", out]
+    total = span / spec["speed"]
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, creationflags=0x08000000 if os.name == "nt" else 0)
+    last = 0.0
+    for line in proc.stdout:
+        line = line.strip()
+        if on_progress and (line.startswith("out_time_us=") or line.startswith("out_time_ms=")):
+            try:
+                t_out = int(line.split("=", 1)[1]) / 1e6
+            except ValueError:
+                continue
+            if time.time() - last > 0.5:
+                on_progress(max(0.0, min(0.99, t_out / total)) if total > 0 else 0.0)
+                last = time.time()
+    err = proc.stderr.read()
+    proc.wait()
+    if proc.returncode != 0 or not os.path.isfile(out):
+        raise RuntimeError((err or "ffmpeg failed").strip().splitlines()[-1] if (err or "").strip() else "ffmpeg failed")
+    return os.path.getsize(out)
+
+
 def gif_job(spec_path):
     with open(spec_path, encoding="utf-8") as f:
         spec = json.load(f)
-    st = {"state": "running", "i": 0, "n": 1, "pct": 0, "files": [], "error": ""}
+    st = {"state": "running", "i": 0, "n": 1, "pct": 0, "files": [], "error": "", "phase": "encode"}
     sp = cut_status_path(spec["job"])
 
     def save():
@@ -1248,44 +1295,62 @@ def gif_job(spec_path):
         os.replace(sp + ".tmp", sp)
 
     save()
-    flags = 0x08000000 if os.name == "nt" else 0
     try:
         span = spec["end"] - spec["start"]
-        vf = []
-        cr = spec.get("crop")
-        if cr:
-            vf.append("crop=trunc(iw*{w:.5f}/2)*2:trunc(ih*{h:.5f}/2)*2:trunc(iw*{x:.5f}/2)*2:trunc(ih*{y:.5f}/2)*2".format(**cr))
-        if spec["speed"] != 1:
-            vf.append(f"setpts=PTS/{spec['speed']:.4f}")
-        vf.append(f"fps={spec['fps']}")
-        vf.append(f"scale='min({spec['width']},iw)':-1:flags=lanczos")
-        # the palette is made from the picture itself (much better colours than the default palette)
-        q = spec["quality"]
-        gen = "palettegen=max_colors=" + ("128:stats_mode=diff" if q == "small" else "256:stats_mode=diff" if q == "good" else "256:stats_mode=full")
-        use = "paletteuse=dither=" + ("bayer:bayer_scale=5:diff_mode=rectangle" if q == "small" else "bayer:bayer_scale=3:diff_mode=rectangle" if q == "good" else "sierra2_4a")
-        graph = ",".join(vf) + f",split[a][b];[a]{gen}[p];[b][p]{use}"
-        cmd = [spec["ffmpeg"], "-hide_banner", "-loglevel", "error", "-y", "-progress", "pipe:1", "-nostats", "-ss", f"{spec['start']:.3f}", "-t", f"{span:.3f}", "-i", spec["video"],
-               "-an", "-filter_complex", graph, "-loop", "0" if spec["loop"] else "-1", spec["out"]]
-        total = span / spec["speed"]
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, creationflags=flags)
-        last = 0.0
-        for line in proc.stdout:
-            line = line.strip()
-            if line.startswith("out_time_us=") or line.startswith("out_time_ms="):
-                try:
-                    t_out = int(line.split("=", 1)[1]) / 1e6
-                except ValueError:
-                    continue
-                if time.time() - last > 0.5:
-                    st["pct"] = max(0, min(99, int(100 * t_out / total))) if total > 0 else 0
-                    save()
-                    last = time.time()
-        err = proc.stderr.read()
-        proc.wait()
-        if proc.returncode != 0 or not os.path.isfile(spec["out"]):
-            raise RuntimeError((err or "ffmpeg failed").strip().splitlines()[-1] if (err or "").strip() else "ffmpeg failed")
+        width, fps, quality = spec["width"], spec["fps"], spec["quality"]
+        target = spec.get("target")
+        if not target:
+            def prog(x):
+                st["pct"] = int(99 * x)
+                save()
+            size = gif_encode(spec, spec["out"], width, fps, quality, spec["start"], span, prog)
+        else:
+            # a size limit: the chosen width / pictures per second are the most it may use; below that the best that fits is searched.
+            # A short sample from the middle of the part is encoded for each try (size per second × length = what the whole will be).
+            ladder = [c for c in GIF_LADDER if c[0] <= width and c[1] <= fps] or [GIF_LADDER[-1]]
+            if (width, fps, quality) not in ladder and ladder[0][0] < width:
+                ladder.insert(0, (width, fps, quality if quality != "best" else "good"))
+            sample = min(span, 2.0)
+            s0 = spec["start"] + (span - sample) / 2
+            tmp = spec["out"] + ".probe.gif"
+            st["phase"] = "probe"
+
+            def fits(i):
+                w, f, q = ladder[i]
+                sz = gif_encode(spec, tmp, w, f, q, s0, sample)
+                est = sz / sample * span
+                st["pct"] = min(25, st["pct"] + 5)
+                save()
+                return est <= target * 0.93
+
+            lo, hi = 0, len(ladder) - 1  # the first that fits (bigger index = smaller GIF)
+            if fits(0):
+                pick = 0
+            else:
+                while lo < hi:
+                    mid = (lo + hi) // 2
+                    if fits(mid):
+                        hi = mid
+                    else:
+                        lo = mid + 1
+                pick = lo
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
+            st["phase"] = "encode"
+            size = None
+            for i in range(pick, min(len(ladder), pick + 4)):  # (the estimate can be a bit off: one step down per miss)
+                w, f, q = ladder[i]
+                base = 25
+                size = gif_encode(spec, spec["out"], w, f, q, spec["start"], span, lambda x: (st.__setitem__("pct", base + int((99 - base) * x)), save()))
+                st["chosen"] = {"width": w, "fps": f, "quality": q}
+                if size <= target:
+                    break
+            if size is not None and size > target:
+                st["over"] = True  # even the smallest try was above the limit – the file is kept, the page says so
         st["files"].append(spec["out"])
-        st["size"] = os.path.getsize(spec["out"])
+        st["size"] = size
         st["pct"] = 100
         st["state"] = "done"
         st["i"] = 1

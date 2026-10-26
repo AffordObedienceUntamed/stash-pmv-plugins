@@ -7,6 +7,13 @@
 
 export const CHANGES = [
   {
+    v: "3.123.1",
+    date: "2026-10-26",
+    items: [
+      ["ui", "GIF maker: “Keep it under” – type a size (or press 2 / 5 / 8 / 10 / 25 MB) and the best settings that fit are picked for you: the widest picture, the most pictures per second and the best colours that stay below it. Width, pictures per second and quality become the most it may use, and the window says which settings were used. If even the smallest settings are too big, it says so – use a shorter part.", "GIF 制作：“大小不超过”——输入大小（或点 2 / 5 / 8 / 10 / 25 MB），会自动选出能放进去的最佳设置：不超过限制的最大宽度、最多的每秒画面数和最好的色彩。宽度、每秒画面数和质量变为上限，窗口会说明用了哪些设置。如果连最小设置也太大，会提示——请选更短的部分。", "scene/@scene::[data-gif]"],
+    ],
+  },
+  {
     v: "3.123.0",
     date: "2026-10-26",
     items: [

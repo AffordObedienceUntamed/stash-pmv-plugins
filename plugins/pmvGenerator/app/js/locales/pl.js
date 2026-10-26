@@ -2524,4 +2524,10 @@ export default {
   "adding it to Stash …": "dodawanie do Stasha …",
   "{n} pictures, {s} seconds long": "{n} klatek, {s} s",
   "– drag the frame on the picture to choose the part that is kept": "– przeciągnij ramkę na obrazie, aby wybrać zachowaną część",
+  "Finding the best settings for {n} MB …": "Szukanie najlepszych ustawień dla {n} MB …",
+  "It stays above {n} MB even with the smallest settings – use a shorter part.": "Nawet przy najmniejszych ustawieniach przekracza {n} MB – wybierz krótszy fragment.",
+  "Keep it under": "Zmieść się w",
+  "The best settings that fit into {n} MB are picked – width, pictures per second and quality above are then the most it may use.": "Wybierane są najlepsze ustawienia mieszczące się w {n} MB – szerokość, klatki na sekundę i jakość powyżej są wtedy maksimum.",
+  "no limit": "bez limitu",
+  "{w} px wide, {f} pictures per second, {q}": "{w} px szer., {f} klatek na sekundę, {q}",
 };

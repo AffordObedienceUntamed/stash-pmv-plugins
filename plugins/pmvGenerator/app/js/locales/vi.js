@@ -2519,4 +2519,10 @@ export default {
   "adding it to Stash …": "đang thêm vào Stash …",
   "{n} pictures, {s} seconds long": "{n} hình, dài {s} giây",
   "– drag the frame on the picture to choose the part that is kept": "– kéo khung trên hình để chọn phần được giữ lại",
+  "Finding the best settings for {n} MB …": "Đang tìm cài đặt tốt nhất cho {n} MB …",
+  "It stays above {n} MB even with the smallest settings – use a shorter part.": "Dù dùng cài đặt nhỏ nhất vẫn vượt quá {n} MB – hãy chọn đoạn ngắn hơn.",
+  "Keep it under": "Giữ dưới",
+  "The best settings that fit into {n} MB are picked – width, pictures per second and quality above are then the most it may use.": "Sẽ chọn cài đặt tốt nhất vừa trong {n} MB – chiều rộng, số hình mỗi giây và chất lượng ở trên là mức tối đa.",
+  "no limit": "không giới hạn",
+  "{w} px wide, {f} pictures per second, {q}": "rộng {w} px, {f} hình mỗi giây, {q}",
 };

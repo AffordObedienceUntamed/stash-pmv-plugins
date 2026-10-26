@@ -15,10 +15,11 @@ const FPS = [10, 12, 15, 20, 25];
 const SPEEDS = [0.5, 0.75, 1, 1.5, 2];
 const QUALITY = [["small", "Small file"], ["good", "Good"], ["best", "Best colors"]];
 const LENGTHS = [3, 5, 8, 12];
+const SIZES = [1, 2, 5, 8, 10, 25]; // MB – what sites take (Discord 10, many boards 5 …)
 
 export function openGifMaker(x, video) {
   const dur = (x.files[0] || {}).duration || 0;
-  const o = Object.assign({ width: 480, fps: 15, speed: 1, quality: "good", loop: true, sub: true, stash: true, meta: true }, store.get("gifOpts", {}));
+  const o = Object.assign({ width: 480, fps: 15, speed: 1, quality: "good", loop: true, sub: true, stash: true, meta: true, targetMb: 0 }, store.get("gifOpts", {}));
   let cropper = null;
   let stopAt = null;
   let busy = false;
@@ -39,6 +40,11 @@ export function openGifMaker(x, video) {
         <label class="kb-form-row"><span>${t("Pictures per second")}</span><select class="kb-field" data-fps>${FPS.map((v) => `<option value="${v}"${o.fps === v ? " selected" : ""}>${v}</option>`).join("")}</select></label>
         <label class="kb-form-row"><span>${t("Speed")}</span><select class="kb-field" data-speed>${SPEEDS.map((v) => `<option value="${v}"${o.speed === v ? " selected" : ""}>${v}×</option>`).join("")}</select></label>
         <label class="kb-form-row"><span>${t("Quality")}</span><select class="kb-field" data-quality>${QUALITY.map(([v, l]) => `<option value="${v}"${o.quality === v ? " selected" : ""}>${t(l)}</option>`).join("")}</select></label>
+      </div>
+      <div class="kb-gif-target">
+        <label class="kb-form-row"><span>${t("Keep it under")}</span><span class="kb-music-t"><input class="kb-field" data-target type="number" min="0.5" max="200" step="0.5" placeholder="${esc(t("no limit"))}" value="${o.targetMb || ""}"><b>MB</b></span></label>
+        <div class="kb-gif-len">${SIZES.map((n) => `<button type="button" class="kb-btn is-ghost" data-size="${n}">${n} MB</button>`).join("")}<button type="button" class="kb-btn is-ghost" data-size="0">${t("no limit")}</button></div>
+        <p class="kb-hint" data-targethint></p>
       </div>
       <p class="kb-hint" data-estimate></p>
       ${
@@ -99,6 +105,20 @@ export function openGifMaker(x, video) {
       }),
   );
   ["[data-from]", "[data-to]", "[data-speed]", "[data-fps]", "[data-width]"].forEach((s) => $(s).addEventListener("input", estimate));
+  const targetHint = () => {
+    const mb = Number($("[data-target]").value);
+    $("[data-targethint]").textContent = mb > 0 ? t("The best settings that fit into {n} MB are picked – width, pictures per second and quality above are then the most it may use.", { n: mb }) : "";
+    el.classList.toggle("has-target", mb > 0);
+  };
+  $("[data-target]").addEventListener("input", targetHint);
+  el.querySelectorAll("[data-size]").forEach(
+    (b) =>
+      (b.onclick = () => {
+        $("[data-target]").value = Number(b.dataset.size) || "";
+        targetHint();
+      }),
+  );
+  targetHint();
   estimate();
 
   // the part plays over and over in the player
@@ -186,6 +206,7 @@ export function openGifMaker(x, video) {
       sub: $("[data-sub]").checked,
       stash: $("[data-stash]").checked,
       meta: $("[data-meta]").checked,
+      targetMb: Math.max(0, Number($("[data-target]").value) || 0),
     });
     store.set("gifOpts", o);
     busy = true;
@@ -209,6 +230,7 @@ export function openGifMaker(x, video) {
         crop: cropper && cropOn && cropOn.checked ? cropper.get() : undefined,
         folder: o.sub ? "Clips" : "",
         name: $("[data-name]").value.trim(),
+        target_mb: o.targetMb || undefined,
       });
       let st;
       for (;;) {
@@ -216,18 +238,20 @@ export function openGifMaker(x, video) {
         if (!el.isConnected) return;
         st = await runBackend({ mode: "clip_status", job: r.job });
         bar.style.width = (st.pct || 0) + "%";
-        note.textContent = t("Making the GIF … {n} %", { n: st.pct || 0 });
+        note.textContent = st.phase === "probe" ? t("Finding the best settings for {n} MB …", { n: o.targetMb }) : t("Making the GIF … {n} %", { n: st.pct || 0 });
         if (st.state === "done" || st.state === "error") break;
       }
       if (st.state === "error") throw new Error(st.error || "ffmpeg failed");
       const file = st.files[0];
       bar.style.width = "100%";
       const sizeText = fmtBytes ? fmtBytes(st.size || 0) : "";
-      note.innerHTML = `${esc(t("GIF saved: {name}", { name: file.split(/[\\/]/).pop() }))}${sizeText ? ` · ${esc(sizeText)}` : ""}`;
+      const used = st.chosen ? ` · ${esc(t("{w} px wide, {f} pictures per second, {q}", { w: st.chosen.width, f: st.chosen.fps, q: t(({ small: "Small file", good: "Good", best: "Best colors" })[st.chosen.quality]) }))}` : "";
+      const over = st.over ? ` · ${esc(t("It stays above {n} MB even with the smallest settings – use a shorter part.", { n: o.targetMb }))}` : "";
+      note.innerHTML = `${esc(t("GIF saved: {name}", { name: file.split(/[\\/]/).pop() }))}${sizeText ? ` · ${esc(sizeText)}` : ""}${used}${over}`;
       if (o.stash) {
         note.textContent += " – " + t("adding it to Stash …");
         const id = await intoStashAsImage(file, file.split(/[\\/]/).pop());
-        note.innerHTML = `${esc(t("GIF saved: {name}", { name: file.split(/[\\/]/).pop() }))}${sizeText ? ` · ${esc(sizeText)}` : ""} – ` + (id ? `<a href="#/image/${esc(id)}">${esc(t("Open the image"))}</a>` : esc(t("Stash will show it after its next scan.")));
+        note.innerHTML = `${esc(t("GIF saved: {name}", { name: file.split(/[\\/]/).pop() }))}${sizeText ? ` · ${esc(sizeText)}` : ""}${used}${over} – ` + (id ? `<a href="#/image/${esc(id)}">${esc(t("Open the image"))}</a>` : esc(t("Stash will show it after its next scan.")));
       }
       toast(t("GIF made"), "ok");
     } catch (e) {

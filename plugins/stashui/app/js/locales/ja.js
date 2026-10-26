@@ -2526,4 +2526,10 @@ export default {
   "adding it to Stash …": "Stash に追加しています …",
   "{n} pictures, {s} seconds long": "{n} 枚、{s} 秒",
   "– drag the frame on the picture to choose the part that is kept": "– 画面上の枠をドラッグして残す部分を選びます",
+  "Finding the best settings for {n} MB …": "{n} MB に合う最適な設定を探しています …",
+  "It stays above {n} MB even with the smallest settings – use a shorter part.": "最小の設定でも {n} MB を超えます – もっと短い部分にしてください。",
+  "Keep it under": "上限サイズ",
+  "The best settings that fit into {n} MB are picked – width, pictures per second and quality above are then the most it may use.": "{n} MB に収まる最良の設定が選ばれます – 上の幅・毎秒の画像数・品質は上限になります。",
+  "no limit": "制限なし",
+  "{w} px wide, {f} pictures per second, {q}": "幅 {w} px、毎秒 {f} 枚、{q}",
 };

@@ -2466,4 +2466,10 @@ export default {
   "adding it to Stash …": "ajout à Stash …",
   "{n} pictures, {s} seconds long": "{n} images, {s} secondes",
   "– drag the frame on the picture to choose the part that is kept": "– faites glisser le cadre sur l'image pour choisir la partie conservée",
+  "Finding the best settings for {n} MB …": "Recherche des meilleurs réglages pour {n} Mo …",
+  "It stays above {n} MB even with the smallest settings – use a shorter part.": "Même avec les réglages les plus petits, il dépasse {n} Mo – choisissez une partie plus courte.",
+  "Keep it under": "Rester sous",
+  "The best settings that fit into {n} MB are picked – width, pictures per second and quality above are then the most it may use.": "Les meilleurs réglages qui tiennent dans {n} Mo sont choisis – la largeur, les images par seconde et la qualité ci-dessus sont alors des maximums.",
+  "no limit": "sans limite",
+  "{w} px wide, {f} pictures per second, {q}": "{w} px de large, {f} images par seconde, {q}",
 };

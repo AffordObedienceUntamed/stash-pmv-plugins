@@ -2228,3 +2228,6 @@ html.kb-glass .kb-ed-hit, html.kb-glass .kb-ed-seg, html.kb-glass .kb-ed-out { b
 .kb-gif-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
 .kb-gif-grid .kb-form-row { margin: 0; }
 .kb-gif [data-estimate].is-warn { color: #ffb86b; }
+.kb-gif-target { margin: 6px 0 4px; }
+.kb-gif-target .kb-music-t b { color: var(--text-2); font: 600 13px/1 var(--f-label); }
+.kb-gif.has-target .kb-gif-grid { opacity: .85; }

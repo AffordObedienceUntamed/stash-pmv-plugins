@@ -2561,4 +2561,10 @@ export default {
   "adding it to Stash …": "добавляю в Stash …",
   "{n} pictures, {s} seconds long": "{n} кадров, {s} с",
   "– drag the frame on the picture to choose the part that is kept": "– перетащите рамку на картинке, чтобы выбрать сохраняемую часть",
+  "Finding the best settings for {n} MB …": "Подбираю лучшие настройки для {n} МБ …",
+  "It stays above {n} MB even with the smallest settings – use a shorter part.": "Даже при самых маленьких настройках больше {n} МБ – выберите часть покороче.",
+  "Keep it under": "Не больше",
+  "The best settings that fit into {n} MB are picked – width, pictures per second and quality above are then the most it may use.": "Выбираются лучшие настройки, умещающиеся в {n} МБ – ширина, кадры в секунду и качество выше становятся максимумом.",
+  "no limit": "без ограничения",
+  "{w} px wide, {f} pictures per second, {q}": "{w} px шириной, {f} кадров в секунду, {q}",
 };

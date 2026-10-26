@@ -2583,4 +2583,10 @@ export default {
   "adding it to Stash …": "正在添加到 Stash …",
   "{n} pictures, {s} seconds long": "{n} 帧，长 {s} 秒",
   "– drag the frame on the picture to choose the part that is kept": "– 在画面上拖动方框，选择保留的部分",
+  "Finding the best settings for {n} MB …": "正在为 {n} MB 寻找最佳设置 …",
+  "It stays above {n} MB even with the smallest settings – use a shorter part.": "即使用最小设置也超过 {n} MB——请选择更短的部分。",
+  "Keep it under": "大小不超过",
+  "The best settings that fit into {n} MB are picked – width, pictures per second and quality above are then the most it may use.": "会选出能放进 {n} MB 的最佳设置——上面的宽度、每秒画面数和质量则是上限。",
+  "no limit": "不限制",
+  "{w} px wide, {f} pictures per second, {q}": "宽 {w} 像素，每秒 {f} 帧，{q}",
 };
